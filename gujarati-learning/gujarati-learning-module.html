@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gujarati Learning Module - Family Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --success: #95E1D3;
+            --danger: #FF6B9D;
+            --dark: #2C3E50;
+            --light: #ECF0F1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #FF6B6B, #FFE66D);
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .user-selector {
+            display: flex;
+            gap: 15px;
+            margin: 20px;
+            justify-content: center;
+        }
+
+        .user-btn {
+            flex: 1;
+            max-width: 150px;
+            padding: 15px 20px;
+            font-size: 1.1em;
+            border: 3px solid var(--secondary);
+            background: white;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .user-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-btn.active {
+            background: var(--secondary);
+            color: white;
+            border-color: var(--secondary);
+        }
+
+        .main-content {
+            padding: 30px;
+            display: none;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 20px;
+            border: 2px solid var(--primary);
+            background: white;
+            color: var(--primary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .phase-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .phase-btn {
+            padding: 10px 15px;
+            border: 2px solid var(--secondary);
+            background: white;
+            color: var(--secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .phase-btn.active {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .lesson-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .lesson-letter {
+            font-size: 5em;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .lesson-romanization {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .lesson-pronunciation {
+            font-size: 1.4em;
+            opacity: 0.85;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .lesson-english {
+            font-size: 2em;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #FF5252;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #3DB8B3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--dark);
+        }
+
+        .btn-success:hover {
+            background: #7FD5C0;
+            transform: translateY(-2px);
+        }
+
+        .quiz-container {
+            background: var(--light);
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        .quiz-question {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: var(--dark);
+        }
+
+        .quiz-word {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quiz-option {
+            padding: 20px;
+            background: white;
+            border: 3px solid #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .quiz-option:hover {
+            border-color: var(--primary);
+            background: #fff5f5;
+        }
+
+        .quiz-option.selected {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .quiz-option.correct {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .quiz-option.incorrect {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        .tracing-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .tracing-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: 20px auto;
+        }
+
+        .tracing-canvas {
+            border: 3px solid var(--primary);
+            border-radius: 10px;
+            background: white;
+            display: block;
+            cursor: crosshair;
+            position: relative;
+            z-index: 2;
+        }
+
+        .tracing-guide {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            opacity: 0.2;
+            font-size: 15em;
+            font-weight: bold;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .tracing-instructions {
+            font-size: 1.2em;
+            color: var(--dark);
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .toggle-guide-btn {
+            margin: 15px;
+            padding: 10px 20px;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+            height: 30px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: width 0.3s ease;
+        }
+
+        .stats {
+            background: var(--light);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .stat-item {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .navigation {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn.prev {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .nav-btn.next {
+            background: var(--primary);
+            color: white;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .lesson-letter {
+                font-size: 3.5em;
+            }
+
+            .quiz-options {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Gujarati Learn Hub</h1>
+            <p>Learn with Krish & Karishma</p>
+        </div>
+
+        <div class="user-selector">
+            <button class="user-btn" data-user="krish">👦 Krish</button>
+            <button class="user-btn" data-user="karishma">👧 Karishma</button>
+        </div>
+
+        <div class="main-content">
+            <div class="tab-buttons">
+                <button class="tab-btn active" data-tab="learn">📚 Learn</button>
+                <button class="tab-btn" data-tab="quiz">🎯 Quiz</button>
+                <button class="tab-btn" data-tab="trace">✏️ Trace</button>
+            </div>
+
+            <!-- LEARN TAB -->
+            <div id="learn-tab" class="tab-content active">
+                <div class="phase-selector">
+                    <button class="phase-btn active" data-phase="phase_1_alphabet">Phase 1: Alphabet</button>
+                    <button class="phase-btn" data-phase="phase_2_numbers">Phase 2: Numbers</button>
+                    <button class="phase-btn" data-phase="phase_3_vocabulary">Phase 3: Vocabulary</button>
+                </div>
+
+                <div class="lesson-display">
+                    <div class="lesson-letter" id="lessonLetter">અ</div>
+                    <div class="lesson-romanization" id="lessonRomanization">a</div>
+                    <div class="lesson-pronunciation" id="lessonPronunciation">like "ago"</div>
+                    <div class="lesson-english" id="lessonEnglish"></div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="speakBtn">🔊 Hear It</button>
+                    <button class="btn btn-primary" id="nextLessonBtn">Next →</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Progress</div>
+                        <div class="stat-value" id="currentLesson">1</div>
+                        <div class="stat-label">of <span id="totalLessons">48</span></div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Points Today</div>
+                        <div class="stat-value" id="pointsToday">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Accuracy</div>
+                        <div class="stat-value" id="accuracy">0%</div>
+                    </div>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 2%">2%</div>
+                </div>
+            </div>
+
+            <!-- QUIZ TAB -->
+            <div id="quiz-tab" class="tab-content hidden">
+                <div class="quiz-container">
+                    <div class="quiz-question">What is this?</div>
+                    <div class="quiz-word" id="quizWord">અ</div>
+                    <div class="quiz-options" id="quizOptions">
+                        <button class="quiz-option" data-index="0">Loading...</button>
+                        <button class="quiz-option" data-index="1">Loading...</button>
+                        <button class="quiz-option" data-index="2">Loading...</button>
+                        <button class="quiz-option" data-index="3">Loading...</button>
+                    </div>
+                    <div class="action-buttons" style="margin-top: 40px;">
+                        <button class="btn btn-primary" id="submitQuizBtn">Submit Answer</button>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Quiz Score</div>
+                        <div class="stat-value" id="quizScore">0</div>
+                        <div class="stat-label">/ 10</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Questions</div>
+                        <div class="stat-value" id="quizQuestions">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Streak</div>
+                        <div class="stat-value" id="quizStreak">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRACE TAB -->
+            <div id="trace-tab" class="tab-content hidden">
+                <div class="tracing-container">
+                    <div class="tracing-instructions">
+                        Trace this: <span id="traceLetterDisplay" style="font-size: 2em; color: var(--primary);">અ</span>
+                    </div>
+                    <button class="toggle-guide-btn" id="toggleGuideBtn">👁️ Show Guide</button>
+                    <div class="tracing-wrapper" id="tracingWrapper">
+                        <div class="tracing-guide" id="tracingGuide">અ</div>
+                        <canvas id="tracingCanvas" class="tracing-canvas" width="500" height="500"></canvas>
+                    </div>
+                    <div style="font-size: 0.9em; color: #666; margin-top: 10px;">Trace over the faded letter to practice</div>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="clearTraceBtn">Clear</button>
+                        <button class="btn btn-success" id="submitTraceBtn">Next ✓</button>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Traced</div>
+                        <div class="stat-value" id="lettersTraced">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Strokes</div>
+                        <div class="stat-value" id="strokeCount">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Points</div>
+                        <div class="stat-value" id="tracePoints">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load curriculum from JSON file (or fallback to embedded data)
+        let curriculum = null;
+
+        async function loadCurriculum() {
+            try {
+                const response = await fetch('gujarati-curriculum-final-verified.json');
+                if (response.ok) {
+                    curriculum = await response.json();
+                }
+            } catch (e) {
+                console.log('Using embedded curriculum data');
+                curriculum = getEmbeddedCurriculum();
+            }
+        }
+
+        function getEmbeddedCurriculum() {
+            return {
+            "phase_1_alphabet": {
+                "lessons": [
+                    {"lesson_id": "V001", "letter": "અ", "romanization": "a", "pronunciation": "ago", "english": "Vowel A"},
+                    {"lesson_id": "V002", "letter": "આ", "romanization": "ā", "pronunciation": "arm", "english": "Vowel AA"},
+                    {"lesson_id": "V003", "letter": "ઇ", "romanization": "i", "pronunciation": "it", "english": "Vowel I"},
+                    {"lesson_id": "V004", "letter": "ઈ", "romanization": "ī", "pronunciation": "heat", "english": "Vowel II"},
+                    {"lesson_id": "V005", "letter": "ઉ", "romanization": "u", "pronunciation": "foot", "english": "Vowel U"},
+                    {"lesson_id": "V006", "letter": "ઊ", "romanization": "ū", "pronunciation": "food", "english": "Vowel UU"},
+                    {"lesson_id": "V007", "letter": "એ", "romanization": "e", "pronunciation": "cat", "english": "Vowel E"},
+                    {"lesson_id": "V008", "letter": "ઐ", "romanization": "ai", "pronunciation": "pain", "english": "Vowel AI"},
+                    {"lesson_id": "V009", "letter": "ઓ", "romanization": "o", "pronunciation": "go", "english": "Vowel O"},
+                    {"lesson_id": "V010", "letter": "ઔ", "romanization": "au", "pronunciation": "house", "english": "Vowel AU"},
+                    {"lesson_id": "V011", "letter": "અં", "romanization": "ṁ", "pronunciation": "angry", "english": "Anusvara"},
+                    {"lesson_id": "V012", "letter": "અઃ", "romanization": "ḥ", "pronunciation": "ah", "english": "Visarga"},
+                    {"lesson_id": "V013", "letter": "ઋ", "romanization": "ru", "pronunciation": "ru", "english": "Vowel RU"},
+                    {"lesson_id": "C001", "letter": "ક", "romanization": "ka", "pronunciation": "pickle", "english": "Ka"},
+                    {"lesson_id": "C002", "letter": "ખ", "romanization": "kha", "pronunciation": "khaki", "english": "Kha"},
+                    {"lesson_id": "C003", "letter": "ગ", "romanization": "ga", "pronunciation": "fog", "english": "Ga"},
+                    {"lesson_id": "C004", "letter": "ઘ", "romanization": "gha", "pronunciation": "like g + h", "english": "Gha"},
+                    {"lesson_id": "C005", "letter": "ચ", "romanization": "cha", "pronunciation": "voucher", "english": "Cha"},
+                    {"lesson_id": "C006", "letter": "છ", "romanization": "chha", "pronunciation": "like ch + h", "english": "Chha"},
+                    {"lesson_id": "C007", "letter": "જ", "romanization": "ja", "pronunciation": "jack", "english": "Ja"},
+                    {"lesson_id": "C008", "letter": "ઝ", "romanization": "jha", "pronunciation": "like j + h", "english": "Jha"},
+                    {"lesson_id": "C009", "letter": "ટ", "romanization": "ṭa", "pronunciation": "train", "english": "Ta (cerebral)"},
+                    {"lesson_id": "C010", "letter": "ઠ", "romanization": "ṭha", "pronunciation": "like ṭ + h", "english": "Tha (cerebral)"},
+                    {"lesson_id": "C011", "letter": "ડ", "romanization": "ḍa", "pronunciation": "dull", "english": "Da (cerebral)"},
+                    {"lesson_id": "C012", "letter": "ઢ", "romanization": "ḍha", "pronunciation": "like ḍ + h", "english": "Dha (cerebral)"},
+                    {"lesson_id": "C013", "letter": "ત", "romanization": "ta", "pronunciation": "stay", "english": "Ta (dental)"},
+                    {"lesson_id": "C014", "letter": "થ", "romanization": "tha", "pronunciation": "like t + h", "english": "Tha (dental)"},
+                    {"lesson_id": "C015", "letter": "દ", "romanization": "da", "pronunciation": "vocal d", "english": "Da (dental)"},
+                    {"lesson_id": "C016", "letter": "ધ", "romanization": "dha", "pronunciation": "like d + h", "english": "Dha (dental)"},
+                    {"lesson_id": "C017", "letter": "પ", "romanization": "pa", "pronunciation": "up", "english": "Pa"},
+                    {"lesson_id": "C018", "letter": "ફ", "romanization": "pha", "pronunciation": "for", "english": "Pha"},
+                    {"lesson_id": "C019", "letter": "બ", "romanization": "ba", "pronunciation": "burn", "english": "Ba"},
+                    {"lesson_id": "C020", "letter": "ભ", "romanization": "bha", "pronunciation": "like b + h", "english": "Bha"},
+                    {"lesson_id": "C021", "letter": "મ", "romanization": "ma", "pronunciation": "me", "english": "Ma"},
+                    {"lesson_id": "C022", "letter": "ન", "romanization": "na", "pronunciation": "no", "english": "Na"},
+                    {"lesson_id": "C023", "letter": "ય", "romanization": "ya", "pronunciation": "yes", "english": "Ya"},
+                    {"lesson_id": "C024", "letter": "ર", "romanization": "ra", "pronunciation": "rush", "english": "Ra"},
+                    {"lesson_id": "C025", "letter": "લ", "romanization": "la", "pronunciation": "leaf", "english": "La"},
+                    {"lesson_id": "C026", "letter": "વ", "romanization": "va", "pronunciation": "verge", "english": "Va"},
+                    {"lesson_id": "C027", "letter": "શ", "romanization": "sha", "pronunciation": "shut", "english": "Sha"},
+                    {"lesson_id": "C028", "letter": "ષ", "romanization": "Sha", "pronunciation": "sh sound", "english": "Sha (retroflex)"},
+                    {"lesson_id": "C029", "letter": "સ", "romanization": "sa", "pronunciation": "sat", "english": "Sa"},
+                    {"lesson_id": "C030", "letter": "હ", "romanization": "ha", "pronunciation": "hush", "english": "Ha"},
+                    {"lesson_id": "C031", "letter": "ળ", "romanization": "ḷa", "pronunciation": "lateral", "english": "La (retroflex)"},
+                    {"lesson_id": "C032", "letter": "ણ", "romanization": "ṇa", "pronunciation": "ng", "english": "Na (nasal)"},
+                    {"lesson_id": "C033", "letter": "ક્ષ", "romanization": "ksha", "pronunciation": "combination", "english": "Ksha"},
+                    {"lesson_id": "C034", "letter": "જ્ઞ", "romanization": "gna", "pronunciation": "combination", "english": "Gna"}
+                ]
+            },
+            "phase_2_numbers": {
+                "lessons": [
+                    {"lesson_id": "N001", "letter": "૦", "romanization": "0", "english": "Zero", "pronunciation": "shunya"},
+                    {"lesson_id": "N002", "letter": "૧", "romanization": "1", "english": "One", "pronunciation": "ek"},
+                    {"lesson_id": "N003", "letter": "૨", "romanization": "2", "english": "Two", "pronunciation": "be"},
+                    {"lesson_id": "N004", "letter": "૩", "romanization": "3", "english": "Three", "pronunciation": "traṇ"},
+                    {"lesson_id": "N005", "letter": "૪", "romanization": "4", "english": "Four", "pronunciation": "chār"},
+                    {"lesson_id": "N006", "letter": "૫", "romanization": "5", "english": "Five", "pronunciation": "paṁch"},
+                    {"lesson_id": "N007", "letter": "૬", "romanization": "6", "english": "Six", "pronunciation": "chh"},
+                    {"lesson_id": "N008", "letter": "૭", "romanization": "7", "english": "Seven", "pronunciation": "sāt"},
+                    {"lesson_id": "N009", "letter": "૮", "romanization": "8", "english": "Eight", "pronunciation": "āṭh"},
+                    {"lesson_id": "N010", "letter": "૯", "romanization": "9", "english": "Nine", "pronunciation": "nav"},
+                    {"lesson_id": "N011", "letter": "૧૦", "romanization": "10", "english": "Ten", "pronunciation": "das"},
+                    {"lesson_id": "N012", "letter": "૧૧", "romanization": "11", "english": "Eleven", "pronunciation": "agiyār"},
+                    {"lesson_id": "N013", "letter": "૧૨", "romanization": "12", "english": "Twelve", "pronunciation": "bār"},
+                    {"lesson_id": "N014", "letter": "૧૩", "romanization": "13", "english": "Thirteen", "pronunciation": "ter"},
+                    {"lesson_id": "N015", "letter": "૧૪", "romanization": "14", "english": "Fourteen", "pronunciation": "chaud"},
+                    {"lesson_id": "N016", "letter": "૧૫", "romanization": "15", "english": "Fifteen", "pronunciation": "paṁdar"},
+                    {"lesson_id": "N017", "letter": "૧૬", "romanization": "16", "english": "Sixteen", "pronunciation": "soḷ"},
+                    {"lesson_id": "N018", "letter": "૧૭", "romanization": "17", "english": "Seventeen", "pronunciation": "sattar"},
+                    {"lesson_id": "N019", "letter": "૧૮", "romanization": "18", "english": "Eighteen", "pronunciation": "aḍhār"},
+                    {"lesson_id": "N020", "letter": "૧૯", "romanization": "19", "english": "Nineteen", "pronunciation": "ogaṇīs"},
+                    {"lesson_id": "N021", "letter": "૨૦", "romanization": "20", "english": "Twenty", "pronunciation": "vīs"},
+                    {"lesson_id": "N022", "letter": "૩૦", "romanization": "30", "english": "Thirty", "pronunciation": "trīs"},
+                    {"lesson_id": "N023", "letter": "૪૦", "romanization": "40", "english": "Forty", "pronunciation": "chāḷīs"},
+                    {"lesson_id": "N024", "letter": "૫૦", "romanization": "50", "english": "Fifty", "pronunciation": "pachās"},
+                    {"lesson_id": "N025", "letter": "૬૦", "romanization": "60", "english": "Sixty", "pronunciation": "sāīṭh"},
+                    {"lesson_id": "N026", "letter": "૭૦", "romanization": "70", "english": "Seventy", "pronunciation": "sitter"},
+                    {"lesson_id": "N027", "letter": "૮૦", "romanization": "80", "english": "Eighty", "pronunciation": "eṁsī"},
+                    {"lesson_id": "N028", "letter": "૯૦", "romanization": "90", "english": "Ninety", "pronunciation": "nevuṁ"},
+                    {"lesson_id": "N029", "letter": "૧૦૦", "romanization": "100", "english": "Hundred", "pronunciation": "so"}
+                ]
+            },
+            "phase_3_vocabulary": {
+                "lessons": [
+                    {"lesson_id": "A001", "letter": "કૂતરો", "romanization": "kutro", "english": "Dog", "pronunciation": "kutro"},
+                    {"lesson_id": "A002", "letter": "બિલાડી", "romanization": "biladi", "english": "Cat", "pronunciation": "biladi"},
+                    {"lesson_id": "FD001", "letter": "ચાલ", "romanization": "chaal", "english": "Rice", "pronunciation": "chaal"},
+                    {"lesson_id": "FD002", "letter": "રોટલી", "romanization": "rotli", "english": "Bread", "pronunciation": "rotli"},
+                    {"lesson_id": "FD003", "letter": "દૂધ", "romanization": "dudh", "english": "Milk", "pronunciation": "dudh"},
+                    {"lesson_id": "B001", "letter": "માથું", "romanization": "matha", "english": "Head", "pronunciation": "matha"},
+                    {"lesson_id": "B002", "letter": "આંખ", "romanization": "ankh", "english": "Eye", "pronunciation": "ankh"},
+                    {"lesson_id": "B003", "letter": "હાથ", "romanization": "hath", "english": "Hand", "pronunciation": "hath"},
+                    {"lesson_id": "H001", "letter": "ઘર", "romanization": "ghar", "english": "House", "pronunciation": "ghar"},
+                    {"lesson_id": "H002", "letter": "બારણું", "romanization": "baranu", "english": "Door", "pronunciation": "baranu"},
+                    {"lesson_id": "F001", "letter": "બાપ", "romanization": "baap", "english": "Father", "pronunciation": "baap"},
+                    {"lesson_id": "F002", "letter": "મા", "romanization": "maa", "english": "Mother", "pronunciation": "maa"},
+                    {"lesson_id": "F003", "letter": "ભાઈ", "romanization": "bhaa-ee", "english": "Brother", "pronunciation": "bhaa-ee"},
+                    {"lesson_id": "G001", "letter": "નમસ્તે", "romanization": "namaste", "english": "Hello", "pronunciation": "namaste"},
+                    {"lesson_id": "G002", "letter": "આભાર", "romanization": "aabhar", "english": "Thank You", "pronunciation": "aabhar"}
+                ]
+            }
+        };
+
+        // State management
+        let currentUser = null;
+        let currentPhase = 'phase_1_alphabet';
+        let currentLessonIndex = 0;
+        let currentTab = 'learn';
+        let userProgress = {};
+        let quizState = { score: 0, total: 0, streak: 0, selectedOption: null };
+        let tracingState = { startTime: null };
+
+        // Initialize
+        async function init() {
+            await loadCurriculum();
+            loadProgress();
+            attachEventListeners();
+            setupCanvas();
+        }
+
+        // Event listeners
+        function attachEventListeners() {
+            // User selection
+            document.querySelectorAll('.user-btn').forEach(btn => {
+                btn.addEventListener('click', selectUser);
+            });
+
+            // Tab navigation
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', switchTab);
+            });
+
+            // Phase selection
+            document.querySelectorAll('.phase-btn').forEach(btn => {
+                btn.addEventListener('click', switchPhase);
+            });
+
+            // Learn tab
+            document.getElementById('speakBtn').addEventListener('click', speak);
+            document.getElementById('nextLessonBtn').addEventListener('click', nextLesson);
+
+            // Quiz tab
+            document.querySelectorAll('.quiz-option').forEach(opt => {
+                opt.addEventListener('click', selectQuizOption);
+            });
+            document.getElementById('submitQuizBtn').addEventListener('click', submitQuiz);
+
+            // Trace tab
+            document.getElementById('clearTraceBtn').addEventListener('click', clearCanvas);
+            document.getElementById('submitTraceBtn').addEventListener('click', submitTrace);
+            document.getElementById('toggleGuideBtn').addEventListener('click', toggleGuide);
+
+            // Canvas drawing
+            setupCanvasDrawing();
+        }
+
+        let guideVisible = true;
+        function toggleGuide() {
+            guideVisible = !guideVisible;
+            const guide = document.getElementById('tracingGuide');
+            const btn = document.getElementById('toggleGuideBtn');
+            if (guideVisible) {
+                guide.style.opacity = '0.2';
+                btn.textContent = '👁️ Hide Guide';
+            } else {
+                guide.style.opacity = '0';
+                btn.textContent = '👁️ Show Guide';
+            }
+        }
+
+        function selectUser(e) {
+            currentUser = e.target.dataset.user;
+            document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            document.querySelector('.main-content').classList.add('active');
+            initializeUserProgress();
+            updateLesson();
+        }
+
+        function initializeUserProgress() {
+            if (!userProgress[currentUser]) {
+                userProgress[currentUser] = {
+                    pointsToday: 0,
+                    correctAnswers: 0,
+                    totalAnswers: 0,
+                    phase_1_alphabet: 0,
+                    phase_2_numbers: 0,
+                    phase_3_vocabulary: 0,
+                    lettersTraced: 0
+                };
+            }
+        }
+
+        function switchTab(e) {
+            currentTab = e.target.dataset.tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById(`${currentTab}-tab`).classList.add('active');
+
+            if (currentTab === 'quiz') {
+                generateQuizQuestion();
+            } else if (currentTab === 'trace') {
+                updateTraceDisplay();
+            }
+        }
+
+        function switchPhase(e) {
+            currentPhase = e.target.dataset.phase;
+            currentLessonIndex = 0;
+            document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            updateLesson();
+        }
+
+        function updateLesson() {
+            const lessons = curriculum[currentPhase].lessons;
+            const lesson = lessons[currentLessonIndex];
+
+            document.getElementById('lessonLetter').textContent = lesson.letter;
+            document.getElementById('lessonRomanization').textContent = lesson.romanization;
+            document.getElementById('lessonPronunciation').textContent = `(${lesson.pronunciation})`;
+            document.getElementById('lessonEnglish').textContent = lesson.english;
+            document.getElementById('currentLesson').textContent = currentLessonIndex + 1;
+            document.getElementById('totalLessons').textContent = lessons.length;
+
+            const progress = ((currentLessonIndex + 1) / lessons.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressFill').textContent = Math.round(progress) + '%';
+
+            updateStats();
+            updateTraceDisplay();
+        }
+
+        function nextLesson() {
+            const lessons = curriculum[currentPhase].lessons;
+            if (currentLessonIndex < lessons.length - 1) {
+                currentLessonIndex++;
+                updateLesson();
+                addPoints(10);
+            }
+        }
+
+        function speak() {
+            const lessons = curriculum[currentPhase].lessons;
+            const lesson = lessons[currentLessonIndex];
+            const utterance = new SpeechSynthesisUtterance(lesson.letter);
+            utterance.lang = 'gu-IN';
+            speechSynthesis.speak(utterance);
+        }
+
+        function generateQuizQuestion() {
+            const lessons = curriculum[currentPhase].lessons;
+            const randomIndex = Math.floor(Math.random() * lessons.length);
+            const correctLesson = lessons[randomIndex];
+
+            document.getElementById('quizWord').textContent = correctLesson.letter;
+
+            // Generate 3 wrong options
+            const options = [correctLesson.english];
+            while (options.length < 4) {
+                const randomLesson = lessons[Math.floor(Math.random() * lessons.length)];
+                if (!options.includes(randomLesson.english)) {
+                    options.push(randomLesson.english);
+                }
+            }
+
+            // Shuffle
+            options.sort(() => Math.random() - 0.5);
+
+            document.querySelectorAll('.quiz-option').forEach((opt, idx) => {
+                opt.textContent = options[idx];
+                opt.dataset.correct = (options[idx] === correctLesson.english);
+                opt.classList.remove('selected', 'correct', 'incorrect');
+            });
+
+            quizState.selectedOption = null;
+            quizState.correct = correctLesson.english;
+        }
+
+        function selectQuizOption(e) {
+            document.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected'));
+            e.target.classList.add('selected');
+            quizState.selectedOption = e.target;
+        }
+
+        function submitQuiz() {
+            if (!quizState.selectedOption) return;
+
+            const isCorrect = quizState.selectedOption.dataset.correct === 'true';
+            quizState.selectedOption.classList.add(isCorrect ? 'correct' : 'incorrect');
+            document.querySelectorAll('.quiz-option').forEach(opt => opt.style.pointerEvents = 'none');
+
+            if (isCorrect) {
+                quizState.score++;
+                quizState.streak++;
+                addPoints(10);
+            } else {
+                quizState.streak = 0;
+            }
+            quizState.total++;
+
+            setTimeout(() => {
+                generateQuizQuestion();
+                document.querySelectorAll('.quiz-option').forEach(opt => opt.style.pointerEvents = 'auto');
+                updateQuizStats();
+            }, 1500);
+        }
+
+        function updateStats() {
+            const prog = userProgress[currentUser];
+            document.getElementById('pointsToday').textContent = prog.pointsToday;
+            const accuracy = prog.totalAnswers > 0 ? Math.round((prog.correctAnswers / prog.totalAnswers) * 100) : 0;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+        }
+
+        function updateQuizStats() {
+            document.getElementById('quizScore').textContent = quizState.score;
+            document.getElementById('quizQuestions').textContent = quizState.total;
+            document.getElementById('quizStreak').textContent = quizState.streak;
+        }
+
+        function addPoints(points) {
+            userProgress[currentUser].pointsToday += points;
+            userProgress[currentUser].correctAnswers++;
+            userProgress[currentUser].totalAnswers++;
+            updateStats();
+            saveProgress();
+        }
+
+        // Canvas drawing with stroke tracking
+        let strokeCount = 0;
+        let isDrawing = false;
+
+        function setupCanvas() {
+            const canvas = document.getElementById('tracingCanvas');
+            canvas.width = Math.min(500, window.innerWidth - 40);
+            canvas.height = canvas.width;
+        }
+
+        function setupCanvasDrawing() {
+            const canvas = document.getElementById('tracingCanvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.addEventListener('mousedown', (e) => startStroke(e, ctx, canvas));
+            canvas.addEventListener('mouseup', endStroke);
+            canvas.addEventListener('mousemove', (e) => draw(e, ctx, canvas));
+            canvas.addEventListener('touchstart', (e) => startStroke(e, ctx, canvas));
+            canvas.addEventListener('touchmove', (e) => draw(e, ctx, canvas));
+            canvas.addEventListener('touchend', endStroke);
+
+            function startStroke(e, ctx, canvas) {
+                isDrawing = true;
+                strokeCount++;
+                document.getElementById('strokeCount').textContent = strokeCount;
+                const rect = canvas.getBoundingClientRect();
+                const {x, y} = getPosition(e, rect);
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+
+            function draw(e, ctx, canvas) {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const {x, y} = getPosition(e, rect);
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#FF6B6B';
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+
+            function getPosition(e, rect) {
+                if (e.touches) {
+                    const touch = e.touches[0];
+                    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+                }
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            }
+
+            function endStroke() {
+                isDrawing = false;
+            }
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('tracingCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokeCount = 0;
+            document.getElementById('strokeCount').textContent = '0';
+        }
+
+        function updateTraceDisplay() {
+            if (!curriculum) return;
+
+            let lessonData = null;
+            let displayText = '';
+
+            if (currentPhase === 'phase_1_alphabet') {
+                const vowels = curriculum.phase_1_alphabet.vowels.lessons;
+                const consonants = curriculum.phase_1_alphabet.consonants.lessons;
+                const allLessons = vowels.concat(consonants);
+                lessonData = allLessons[currentLessonIndex];
+                displayText = lessonData.letter;
+            } else if (currentPhase === 'phase_2_numbers') {
+                lessonData = curriculum.phase_2_numbers.lessons[currentLessonIndex];
+                displayText = lessonData.numeral;
+            } else if (currentPhase === 'phase_3_vocabulary') {
+                // Get first vocabulary lesson
+                const animals = curriculum.phase_3_vocabulary.categories.animals.lessons;
+                lessonData = animals[currentLessonIndex % animals.length];
+                displayText = lessonData.gujarati;
+            }
+
+            if (lessonData && displayText) {
+                document.getElementById('traceLetterDisplay').textContent = displayText;
+                document.getElementById('tracingGuide').textContent = displayText;
+            }
+        }
+
+        function submitTrace() {
+            if (strokeCount === 0) {
+                alert('Please trace the letter first!');
+                return;
+            }
+            userProgress[currentUser].lettersTraced++;
+            addPoints(15); // Tracing gives more points
+            document.getElementById('tracePoints').textContent = userProgress[currentUser].pointsToday;
+            clearCanvas();
+            nextLesson();
+            updateTraceDisplay();
+            document.getElementById('lettersTraced').textContent = userProgress[currentUser].lettersTraced;
+        }
+
+        // Storage
+        function saveProgress() {
+            localStorage.setItem('gujarati-progress', JSON.stringify(userProgress));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('gujarati-progress');
+            if (saved) {
+                userProgress = JSON.parse(saved);
+            }
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
