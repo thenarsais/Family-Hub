@@ -1,0 +1,74 @@
+.portfolio-summary {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.summary-card h2,
+.summary-card h3 {
+  color: white;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.summary-card.main {
+  grid-column: span 1;
+}
+
+.big-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.number {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.gain {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.gain-positive {
+  color: #90ee90;
+}
+
+.gain-negative {
+  color: #ffcccc;
+}
+
+.large-text .big-number {
+  font-size: 3.5rem;
+}
+
+.large-text .number {
+  font-size: 2.5rem;
+}
+
+@media (max-width: 768px) {
+  .portfolio-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-card.main {
+    grid-column: span 1;
+  }
+
+  .big-number {
+    font-size: 2rem;
+  }
+
+  .number {
+    font-size: 1.5rem;
+  }
+}

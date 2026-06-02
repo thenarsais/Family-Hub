@@ -1,0 +1,156 @@
+.stocks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.stock-card {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.stock-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+}
+
+.stock-header {
+  margin-bottom: 1.5rem;
+}
+
+.stock-header h3 {
+  color: #333;
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.stock-ticker {
+  color: #667eea;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.stock-price {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.price {
+  font-size: 2rem;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.change {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.change.positive {
+  color: #4caf50;
+}
+
+.change.negative {
+  color: #f44336;
+}
+
+.holding {
+  background: #f0f4ff;
+  padding: 0.75rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+  color: #667eea;
+  font-weight: bold;
+}
+
+.quantity-selector {
+  margin-bottom: 1.5rem;
+}
+
+.quantity-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.quantity-selector input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.quantity-selector input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.large-input {
+  font-size: 1.5rem !important;
+  padding: 1rem !important;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.action-buttons.single {
+  grid-template-columns: 1fr;
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-buy {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-buy:hover {
+  background: #45a049;
+  transform: scale(1.05);
+}
+
+.btn-sell {
+  background: #f44336;
+  color: white;
+}
+
+.btn-sell:hover {
+  background: #da190b;
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .stocks-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .price {
+    font-size: 1.5rem;
+  }
+}
