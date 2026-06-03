@@ -26,6 +26,9 @@ function Navigation({ userAge }) {
           <Link to="/lessons" className="nav-link" onClick={() => setIsMenuOpen(false)}>
             {isYoung ? '🎓 Learn' : 'Lessons'}
           </Link>
+          <Link to="/credit-score" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+            {isYoung ? '⭐ Score' : 'Credit Score'}
+          </Link>
         </div>
 
         <div className="hamburger" onClick={() => setIsMenuOpen(!isMenuOpen)}>

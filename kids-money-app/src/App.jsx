@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Trading from './pages/Trading';
 import Lessons from './pages/Lessons';
 import Portfolio from './pages/Portfolio';
+import CreditScore from './pages/CreditScore';
 import { PortfolioProvider } from './context/PortfolioContext';
 import './App.css';
 
@@ -28,6 +29,7 @@ function App() {
               <Route path="/trading" element={<Trading userAge={userAge} />} />
               <Route path="/lessons" element={<Lessons userAge={userAge} />} />
               <Route path="/portfolio" element={<Portfolio userAge={userAge} />} />
+              <Route path="/credit-score" element={<CreditScore userAge={userAge} />} />
             </Routes>
           </main>
         </div>

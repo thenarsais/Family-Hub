@@ -1,7 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { usePortfolio } from '../context/PortfolioContext';
+import { useCreditScore } from '../hooks/useCreditScore';
 import PortfolioSummary from '../components/PortfolioSummary';
 import QuickStats from '../components/QuickStats';
+import '../styles/CreditScore.css';
 
 function Dashboard({ userAge }) {
   const { portfolio, getPortfolioValue } = usePortfolio();
@@ -10,6 +13,8 @@ function Dashboard({ userAge }) {
   const gainPercent = ((gain / 10000) * 100).toFixed(1);
 
   const isYoung = userAge < 8;
+  const isTeen = userAge >= 13;
+  const creditScore = useCreditScore();
 
   return (
     <div className="dashboard-page">
@@ -26,6 +31,27 @@ function Dashboard({ userAge }) {
           userAge={userAge}
         />
         <QuickStats userAge={userAge} />
+      </div>
+
+      <div className="credit-score-preview">
+        <div>
+          <p className="credit-preview-heading">
+            {isYoung ? 'Money Score' : 'Credit Score'}
+          </p>
+          <div className="credit-preview-score" style={{ color: creditScore.color }}>
+            {isYoung
+              ? `${creditScore.stars}/5 ⭐`
+              : isTeen
+              ? creditScore.ficoScore
+              : `${creditScore.percentage}%`}
+          </div>
+          <p className="credit-preview-label" style={{ color: creditScore.color }}>
+            {creditScore.label}
+          </p>
+        </div>
+        <Link to="/credit-score" className="credit-preview-link">
+          {isYoung ? 'See My Stars →' : 'View Details →'}
+        </Link>
       </div>
 
       <div className="cta-section">
