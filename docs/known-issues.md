@@ -505,13 +505,11 @@ Found a bug in Family Hub?
 
 ---
 
-### Issue: School transit "Pickup from PRA" sensor routes home → school (not school → home)
+### ✅ RESOLVED (June 3, 2026): School transit "Pickup from PRA" sensor routed wrong direction
 
-**Symptom:** The afternoon pickup drive time is calculated from home to school, not school to home. On routes with significant directional traffic differences, the ETA may be slightly off.
+**Symptom:** Both Waze sensors used home → school as the route, giving the same ETA for drop-off and pickup.
 
-**Cause:** Both Waze sensors (`sensor.drive_to_pra` and `sensor.drive_to_pra_pickup_from_pra`) are configured with the same origin (13303 Clarkson St, Thornton) and destination (2555 Preble Creek Pkwy, Broomfield). Currently returns ~12.5 min either way so impact is minimal.
-
-**Fix:** In Settings → Devices & Services → Waze Travel Time → "Pickup from PRA" → Configure, swap origin and destination so it routes from the school address to home.
+**Resolution:** Swapped origin/destination on `sensor.drive_to_pra_pickup_from_pra` via config storage edit + HA restart. Now correctly routes school (2555 Preble Creek Pkwy, Broomfield) → home (13303 Clarkson St, Thornton). Verified live: drop-off 12.2 min, pickup 12.0 min, reverse route waypoints confirmed.
 
 ---
 
