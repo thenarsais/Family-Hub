@@ -513,4 +513,12 @@ Found a bug in Family Hub?
 
 ---
 
+### ✅ RESOLVED (June 3, 2026): School transit card showed during summer break
+
+**Symptom:** The school transit card was configured to show when the ThrillShare calendar state is `off` (no active event). During summer break there are no school events, so the calendar is always `off` — meaning the card would display all morning even when school is out.
+
+**Resolution:** Flipped the Lovelace condition from `state: "off"` to `state: "on"`. The card now only shows when ThrillShare has an active event (school days during drop-off/pickup windows). During summer break, weekends, and holidays the calendar has no events and stays `off`, keeping the card correctly hidden.
+
+---
+
 Last updated: June 3, 2026

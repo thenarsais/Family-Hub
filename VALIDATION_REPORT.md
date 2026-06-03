@@ -108,4 +108,4 @@ This is not a bug — the meal planner is working, just no meals have been sched
 
 ---
 
-*Report generated: 2026-06-03 · Last updated: 2026-06-03 (Google Calendar re-auth resolved; world clock DST fix applied; Waze pickup sensor corrected; school transit card updated to show drive-to-school and drive-home separately using both sensors)*
+*Report generated: 2026-06-03 · Last updated: 2026-06-03 (Google Calendar re-auth resolved; world clock DST fix applied; Waze pickup sensor corrected; school transit card updated to show drive-to-school and drive-home separately using both sensors; school transit visibility condition corrected — now hides during summer break when ThrillShare calendar has no active events)*
