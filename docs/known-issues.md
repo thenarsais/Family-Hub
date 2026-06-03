@@ -521,4 +521,23 @@ Found a bug in Family Hub?
 
 ---
 
+---
+
+## Open Issues
+
+### Nest thermostat not linked to Google Home (Device ID: CCA7C100003397AC)
+
+**Symptom:** Thermostat is accessible via Nest app only; does not appear in Google Home or HA despite being a compatible 3rd-gen Nest Learning Thermostat.
+
+**Cause:** Legacy Nest account linkage issue — migration option not appearing in Nest app settings.
+
+**To try next:**
+1. Google Home app → + → Set up device → Works with Google → Nest → sign in with Nest credentials
+2. If that fails, contact Google Nest support with Device ID `CCA7C100003397AC`
+3. As a last resort: factory reset thermostat and re-pair via Google Home app directly
+
+**Impact:** Home Status card thermostat tile (Phase 8C Sprint 9) will be built as a placeholder until resolved.
+
+---
+
 Last updated: June 3, 2026
