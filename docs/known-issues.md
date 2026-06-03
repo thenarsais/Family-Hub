@@ -317,6 +317,18 @@ docker start homeassistant
 
 ---
 
+### ✅ RESOLVED (June 3, 2026): Google Calendar OAuth refresh token expired
+
+**Symptom:** All Google calendar entities showed `unavailable`. Family calendar card empty. Birthday reminders blank.
+
+**Cause:** The OAuth refresh token was permanently revoked (`invalid_grant`). HA cannot renew access without re-authenticating.
+
+**Resolution:** Re-authenticated via Settings → Devices & Services → Google Calendar → Re-Authenticate. All 5 Google calendar entities confirmed live (`calendar.thenarsais_gmail_com`, `calendar.birthdays`, `calendar.family`, `calendar.holidays_in_united_states`, ThrillShare school calendar).
+
+**If it happens again:** Repeat the Re-Authenticate step above. Google refresh tokens can be revoked if you change your Google password, sign out of all devices, or revoke access in Google Account → Security → Third-party apps.
+
+---
+
 ### Issue: Waze Travel Time shows "Unknown"
 
 **Symptom:** Travel time sensor doesn't populate, always shows "Unknown".
@@ -479,4 +491,32 @@ Found a bug in Family Hub?
 
 ---
 
-Last updated: June 2026
+---
+
+## Minor Issues (Open)
+
+### Issue: World clock card shows wrong time for Cleveland in winter
+
+**Symptom:** Cleveland time is one hour ahead from November (when DST ends) through March.
+
+**Cause:** The World Clocks dashboard card uses a hardcoded UTC offset of `-4` (EDT). The correct offset in winter is `-5` (EST). The underlying worldclock sensor entities (`sensor.cleveland_time_2`, `sensor.vadodara_time_2`) are DST-aware and always correct — the card just doesn't use them.
+
+**Fix:** Edit the World Clocks markdown card in the Lovelace dashboard. Replace the timestamp math with:
+```
+| 🇺🇸 Cleveland | {{ states('sensor.cleveland_time_2') }} | ...
+| 🇮🇳 Vadodara  | {{ states('sensor.vadodara_time_2') }}  | ...
+```
+
+---
+
+### Issue: School transit "Pickup from PRA" sensor routes home → school (not school → home)
+
+**Symptom:** The afternoon pickup drive time is calculated from home to school, not school to home. On routes with significant directional traffic differences, the ETA may be slightly off.
+
+**Cause:** Both Waze sensors (`sensor.drive_to_pra` and `sensor.drive_to_pra_pickup_from_pra`) are configured with the same origin (13303 Clarkson St, Thornton) and destination (2555 Preble Creek Pkwy, Broomfield). Currently returns ~12.5 min either way so impact is minimal.
+
+**Fix:** In Settings → Devices & Services → Waze Travel Time → "Pickup from PRA" → Configure, swap origin and destination so it routes from the school address to home.
+
+---
+
+Last updated: June 3, 2026
