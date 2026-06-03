@@ -525,6 +525,14 @@ Found a bug in Family Hub?
 
 ## Open Issues
 
+### Dashboard getting crowded — condensing needed as Phase 8C features land
+
+**Symptom:** As more cards are added (cameras, Phase 8C features), the dashboard scrolls long and feels dense.
+
+**Plan:** Once Phase 8C Tier 1–2 features are built, consolidate into collapsible sections or split into a dedicated Security tab for cameras. Defer until after Sprint 6 when the full card set is known.
+
+---
+
 ### Nest thermostat not linked to Google Home (Device ID: CCA7C100003397AC)
 
 **Symptom:** Thermostat is accessible via Nest app only; does not appear in Google Home or HA despite being a compatible 3rd-gen Nest Learning Thermostat.
