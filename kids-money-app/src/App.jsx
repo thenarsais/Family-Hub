@@ -6,7 +6,11 @@ import Trading from './pages/Trading';
 import Lessons from './pages/Lessons';
 import Portfolio from './pages/Portfolio';
 import CreditScore from './pages/CreditScore';
+import Budget from './pages/Budget';
+import Calculator from './pages/Calculator';
+import Quiz from './pages/Quiz';
 import { PortfolioProvider } from './context/PortfolioContext';
+import { BudgetProvider } from './context/BudgetContext';
 import './App.css';
 
 function App() {
@@ -20,6 +24,7 @@ function App() {
 
   return (
     <PortfolioProvider>
+      <BudgetProvider>
       <Router>
         <div className="app">
           <Navigation userAge={userAge} />
@@ -30,10 +35,14 @@ function App() {
               <Route path="/lessons" element={<Lessons userAge={userAge} />} />
               <Route path="/portfolio" element={<Portfolio userAge={userAge} />} />
               <Route path="/credit-score" element={<CreditScore userAge={userAge} />} />
+              <Route path="/budget" element={<Budget userAge={userAge} />} />
+              <Route path="/calculator" element={<Calculator userAge={userAge} />} />
+              <Route path="/quiz" element={<Quiz userAge={userAge} />} />
             </Routes>
           </main>
         </div>
       </Router>
+      </BudgetProvider>
     </PortfolioProvider>
   );
 }

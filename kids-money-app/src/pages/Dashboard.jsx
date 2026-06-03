@@ -4,7 +4,9 @@ import { usePortfolio } from '../context/PortfolioContext';
 import { useCreditScore } from '../hooks/useCreditScore';
 import PortfolioSummary from '../components/PortfolioSummary';
 import QuickStats from '../components/QuickStats';
+import PortfolioChart from '../components/PortfolioChart';
 import '../styles/CreditScore.css';
+import '../styles/PortfolioChart.css';
 
 function Dashboard({ userAge }) {
   const { portfolio, getPortfolioValue } = usePortfolio();
@@ -31,6 +33,11 @@ function Dashboard({ userAge }) {
           userAge={userAge}
         />
         <QuickStats userAge={userAge} />
+      </div>
+
+      <div className="chart-section">
+        <h2>{isYoung ? '📈 My Portfolio Chart' : 'Portfolio Performance'}</h2>
+        <PortfolioChart userAge={userAge} />
       </div>
 
       <div className="credit-score-preview">

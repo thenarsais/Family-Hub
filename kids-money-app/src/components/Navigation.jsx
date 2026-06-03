@@ -29,6 +29,15 @@ function Navigation({ userAge }) {
           <Link to="/credit-score" className="nav-link" onClick={() => setIsMenuOpen(false)}>
             {isYoung ? '⭐ Score' : 'Credit Score'}
           </Link>
+          <Link to="/budget" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+            {isYoung ? '💰 Budget' : 'Budget'}
+          </Link>
+          <Link to="/calculator" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+            {isYoung ? '🧮 Calc' : 'Calculator'}
+          </Link>
+          <Link to="/quiz" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+            {isYoung ? '🎯 Quiz' : 'Quiz'}
+          </Link>
         </div>
 
         <div className="hamburger" onClick={() => setIsMenuOpen(!isMenuOpen)}>

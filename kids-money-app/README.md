@@ -5,8 +5,12 @@ An educational React web app that teaches children about money management and st
 ## Features
 
 - **Age-Adaptive Interface** - Content and complexity scale with user age (5-18)
-- **Paper Trading** - Simulate stock trading with fictional or real-time stock data
-- **Portfolio Tracking** - Monitor holdings, cash, and portfolio value
+- **Paper Trading** - Simulate stock trading with fictional stocks
+- **Portfolio Tracking** - Monitor holdings, cash, portfolio value, and performance chart
+- **Credit Score Simulator** - Live score derived from trading behavior (FICO scale for teens)
+- **Budget & Income Tracker** - Log allowance, chores, jobs, gifts, and expenses by category
+- **Compound Interest Calculator** - Interactive sliders with year-by-year breakdown
+- **Money Markets Quiz** - Age-gated questions with explanations and score tracking
 - **Interactive Lessons** - Age-appropriate financial education modules
 - **Transaction History** - View all buy/sell activity
 - **Home Assistant Integration** - Display portfolio data on Family Hub dashboard
@@ -40,14 +44,22 @@ src/
 │   ├── QuickStats.jsx
 │   ├── HoldingsTable.jsx
 │   ├── TransactionHistory.jsx
-│   └── LessonCard.jsx
+│   ├── LessonCard.jsx
+│   └── PortfolioChart.jsx   # SVG performance chart
 ├── pages/               # Main page components
-│   ├── Dashboard.jsx    # Home/overview
+│   ├── Dashboard.jsx    # Home/overview with chart
 │   ├── Trading.jsx      # Buy/sell stocks
 │   ├── Portfolio.jsx    # Holdings & transactions
-│   └── Lessons.jsx      # Financial education
+│   ├── Lessons.jsx      # Financial education
+│   ├── CreditScore.jsx  # Credit score simulator
+│   ├── Budget.jsx       # Income & expense tracker
+│   ├── Calculator.jsx   # Compound interest calculator
+│   └── Quiz.jsx         # Money markets quiz
 ├── context/             # State management
-│   └── PortfolioContext.jsx
+│   ├── PortfolioContext.jsx  # Trading state + value history
+│   └── BudgetContext.jsx     # Income/expense state
+├── hooks/
+│   └── useCreditScore.js    # Derives credit score from portfolio
 ├── styles/              # Component CSS files
 ├── App.jsx              # Main app component
 └── index.jsx            # React entry point
@@ -166,7 +178,6 @@ See `HOME_ASSISTANT_INTEGRATION.md` for detailed setup.
 - [ ] Multi-user support with parent controls
 - [ ] Achievement badges and gamification
 - [ ] Stock watchlist
-- [ ] Portfolio performance charts
 - [ ] News feed integration
 - [ ] Educational video modules
 - [ ] Leaderboards
@@ -251,19 +262,22 @@ For questions or issues:
 
 ## Roadmap
 
-**Phase 1** (Current)
+**Phase 1** ✅
 - Basic portfolio tracking
 - Paper trading simulator
 - Age-adapted lessons
+- Credit score simulator
 
-**Phase 2**
-- Real stock data
-- Performance charts
-- Advanced education
+**Phase 2** ✅
+- Portfolio performance chart
+- Budget & income tracker (allowance, chores, jobs, gifts)
+- Compound interest calculator
+- Money markets quiz
 
 **Phase 3**
+- Real stock data (Alpha Vantage / Yahoo Finance)
 - Home Assistant full integration
-- Multi-user support
+- Multi-user support with parent controls
 - Real trading capabilities
 
 ---

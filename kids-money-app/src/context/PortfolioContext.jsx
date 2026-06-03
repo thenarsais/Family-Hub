@@ -14,11 +14,9 @@ const FICTIONAL_STOCKS = [
 export function PortfolioProvider({ children }) {
   const [portfolio, setPortfolio] = useState(() => {
     const saved = localStorage.getItem('portfolio');
-    return saved ? JSON.parse(saved) : {
-      cash: 10000,
-      holdings: {},
-      transactions: [],
-    };
+    const base = saved ? JSON.parse(saved) : { cash: 10000, holdings: {}, transactions: [] };
+    // Migrate existing saves that predate valueHistory
+    return { ...base, valueHistory: base.valueHistory || [{ value: 10000, timestamp: Date.now() }] };
   });
 
   const [stocks, setStocks] = useState(FICTIONAL_STOCKS);
@@ -51,25 +49,22 @@ export function PortfolioProvider({ children }) {
       return { success: false, message: 'Not enough cash!' };
     }
 
-    setPortfolio(prev => ({
-      ...prev,
-      cash: prev.cash - cost,
-      holdings: {
-        ...prev.holdings,
-        [stockId]: (prev.holdings[stockId] || 0) + quantity,
-      },
-      transactions: [
-        ...prev.transactions,
-        {
-          type: 'BUY',
-          stockId,
-          quantity,
-          price: stock.price,
-          date: new Date().toISOString(),
-          total: cost,
-        },
-      ],
-    }));
+    setPortfolio(prev => {
+      const newCash = prev.cash - cost;
+      const newHoldings = { ...prev.holdings, [stockId]: (prev.holdings[stockId] || 0) + quantity };
+      let newValue = newCash;
+      Object.entries(newHoldings).forEach(([sid, qty]) => {
+        const s = stocks.find(st => st.id === sid);
+        if (s) newValue += s.price * qty;
+      });
+      return {
+        ...prev,
+        cash: newCash,
+        holdings: newHoldings,
+        transactions: [...prev.transactions, { type: 'BUY', stockId, quantity, price: stock.price, date: new Date().toISOString(), total: cost }],
+        valueHistory: [...(prev.valueHistory || []), { value: parseFloat(newValue.toFixed(2)), timestamp: Date.now() }],
+      };
+    });
 
     return { success: true, message: `Bought ${quantity} share(s) of ${stock.name}!` };
   };
@@ -82,25 +77,22 @@ export function PortfolioProvider({ children }) {
     const stock = stocks.find(s => s.id === stockId);
     const proceeds = stock.price * quantity;
 
-    setPortfolio(prev => ({
-      ...prev,
-      cash: prev.cash + proceeds,
-      holdings: {
-        ...prev.holdings,
-        [stockId]: prev.holdings[stockId] - quantity,
-      },
-      transactions: [
-        ...prev.transactions,
-        {
-          type: 'SELL',
-          stockId,
-          quantity,
-          price: stock.price,
-          date: new Date().toISOString(),
-          total: proceeds,
-        },
-      ],
-    }));
+    setPortfolio(prev => {
+      const newCash = prev.cash + proceeds;
+      const newHoldings = { ...prev.holdings, [stockId]: prev.holdings[stockId] - quantity };
+      let newValue = newCash;
+      Object.entries(newHoldings).forEach(([sid, qty]) => {
+        const s = stocks.find(st => st.id === sid);
+        if (s) newValue += s.price * qty;
+      });
+      return {
+        ...prev,
+        cash: newCash,
+        holdings: newHoldings,
+        transactions: [...prev.transactions, { type: 'SELL', stockId, quantity, price: stock.price, date: new Date().toISOString(), total: proceeds }],
+        valueHistory: [...(prev.valueHistory || []), { value: parseFloat(newValue.toFixed(2)), timestamp: Date.now() }],
+      };
+    });
 
     return { success: true, message: `Sold ${quantity} share(s) of ${stock.name}!` };
   };
