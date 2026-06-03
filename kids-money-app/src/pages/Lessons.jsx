@@ -43,7 +43,7 @@ const LESSON_QUIZZES = {
 };
 
 function Lessons({ userAge }) {
-  const ageTier = Math.min(Math.max(Math.floor(userAge / 4) * 4, 5), 13);
+  const ageTier = userAge < 8 ? 5 : userAge < 13 ? 8 : 13;
   const lessons = LESSONS[ageTier] || LESSONS[5];
   const quizzes = LESSON_QUIZZES[ageTier] || LESSON_QUIZZES[5];
   const isYoung = userAge < 8;
