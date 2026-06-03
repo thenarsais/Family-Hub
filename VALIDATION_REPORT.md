@@ -10,8 +10,8 @@
 
 | Category | Count |
 |---|---|
-| ✅ Working | 18 |
-| ⚠️ Issues | 3 |
+| ✅ Working | 19 |
+| ⚠️ Issues | 2 |
 | 🔴 Critical Bugs | 0 (1 resolved) |
 
 ---
@@ -44,20 +44,7 @@ The dashboard displays them as distinct sensors for "Morning Drop-off" and "Afte
 
 ---
 
-### 2. World Clock Card Uses Hardcoded UTC Offsets
-
-The "World Clocks" markdown card uses hardcoded offsets:
-```
-Cleveland: UTC -4    (EDT — correct in summer, wrong in winter: should be -5)
-Vadodara:  UTC +5.5  (IST — correct year-round)
-```
-The worldclock sensor entities (`sensor.cleveland_time_2` and `sensor.vadodara_time_2`) are working correctly and DST-aware, but the dashboard markdown template doesn't use them. In November when DST ends, Cleveland will display one hour off.
-
-**Fix:** Update the World Clocks markdown card to use `states('sensor.cleveland_time_2')` and `states('sensor.vadodara_time_2')` instead of manual timestamp math.
-
----
-
-### 3. Mealie Meal Plans — No Meals Planned This Week
+### 2. Mealie Meal Plans — No Meals Planned This Week
 
 The `sensor.mealie_recipes` shows 7 recipes available in the library, but the meal planner has no meals planned for the current week (June 1–7, 2026). The meal planner iframe at `http://localhost:8080/meal-planner.html` is accessible (HTTP 200) and renders the drag-and-drop interface, but the week grid will appear empty.
 
@@ -130,9 +117,8 @@ This is not a bug — the meal planner is working, just no meals have been sched
 ## Action Required
 
 1. **⚠️ Add meals to Mealie** — drag recipes onto the week grid in the meal planner
-2. **⚠️ Optional: Fix world clock card** — use sensor states instead of hardcoded UTC offsets (will matter in November when DST ends)
-3. **⚠️ Optional: Fix Pickup from PRA Waze sensor** — swap origin/destination so it routes school → home for afternoon pickup
+2. **⚠️ Optional: Fix Pickup from PRA Waze sensor** — swap origin/destination so it routes school → home for afternoon pickup
 
 ---
 
-*Report generated: 2026-06-03 · Last updated: 2026-06-03 (Google Calendar re-auth resolved)*
+*Report generated: 2026-06-03 · Last updated: 2026-06-03 (Google Calendar re-auth resolved; world clock DST fix applied)*

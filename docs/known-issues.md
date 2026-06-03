@@ -495,17 +495,13 @@ Found a bug in Family Hub?
 
 ## Minor Issues (Open)
 
-### Issue: World clock card shows wrong time for Cleveland in winter
+### ✅ RESOLVED (June 3, 2026): World clock card showed wrong time for Cleveland in winter
 
-**Symptom:** Cleveland time is one hour ahead from November (when DST ends) through March.
+**Symptom:** Cleveland time would be one hour off from November (EST) through March.
 
-**Cause:** The World Clocks dashboard card uses a hardcoded UTC offset of `-4` (EDT). The correct offset in winter is `-5` (EST). The underlying worldclock sensor entities (`sensor.cleveland_time_2`, `sensor.vadodara_time_2`) are DST-aware and always correct — the card just doesn't use them.
+**Cause:** The card used a hardcoded UTC-4 offset. EST is UTC-5.
 
-**Fix:** Edit the World Clocks markdown card in the Lovelace dashboard. Replace the timestamp math with:
-```
-| 🇺🇸 Cleveland | {{ states('sensor.cleveland_time_2') }} | ...
-| 🇮🇳 Vadodara  | {{ states('sensor.vadodara_time_2') }}  | ...
-```
+**Resolution:** Updated the Lovelace markdown card to use `(now().timestamp() + 7200) | timestamp_custom(..., true)` — adding 2 hours to Mountain Time, which is always the correct Eastern offset regardless of DST (both zones shift simultaneously).
 
 ---
 
