@@ -10,8 +10,26 @@
   margin: 2rem 0;
 }
 
+/* ── Lesson quiz section ─────────────────────────────────── */
+.lessons-quiz-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e8e8f0;
+}
+
+.lessons-quiz-subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.lessons-quiz-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 700px;
+}
+
 @media (max-width: 768px) {
-  .lessons-grid {
-    grid-template-columns: 1fr;
-  }
+  .lessons-grid { grid-template-columns: 1fr; }
 }

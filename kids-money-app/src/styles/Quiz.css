@@ -1,6 +1,130 @@
 .quiz-page {
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
+}
+
+/* ── Category hub ────────────────────────────────────────── */
+.quiz-hub-subtitle {
+  color: #666;
+  font-size: 0.92rem;
+  margin-bottom: 1.5rem;
+}
+
+.quiz-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.quiz-category-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  background: white;
+  border: 2px solid #e8e8f0;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  text-align: center;
+}
+
+.quiz-category-card:hover {
+  border-color: var(--cat-color, #667eea);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.cat-icon  { font-size: 2.4rem; }
+.cat-label { font-size: 0.92rem; font-weight: 700; color: #2d3436; }
+.cat-count { font-size: 0.75rem; color: #aaa; }
+
+.quiz-hub-tip {
+  background: #f5f7ff;
+  border-left: 4px solid #667eea;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.55;
+}
+
+/* ── Back/hub buttons ────────────────────────────────────── */
+.btn-hub-small {
+  padding: 0.3rem 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 20px;
+  background: white;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-hub-small:hover { border-color: #667eea; color: #667eea; }
+
+.btn-hub {
+  padding: 0.7rem 1.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 50px;
+  background: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-hub:hover { border-color: #667eea; color: #667eea; }
+
+.score-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Skill gap recommendations ───────────────────────────── */
+.skill-gap-section {
+  margin: 1.25rem 0;
+  text-align: left;
+}
+
+.skill-gap-heading {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 0.6rem;
+}
+
+.rec-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rec-pill {
+  padding: 0.6rem 1rem;
+  background: #f5f7ff;
+  border: 2px solid #d0c8f8;
+  border-radius: 10px;
+  color: #667eea;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.rec-pill:hover { background: #edf0ff; }
+
+@media (max-width: 768px) {
+  .quiz-category-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ── Progress ────────────────────────────────────────────── */
