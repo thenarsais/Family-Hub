@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Krish's Daily Tasks — Family Hub</title>
+    <style>
+        :root {
+            --primary: #6366F1;
+            --primary-light: #818CF8;
+            --secondary: #EC4899;
+            --accent: #F59E0B;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --info: #3B82F6;
+            --purple: #8B5CF6;
+            --orange: #F97316;
+            --teal: #14B8A6;
+            --dark: #1E293B;
+            --mid: #475569;
+            --muted: #94A3B8;
+            --light: #F1F5F9;
+            --white: #FFFFFF;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --t: all 0.2s ease;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        html { font-size: 16px; }
+        body { font-family:var(--font); background:#0F172A; min-height:100vh; color:var(--dark); overflow-x:hidden; }
+
+        /* ── VIEWS ─────────────────────────────── */
+        .view { display:none; min-height:100vh; }
+        .view.active { display:block; }
+        .hidden { display:none !important; }
+
+        /* ── DASHBOARD ─────────────────────────── */
+        #view-dashboard { background:linear-gradient(160deg,#1E293B 0%,#0F172A 100%); padding-bottom:30px; }
+
+        .dash-header {
+            background: linear-gradient(135deg,#4F46E5,#7C3AED);
+            padding: 20px 18px 18px;
+            color: white;
+        }
+        .dash-header-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+        .dash-greeting h1 { font-size:1.75em; font-weight:800; line-height:1.1; }
+        .dash-greeting .date-sub { font-size:0.88em; opacity:0.85; margin-top:3px; }
+        .pts-badge {
+            background:rgba(255,255,255,0.18);
+            border:2px solid rgba(255,255,255,0.35);
+            border-radius:30px;
+            padding:8px 16px;
+            text-align:center;
+            cursor:pointer;
+            transition:var(--t);
+        }
+        .pts-badge:active { transform:scale(0.97); }
+        .pts-badge .num { font-size:1.6em; font-weight:800; line-height:1; display:block; }
+        .pts-badge .lbl { font-size:0.7em; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px; }
+        .dash-bar-wrap { background:rgba(255,255,255,0.22); border-radius:10px; height:8px; overflow:hidden; margin-bottom:6px; }
+        .dash-bar-fill { height:100%; background:var(--accent); border-radius:10px; transition:width 0.6s ease; }
+        .dash-bar-labels { display:flex; justify-content:space-between; font-size:0.78em; opacity:0.88; }
+
+        /* Dashboard Grid */
+        .dash-grid { padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .dash-card {
+            background:#1E293B;
+            border-radius:var(--radius);
+            padding:15px;
+            cursor:pointer;
+            transition:var(--t);
+            border:2px solid transparent;
+            position:relative;
+            overflow:hidden;
+            min-height:108px;
+            display:flex;
+            flex-direction:column;
+        }
+        .dash-card:active { transform:scale(0.96); }
+        .dash-card:hover { border-color:rgba(99,102,241,0.35); }
+        .dash-card::before {
+            content:'';
+            position:absolute;
+            top:0; left:0; right:0;
+            height:3px;
+            border-radius:var(--radius) var(--radius) 0 0;
+        }
+        .dc-chores::before  { background:linear-gradient(90deg,#F59E0B,#EF4444); }
+        .dc-points::before  { background:linear-gradient(90deg,#F59E0B,#FBBF24); }
+        .dc-hw::before      { background:linear-gradient(90deg,#10B981,#34D399); }
+        .dc-guj::before     { background:linear-gradient(90deg,#6366F1,#8B5CF6); }
+        .dc-cal::before     { background:linear-gradient(90deg,#3B82F6,#06B6D4); }
+        .dc-habits::before  { background:linear-gradient(90deg,#EC4899,#F43F5E); }
+        .dc-mood::before    { background:linear-gradient(90deg,#8B5CF6,#A855F7); }
+
+        /* Full-width mood card */
+        .dc-mood { grid-column:1/-1; flex-direction:row; align-items:center; gap:14px; min-height:auto; }
+
+        .card-tag { font-size:0.72em; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:3px; }
+        .card-icon { font-size:1.8em; margin-bottom:4px; }
+        .card-val { font-size:1.35em; font-weight:700; color:white; line-height:1.2; }
+        .card-sub { font-size:0.78em; color:#64748B; margin-top:2px; }
+        .card-bar { margin-top:8px; background:#334155; border-radius:6px; height:5px; overflow:hidden; flex-shrink:0; }
+        .card-bar-fill { height:100%; border-radius:6px; transition:width 0.4s ease; }
+        .card-badge-top {
+            position:absolute; top:10px; right:10px;
+            background:var(--accent); color:#1E293B;
+            font-size:0.68em; font-weight:800;
+            padding:2px 8px; border-radius:20px;
+        }
+        .card-badge-top.red { background:var(--danger); color:white; }
+
+        .mood-emoji-big { font-size:3em; flex-shrink:0; }
+        .mood-card-info { flex:1; min-width:0; }
+
+        /* ── ACTIVITY BOARD ──────────────────────── */
+        #view-board { background:#F1F5F9; padding-bottom:30px; }
+
+        .board-hdr {
+            background:linear-gradient(135deg,#4F46E5,#7C3AED);
+            padding:14px 16px;
+            display:flex; align-items:center; gap:10px;
+            color:white;
+            position:sticky; top:0; z-index:20;
+        }
+        .back-btn {
+            background:rgba(255,255,255,0.2);
+            border:2px solid rgba(255,255,255,0.4);
+            color:white; border-radius:10px;
+            padding:7px 13px; font-size:0.95em;
+            font-weight:700; cursor:pointer;
+            transition:var(--t); white-space:nowrap;
+        }
+        .back-btn:active { transform:scale(0.96); }
+        .board-title { font-size:1.15em; font-weight:800; flex:1; }
+        .board-pts-chip {
+            background:var(--accent); color:#1E293B;
+            font-weight:800; font-size:0.88em;
+            padding:5px 13px; border-radius:20px;
+            cursor:pointer; white-space:nowrap;
+        }
+
+        /* Tabs */
+        .board-tabs {
+            display:flex; gap:4px;
+            padding:10px 12px 8px;
+            background:white;
+            overflow-x:auto; scrollbar-width:none;
+            border-bottom:2px solid #E2E8F0;
+            position:sticky; top:54px; z-index:15;
+        }
+        .board-tabs::-webkit-scrollbar { display:none; }
+        .b-tab {
+            display:flex; flex-direction:column; align-items:center; gap:2px;
+            padding:7px 11px; border:2px solid transparent;
+            background:#F8FAFC; border-radius:10px;
+            cursor:pointer; white-space:nowrap;
+            font-size:0.72em; font-weight:700; color:#64748B;
+            min-width:58px; transition:var(--t);
+        }
+        .b-tab .ti { font-size:1.4em; }
+        .b-tab.active { background:var(--primary); color:white; border-color:var(--primary); }
+
+        /* Panels */
+        .b-panel { display:none; padding:14px; }
+        .b-panel.active { display:block; }
+
+        /* Section headers */
+        .sec-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+        .sec-title { font-size:1.2em; font-weight:800; color:var(--dark); }
+        .sec-sub { font-size:0.82em; color:var(--mid); margin-top:2px; }
+
+        /* ── CHORES ──────────────────────────────── */
+        .chore-block { background:white; border-radius:var(--radius); overflow:hidden; margin-bottom:12px; box-shadow:var(--shadow); }
+        .chore-blk-hdr {
+            display:flex; align-items:center; gap:10px;
+            padding:12px 15px; font-weight:700; font-size:0.9em;
+        }
+        .chore-blk-hdr.morning  { background:linear-gradient(135deg,#FEF3C7,#FDE68A); color:#78350F; }
+        .chore-blk-hdr.afternoon{ background:linear-gradient(135deg,#DBEAFE,#BFDBFE); color:#1E40AF; }
+        .chore-blk-hdr.evening  { background:linear-gradient(135deg,#EDE9FE,#DDD6FE); color:#4C1D95; }
+        .blk-pts-badge { margin-left:auto; background:rgba(0,0,0,0.1); border-radius:20px; padding:2px 9px; font-size:0.82em; }
+        .chore-item {
+            display:flex; align-items:center; gap:12px;
+            padding:13px 15px; border-bottom:1px solid #F1F5F9;
+            cursor:pointer; user-select:none; transition:background 0.15s;
+        }
+        .chore-item:last-child { border-bottom:none; }
+        .chore-item:active { background:#F8FAFC; }
+        .chore-cb {
+            width:28px; height:28px; border-radius:50%;
+            border:3px solid #CBD5E1;
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0; transition:var(--t); font-size:0.9em;
+        }
+        .chore-item.done .chore-cb { background:var(--success); border-color:var(--success); color:white; }
+        .chore-ico { font-size:1.3em; }
+        .chore-lbl { flex:1; font-size:0.97em; font-weight:600; color:var(--dark); }
+        .chore-item.done .chore-lbl { text-decoration:line-through; color:#94A3B8; }
+        .chore-pts { font-size:0.82em; font-weight:700; color:var(--accent); background:#FFFBEB; padding:3px 9px; border-radius:20px; }
+
+        /* ── HOMEWORK ────────────────────────────── */
+        .hw-add-form { background:white; border-radius:var(--radius); padding:15px; margin-bottom:14px; box-shadow:var(--shadow); }
+        .form-row { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+        .f-input {
+            flex:1; min-width:120px; padding:11px 13px;
+            border:2px solid #E2E8F0; border-radius:10px;
+            font-size:0.95em; font-family:var(--font);
+            outline:none; transition:border-color 0.2s; background:white;
+        }
+        .f-input:focus { border-color:var(--primary); }
+        .f-select {
+            padding:11px 13px; border:2px solid #E2E8F0;
+            border-radius:10px; font-size:0.95em;
+            font-family:var(--font); background:white; outline:none;
+        }
+        .btn-add {
+            padding:11px 18px; background:var(--primary);
+            color:white; border:none; border-radius:10px;
+            font-size:0.95em; font-weight:700; cursor:pointer;
+            transition:var(--t); white-space:nowrap;
+        }
+        .btn-add:active { transform:scale(0.97); }
+
+        .hw-item {
+            background:white; border-radius:var(--radius);
+            padding:13px 15px; margin-bottom:9px;
+            box-shadow:var(--shadow); display:flex;
+            gap:11px; align-items:flex-start; cursor:pointer;
+        }
+        .hw-cb {
+            width:26px; height:26px; border-radius:8px;
+            border:3px solid #CBD5E1; display:flex;
+            align-items:center; justify-content:center;
+            flex-shrink:0; transition:var(--t); margin-top:3px;
+        }
+        .hw-item.done .hw-cb { background:var(--success); border-color:var(--success); color:white; }
+        .hw-info { flex:1; min-width:0; }
+        .hw-subj {
+            display:inline-block; padding:2px 9px;
+            border-radius:20px; font-size:0.72em; font-weight:700;
+            margin-bottom:3px;
+        }
+        .hw-title { font-size:0.97em; font-weight:600; color:var(--dark); }
+        .hw-item.done .hw-title { text-decoration:line-through; color:#94A3B8; }
+        .hw-due { font-size:0.78em; color:#64748B; margin-top:3px; }
+        .hw-due.urgent { color:var(--danger); font-weight:700; }
+        .hw-due.warning { color:var(--orange); font-weight:700; }
+        .pomo-launch-btn {
+            background:#FFF7ED; border:2px solid #FED7AA;
+            border-radius:9px; padding:7px 11px;
+            cursor:pointer; font-size:0.78em; font-weight:700;
+            color:#C2410C; transition:var(--t); flex-shrink:0;
+        }
+        .pomo-launch-btn:active { transform:scale(0.95); }
+
+        /* Pomodoro widget */
+        .pomo-widget {
+            background:linear-gradient(135deg,#1E293B,#0F172A);
+            border-radius:var(--radius); padding:22px;
+            text-align:center; margin-bottom:14px; color:white;
+        }
+        .pomo-for { font-size:0.8em; color:#94A3B8; margin-bottom:3px; font-weight:700; }
+        .pomo-subj-lbl { font-size:1em; font-weight:700; color:white; margin-bottom:18px; }
+        .pomo-ring { position:relative; width:130px; height:130px; margin:0 auto 14px; }
+        .pomo-ring svg { transform:rotate(-90deg); width:130px; height:130px; }
+        .pomo-ring circle { fill:none; stroke-width:9; }
+        .pomo-ring .r-bg { stroke:#334155; }
+        .pomo-ring .r-fill { stroke:#F97316; stroke-linecap:round; transition:stroke-dashoffset 0.9s linear; }
+        .pomo-time {
+            position:absolute; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            font-size:1.9em; font-weight:800;
+        }
+        .pomo-mode-lbl { font-size:0.72em; color:#94A3B8; margin-top:-4px; margin-bottom:14px; }
+        .pomo-btns { display:flex; gap:8px; justify-content:center; }
+        .pb {
+            padding:9px 18px; border:none; border-radius:10px;
+            font-size:0.93em; font-weight:700; cursor:pointer;
+            transition:var(--t);
+        }
+        .pb:active { transform:scale(0.95); }
+        .pb-start { background:#F97316; color:white; }
+        .pb-pause { background:#F59E0B; color:white; }
+        .pb-reset { background:#334155; color:#94A3B8; }
+
+        /* ── KUNG FU ─────────────────────────────── */
+        .kf-goals { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
+        .kf-goal {
+            background:white; border-radius:var(--radius-sm);
+            padding:14px 10px; text-align:center;
+            box-shadow:var(--shadow); cursor:pointer;
+            border:3px solid transparent; transition:var(--t);
+        }
+        .kf-goal.done { border-color:var(--success); background:#ECFDF5; }
+        .kf-goal:active { transform:scale(0.96); }
+        .kf-g-icon { font-size:1.8em; margin-bottom:6px; }
+        .kf-g-name { font-size:0.82em; font-weight:700; color:var(--dark); }
+        .kf-g-sub  { font-size:0.7em; color:#64748B; margin-top:2px; }
+        .kf-goal.done .kf-g-name { color:var(--success); }
+
+        /* Flash cards */
+        .fc-section { background:white; border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:var(--shadow); }
+        .fc-section-title { font-size:0.9em; font-weight:700; color:var(--mid); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px; }
+        .fc-wrap { perspective:800px; height:160px; margin-bottom:10px; }
+        .fc-card {
+            width:100%; height:100%;
+            position:relative; transform-style:preserve-3d;
+            transition:transform 0.55s ease; cursor:pointer;
+        }
+        .fc-card.flipped { transform:rotateY(180deg); }
+        .fc-front, .fc-back {
+            position:absolute; width:100%; height:100%;
+            backface-visibility:hidden; border-radius:12px;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center; padding:20px;
+        }
+        .fc-front { background:linear-gradient(135deg,#1E293B,#334155); color:white; }
+        .fc-back  { background:linear-gradient(135deg,#059669,#10B981); color:white; transform:rotateY(180deg); }
+        .fc-hint  { font-size:0.78em; opacity:0.7; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+        .fc-term  { font-size:1.9em; font-weight:800; }
+        .fc-meaning { font-size:0.9em; text-align:center; line-height:1.4; }
+        .fc-nav { display:flex; align-items:center; gap:8px; justify-content:center; }
+        .fc-btn {
+            padding:9px 16px; border:none; border-radius:9px;
+            font-weight:700; font-size:0.88em; cursor:pointer;
+            transition:var(--t);
+        }
+        .fc-btn:active { transform:scale(0.95); }
+        .fc-flip { background:var(--primary); color:white; }
+        .fc-prev { background:#E2E8F0; color:var(--dark); }
+        .fc-next { background:var(--success); color:white; }
+        .fc-counter { font-size:0.82em; color:#64748B; min-width:60px; text-align:center; font-weight:700; }
+
+        /* Practice Log */
+        .practice-form { background:white; border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
+        .dur-btns { display:flex; gap:7px; flex-wrap:wrap; }
+        .dur-btn {
+            padding:9px 15px; background:#F1F5F9;
+            border:2px solid #E2E8F0; border-radius:9px;
+            font-size:0.88em; font-weight:700; cursor:pointer;
+            color:var(--dark); transition:var(--t);
+        }
+        .dur-btn.selected { background:var(--primary); border-color:var(--primary); color:white; }
+        .dur-btn:active { transform:scale(0.96); }
+        .log-btn {
+            margin-top:10px; width:100%; padding:11px;
+            background:var(--success); color:white;
+            border:none; border-radius:10px; font-size:1em;
+            font-weight:700; cursor:pointer; transition:var(--t);
+        }
+        .log-btn:active { transform:scale(0.98); }
+        .practice-log-list { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
+        .log-entry {
+            display:flex; align-items:center; gap:10px;
+            padding:9px 0; border-bottom:1px solid #F1F5F9;
+            font-size:0.88em; color:var(--mid);
+        }
+        .log-entry:last-child { border-bottom:none; }
+
+        /* ── GUJARATI ────────────────────────────── */
+        .guj-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
+        .guj-stat {
+            background:white; border-radius:var(--radius-sm);
+            padding:13px; text-align:center; box-shadow:var(--shadow);
+        }
+        .guj-s-icon { font-size:1.6em; margin-bottom:4px; }
+        .guj-s-val  { font-size:1.3em; font-weight:800; color:var(--primary); }
+        .guj-s-lbl  { font-size:0.72em; color:#64748B; font-weight:600; }
+
+        .guj-actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
+        .guj-action {
+            background:white; border:3px solid #E2E8F0;
+            border-radius:var(--radius); padding:18px 10px;
+            text-align:center; cursor:pointer;
+            transition:var(--t); text-decoration:none;
+            display:block;
+        }
+        .guj-action:hover { border-color:var(--primary); }
+        .guj-action:active { transform:scale(0.96); }
+        .guj-a-icon { font-size:2.2em; margin-bottom:7px; }
+        .guj-a-name { font-size:0.88em; font-weight:700; color:var(--dark); }
+        .guj-a-sub  { font-size:0.7em; color:#64748B; margin-top:2px; }
+
+        .guj-timer-section {
+            background:white; border-radius:var(--radius);
+            padding:15px; box-shadow:var(--shadow); margin-bottom:12px;
+        }
+        .guj-timer-display { font-size:2em; font-weight:800; color:var(--primary); text-align:center; margin:10px 0; }
+        .guj-timer-btns { display:flex; gap:8px; }
+        .guj-tbtn {
+            flex:1; padding:10px; border:none; border-radius:9px;
+            font-weight:700; font-size:0.9em; cursor:pointer;
+            transition:var(--t);
+        }
+        .guj-tbtn:active { transform:scale(0.97); }
+        .gtb-start { background:var(--primary); color:white; }
+        .gtb-stop  { background:var(--danger); color:white; }
+        .gtb-reset { background:#E2E8F0; color:var(--dark); }
+
+        /* ── CALENDAR ────────────────────────────── */
+        .cal-add-form { background:white; border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
+        .event-item {
+            background:white; border-radius:var(--radius);
+            padding:13px 15px; margin-bottom:9px;
+            box-shadow:var(--shadow); display:flex;
+            align-items:center; gap:13px;
+        }
+        .ev-date-block {
+            background:#F1F5F9; border-radius:9px;
+            padding:7px 10px; text-align:center;
+            min-width:44px; flex-shrink:0;
+        }
+        .ev-day   { font-size:1.1em; font-weight:800; color:var(--dark); }
+        .ev-month { font-size:0.62em; color:#64748B; text-transform:uppercase; font-weight:700; }
+        .ev-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+        .ev-info  { flex:1; min-width:0; }
+        .ev-title { font-size:0.97em; font-weight:700; color:var(--dark); }
+        .ev-time  { font-size:0.78em; color:#64748B; margin-top:2px; }
+        .ev-today-badge {
+            background:var(--primary); color:white;
+            font-size:0.68em; font-weight:800;
+            padding:2px 8px; border-radius:20px;
+            white-space:nowrap;
+        }
+
+        /* ── HABITS ──────────────────────────────── */
+        .habit-card { background:white; border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
+        .habit-hdr { display:flex; align-items:center; gap:11px; margin-bottom:13px; }
+        .habit-ico { font-size:1.9em; }
+        .habit-info { flex:1; }
+        .habit-name { font-size:1.05em; font-weight:700; color:var(--dark); }
+        .habit-goal-lbl { font-size:0.78em; color:#64748B; }
+        .streak-chip {
+            background:linear-gradient(135deg,#FEF3C7,#FDE68A);
+            border-radius:20px; padding:5px 11px;
+            font-size:0.82em; font-weight:800; color:#78350F;
+        }
+        .habit-week { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:11px; }
+        .hday {
+            aspect-ratio:1; border-radius:7px;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            font-size:0.68em; font-weight:700;
+            border:2px solid #E2E8F0;
+            background:#F8FAFC; color:#94A3B8;
+            cursor:pointer; transition:var(--t);
+        }
+        .hday.done  { background:var(--success); border-color:var(--success); color:white; }
+        .hday.today { border-color:var(--primary); color:var(--primary); }
+        .hday.today.done { border-color:var(--success); color:white; }
+        .hday.future { opacity:0.35; pointer-events:none; }
+        .hday-lbl { line-height:1; }
+        .hday-chk { font-size:1.1em; }
+
+        .habit-counter {
+            display:flex; align-items:center; gap:10px;
+            background:#F8FAFC; border-radius:9px;
+            padding:9px 13px;
+        }
+        .cntr-lbl { flex:1; font-size:0.88em; font-weight:600; color:var(--mid); }
+        .cntr-val { font-size:1.25em; font-weight:800; color:var(--dark); min-width:34px; text-align:center; }
+        .cntr-btn {
+            width:34px; height:34px; border:2px solid #E2E8F0;
+            background:white; border-radius:8px;
+            font-size:1.2em; cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            font-weight:700; transition:var(--t);
+        }
+        .cntr-btn:active { transform:scale(0.94); background:#F1F5F9; }
+
+        /* ── MOOD ────────────────────────────────── */
+        .mood-q { text-align:center; font-size:1.2em; font-weight:800; color:var(--dark); margin-bottom:18px; }
+        .mood-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:9px; margin-bottom:18px; }
+        .mood-opt {
+            aspect-ratio:1; border-radius:var(--radius);
+            border:3px solid #E2E8F0;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            cursor:pointer; transition:var(--t);
+            background:white; padding:6px;
+        }
+        .mood-opt:active { transform:scale(0.94); }
+        .mood-opt.selected { border-color:var(--primary); background:#EEF2FF; transform:scale(1.04); }
+        .mood-em { font-size:2em; margin-bottom:3px; }
+        .mood-lbl { font-size:0.68em; font-weight:700; color:#64748B; text-align:center; line-height:1.2; }
+        .mood-opt.selected .mood-lbl { color:var(--primary); }
+
+        .mood-history { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
+        .mood-h-title { font-size:0.82em; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:11px; }
+        .mood-h-row { display:flex; gap:6px; }
+        .mood-h-item { flex:1; text-align:center; }
+        .mood-h-em { font-size:1.4em; }
+        .mood-h-day { font-size:0.66em; color:#94A3B8; font-weight:700; }
+
+        /* ── POINTS PANEL ────────────────────────── */
+        .pts-tier-card {
+            background:linear-gradient(135deg,#1E293B,#334155);
+            border-radius:var(--radius); padding:22px;
+            text-align:center; color:white; margin-bottom:14px;
+            position:relative; overflow:hidden;
+        }
+        .pts-tier-card::after {
+            content:attr(data-icon);
+            position:absolute; font-size:7em;
+            opacity:0.06; top:-10px; right:-5px;
+        }
+        .tier-icon-big { font-size:3.5em; margin-bottom:6px; }
+        .tier-name-big { font-size:1.4em; font-weight:800; }
+        .tier-pts-sub  { font-size:0.9em; opacity:0.7; margin-top:4px; }
+
+        .pts-stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
+        .pts-stat {
+            background:white; border-radius:var(--radius-sm);
+            padding:13px; text-align:center; box-shadow:var(--shadow);
+        }
+        .pts-stat-val { font-size:1.4em; font-weight:800; color:var(--dark); }
+        .pts-stat-lbl { font-size:0.72em; color:#64748B; font-weight:600; margin-top:2px; }
+
+        .next-tier-card { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
+        .nt-label { display:flex; justify-content:space-between; font-size:0.85em; font-weight:700; margin-bottom:8px; }
+        .pbar { background:#E2E8F0; border-radius:10px; height:10px; overflow:hidden; }
+        .pbar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,#6366F1,#8B5CF6); transition:width 0.5s ease; }
+
+        .pts-how-to { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); margin-top:12px; }
+        .how-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #F1F5F9; font-size:0.88em; }
+        .how-row:last-child { border-bottom:none; }
+        .how-pts { font-weight:700; color:var(--accent); }
+
+        /* ── UTILITY ─────────────────────────────── */
+        .card-white { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); margin-bottom:12px; }
+        .lbl { font-size:0.82em; font-weight:700; color:var(--mid); display:block; margin-bottom:6px; }
+        .empty-state { text-align:center; padding:36px 20px; color:#94A3B8; }
+        .empty-ico { font-size:2.8em; margin-bottom:7px; }
+        .empty-txt { font-size:0.95em; font-weight:600; }
+        .chip { display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.75em; font-weight:700; }
+        .chip-g { background:#DCFCE7; color:#166534; }
+        .chip-y { background:#FEF9C3; color:#854D0E; }
+        .chip-r { background:#FEE2E2; color:#991B1B; }
+        .chip-b { background:#DBEAFE; color:#1E40AF; }
+        .divider { border:none; border-top:1px solid #E2E8F0; margin:12px 0; }
+        .row-between { display:flex; justify-content:space-between; align-items:center; }
+
+        /* ── ANIMATIONS ──────────────────────────── */
+        @keyframes popIn { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
+        .pop { animation:popIn 0.3s ease; }
+        .slide-up { animation:slideUp 0.25s ease; }
+        .shake { animation:shake 0.35s ease; }
+
+        /* ── RESPONSIVE ──────────────────────────── */
+        @media (max-width: 380px) {
+            .dash-greeting h1 { font-size:1.5em; }
+            .dash-grid { gap:8px; padding:10px; }
+            .mood-em { font-size:1.7em; }
+            .kf-goals { grid-template-columns:1fr 1fr 1fr; gap:7px; }
+        }
+        @media (min-width: 580px) {
+            .dash-grid { max-width:680px; margin:0 auto; }
+            .b-panel { max-width:680px; margin:0 auto; }
+            .board-hdr, .board-tabs { max-width:100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     VIEW 1 — DASHBOARD
+     ════════════════════════════════════════════════ -->
+<div id="view-dashboard" class="view active">
+
+    <header class="dash-header">
+        <div class="dash-header-row">
+            <div class="dash-greeting">
+                <h1 id="greeting-text">Hey Krish! 👋</h1>
+                <div class="date-sub" id="date-display"></div>
+            </div>
+            <div class="pts-badge" onclick="showBoard('points')">
+                <span class="num" id="hdr-pts">0</span>
+                <span class="lbl">pts today</span>
+            </div>
+        </div>
+        <div class="dash-bar-wrap">
+            <div class="dash-bar-fill" id="daily-bar" style="width:0%"></div>
+        </div>
+        <div class="dash-bar-labels">
+            <span id="daily-bar-left">0 / 0 chores done</span>
+            <span id="daily-bar-right">Goal: 50 pts</span>
+        </div>
+    </header>
+
+    <div class="dash-grid">
+
+        <!-- Chores -->
+        <div class="dash-card dc-chores" onclick="showBoard('chores')">
+            <div class="card-tag">Chores</div>
+            <div class="card-icon">✅</div>
+            <div class="card-val" id="dc-chores-val">0 / 0</div>
+            <div class="card-sub" id="dc-chores-sub">done today</div>
+            <div class="card-bar">
+                <div class="card-bar-fill" id="dc-chores-bar" style="width:0%;background:linear-gradient(90deg,#F59E0B,#EF4444)"></div>
+            </div>
+        </div>
+
+        <!-- Points -->
+        <div class="dash-card dc-points" onclick="showBoard('points')">
+            <div class="card-tag">Points</div>
+            <div class="card-icon">⭐</div>
+            <div class="card-val" id="dc-pts-val">0 pts</div>
+            <div class="card-sub" id="dc-pts-tier">Beginner 🌱</div>
+            <div class="card-bar">
+                <div class="card-bar-fill" id="dc-pts-bar" style="width:0%;background:linear-gradient(90deg,#F59E0B,#FBBF24)"></div>
+            </div>
+        </div>
+
+        <!-- Homework -->
+        <div class="dash-card dc-hw" onclick="showBoard('homework')">
+            <div class="card-tag">Homework</div>
+            <div class="card-icon">📚</div>
+            <div class="card-val" id="dc-hw-val">0 tasks</div>
+            <div class="card-sub" id="dc-hw-sub">all done!</div>
+        </div>
+
+        <!-- Gujarati -->
+        <div class="dash-card dc-guj" onclick="showBoard('gujarati')">
+            <div class="card-tag">Gujarati</div>
+            <div class="card-icon">🇮🇳</div>
+            <div class="card-val" id="dc-guj-val">P1 L1</div>
+            <div class="card-sub" id="dc-guj-sub">0 / 10 min today</div>
+            <div class="card-bar">
+                <div class="card-bar-fill" id="dc-guj-bar" style="width:0%;background:linear-gradient(90deg,#6366F1,#8B5CF6)"></div>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="dash-card dc-cal" onclick="showBoard('calendar')">
+            <div class="card-tag">Calendar</div>
+            <div class="card-icon">📅</div>
+            <div class="card-val" id="dc-cal-val">0 events</div>
+            <div class="card-sub" id="dc-cal-sub">coming up</div>
+        </div>
+
+        <!-- Habits -->
+        <div class="dash-card dc-habits" onclick="showBoard('habits')">
+            <div class="card-tag">Habits</div>
+            <div class="card-icon">💪</div>
+            <div class="card-val" id="dc-habits-val">0 / 3</div>
+            <div class="card-sub" id="dc-habits-sub">done today</div>
+        </div>
+
+        <!-- Mood (full width) -->
+        <div class="dash-card dc-mood" onclick="showBoard('mood')">
+            <div class="mood-emoji-big" id="dc-mood-em">🤔</div>
+            <div class="mood-card-info">
+                <div class="card-tag">Today's Mood</div>
+                <div class="card-val" id="dc-mood-val">Not set yet</div>
+                <div class="card-sub">Tap to log how you're feeling</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     VIEW 2 — ACTIVITY BOARD
+     ════════════════════════════════════════════════ -->
+<div id="view-board" class="view">
+
+    <header class="board-hdr">
+        <button class="back-btn" onclick="showDashboard()">← Dashboard</button>
+        <span class="board-title">Activity Board</span>
+        <span class="board-pts-chip" id="board-pts-chip" onclick="switchTab('points')">0 pts</span>
+    </header>
+
+    <div class="board-tabs" id="board-tabs">
+        <button class="b-tab" data-tab="chores"   onclick="switchTab('chores')">  <span class="ti">✅</span>Chores   </button>
+        <button class="b-tab" data-tab="homework" onclick="switchTab('homework')"><span class="ti">📚</span>Homework  </button>
+        <button class="b-tab" data-tab="kungfu"   onclick="switchTab('kungfu')">  <span class="ti">🥋</span>Kung Fu  </button>
+        <button class="b-tab" data-tab="gujarati" onclick="switchTab('gujarati')"><span class="ti">🇮🇳</span>Gujarati </button>
+        <button class="b-tab" data-tab="calendar" onclick="switchTab('calendar')"><span class="ti">📅</span>Calendar  </button>
+        <button class="b-tab" data-tab="habits"   onclick="switchTab('habits')">  <span class="ti">💪</span>Habits   </button>
+        <button class="b-tab" data-tab="mood"     onclick="switchTab('mood')">    <span class="ti">😊</span>Mood      </button>
+        <button class="b-tab" data-tab="points"   onclick="switchTab('points')">  <span class="ti">⭐</span>Points   </button>
+    </div>
+
+    <!-- CHORES PANEL -->
+    <div id="panel-chores" class="b-panel"></div>
+
+    <!-- HOMEWORK PANEL -->
+    <div id="panel-homework" class="b-panel"></div>
+
+    <!-- KUNG FU PANEL -->
+    <div id="panel-kungfu" class="b-panel"></div>
+
+    <!-- GUJARATI PANEL -->
+    <div id="panel-gujarati" class="b-panel"></div>
+
+    <!-- CALENDAR PANEL -->
+    <div id="panel-calendar" class="b-panel"></div>
+
+    <!-- HABITS PANEL -->
+    <div id="panel-habits" class="b-panel"></div>
+
+    <!-- MOOD PANEL -->
+    <div id="panel-mood" class="b-panel"></div>
+
+    <!-- POINTS PANEL -->
+    <div id="panel-points" class="b-panel"></div>
+
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════════
+const LS_KEY = 'krish_tasks_v1';
+const GUJARATI_MODULE_PATH = '../../gujarati-learning/gujarati-learning-module.html';
+const DAILY_GOAL_PTS = 50;
+
+const MOODS = [
+    { key:'amazing', emoji:'😄', label:'Amazing' },
+    { key:'good',    emoji:'😊', label:'Good'    },
+    { key:'okay',    emoji:'😐', label:'Okay'    },
+    { key:'meh',     emoji:'😕', label:'Meh'     },
+    { key:'sad',     emoji:'😔', label:'Sad'     },
+];
+
+const SUBJECT_COLORS = {
+    Math:    { bg:'#DBEAFE', color:'#1E40AF' },
+    Science: { bg:'#DCFCE7', color:'#166534' },
+    English: { bg:'#EDE9FE', color:'#4C1D95' },
+    Reading: { bg:'#FCE7F3', color:'#831843' },
+    History: { bg:'#FFEDD5', color:'#9A3412' },
+    Art:     { bg:'#FEF9C3', color:'#78350F' },
+    Other:   { bg:'#F1F5F9', color:'#475569' },
+};
+
+const EVENT_COLORS = {
+    School: '#3B82F6', Family: '#10B981',
+    Sport:  '#F97316', Health: '#EF4444', Other: '#8B5CF6',
+};
+
+const TIER_LEVELS = [
+    { name:'Legend',   icon:'🦁', min:1000, color:'#F59E0B' },
+    { name:'Champion', icon:'🏆', min:500,  color:'#F59E0B' },
+    { name:'Achiever', icon:'⭐', min:250,  color:'#6366F1' },
+    { name:'Explorer', icon:'🔍', min:100,  color:'#10B981' },
+    { name:'Beginner', icon:'🌱', min:0,    color:'#94A3B8' },
+];
+
+const KF_FLASHCARDS = [
+    { term:'Sifu',        meaning:'Teacher or master in Kung Fu' },
+    { term:'Qi (Chi)',    meaning:'Inner energy and life force within you' },
+    { term:'Stance',      meaning:'The foundation position — keeps you balanced and strong' },
+    { term:'Kata / Form', meaning:'A sequence of moves practised alone to build muscle memory' },
+    { term:'Spar',        meaning:'Practise fighting safely with a training partner' },
+    { term:'Block',       meaning:'Defend yourself against an incoming strike' },
+    { term:'Strike',      meaning:'An attack using your hand, fist, or foot' },
+    { term:'Horse Stance',meaning:'Wide legged stance like riding a horse — builds leg strength' },
+    { term:'Kiai',        meaning:'A battle shout that focuses inner energy during a technique' },
+    { term:'Bow',         meaning:'Show respect to your teacher and training hall' },
+    { term:'Centre Line', meaning:'Imaginary line down your middle — protect it always' },
+    { term:'Focus',       meaning:'Concentrate all power into one precise point at the moment of impact' },
+    { term:'Wushu',       meaning:'Chinese martial arts — the broad category Kung Fu belongs to' },
+    { term:'Zanshin',     meaning:'Staying alert and ready even after completing a move' },
+    { term:'Dojo',        meaning:'The training hall — treat it with respect' },
+];
+
+const DEFAULT_CHORES = {
+    morning: [
+        { id:'m1', text:'Make Bed',    icon:'🛏️', pts:5  },
+        { id:'m2', text:'Brush Teeth', icon:'🦷', pts:3  },
+        { id:'m3', text:'Get Dressed', icon:'👕', pts:3  },
+        { id:'m4', text:'Eat Breakfast', icon:'🥣', pts:3 },
+    ],
+    afternoon: [
+        { id:'a1', text:'Read 20 min', icon:'📖', pts:5  },
+        { id:'a2', text:'Tidy Room',   icon:'🧹', pts:5  },
+        { id:'a3', text:'Homework Time', icon:'📝', pts:10 },
+    ],
+    evening: [
+        { id:'e1', text:'Set Table',      icon:'🍽️', pts:3 },
+        { id:'e2', text:'Clear Dishes',   icon:'🫙', pts:3 },
+        { id:'e3', text:'Shower',         icon:'🚿', pts:5 },
+        { id:'e4', text:'Brush Teeth',    icon:'🦷', pts:3 },
+        { id:'e5', text:'Pack School Bag',icon:'🎒', pts:5 },
+    ],
+};
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let state = null;
+
+function todayStr() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function getMondayOfWeek(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().split('T')[0];
+}
+
+function buildDefaultState() {
+    const today = todayStr();
+    const weekStart = getMondayOfWeek(today);
+    return {
+        version: 1,
+        date: today,
+        weekStart: weekStart,
+        month: today.slice(0, 7),
+        chores: {
+            morning:   DEFAULT_CHORES.morning.map(c => ({ ...c, done: false })),
+            afternoon: DEFAULT_CHORES.afternoon.map(c => ({ ...c, done: false })),
+            evening:   DEFAULT_CHORES.evening.map(c => ({ ...c, done: false })),
+        },
+        points: { today: 0, week: 0, month: 0, total: 0 },
+        homework: [
+            { id:'hw_demo1', subject:'Math',    title:'Times tables worksheet', dueDate: today,                   done:false, pomodorosUsed:0 },
+            { id:'hw_demo2', subject:'English', title:'Book report — 1 page',   dueDate: addDays(today, 2),       done:false, pomodorosUsed:0 },
+            { id:'hw_demo3', subject:'Science', title:'Solar system diagram',   dueDate: addDays(today, 5),       done:false, pomodorosUsed:0 },
+        ],
+        kungfu: {
+            todayPractice:   false,
+            practiceMinutes: 0,
+            todayFlashcards: false,
+            todayStudy:      false,
+            studyMinutes:    0,
+            practiceLog: [],
+            selectedDuration: 30,
+        },
+        gujarati: {
+            phase: 1, lesson: 1,
+            todayMinutes: 0,
+            timerRunning: false,
+            timerStart: null,
+            lastVisit: null,
+        },
+        calendar: {
+            events: [
+                { id:'ev1', title:'Swimming Lesson',  date: today,               time:'4:00 PM', type:'Sport',  color:EVENT_COLORS.Sport  },
+                { id:'ev2', title:'Kung Fu Class',     date: addDays(today, 2),   time:'5:30 PM', type:'Sport',  color:EVENT_COLORS.Sport  },
+                { id:'ev3', title:'Math Test',         date: addDays(today, 3),   time:'9:00 AM', type:'School', color:EVENT_COLORS.School },
+                { id:'ev4', title:'Family Dinner',     date: addDays(today, 5),   time:'6:00 PM', type:'Family', color:EVENT_COLORS.Family },
+            ],
+        },
+        habits: {
+            meditate: { goal:5, weekDays:[], streak:0, todayDone:false },
+            pullups:  { goal:5, weekDays:[], streak:0, todayDone:false, todayCount:0 },
+            water:    { goal:5, weekDays:[], streak:0, todayDone:false, todayGlasses:0, dailyGoal:8 },
+        },
+        mood: { today: null, history: [] },
+        pomodoro: null, // set when active: { hwId, mode, remaining, total, active }
+    };
+}
+
+function addDays(dateStr, days) {
+    const d = new Date(dateStr + 'T12:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split('T')[0];
+}
+
+function loadState() {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) {
+            state = JSON.parse(raw);
+            applyResets();
+            return;
+        }
+    } catch (e) { console.warn('State parse error', e); }
+    state = buildDefaultState();
+    saveState();
+}
+
+function saveState() {
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+}
+
+function applyResets() {
+    const today = todayStr();
+    const weekStart = getMondayOfWeek(today);
+    const month = today.slice(0, 7);
+
+    // Daily reset
+    if (state.date !== today) {
+        // Reset chore completion
+        ['morning','afternoon','evening'].forEach(block => {
+            state.chores[block].forEach(c => { c.done = false; });
+        });
+        // Reset daily points (carry week/month/total)
+        state.points.today = 0;
+        // Reset Kung Fu daily goals
+        state.kungfu.todayPractice   = false;
+        state.kungfu.todayFlashcards = false;
+        state.kungfu.todayStudy      = false;
+        state.kungfu.practiceMinutes = 0;
+        state.kungfu.studyMinutes    = 0;
+        // Reset mood today
+        state.mood.today = null;
+        // Reset Gujarati daily timer
+        state.gujarati.todayMinutes = 0;
+        state.gujarati.timerRunning = false;
+        state.gujarati.timerStart   = null;
+        // Stop any running pomodoro
+        state.pomodoro = null;
+        // Reset habit today flags
+        Object.values(state.habits).forEach(h => {
+            h.todayDone = false;
+            if (h.todayCount !== undefined) h.todayCount = 0;
+            if (h.todayGlasses !== undefined) h.todayGlasses = 0;
+        });
+        state.date = today;
+    }
+
+    // Weekly reset
+    if (state.weekStart !== weekStart) {
+        Object.values(state.habits).forEach(h => { h.weekDays = []; });
+        state.weekStart = weekStart;
+    }
+
+    // Monthly reset
+    if (state.month !== month) {
+        state.points.month = 0;
+        state.month = month;
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════
+let currentTab = 'chores';
+
+function showDashboard() {
+    document.getElementById('view-dashboard').classList.add('active');
+    document.getElementById('view-board').classList.remove('active');
+    renderDashboard();
+}
+
+function showBoard(tab) {
+    document.getElementById('view-dashboard').classList.remove('active');
+    document.getElementById('view-board').classList.add('active');
+    switchTab(tab || currentTab);
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.b-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    document.querySelectorAll('.b-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    const panel = document.getElementById('panel-' + tab);
+    if (panel) panel.classList.add('active');
+
+    // Scroll tab into view
+    const activeTab = document.querySelector('.b-tab.active');
+    if (activeTab) activeTab.scrollIntoView({ inline:'nearest', behavior:'smooth' });
+
+    // Render specific panel
+    switch(tab) {
+        case 'chores':   renderChoresPanel();   break;
+        case 'homework': renderHomeworkPanel(); break;
+        case 'kungfu':   renderKungFuPanel();   break;
+        case 'gujarati': renderGujaratiPanel(); break;
+        case 'calendar': renderCalendarPanel(); break;
+        case 'habits':   renderHabitsPanel();   break;
+        case 'mood':     renderMoodPanel();     break;
+        case 'points':   renderPointsPanel();   break;
+    }
+    updateBoardHeader();
+}
+
+function updateBoardHeader() {
+    document.getElementById('board-pts-chip').textContent = state.points.today + ' pts';
+}
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+function h(tag, cls, html) {
+    return `<${tag} class="${cls}">${html}</${tag}>`;
+}
+
+function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+}
+
+function getDayLabel(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-GB', { weekday:'short' });
+}
+
+function getDayNum(dateStr) {
+    return new Date(dateStr + 'T12:00:00').getDate();
+}
+
+function getMonthLabel(dateStr) {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-GB', { month:'short' });
+}
+
+function getDueStatus(dueDate) {
+    const today = todayStr();
+    if (dueDate < today) return { text:'Overdue!', cls:'urgent' };
+    if (dueDate === today) return { text:'Due today!', cls:'urgent' };
+    const diff = Math.round((new Date(dueDate + 'T12:00:00') - new Date(today + 'T12:00:00')) / 86400000);
+    if (diff === 1) return { text:'Due tomorrow', cls:'warning' };
+    return { text:'Due ' + formatDate(dueDate), cls:'' };
+}
+
+function getTier(monthlyPts) {
+    return TIER_LEVELS.find(t => monthlyPts >= t.min) || TIER_LEVELS[TIER_LEVELS.length - 1];
+}
+
+function getNextTier(monthlyPts) {
+    const tiers = [...TIER_LEVELS].reverse();
+    for (let i = 0; i < tiers.length; i++) {
+        if (monthlyPts < tiers[i].min) return tiers[i];
+    }
+    return null;
+}
+
+function allChoresCount() {
+    return Object.values(state.chores).flat();
+}
+
+function doneChoresCount() {
+    return allChoresCount().filter(c => c.done).length;
+}
+
+function getWeekDayGrid() {
+    const today = todayStr();
+    const monday = getMondayOfWeek(today);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        days.push(addDays(monday, i));
+    }
+    return days;
+}
+
+function uid() {
+    return 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+function addPoints(pts) {
+    state.points.today += pts;
+    state.points.week  += pts;
+    state.points.month += pts;
+    state.points.total += pts;
+    saveState();
+    updateBoardHeader();
+    // Animate badge
+    const el = document.getElementById('board-pts-chip');
+    if (el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+}
+
+function subtractPoints(pts) {
+    state.points.today = Math.max(0, state.points.today - pts);
+    state.points.week  = Math.max(0, state.points.week  - pts);
+    state.points.month = Math.max(0, state.points.month - pts);
+    state.points.total = Math.max(0, state.points.total - pts);
+    saveState();
+    updateBoardHeader();
+}
+
+function playTick() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.frequency.value = 880;
+        g.gain.value = 0.15;
+        osc.start(); osc.stop(ctx.currentTime + 0.08);
+    } catch(e) {}
+}
+
+function playDone() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [523, 659, 784].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.connect(g); g.connect(ctx.destination);
+            osc.frequency.value = freq;
+            g.gain.value = 0.2;
+            osc.start(ctx.currentTime + i * 0.12);
+            osc.stop(ctx.currentTime + i * 0.12 + 0.15);
+        });
+    } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════
+//  DASHBOARD RENDER
+// ═══════════════════════════════════════════════════
+function renderDashboard() {
+    const today = new Date();
+    const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greeting-text').textContent = greeting + ', Krish! 👋';
+    document.getElementById('date-display').textContent = today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+
+    const all  = allChoresCount();
+    const done = doneChoresCount();
+    const chorePct = all.length ? (done / all.length) * 100 : 0;
+    const choresPts = all.filter(c => c.done).reduce((s, c) => s + c.pts, 0);
+
+    document.getElementById('hdr-pts').textContent = state.points.today;
+    document.getElementById('daily-bar').style.width = Math.min(100, (state.points.today / DAILY_GOAL_PTS) * 100) + '%';
+    document.getElementById('daily-bar-left').textContent = done + ' / ' + all.length + ' chores done';
+    document.getElementById('daily-bar-right').textContent = 'Goal: ' + DAILY_GOAL_PTS + ' pts';
+
+    // Chores card
+    document.getElementById('dc-chores-val').textContent = done + ' / ' + all.length;
+    document.getElementById('dc-chores-sub').textContent = choresPts + ' pts earned';
+    document.getElementById('dc-chores-bar').style.width = chorePct + '%';
+
+    // Points card
+    const tier = getTier(state.points.month);
+    document.getElementById('dc-pts-val').textContent = state.points.today + ' pts';
+    document.getElementById('dc-pts-tier').textContent = tier.name + ' ' + tier.icon;
+    document.getElementById('dc-pts-bar').style.width = Math.min(100, (state.points.month / 250) * 100) + '%';
+
+    // Homework card
+    const hwPending = state.homework.filter(h => !h.done);
+    const hwToday   = hwPending.filter(h => h.dueDate <= todayStr());
+    document.getElementById('dc-hw-val').textContent = hwPending.length + ' task' + (hwPending.length !== 1 ? 's' : '');
+    document.getElementById('dc-hw-sub').textContent = hwToday.length > 0 ? hwToday.length + ' due today!' : hwPending.length === 0 ? 'All done! 🎉' : 'Next: ' + formatDate(hwPending[0]?.dueDate || '');
+
+    // Gujarati card
+    document.getElementById('dc-guj-val').textContent = 'P' + state.gujarati.phase + ' L' + state.gujarati.lesson;
+    document.getElementById('dc-guj-sub').textContent = state.gujarati.todayMinutes + ' / 10 min today';
+    document.getElementById('dc-guj-bar').style.width = Math.min(100, (state.gujarati.todayMinutes / 10) * 100) + '%';
+
+    // Calendar card
+    const upcoming = state.calendar.events.filter(e => e.date >= todayStr()).sort((a,b)=>a.date.localeCompare(b.date));
+    document.getElementById('dc-cal-val').textContent = upcoming.length + ' event' + (upcoming.length !== 1 ? 's' : '');
+    document.getElementById('dc-cal-sub').textContent = upcoming.length > 0 ? upcoming[0].title + (upcoming[0].date === todayStr() ? ' (today!)' : '') : 'Nothing coming up';
+
+    // Habits card
+    const h_today = ['meditate','pullups','water'].filter(k => state.habits[k].todayDone).length;
+    document.getElementById('dc-habits-val').textContent = h_today + ' / 3';
+    const maxStreak = Math.max(...Object.values(state.habits).map(h => h.streak));
+    document.getElementById('dc-habits-sub').textContent = maxStreak > 0 ? '🔥 ' + maxStreak + ' day streak' : 'done today';
+
+    // Mood card
+    const mood = MOODS.find(m => m.key === state.mood.today);
+    document.getElementById('dc-mood-em').textContent  = mood ? mood.emoji : '🤔';
+    document.getElementById('dc-mood-val').textContent = mood ? mood.label : 'Not set yet';
+}
+
+// ═══════════════════════════════════════════════════
+//  CHORES PANEL
+// ═══════════════════════════════════════════════════
+function renderChoresPanel() {
+    const all  = allChoresCount();
+    const done = doneChoresCount();
+    const pts  = all.filter(c => c.done).reduce((s, c) => s + c.pts, 0);
+    const totalPts = all.reduce((s, c) => s + c.pts, 0);
+
+    let html = `
+        <div class="sec-hdr">
+            <div>
+                <div class="sec-title">Today's Chores</div>
+                <div class="sec-sub">${done}/${all.length} done · ${pts}/${totalPts} pts earned</div>
+            </div>
+        </div>
+        <div class="card-white" style="padding:12px 14px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:7px;font-size:0.82em;font-weight:700">
+                <span style="color:var(--mid)">Overall progress</span>
+                <span style="color:var(--primary)">${done}/${all.length}</span>
+            </div>
+            <div class="pbar"><div class="pbar-fill" style="width:${all.length ? (done/all.length*100).toFixed(0) : 0}%"></div></div>
+        </div>
+    `;
+
+    const blocks = [
+        { key:'morning',   label:'🌅 Morning',   time:'Before school',  cls:'morning'   },
+        { key:'afternoon', label:'☀️ Afternoon',  time:'After school',   cls:'afternoon' },
+        { key:'evening',   label:'🌙 Evening',    time:'Before bed',     cls:'evening'   },
+    ];
+
+    blocks.forEach(block => {
+        const chores = state.chores[block.key];
+        const blkDone = chores.filter(c => c.done).length;
+        const blkPts  = chores.filter(c => c.done).reduce((s,c) => s + c.pts, 0);
+        const blkTotalPts = chores.reduce((s,c) => s + c.pts, 0);
+
+        html += `<div class="chore-block">
+            <div class="chore-blk-hdr ${block.cls}">
+                <span>${block.label}</span>
+                <span style="opacity:0.7;font-size:0.85em;margin-left:4px">${block.time}</span>
+                <span class="blk-pts-badge">${blkDone}/${chores.length} · ${blkPts}/${blkTotalPts}pts</span>
+            </div>`;
+
+        chores.forEach(chore => {
+            html += `<div class="chore-item ${chore.done ? 'done' : ''}" onclick="toggleChore('${block.key}','${chore.id}')">
+                <div class="chore-cb">${chore.done ? '✓' : ''}</div>
+                <div class="chore-ico">${chore.icon}</div>
+                <div class="chore-lbl">${chore.text}</div>
+                <div class="chore-pts">+${chore.pts}pts</div>
+            </div>`;
+        });
+
+        html += `</div>`;
+    });
+
+    document.getElementById('panel-chores').innerHTML = html;
+}
+
+function toggleChore(block, id) {
+    const chore = state.chores[block].find(c => c.id === id);
+    if (!chore) return;
+    chore.done = !chore.done;
+    if (chore.done) { addPoints(chore.pts); playTick(); }
+    else { subtractPoints(chore.pts); }
+    saveState();
+    renderChoresPanel();
+    renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+//  HOMEWORK PANEL + POMODORO
+// ═══════════════════════════════════════════════════
+let _pomoInterval = null;
+
+function renderHomeworkPanel() {
+    const pending  = state.homework.filter(h => !h.done);
+    const complete = state.homework.filter(h => h.done);
+
+    let html = `
+        <div class="pomo-widget ${state.pomodoro ? '' : 'hidden'}" id="pomo-widget">
+            ${renderPomoWidget()}
+        </div>
+
+        <div class="hw-add-form">
+            <div class="sec-title" style="margin-bottom:12px">Add Assignment</div>
+            <div class="form-row">
+                <input class="f-input" id="hw-title-input" placeholder="Assignment name..." />
+            </div>
+            <div class="form-row">
+                <select class="f-select" id="hw-subj-select">
+                    ${Object.keys(SUBJECT_COLORS).map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+                <input class="f-input" id="hw-date-input" type="date" value="${addDays(todayStr(),1)}" min="${todayStr()}" />
+                <button class="btn-add" onclick="addHomework()">+ Add</button>
+            </div>
+        </div>
+    `;
+
+    if (pending.length > 0) {
+        html += `<div class="sec-hdr"><div class="sec-title">To Do</div></div>`;
+        pending.forEach(hw => {
+            const due    = getDueStatus(hw.dueDate);
+            const colors = SUBJECT_COLORS[hw.subject] || SUBJECT_COLORS.Other;
+            html += `<div class="hw-item ${hw.done ? 'done' : ''}" onclick="toggleHomework('${hw.id}')">
+                <div class="hw-cb">${hw.done ? '✓' : ''}</div>
+                <div class="hw-info">
+                    <span class="hw-subj" style="background:${colors.bg};color:${colors.color}">${hw.subject}</span>
+                    <div class="hw-title">${hw.title}</div>
+                    <div class="hw-due ${due.cls}">${due.text}${hw.pomodorosUsed > 0 ? ' · 🍅 ×'+hw.pomodorosUsed : ''}</div>
+                </div>
+                <button class="pomo-launch-btn" onclick="event.stopPropagation();startPomodoro('${hw.id}')">🍅 Focus</button>
+            </div>`;
+        });
+    }
+
+    if (complete.length > 0) {
+        html += `<div class="sec-hdr" style="margin-top:14px"><div class="sec-title" style="color:var(--muted)">Completed</div></div>`;
+        complete.forEach(hw => {
+            const colors = SUBJECT_COLORS[hw.subject] || SUBJECT_COLORS.Other;
+            html += `<div class="hw-item done" onclick="toggleHomework('${hw.id}')">
+                <div class="hw-cb">✓</div>
+                <div class="hw-info">
+                    <span class="hw-subj" style="background:${colors.bg};color:${colors.color}">${hw.subject}</span>
+                    <div class="hw-title">${hw.title}</div>
+                    <div class="hw-due">Completed ✓${hw.pomodorosUsed > 0 ? ' · 🍅 ×'+hw.pomodorosUsed : ''}</div>
+                </div>
+            </div>`;
+        });
+    }
+
+    if (state.homework.length === 0) {
+        html += `<div class="empty-state"><div class="empty-ico">📚</div><div class="empty-txt">No assignments yet!</div></div>`;
+    }
+
+    document.getElementById('panel-homework').innerHTML = html;
+
+    // Restore pomodoro widget
+    if (state.pomodoro) {
+        updatePomoDisplay();
+    }
+}
+
+function addHomework() {
+    const title = document.getElementById('hw-title-input')?.value?.trim();
+    const subj  = document.getElementById('hw-subj-select')?.value;
+    const date  = document.getElementById('hw-date-input')?.value;
+    if (!title) {
+        const inp = document.getElementById('hw-title-input');
+        if (inp) { inp.classList.add('shake'); setTimeout(() => inp.classList.remove('shake'), 400); }
+        return;
+    }
+    state.homework.push({ id: uid(), subject: subj || 'Other', title, dueDate: date || addDays(todayStr(),1), done:false, pomodorosUsed:0 });
+    saveState();
+    renderHomeworkPanel();
+}
+
+function toggleHomework(id) {
+    const hw = state.homework.find(h => h.id === id);
+    if (!hw) return;
+    hw.done = !hw.done;
+    if (hw.done) { addPoints(10); playTick(); }
+    else         { subtractPoints(10); }
+    saveState();
+    renderHomeworkPanel();
+    renderDashboard();
+}
+
+// Pomodoro
+function renderPomoWidget() {
+    if (!state.pomodoro) return '';
+    const p = state.pomodoro;
+    const hw = state.homework.find(h => h.id === p.hwId);
+    const R = 51;
+    const C = 2 * Math.PI * R;
+    const pct = p.remaining / p.total;
+    const offset = C * (1 - pct);
+    const mins = String(Math.floor(p.remaining / 60)).padStart(2,'0');
+    const secs = String(p.remaining % 60).padStart(2,'0');
+    const modeLabel = p.mode === 'work' ? 'Focus Time 🎯' : 'Break Time ☕';
+
+    return `
+        <div class="pomo-for">Pomodoro Timer</div>
+        <div class="pomo-subj-lbl">${hw ? hw.title : 'Study Session'}</div>
+        <div class="pomo-ring">
+            <svg viewBox="0 0 120 120">
+                <circle class="r-bg" cx="60" cy="60" r="${R}"/>
+                <circle class="r-fill" id="pomo-ring-fill" cx="60" cy="60" r="${R}"
+                    stroke-dasharray="${C.toFixed(2)}"
+                    stroke-dashoffset="${offset.toFixed(2)}"
+                    stroke="${p.mode === 'work' ? '#F97316' : '#10B981'}"/>
+            </svg>
+            <div class="pomo-time" id="pomo-time-display">${mins}:${secs}</div>
+        </div>
+        <div class="pomo-mode-lbl" id="pomo-mode-lbl">${modeLabel}</div>
+        <div class="pomo-btns">
+            ${p.active
+                ? `<button class="pb pb-pause" onclick="pausePomodoro()">⏸ Pause</button>`
+                : `<button class="pb pb-start" onclick="resumePomodoro()">▶ ${p.remaining === p.total ? 'Start' : 'Resume'}</button>`
+            }
+            <button class="pb pb-reset" onclick="resetPomodoro()">↺ Reset</button>
+        </div>
+    `;
+}
+
+function startPomodoro(hwId) {
+    if (_pomoInterval) clearInterval(_pomoInterval);
+    state.pomodoro = { hwId, mode:'work', remaining:25*60, total:25*60, active:true };
+    saveState();
+    switchTab('homework');
+    startPomoInterval();
+}
+
+function resumePomodoro() {
+    if (!state.pomodoro) return;
+    state.pomodoro.active = true;
+    saveState();
+    startPomoInterval();
+    updatePomoDisplay();
+}
+
+function pausePomodoro() {
+    if (!state.pomodoro) return;
+    state.pomodoro.active = false;
+    clearInterval(_pomoInterval);
+    _pomoInterval = null;
+    saveState();
+    updatePomoDisplay();
+}
+
+function resetPomodoro() {
+    clearInterval(_pomoInterval);
+    _pomoInterval = null;
+    state.pomodoro = null;
+    saveState();
+    renderHomeworkPanel();
+}
+
+function startPomoInterval() {
+    if (_pomoInterval) clearInterval(_pomoInterval);
+    _pomoInterval = setInterval(tickPomo, 1000);
+}
+
+function tickPomo() {
+    if (!state.pomodoro || !state.pomodoro.active) return;
+    state.pomodoro.remaining--;
+
+    if (state.pomodoro.remaining <= 0) {
+        if (state.pomodoro.mode === 'work') {
+            // Work session done
+            const hw = state.homework.find(h => h.id === state.pomodoro.hwId);
+            if (hw) { hw.pomodorosUsed++; addPoints(15); }
+            playDone();
+            state.pomodoro.mode = 'break';
+            state.pomodoro.remaining = 5 * 60;
+            state.pomodoro.total = 5 * 60;
+        } else {
+            // Break done
+            playDone();
+            clearInterval(_pomoInterval);
+            _pomoInterval = null;
+            state.pomodoro.active = false;
+            state.pomodoro.mode = 'work';
+            state.pomodoro.remaining = 25 * 60;
+            state.pomodoro.total = 25 * 60;
+        }
+    }
+
+    saveState();
+    updatePomoDisplay();
+}
+
+function updatePomoDisplay() {
+    if (!state.pomodoro) return;
+    const p = state.pomodoro;
+    const R = 51;
+    const C = 2 * Math.PI * R;
+    const offset = C * (1 - p.remaining / p.total);
+    const mins = String(Math.floor(p.remaining / 60)).padStart(2,'0');
+    const secs = String(p.remaining % 60).padStart(2,'0');
+
+    const widget = document.getElementById('pomo-widget');
+    if (!widget) return;
+    widget.classList.remove('hidden');
+
+    const timeEl = document.getElementById('pomo-time-display');
+    const ringEl = document.getElementById('pomo-ring-fill');
+    const modeEl = document.getElementById('pomo-mode-lbl');
+
+    if (timeEl) timeEl.textContent = mins + ':' + secs;
+    if (ringEl) {
+        ringEl.setAttribute('stroke-dashoffset', offset.toFixed(2));
+        ringEl.setAttribute('stroke', p.mode === 'work' ? '#F97316' : '#10B981');
+    }
+    if (modeEl) modeEl.textContent = p.mode === 'work' ? 'Focus Time 🎯' : 'Break Time ☕';
+
+    // Refresh start/pause button
+    const btns = widget.querySelector('.pomo-btns');
+    if (btns) {
+        const first = btns.firstElementChild;
+        if (p.active) {
+            if (first.classList.contains('pb-start')) {
+                first.className = 'pb pb-pause';
+                first.innerHTML = '⏸ Pause';
+                first.onclick = pausePomodoro;
+            }
+        } else {
+            if (first.classList.contains('pb-pause')) {
+                first.className = 'pb pb-start';
+                first.innerHTML = '▶ Resume';
+                first.onclick = resumePomodoro;
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  KUNG FU PANEL
+// ═══════════════════════════════════════════════════
+let _fcIndex = 0;
+let _fcFlipped = false;
+
+function renderKungFuPanel() {
+    const kf = state.kungfu;
+    const weekDone = kf.practiceLog.filter(l => l.date >= getMondayOfWeek(todayStr())).length;
+
+    let html = `
+        <div class="sec-hdr">
+            <div>
+                <div class="sec-title">🥋 Kung Fu Training</div>
+                <div class="sec-sub">This week: ${weekDone} sessions · keep it up!</div>
+            </div>
+        </div>
+
+        <div class="kf-goals">
+            <div class="kf-goal ${kf.todayPractice ? 'done' : ''}" onclick="toggleKFGoal('practice')">
+                <div class="kf-g-icon">🥋</div>
+                <div class="kf-g-name">Practice</div>
+                <div class="kf-g-sub">${kf.practiceMinutes > 0 ? kf.practiceMinutes + ' min' : 'Log below'}</div>
+            </div>
+            <div class="kf-goal ${kf.todayFlashcards ? 'done' : ''}" onclick="toggleKFGoal('flashcards')">
+                <div class="kf-g-icon">🃏</div>
+                <div class="kf-g-name">Flash Cards</div>
+                <div class="kf-g-sub">Study terms</div>
+            </div>
+            <div class="kf-goal ${kf.todayStudy ? 'done' : ''}" onclick="toggleKFGoal('study')">
+                <div class="kf-g-icon">📖</div>
+                <div class="kf-g-name">Study</div>
+                <div class="kf-g-sub">${kf.studyMinutes > 0 ? kf.studyMinutes + ' min' : '10 min goal'}</div>
+            </div>
+        </div>
+
+        <!-- Practice Log -->
+        <div class="practice-form">
+            <div class="lbl">Log Today's Practice</div>
+            <div class="dur-btns" id="dur-btns">
+                ${[15,30,45,60].map(d =>
+                    `<button class="dur-btn ${kf.selectedDuration === d ? 'selected' : ''}" onclick="selectDuration(${d})">${d} min</button>`
+                ).join('')}
+            </div>
+            <button class="log-btn" onclick="logPractice()">Log Practice Session ✓</button>
+        </div>
+
+        <!-- Flash Cards -->
+        <div class="fc-section">
+            <div class="fc-section-title">Kung Fu Flash Cards</div>
+            <div class="fc-wrap">
+                <div class="fc-card ${_fcFlipped ? 'flipped' : ''}" id="fc-card" onclick="flipCard()">
+                    <div class="fc-front">
+                        <div class="fc-hint">Tap to reveal meaning</div>
+                        <div class="fc-term">${KF_FLASHCARDS[_fcIndex].term}</div>
+                    </div>
+                    <div class="fc-back">
+                        <div class="fc-hint">Meaning</div>
+                        <div class="fc-meaning">${KF_FLASHCARDS[_fcIndex].meaning}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="fc-nav">
+                <button class="fc-btn fc-prev" onclick="prevCard()">← Prev</button>
+                <span class="fc-counter">${_fcIndex + 1} / ${KF_FLASHCARDS.length}</span>
+                <button class="fc-btn fc-flip" onclick="flipCard()">Flip</button>
+                <button class="fc-btn fc-next" onclick="nextCard()">Next →</button>
+            </div>
+        </div>
+
+        <!-- Practice History -->
+        <div class="practice-log-list">
+            <div class="lbl" style="margin-bottom:10px">Recent Sessions</div>
+            ${kf.practiceLog.length === 0
+                ? `<div class="empty-state" style="padding:20px"><div class="empty-ico">🥋</div><div class="empty-txt">No sessions logged yet</div></div>`
+                : kf.practiceLog.slice(-7).reverse().map(l =>
+                    `<div class="log-entry">
+                        <span>🥋</span>
+                        <span style="font-weight:700;color:var(--dark)">${l.duration} min</span>
+                        <span>${formatDate(l.date)}</span>
+                    </div>`
+                ).join('')
+            }
+        </div>
+    `;
+
+    document.getElementById('panel-kungfu').innerHTML = html;
+}
+
+function toggleKFGoal(type) {
+    const kf = state.kungfu;
+    if (type === 'practice')   { kf.todayPractice   = !kf.todayPractice;   if (kf.todayPractice)   { addPoints(10); playTick(); } else subtractPoints(10); }
+    if (type === 'flashcards') { kf.todayFlashcards = !kf.todayFlashcards; if (kf.todayFlashcards) { addPoints(5);  playTick(); } else subtractPoints(5);  }
+    if (type === 'study')      { kf.todayStudy      = !kf.todayStudy;      if (kf.todayStudy)      { addPoints(5);  playTick(); } else subtractPoints(5);  }
+    saveState();
+    renderKungFuPanel();
+}
+
+function selectDuration(d) {
+    state.kungfu.selectedDuration = d;
+    saveState();
+    document.querySelectorAll('.dur-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.textContent.trim() === d + ' min');
+    });
+}
+
+function logPractice() {
+    const dur = state.kungfu.selectedDuration || 30;
+    state.kungfu.practiceLog.push({ date: todayStr(), duration: dur });
+    state.kungfu.todayPractice   = true;
+    state.kungfu.practiceMinutes = dur;
+    addPoints(Math.floor(dur / 10) * 3);
+    playDone();
+    saveState();
+    renderKungFuPanel();
+}
+
+function flipCard() {
+    _fcFlipped = !_fcFlipped;
+    const card = document.getElementById('fc-card');
+    if (card) card.classList.toggle('flipped', _fcFlipped);
+    if (_fcFlipped && !state.kungfu.todayFlashcards) {
+        state.kungfu.todayFlashcards = true;
+        addPoints(5);
+        saveState();
+    }
+}
+
+function prevCard() {
+    _fcIndex = (_fcIndex - 1 + KF_FLASHCARDS.length) % KF_FLASHCARDS.length;
+    _fcFlipped = false;
+    renderKungFuPanel();
+}
+
+function nextCard() {
+    _fcIndex = (_fcIndex + 1) % KF_FLASHCARDS.length;
+    _fcFlipped = false;
+    renderKungFuPanel();
+}
+
+// ═══════════════════════════════════════════════════
+//  GUJARATI PANEL
+// ═══════════════════════════════════════════════════
+let _gujaratiTimerInterval = null;
+
+function renderGujaratiPanel() {
+    const g = state.gujarati;
+    const pct = Math.min(100, (g.todayMinutes / 10) * 100);
+
+    // Try to read from Gujarati module's localStorage
+    tryReadGujaratiProgress();
+
+    const mins = String(Math.floor(g.todayMinutes)).padStart(2,'0');
+    const secs = '00';
+
+    let html = `
+        <div class="sec-hdr">
+            <div>
+                <div class="sec-title">🇮🇳 Gujarati Learning</div>
+                <div class="sec-sub">Phase ${g.phase} · Lesson ${g.lesson} · ${g.todayMinutes} min today</div>
+            </div>
+        </div>
+
+        <div class="guj-stats">
+            <div class="guj-stat">
+                <div class="guj-s-icon">📚</div>
+                <div class="guj-s-val">Phase ${g.phase}</div>
+                <div class="guj-s-lbl">Current Phase</div>
+            </div>
+            <div class="guj-stat">
+                <div class="guj-s-icon">📖</div>
+                <div class="guj-s-val">L${g.lesson}</div>
+                <div class="guj-s-lbl">Current Lesson</div>
+            </div>
+            <div class="guj-stat">
+                <div class="guj-s-icon">⏱️</div>
+                <div class="guj-s-val">${g.todayMinutes}m</div>
+                <div class="guj-s-lbl">Today</div>
+            </div>
+        </div>
+
+        <!-- Study Timer -->
+        <div class="guj-timer-section">
+            <div class="lbl">Study Timer</div>
+            <div class="guj-timer-display" id="guj-timer-display">${mins}:${secs}</div>
+            <div class="pbar" style="margin-bottom:12px">
+                <div class="pbar-fill" style="background:linear-gradient(90deg,#6366F1,#8B5CF6);width:${pct}%"></div>
+            </div>
+            <div style="font-size:0.78em;color:var(--mid);text-align:center;margin-bottom:10px">Daily goal: 10 minutes</div>
+            <div class="guj-timer-btns">
+                <button class="guj-tbtn ${g.timerRunning ? 'gtb-stop' : 'gtb-start'}"
+                    onclick="${g.timerRunning ? 'stopGujaratiTimer()' : 'startGujaratiTimer()'}">
+                    ${g.timerRunning ? '⏹ Stop' : '▶ Start Studying'}
+                </button>
+                <button class="guj-tbtn gtb-reset" onclick="resetGujaratiTimer()">↺</button>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="guj-actions">
+            <a class="guj-action" href="${GUJARATI_MODULE_PATH}?user=krish&tab=learn" target="_blank">
+                <div class="guj-a-icon">📚</div>
+                <div class="guj-a-name">Learn</div>
+                <div class="guj-a-sub">Phase ${g.phase}</div>
+            </a>
+            <a class="guj-action" href="${GUJARATI_MODULE_PATH}?user=krish&tab=quiz" target="_blank">
+                <div class="guj-a-icon">🎯</div>
+                <div class="guj-a-name">Quiz</div>
+                <div class="guj-a-sub">Test yourself</div>
+            </a>
+            <a class="guj-action" href="${GUJARATI_MODULE_PATH}?user=krish&tab=trace" target="_blank">
+                <div class="guj-a-icon">✏️</div>
+                <div class="guj-a-name">Trace</div>
+                <div class="guj-a-sub">Practice writing</div>
+            </a>
+        </div>
+
+        <!-- Phase Progress -->
+        <div class="card-white">
+            <div class="row-between" style="margin-bottom:10px">
+                <span style="font-weight:700;font-size:0.9em">Phase Progress</span>
+                <span style="font-size:0.82em;color:var(--mid)">Phase ${g.phase} of 3</span>
+            </div>
+            ${['Phase 1: Alphabet (48 letters)', 'Phase 2: Numbers & Words', 'Phase 3: Vocabulary & Sentences'].map((ph, i) => {
+                const isActive  = g.phase === i + 1;
+                const isDone    = g.phase > i + 1;
+                return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #F1F5F9;font-size:0.88em">
+                    <span style="font-size:1.2em">${isDone ? '✅' : isActive ? '🔵' : '⭕'}</span>
+                    <span style="font-weight:${isActive ? '700' : '400'};color:${isDone ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--muted)'}">${ph}</span>
+                    ${isActive ? '<span class="chip chip-b" style="margin-left:auto">Active</span>' : ''}
+                </div>`;
+            }).join('')}
+        </div>
+    `;
+
+    document.getElementById('panel-gujarati').innerHTML = html;
+
+    // Resume live timer if running
+    if (g.timerRunning) startGujaratiLiveUpdate();
+}
+
+function tryReadGujaratiProgress() {
+    // Try reading Gujarati module's progress from localStorage
+    const guijKeys = ['gujarati_progress_krish', 'gujarati_krish', 'gujarati_state'];
+    for (const key of guijKeys) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data.currentPhase)  state.gujarati.phase  = data.currentPhase;
+                if (data.currentLesson) state.gujarati.lesson = data.currentLesson;
+                break;
+            }
+        } catch(e) {}
+    }
+}
+
+function startGujaratiTimer() {
+    state.gujarati.timerRunning = true;
+    state.gujarati.timerStart   = Date.now();
+    saveState();
+    renderGujaratiPanel();
+}
+
+function stopGujaratiTimer() {
+    if (state.gujarati.timerRunning && state.gujarati.timerStart) {
+        const elapsed = Math.floor((Date.now() - state.gujarati.timerStart) / 60000);
+        state.gujarati.todayMinutes += elapsed;
+        if (elapsed >= 5) { addPoints(elapsed * 2); playTick(); }
+    }
+    state.gujarati.timerRunning = false;
+    state.gujarati.timerStart   = null;
+    clearInterval(_gujaratiTimerInterval);
+    _gujaratiTimerInterval = null;
+    saveState();
+    renderGujaratiPanel();
+    renderDashboard();
+}
+
+function resetGujaratiTimer() {
+    stopGujaratiTimer();
+    state.gujarati.todayMinutes = 0;
+    state.gujarati.timerRunning = false;
+    state.gujarati.timerStart   = null;
+    saveState();
+    renderGujaratiPanel();
+}
+
+function startGujaratiLiveUpdate() {
+    clearInterval(_gujaratiTimerInterval);
+    _gujaratiTimerInterval = setInterval(() => {
+        if (!state.gujarati.timerRunning || !state.gujarati.timerStart) return;
+        const totalSecs = state.gujarati.todayMinutes * 60 + Math.floor((Date.now() - state.gujarati.timerStart) / 1000);
+        const m = String(Math.floor(totalSecs / 60)).padStart(2,'0');
+        const s = String(totalSecs % 60).padStart(2,'0');
+        const el = document.getElementById('guj-timer-display');
+        if (el) el.textContent = m + ':' + s;
+    }, 1000);
+}
+
+// ═══════════════════════════════════════════════════
+//  CALENDAR PANEL
+// ═══════════════════════════════════════════════════
+function renderCalendarPanel() {
+    const today = todayStr();
+    const events = [...state.calendar.events]
+        .filter(e => e.date >= today)
+        .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+
+    let html = `
+        <div class="sec-hdr"><div class="sec-title">📅 Calendar Events</div></div>
+
+        <div class="cal-add-form">
+            <div class="lbl" style="font-size:1em;font-weight:800;color:var(--dark);margin-bottom:12px">Add Event</div>
+            <div class="form-row">
+                <input class="f-input" id="ev-title" placeholder="Event name..." />
+            </div>
+            <div class="form-row">
+                <input class="f-input" id="ev-date" type="date" value="${today}" min="${today}" />
+                <input class="f-input" id="ev-time" type="time" value="09:00" />
+            </div>
+            <div class="form-row">
+                <select class="f-select" id="ev-type">
+                    ${Object.keys(EVENT_COLORS).map(t => `<option>${t}</option>`).join('')}
+                </select>
+                <button class="btn-add" onclick="addEvent()">+ Add</button>
+            </div>
+        </div>
+    `;
+
+    if (events.length === 0) {
+        html += `<div class="empty-state"><div class="empty-ico">📅</div><div class="empty-txt">No upcoming events</div></div>`;
+    } else {
+        let currentGroup = '';
+        events.forEach(ev => {
+            const isToday = ev.date === today;
+            const group   = isToday ? 'Today' : formatDate(ev.date);
+            if (group !== currentGroup) {
+                html += `<div style="font-size:0.82em;font-weight:800;color:var(--mid);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 7px">${group}</div>`;
+                currentGroup = group;
+            }
+            html += `<div class="event-item">
+                <div class="ev-date-block">
+                    <div class="ev-day">${getDayNum(ev.date)}</div>
+                    <div class="ev-month">${getMonthLabel(ev.date)}</div>
+                </div>
+                <div class="ev-dot" style="background:${ev.color}"></div>
+                <div class="ev-info">
+                    <div class="ev-title">${ev.title}</div>
+                    <div class="ev-time">${ev.type} · ${ev.time}</div>
+                </div>
+                ${isToday ? '<div class="ev-today-badge">TODAY</div>' : ''}
+            </div>`;
+        });
+    }
+
+    document.getElementById('panel-calendar').innerHTML = html;
+}
+
+function addEvent() {
+    const title = document.getElementById('ev-title')?.value?.trim();
+    const date  = document.getElementById('ev-date')?.value;
+    const time  = document.getElementById('ev-time')?.value;
+    const type  = document.getElementById('ev-type')?.value || 'Other';
+    if (!title || !date) {
+        const el = document.getElementById('ev-title');
+        if (el) { el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),400); }
+        return;
+    }
+    const fmt = time ? new Date('2000-01-01T' + time).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '';
+    state.calendar.events.push({ id: uid(), title, date, time: fmt, type, color: EVENT_COLORS[type] || EVENT_COLORS.Other });
+    saveState();
+    renderCalendarPanel();
+    renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+//  HABITS PANEL
+// ═══════════════════════════════════════════════════
+const HABIT_CONFIG = {
+    meditate: { icon:'🧘', name:'Meditate',   goal:'5 out of 7 days',  pts:10 },
+    pullups:  { icon:'💪', name:'Pull-ups',    goal:'5 out of 7 days',  pts:8  },
+    water:    { icon:'💧', name:'Drink Water', goal:'5 out of 7 days',  pts:6  },
+};
+
+function renderHabitsPanel() {
+    const today    = todayStr();
+    const weekDays = getWeekDayGrid();
+    const todayIdx = weekDays.indexOf(today);
+    const dayLabels = ['M','T','W','T','F','S','S'];
+
+    let html = `<div class="sec-hdr"><div>
+        <div class="sec-title">💪 Weekly Habits</div>
+        <div class="sec-sub">Goal: 5 out of 7 days for each habit</div>
+    </div></div>`;
+
+    Object.entries(HABIT_CONFIG).forEach(([key, cfg]) => {
+        const habit = state.habits[key];
+        const weekDone = habit.weekDays.length;
+
+        html += `<div class="habit-card">
+            <div class="habit-hdr">
+                <span class="habit-ico">${cfg.icon}</span>
+                <div class="habit-info">
+                    <div class="habit-name">${cfg.name}</div>
+                    <div class="habit-goal-lbl">${weekDone}/${cfg.goal} · ${cfg.pts}pts/day</div>
+                </div>
+                <div class="streak-chip">🔥 ${habit.streak} days</div>
+            </div>
+
+            <div class="habit-week">
+                ${weekDays.map((d, i) => {
+                    const isDone   = habit.weekDays.includes(d);
+                    const isToday  = d === today;
+                    const isFuture = i > todayIdx && todayIdx !== -1;
+                    return `<div class="hday ${isDone ? 'done' : ''} ${isToday ? 'today' : ''} ${isFuture ? 'future' : ''}"
+                        onclick="toggleHabitDay('${key}','${d}')">
+                        <span class="hday-lbl">${dayLabels[i]}</span>
+                        <span class="hday-chk">${isDone ? '✓' : ''}</span>
+                    </div>`;
+                }).join('')}
+            </div>`;
+
+        // Extra controls per habit
+        if (key === 'pullups') {
+            html += `<div class="habit-counter">
+                <span class="cntr-lbl">Today's count</span>
+                <button class="cntr-btn" onclick="adjustPullups(-1)">−</button>
+                <span class="cntr-val" id="pullups-count">${habit.todayCount || 0}</span>
+                <button class="cntr-btn" onclick="adjustPullups(1)">+</button>
+                <span style="font-size:0.8em;color:var(--mid);margin-left:4px">reps</span>
+            </div>`;
+        }
+        if (key === 'water') {
+            const glasses = habit.todayGlasses || 0;
+            html += `<div class="habit-counter">
+                <span class="cntr-lbl">Glasses today (goal: ${habit.dailyGoal || 8})</span>
+                <button class="cntr-btn" onclick="adjustWater(-1)">−</button>
+                <span class="cntr-val" id="water-count">${glasses}</span>
+                <button class="cntr-btn" onclick="adjustWater(1)">+</button>
+                <span style="font-size:0.8em;color:var(--mid);margin-left:4px">💧</span>
+            </div>`;
+        }
+
+        html += `</div>`;
+    });
+
+    document.getElementById('panel-habits').innerHTML = html;
+}
+
+function toggleHabitDay(key, dateStr) {
+    const habit = state.habits[key];
+    const cfg   = HABIT_CONFIG[key];
+    const idx   = habit.weekDays.indexOf(dateStr);
+    if (idx === -1) {
+        habit.weekDays.push(dateStr);
+        if (dateStr === todayStr()) { habit.todayDone = true; }
+        habit.streak = calcStreak(habit.weekDays);
+        addPoints(cfg.pts); playTick();
+    } else {
+        habit.weekDays.splice(idx, 1);
+        if (dateStr === todayStr()) { habit.todayDone = false; }
+        habit.streak = calcStreak(habit.weekDays);
+        subtractPoints(cfg.pts);
+    }
+    saveState();
+    renderHabitsPanel();
+    renderDashboard();
+}
+
+function calcStreak(weekDays) {
+    // Simple streak: how many consecutive days ending today
+    let streak = 0;
+    let d = todayStr();
+    while (weekDays.includes(d)) {
+        streak++;
+        d = addDays(d, -1);
+    }
+    return streak;
+}
+
+function adjustPullups(delta) {
+    const h = state.habits.pullups;
+    h.todayCount = Math.max(0, (h.todayCount || 0) + delta);
+    if (h.todayCount >= 10 && !h.weekDays.includes(todayStr())) {
+        toggleHabitDay('pullups', todayStr());
+        return;
+    }
+    saveState();
+    const el = document.getElementById('pullups-count');
+    if (el) { el.textContent = h.todayCount; el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),300); }
+}
+
+function adjustWater(delta) {
+    const h = state.habits.water;
+    h.todayGlasses = Math.max(0, (h.todayGlasses || 0) + delta);
+    const goal = h.dailyGoal || 8;
+    if (h.todayGlasses >= goal && !h.weekDays.includes(todayStr())) {
+        toggleHabitDay('water', todayStr());
+        return;
+    }
+    saveState();
+    const el = document.getElementById('water-count');
+    if (el) { el.textContent = h.todayGlasses; el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),300); }
+}
+
+// ═══════════════════════════════════════════════════
+//  MOOD PANEL
+// ═══════════════════════════════════════════════════
+function renderMoodPanel() {
+    const current = state.mood.today;
+    const history = state.mood.history.slice(-7).reverse();
+    const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    let html = `
+        <div class="mood-q">How are you feeling today? ${current ? MOODS.find(m=>m.key===current)?.emoji || '' : ''}</div>
+        <div class="mood-grid">
+            ${MOODS.map(m =>
+                `<div class="mood-opt ${current === m.key ? 'selected' : ''}" onclick="setMood('${m.key}')">
+                    <div class="mood-em">${m.emoji}</div>
+                    <div class="mood-lbl">${m.label}</div>
+                </div>`
+            ).join('')}
+        </div>
+    `;
+
+    if (history.length > 0) {
+        html += `<div class="mood-history">
+            <div class="mood-h-title">Last 7 Days</div>
+            <div class="mood-h-row">
+                ${history.map(h => {
+                    const d = new Date(h.date + 'T12:00:00');
+                    return `<div class="mood-h-item">
+                        <div class="mood-h-em">${h.emoji}</div>
+                        <div class="mood-h-day">${dayLabels[d.getDay()]}</div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    document.getElementById('panel-mood').innerHTML = html;
+}
+
+function setMood(key) {
+    const mood = MOODS.find(m => m.key === key);
+    if (!mood) return;
+
+    // Add 5 pts for logging mood (only once per day)
+    if (!state.mood.today) addPoints(5);
+    state.mood.today = key;
+
+    // Update history (replace today's entry if it exists)
+    const today = todayStr();
+    const idx = state.mood.history.findIndex(h => h.date === today);
+    const entry = { date: today, mood: key, emoji: mood.emoji };
+    if (idx === -1) state.mood.history.push(entry);
+    else state.mood.history[idx] = entry;
+
+    saveState();
+    playTick();
+    renderMoodPanel();
+    renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+//  POINTS PANEL
+// ═══════════════════════════════════════════════════
+function renderPointsPanel() {
+    const pts   = state.points;
+    const tier  = getTier(pts.month);
+    const next  = getNextTier(pts.month);
+    const nextMin = next ? next.min : tier.min;
+    const pct   = next ? Math.min(100, ((pts.month - tier.min) / (nextMin - tier.min)) * 100) : 100;
+
+    let html = `
+        <div class="pts-tier-card" data-icon="${tier.icon}">
+            <div class="tier-icon-big">${tier.icon}</div>
+            <div class="tier-name-big">${tier.name}</div>
+            <div class="tier-pts-sub">${pts.month} pts this month</div>
+        </div>
+
+        <div class="pts-stats-row">
+            <div class="pts-stat">
+                <div class="pts-stat-val">${pts.today}</div>
+                <div class="pts-stat-lbl">Today</div>
+            </div>
+            <div class="pts-stat">
+                <div class="pts-stat-val">${pts.week}</div>
+                <div class="pts-stat-lbl">This Week</div>
+            </div>
+            <div class="pts-stat">
+                <div class="pts-stat-val">${pts.total}</div>
+                <div class="pts-stat-lbl">All Time</div>
+            </div>
+        </div>
+    `;
+
+    if (next) {
+        html += `<div class="next-tier-card">
+            <div class="nt-label">
+                <span>${tier.icon} ${tier.name}</span>
+                <span>${next.icon} ${next.name} at ${next.min} pts</span>
+            </div>
+            <div class="pbar"><div class="pbar-fill" style="width:${pct.toFixed(0)}%"></div></div>
+            <div style="text-align:center;font-size:0.8em;color:var(--mid);margin-top:8px">
+                ${next.min - pts.month} pts to go!
+            </div>
+        </div>`;
+    } else {
+        html += `<div class="next-tier-card" style="text-align:center;padding:20px">
+            <div style="font-size:2em;margin-bottom:8px">🦁</div>
+            <div style="font-weight:800;font-size:1.1em">You're a Legend!</div>
+            <div style="color:var(--mid);font-size:0.88em;margin-top:4px">Maximum tier reached — amazing work!</div>
+        </div>`;
+    }
+
+    html += `
+        <div class="pts-how-to">
+            <div style="font-size:0.9em;font-weight:800;color:var(--dark);margin-bottom:10px">How to Earn Points</div>
+            ${[
+                ['Chore (each)',    '+3–10 pts'],
+                ['Homework done',   '+10 pts'],
+                ['Pomodoro session','+15 pts'],
+                ['Kung Fu practice','+6–18 pts'],
+                ['Flash cards',     '+5 pts'],
+                ['Gujarati (per 2min)', '+2 pts'],
+                ['Habit day',       '+6–10 pts'],
+                ['Log mood',        '+5 pts'],
+            ].map(([what, pts]) =>
+                `<div class="how-row"><span>${what}</span><span class="how-pts">${pts}</span></div>`
+            ).join('')}
+        </div>
+    `;
+
+    document.getElementById('panel-points').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+function init() {
+    loadState();
+    renderDashboard();
+
+    // If Pomodoro was active from a previous session, restore interval
+    if (state.pomodoro && state.pomodoro.active) {
+        startPomoInterval();
+    }
+
+    // If Gujarati timer was running, mark as stopped (page reload)
+    if (state.gujarati.timerRunning) {
+        stopGujaratiTimer();
+    }
+}
+
+// Home Assistant integration helper (called from HA webhook)
+window.haUpdateChores = function(choreData) {
+    if (!choreData || !choreData.morning) return;
+    state.chores = choreData;
+    saveState();
+    renderDashboard();
+};
+
+window.haUpdateCalendar = function(events) {
+    if (!Array.isArray(events)) return;
+    state.calendar.events = events;
+    saveState();
+    renderDashboard();
+};
+
+init();
+</script>
+</body>
+</html>
