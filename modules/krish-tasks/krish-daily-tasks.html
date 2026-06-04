@@ -475,14 +475,14 @@
 
         /* ── MOOD ────────────────────────────────── */
         .mood-q { text-align:center; font-size:1.2em; font-weight:800; color:var(--dark); margin-bottom:18px; }
-        .mood-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:9px; margin-bottom:18px; }
+        .mood-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin-bottom:18px; }
         .mood-opt {
             aspect-ratio:1; border-radius:var(--radius);
             border:3px solid #E2E8F0;
             display:flex; flex-direction:column;
             align-items:center; justify-content:center;
             cursor:pointer; transition:var(--t);
-            background:white; padding:6px;
+            background:white; padding:4px;
         }
         .mood-opt:active { transform:scale(0.94); }
         .mood-opt.selected { border-color:var(--primary); background:#EEF2FF; transform:scale(1.04); }
@@ -865,7 +865,7 @@
 
         <!-- COL 1: CHORES (interactive list) -->
         <div class="db-card" id="db-chores-card">
-            <div class="db-card-hdr">
+            <div class="db-card-hdr" onclick="showBoard('chores')" style="cursor:pointer">
                 <span class="db-card-ico">✅</span>
                 <span class="db-ct">Chores</span>
                 <span class="db-cs" id="db-chores-summary"></span>
@@ -878,7 +878,7 @@
         <!-- COL 2: HOMEWORK + CALENDAR (stacked) -->
         <div class="db-col2">
             <div class="db-card" id="db-hw-card">
-                <div class="db-card-hdr">
+                <div class="db-card-hdr" onclick="showBoard('homework')" style="cursor:pointer">
                     <span class="db-card-ico">📚</span>
                     <span class="db-ct">Homework</span>
                     <span class="db-cs" id="db-hw-summary"></span>
@@ -889,7 +889,7 @@
             </div>
 
             <div class="db-card" id="db-cal-card">
-                <div class="db-card-hdr">
+                <div class="db-card-hdr" onclick="showBoard('calendar')" style="cursor:pointer">
                     <span class="db-card-ico">📅</span>
                     <span class="db-ct">Calendar</span>
                     <button class="db-expand" onclick="showBoard('calendar')">Add ↗</button>
@@ -898,7 +898,7 @@
             </div>
 
             <div class="db-card" id="db-kf-card">
-                <div class="db-card-hdr">
+                <div class="db-card-hdr" onclick="showBoard('kungfu')" style="cursor:pointer">
                     <span class="db-card-ico">🥋</span>
                     <span class="db-ct">Kung Fu</span>
                     <span class="db-cs" id="db-kf-summary"></span>
@@ -910,7 +910,7 @@
 
         <!-- COL 3: HABITS (full interactive) -->
         <div class="db-card" id="db-habits-card">
-            <div class="db-card-hdr">
+            <div class="db-card-hdr" onclick="showBoard('habits')" style="cursor:pointer">
                 <span class="db-card-ico">💪</span>
                 <span class="db-ct">Weekly Habits</span>
                 <span class="db-cs" id="db-habits-summary"></span>
@@ -922,15 +922,16 @@
         <!-- COL 4: MOOD + GUJARATI + POINTS (stacked) -->
         <div class="db-side">
             <div class="db-card" id="db-mood-card">
-                <div class="db-card-hdr">
+                <div class="db-card-hdr" onclick="showBoard('mood')" style="cursor:pointer">
                     <span class="db-card-ico">😊</span>
                     <span class="db-ct">Today's Mood</span>
+                    <button class="db-expand" onclick="showBoard('mood')">Log ↗</button>
                 </div>
                 <div id="db-mood-content"></div>
             </div>
 
             <div class="db-card" id="db-guj-card">
-                <div class="db-card-hdr">
+                <div class="db-card-hdr" onclick="showBoard('gujarati')" style="cursor:pointer">
                     <span class="db-card-ico">🇮🇳</span>
                     <span class="db-ct">Gujarati</span>
                     <button class="db-expand" onclick="showBoard('gujarati')">Timer ↗</button>
@@ -2542,7 +2543,7 @@ function renderHabitsPanel() {
         if (key === 'water') {
             const glasses = habit.todayGlasses || 0;
             html += `<div class="habit-counter">
-                <span class="cntr-lbl">Glasses today (goal: ${habit.dailyGoal || 8})</span>
+                <span class="cntr-lbl">Glasses (goal: ${habit.dailyGoal||8})</span>
                 <button class="cntr-btn" onclick="adjustWater(-1)">−</button>
                 <span class="cntr-val" id="water-count">${glasses}</span>
                 <button class="cntr-btn" onclick="adjustWater(1)">+</button>
