@@ -553,18 +553,253 @@
         .slide-up { animation:slideUp 0.25s ease; }
         .shake { animation:shake 0.35s ease; }
 
-        /* ── RESPONSIVE ──────────────────────────── */
-        @media (max-width: 380px) {
-            .dash-greeting h1 { font-size:1.5em; }
-            .dash-grid { gap:8px; padding:10px; }
-            .mood-em { font-size:1.7em; }
-            .kf-goals { grid-template-columns:1fr 1fr 1fr; gap:7px; }
-        }
+        /* ── BOARD RESPONSIVE ───────────────────────── */
         @media (min-width: 580px) {
-            .dash-grid { max-width:680px; margin:0 auto; }
-            .b-panel { max-width:680px; margin:0 auto; }
-            .board-hdr, .board-tabs { max-width:100%; }
+            .b-panel { max-width:780px; margin:0 auto; }
         }
+
+        /* ════════════════════════════════════════════
+           BENTO DASHBOARD
+           ════════════════════════════════════════════ */
+        .dash-bento {
+            padding: 14px;
+            display: grid;
+            gap: 12px;
+            align-items: start;
+            grid-template-columns: 1fr 1fr;   /* mobile: 2-col */
+        }
+
+        /* ≥ 960px: 4-column bento */
+        @media (min-width: 960px) {
+            .dash-bento {
+                grid-template-columns: 1.35fr 1fr 1.15fr 0.82fr;
+                grid-template-rows: auto;
+            }
+            .db-col2 { display:flex; flex-direction:column; gap:12px; }
+            .db-side { display:flex; flex-direction:column; gap:12px; }
+        }
+
+        /* mobile: col2 and side children flow into grid */
+        @media (max-width: 959px) {
+            .db-col2, .db-side { display:contents; }
+            .db-card { max-height:340px; overflow-y:auto; }
+        }
+        @media (max-width: 480px) {
+            .dash-bento { grid-template-columns:1fr; }
+        }
+
+        /* ── DB CARD BASE ──────────────────────────── */
+        .db-card {
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.14);
+            position: relative;
+        }
+
+        .db-card-hdr {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 14px 10px;
+            border-bottom: 2px solid #F1F5F9;
+            flex-shrink: 0;
+        }
+        .db-card-ico { font-size:1.25em; flex-shrink:0; }
+        .db-ct { font-size:0.97em; font-weight:800; color:#1E293B; flex:1; white-space:nowrap; }
+        .db-cs { font-size:0.75em; font-weight:600; color:#64748B; white-space:nowrap; }
+
+        .db-expand {
+            background: #EEF2FF; border: none; border-radius:8px;
+            padding: 5px 10px; font-size:0.72em; font-weight:700;
+            color: #4F46E5; cursor:pointer; transition:var(--t); white-space:nowrap;
+        }
+        .db-expand:hover  { background:#E0E7FF; }
+        .db-expand:active { transform:scale(0.95); }
+
+        /* thin progress strip under header */
+        .db-pbar-wrap { background:#F1F5F9; height:4px; }
+        .db-pbar-fill { height:100%; background:linear-gradient(90deg,#6366F1,#10B981); transition:width 0.5s ease; }
+
+        /* ── CHORES ────────────────────────────────── */
+        .db-blk-hdr {
+            display:flex; align-items:center; gap:6px;
+            padding: 7px 14px 5px;
+            font-size:0.72em; font-weight:800;
+            text-transform:uppercase; letter-spacing:0.5px;
+        }
+        .db-blk-hdr.morning   { background:#FEF9C3; color:#713F12; }
+        .db-blk-hdr.afternoon { background:#DBEAFE; color:#1E3A8A; }
+        .db-blk-hdr.evening   { background:#EDE9FE; color:#3B0764; }
+        .db-blk-pts { margin-left:auto; opacity:0.8; }
+
+        .db-chore-row {
+            display:flex; align-items:center; gap:10px;
+            padding: 9px 14px;
+            border-bottom: 1px solid #F8FAFC;
+            cursor:pointer; min-height:44px; user-select:none;
+            transition:background 0.12s;
+        }
+        .db-chore-row:active { background:#F8FAFC; }
+        .db-chore-row.done .db-cl { text-decoration:line-through; color:#94A3B8; }
+        .db-cb {
+            width:24px; height:24px; border-radius:50%;
+            border:2.5px solid #CBD5E1;
+            display:flex; align-items:center; justify-content:center;
+            font-size:0.8em; flex-shrink:0; transition:var(--t);
+        }
+        .db-chore-row.done .db-cb { background:#10B981; border-color:#10B981; color:white; }
+        .db-ci { font-size:1.15em; }
+        .db-cl { flex:1; font-size:0.9em; font-weight:600; color:#1E293B; }
+        .db-cp { font-size:0.7em; font-weight:700; color:#D97706; background:#FEF3C7; padding:2px 7px; border-radius:20px; flex-shrink:0; }
+
+        /* ── HOMEWORK ──────────────────────────────── */
+        .db-hw-row {
+            display:flex; align-items:flex-start; gap:10px;
+            padding:10px 14px; border-bottom:1px solid #F8FAFC;
+            cursor:pointer; transition:background 0.12s; min-height:46px;
+        }
+        .db-hw-row:active { background:#F8FAFC; }
+        .db-hw-cb {
+            width:22px; height:22px; border-radius:6px;
+            border:2.5px solid #CBD5E1; flex-shrink:0; margin-top:3px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:0.78em; transition:var(--t);
+        }
+        .db-hw-row.done .db-hw-cb { background:#10B981; border-color:#10B981; color:white; }
+        .db-hw-info { flex:1; min-width:0; }
+        .db-hw-subj { display:inline-block; padding:1px 7px; border-radius:20px; font-size:0.68em; font-weight:700; margin-bottom:2px; }
+        .db-hw-title { font-size:0.87em; font-weight:700; color:#1E293B; }
+        .db-hw-row.done .db-hw-title { text-decoration:line-through; color:#94A3B8; }
+        .db-hw-due  { font-size:0.7em; color:#64748B; margin-top:2px; }
+        .db-hw-due.urgent  { color:#EF4444; font-weight:700; }
+        .db-hw-due.warning { color:#F97316; font-weight:700; }
+        .db-pomo-launch {
+            background:#FFF7ED; border:1.5px solid #FED7AA; border-radius:8px;
+            padding:5px 9px; font-size:0.72em; font-weight:700; color:#C2410C;
+            cursor:pointer; flex-shrink:0; transition:var(--t); align-self:center;
+        }
+        .db-pomo-launch:active { transform:scale(0.93); }
+        .db-add-row { padding:9px 14px; border-top:1px solid #F1F5F9; }
+
+        /* ── MINI POMODORO ─────────────────────────── */
+        .db-pomo-mini {
+            background:linear-gradient(135deg,#1E293B,#334155);
+            color:white; padding:11px 14px;
+            display:flex; align-items:center; gap:12px;
+        }
+        .db-pomo-mini.hidden-pomo { display:none; }
+        .db-pomo-info  { flex:1; min-width:0; }
+        .db-pomo-label { font-size:0.65em; color:#94A3B8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+        .db-pomo-subj  { font-size:0.82em; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .db-pomo-mode  { font-size:0.65em; color:#94A3B8; margin-top:1px; }
+        .db-pomo-time  { font-size:1.55em; font-weight:800; color:#F97316; font-variant-numeric:tabular-nums; flex-shrink:0; }
+        .db-pomo-ctrl  { display:flex; gap:5px; flex-shrink:0; }
+        .db-pmb { padding:5px 11px; border:none; border-radius:8px; font-weight:700; font-size:0.8em; cursor:pointer; transition:var(--t); }
+        .db-pmb:active { transform:scale(0.94); }
+        .db-pmb-p { background:#F59E0B; color:white; }
+        .db-pmb-r { background:#374151; color:#9CA3AF; }
+
+        /* ── HABITS ────────────────────────────────── */
+        .db-habit-block { padding:11px 14px; border-bottom:1px solid #F8FAFC; }
+        .db-habit-top { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+        .db-h-ico  { font-size:1.45em; flex-shrink:0; }
+        .db-h-meta { flex:1; min-width:0; }
+        .db-h-name { font-size:0.9em; font-weight:700; color:#1E293B; }
+        .db-h-sub  { font-size:0.68em; color:#64748B; }
+        .db-h-streak { font-size:0.7em; font-weight:700; background:#FEF3C7; color:#78350F; padding:2px 8px; border-radius:20px; flex-shrink:0; }
+        .db-h-today-btn {
+            padding:5px 11px; border-radius:8px;
+            border:2px solid #E2E8F0; background:white;
+            font-size:0.75em; font-weight:700; color:#475569;
+            cursor:pointer; transition:var(--t); flex-shrink:0;
+        }
+        .db-h-today-btn.done { background:#DCFCE7; border-color:#10B981; color:#166534; }
+        .db-h-today-btn:active { transform:scale(0.94); }
+
+        .db-week-row { display:flex; gap:4px; margin-bottom:6px; }
+        .db-hd {
+            flex:1; height:28px; border-radius:6px;
+            border:2px solid #E2E8F0; background:#F8FAFC;
+            display:flex; align-items:center; justify-content:center;
+            font-size:0.67em; font-weight:700; color:#94A3B8;
+            cursor:pointer; transition:var(--t);
+        }
+        .db-hd.done   { background:#10B981; border-color:#10B981; color:white; }
+        .db-hd.today  { border-color:#6366F1; color:#6366F1; }
+        .db-hd.today.done { border-color:#10B981; color:white; }
+        .db-hd.future { opacity:0.28; pointer-events:none; }
+
+        .db-h-counter { display:flex; align-items:center; gap:7px; }
+        .db-h-cntr-lbl { flex:1; font-size:0.75em; color:#64748B; font-weight:600; }
+        .db-cntr-btn {
+            width:30px; height:30px; border:2px solid #E2E8F0; background:white;
+            border-radius:7px; font-size:1.1em; cursor:pointer; font-weight:700;
+            display:flex; align-items:center; justify-content:center; transition:var(--t);
+        }
+        .db-cntr-btn:active { background:#F1F5F9; transform:scale(0.93); }
+        .db-cntr-val { font-size:1.05em; font-weight:800; color:#1E293B; min-width:26px; text-align:center; }
+
+        /* ── MOOD ──────────────────────────────────── */
+        .db-mood-row { display:flex; gap:5px; padding:11px 13px 7px; }
+        .db-mood-btn {
+            flex:1; border:3px solid #E2E8F0; background:white;
+            border-radius:12px; padding:8px 3px;
+            display:flex; flex-direction:column; align-items:center; gap:3px;
+            cursor:pointer; transition:var(--t);
+        }
+        .db-mood-btn:active { transform:scale(0.93); }
+        .db-mood-btn.selected { border-color:#6366F1; background:#EEF2FF; transform:scale(1.05); }
+        .db-me { font-size:1.45em; }
+        .db-ml { font-size:0.6em; font-weight:700; color:#64748B; text-align:center; line-height:1.2; }
+        .db-mood-btn.selected .db-ml { color:#4F46E5; }
+        .db-mood-hist { display:flex; padding:5px 13px 11px; gap:5px; }
+        .db-mh-item { flex:1; text-align:center; }
+        .db-mh-em  { font-size:1.15em; }
+        .db-mh-day { font-size:0.58em; color:#94A3B8; font-weight:700; }
+        .db-mood-set { padding:0 13px 10px; font-size:0.75em; color:#94A3B8; text-align:center; }
+
+        /* ── GUJARATI ──────────────────────────────── */
+        .db-guj-info { display:flex; align-items:center; gap:10px; padding:10px 14px 7px; }
+        .db-guj-phase { font-size:1.1em; font-weight:800; color:#6366F1; }
+        .db-guj-subtext { font-size:0.75em; color:#64748B; margin-top:2px; }
+        .db-guj-pbar { margin:0 14px 4px; background:#F1F5F9; border-radius:6px; height:5px; overflow:hidden; }
+        .db-guj-pfill { height:100%; background:linear-gradient(90deg,#6366F1,#8B5CF6); border-radius:6px; transition:width 0.4s; }
+        .db-guj-plbl { text-align:center; font-size:0.68em; color:#64748B; margin-bottom:9px; }
+        .db-guj-acts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; padding:0 12px 12px; }
+        .db-guj-btn {
+            background:#F8FAFC; border:2px solid #E2E8F0; border-radius:10px;
+            padding:9px 5px; text-align:center; cursor:pointer;
+            text-decoration:none; display:block; transition:var(--t);
+        }
+        .db-guj-btn:hover  { border-color:#6366F1; background:#EEF2FF; }
+        .db-guj-btn:active { transform:scale(0.95); }
+        .db-guj-bi { font-size:1.4em; display:block; }
+        .db-guj-bl { font-size:0.68em; font-weight:700; color:#1E293B; margin-top:3px; }
+
+        /* ── POINTS ────────────────────────────────── */
+        .db-pts-inner  { padding:12px 14px; }
+        .db-pts-tier   { display:flex; align-items:center; gap:9px; margin-bottom:9px; }
+        .db-pts-t-ico  { font-size:1.9em; }
+        .db-pts-t-name { font-size:0.95em; font-weight:800; color:#1E293B; }
+        .db-pts-t-sub  { font-size:0.72em; color:#64748B; }
+        .db-pts-row    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-bottom:9px; }
+        .db-pts-stat   { text-align:center; background:#F8FAFC; border-radius:9px; padding:7px 4px; }
+        .db-pts-val    { font-size:1em; font-weight:800; color:#1E293B; }
+        .db-pts-lbl    { font-size:0.62em; color:#64748B; font-weight:600; }
+        .db-pts-bar    { background:#E2E8F0; border-radius:8px; height:6px; overflow:hidden; }
+        .db-pts-bfill  { height:100%; background:linear-gradient(90deg,#6366F1,#8B5CF6); border-radius:8px; transition:width 0.5s; }
+        .db-pts-next-lbl { display:flex; justify-content:space-between; font-size:0.7em; font-weight:700; color:#64748B; margin-bottom:4px; }
+        .db-pts-card   { cursor:pointer; }
+        .db-pts-card:hover { box-shadow:0 4px 24px rgba(99,102,241,0.22); }
+
+        /* ── CALENDAR (dashboard) ──────────────────── */
+        .db-ev-row { display:flex; align-items:center; gap:9px; padding:8px 14px; border-bottom:1px solid #F8FAFC; }
+        .db-ev-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+        .db-ev-info { flex:1; min-width:0; }
+        .db-ev-title { font-size:0.85em; font-weight:700; color:#1E293B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .db-ev-when  { font-size:0.68em; color:#64748B; }
+        .db-today-tag { background:#6366F1; color:white; font-size:0.6em; font-weight:800; padding:1px 6px; border-radius:10px; flex-shrink:0; }
     </style>
 </head>
 <body>
@@ -594,72 +829,81 @@
         </div>
     </header>
 
-    <div class="dash-grid">
+    <!-- ══ BENTO GRID ══ -->
+    <div class="dash-bento">
 
-        <!-- Chores -->
-        <div class="dash-card dc-chores" onclick="showBoard('chores')">
-            <div class="card-tag">Chores</div>
-            <div class="card-icon">✅</div>
-            <div class="card-val" id="dc-chores-val">0 / 0</div>
-            <div class="card-sub" id="dc-chores-sub">done today</div>
-            <div class="card-bar">
-                <div class="card-bar-fill" id="dc-chores-bar" style="width:0%;background:linear-gradient(90deg,#F59E0B,#EF4444)"></div>
+        <!-- COL 1: CHORES (interactive list) -->
+        <div class="db-card" id="db-chores-card">
+            <div class="db-card-hdr">
+                <span class="db-card-ico">✅</span>
+                <span class="db-ct">Chores</span>
+                <span class="db-cs" id="db-chores-summary"></span>
+                <button class="db-expand" onclick="showBoard('chores')">Full View ↗</button>
+            </div>
+            <div class="db-pbar-wrap"><div class="db-pbar-fill" id="db-chores-bar" style="width:0%"></div></div>
+            <div id="db-chores-content"></div>
+        </div>
+
+        <!-- COL 2: HOMEWORK + CALENDAR (stacked) -->
+        <div class="db-col2">
+            <div class="db-card" id="db-hw-card">
+                <div class="db-card-hdr">
+                    <span class="db-card-ico">📚</span>
+                    <span class="db-ct">Homework</span>
+                    <span class="db-cs" id="db-hw-summary"></span>
+                    <button class="db-expand" onclick="showBoard('homework')">Add ↗</button>
+                </div>
+                <div class="db-pomo-mini hidden-pomo" id="db-pomo-mini"></div>
+                <div id="db-hw-content"></div>
+            </div>
+
+            <div class="db-card" id="db-cal-card">
+                <div class="db-card-hdr">
+                    <span class="db-card-ico">📅</span>
+                    <span class="db-ct">Calendar</span>
+                    <button class="db-expand" onclick="showBoard('calendar')">Add ↗</button>
+                </div>
+                <div id="db-cal-content"></div>
             </div>
         </div>
 
-        <!-- Points -->
-        <div class="dash-card dc-points" onclick="showBoard('points')">
-            <div class="card-tag">Points</div>
-            <div class="card-icon">⭐</div>
-            <div class="card-val" id="dc-pts-val">0 pts</div>
-            <div class="card-sub" id="dc-pts-tier">Beginner 🌱</div>
-            <div class="card-bar">
-                <div class="card-bar-fill" id="dc-pts-bar" style="width:0%;background:linear-gradient(90deg,#F59E0B,#FBBF24)"></div>
+        <!-- COL 3: HABITS (full interactive) -->
+        <div class="db-card" id="db-habits-card">
+            <div class="db-card-hdr">
+                <span class="db-card-ico">💪</span>
+                <span class="db-ct">Weekly Habits</span>
+                <span class="db-cs" id="db-habits-summary"></span>
+                <button class="db-expand" onclick="showBoard('habits')">Details ↗</button>
             </div>
+            <div id="db-habits-content"></div>
         </div>
 
-        <!-- Homework -->
-        <div class="dash-card dc-hw" onclick="showBoard('homework')">
-            <div class="card-tag">Homework</div>
-            <div class="card-icon">📚</div>
-            <div class="card-val" id="dc-hw-val">0 tasks</div>
-            <div class="card-sub" id="dc-hw-sub">all done!</div>
-        </div>
-
-        <!-- Gujarati -->
-        <div class="dash-card dc-guj" onclick="showBoard('gujarati')">
-            <div class="card-tag">Gujarati</div>
-            <div class="card-icon">🇮🇳</div>
-            <div class="card-val" id="dc-guj-val">P1 L1</div>
-            <div class="card-sub" id="dc-guj-sub">0 / 10 min today</div>
-            <div class="card-bar">
-                <div class="card-bar-fill" id="dc-guj-bar" style="width:0%;background:linear-gradient(90deg,#6366F1,#8B5CF6)"></div>
+        <!-- COL 4: MOOD + GUJARATI + POINTS (stacked) -->
+        <div class="db-side">
+            <div class="db-card" id="db-mood-card">
+                <div class="db-card-hdr">
+                    <span class="db-card-ico">😊</span>
+                    <span class="db-ct">Today's Mood</span>
+                </div>
+                <div id="db-mood-content"></div>
             </div>
-        </div>
 
-        <!-- Calendar -->
-        <div class="dash-card dc-cal" onclick="showBoard('calendar')">
-            <div class="card-tag">Calendar</div>
-            <div class="card-icon">📅</div>
-            <div class="card-val" id="dc-cal-val">0 events</div>
-            <div class="card-sub" id="dc-cal-sub">coming up</div>
-        </div>
+            <div class="db-card" id="db-guj-card">
+                <div class="db-card-hdr">
+                    <span class="db-card-ico">🇮🇳</span>
+                    <span class="db-ct">Gujarati</span>
+                    <button class="db-expand" onclick="showBoard('gujarati')">Timer ↗</button>
+                </div>
+                <div id="db-guj-content"></div>
+            </div>
 
-        <!-- Habits -->
-        <div class="dash-card dc-habits" onclick="showBoard('habits')">
-            <div class="card-tag">Habits</div>
-            <div class="card-icon">💪</div>
-            <div class="card-val" id="dc-habits-val">0 / 3</div>
-            <div class="card-sub" id="dc-habits-sub">done today</div>
-        </div>
-
-        <!-- Mood (full width) -->
-        <div class="dash-card dc-mood" onclick="showBoard('mood')">
-            <div class="mood-emoji-big" id="dc-mood-em">🤔</div>
-            <div class="mood-card-info">
-                <div class="card-tag">Today's Mood</div>
-                <div class="card-val" id="dc-mood-val">Not set yet</div>
-                <div class="card-sub">Tap to log how you're feeling</div>
+            <div class="db-card db-pts-card" id="db-pts-card" onclick="showBoard('points')">
+                <div class="db-card-hdr">
+                    <span class="db-card-ico">⭐</span>
+                    <span class="db-ct">Points</span>
+                    <span class="db-cs" id="db-pts-hdr-sub"></span>
+                </div>
+                <div id="db-pts-content"></div>
             </div>
         </div>
 
@@ -1103,62 +1347,325 @@ function playDone() {
 }
 
 // ═══════════════════════════════════════════════════
-//  DASHBOARD RENDER
+//  DASHBOARD RENDER — BENTO
 // ═══════════════════════════════════════════════════
 function renderDashboard() {
-    const today = new Date();
-    const greeting = today.getHours() < 12 ? 'Good morning' : today.getHours() < 17 ? 'Good afternoon' : 'Good evening';
-    document.getElementById('greeting-text').textContent = greeting + ', Krish! 👋';
-    document.getElementById('date-display').textContent = today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+    const now = new Date();
+    const hr = now.getHours();
+    const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+    const gEl = document.getElementById('greeting-text');
+    if (gEl) gEl.textContent = greeting + ', Krish! 👋';
+    const dEl = document.getElementById('date-display');
+    if (dEl) dEl.textContent = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
 
     const all  = allChoresCount();
     const done = doneChoresCount();
-    const chorePct = all.length ? (done / all.length) * 100 : 0;
-    const choresPts = all.filter(c => c.done).reduce((s, c) => s + c.pts, 0);
+    const hEl = document.getElementById('hdr-pts');
+    if (hEl) hEl.textContent = state.points.today;
+    const bEl = document.getElementById('daily-bar');
+    if (bEl) bEl.style.width = Math.min(100, (state.points.today / DAILY_GOAL_PTS) * 100) + '%';
+    const blEl = document.getElementById('daily-bar-left');
+    if (blEl) blEl.textContent = done + ' / ' + all.length + ' chores done';
+    const brEl = document.getElementById('daily-bar-right');
+    if (brEl) brEl.textContent = 'Goal: ' + DAILY_GOAL_PTS + ' pts';
 
-    document.getElementById('hdr-pts').textContent = state.points.today;
-    document.getElementById('daily-bar').style.width = Math.min(100, (state.points.today / DAILY_GOAL_PTS) * 100) + '%';
-    document.getElementById('daily-bar-left').textContent = done + ' / ' + all.length + ' chores done';
-    document.getElementById('daily-bar-right').textContent = 'Goal: ' + DAILY_GOAL_PTS + ' pts';
-
-    // Chores card
-    document.getElementById('dc-chores-val').textContent = done + ' / ' + all.length;
-    document.getElementById('dc-chores-sub').textContent = choresPts + ' pts earned';
-    document.getElementById('dc-chores-bar').style.width = chorePct + '%';
-
-    // Points card
-    const tier = getTier(state.points.month);
-    document.getElementById('dc-pts-val').textContent = state.points.today + ' pts';
-    document.getElementById('dc-pts-tier').textContent = tier.name + ' ' + tier.icon;
-    document.getElementById('dc-pts-bar').style.width = Math.min(100, (state.points.month / 250) * 100) + '%';
-
-    // Homework card
-    const hwPending = state.homework.filter(h => !h.done);
-    const hwToday   = hwPending.filter(h => h.dueDate <= todayStr());
-    document.getElementById('dc-hw-val').textContent = hwPending.length + ' task' + (hwPending.length !== 1 ? 's' : '');
-    document.getElementById('dc-hw-sub').textContent = hwToday.length > 0 ? hwToday.length + ' due today!' : hwPending.length === 0 ? 'All done! 🎉' : 'Next: ' + formatDate(hwPending[0]?.dueDate || '');
-
-    // Gujarati card
-    document.getElementById('dc-guj-val').textContent = 'P' + state.gujarati.phase + ' L' + state.gujarati.lesson;
-    document.getElementById('dc-guj-sub').textContent = state.gujarati.todayMinutes + ' / 10 min today';
-    document.getElementById('dc-guj-bar').style.width = Math.min(100, (state.gujarati.todayMinutes / 10) * 100) + '%';
-
-    // Calendar card
-    const upcoming = state.calendar.events.filter(e => e.date >= todayStr()).sort((a,b)=>a.date.localeCompare(b.date));
-    document.getElementById('dc-cal-val').textContent = upcoming.length + ' event' + (upcoming.length !== 1 ? 's' : '');
-    document.getElementById('dc-cal-sub').textContent = upcoming.length > 0 ? upcoming[0].title + (upcoming[0].date === todayStr() ? ' (today!)' : '') : 'Nothing coming up';
-
-    // Habits card
-    const h_today = ['meditate','pullups','water'].filter(k => state.habits[k].todayDone).length;
-    document.getElementById('dc-habits-val').textContent = h_today + ' / 3';
-    const maxStreak = Math.max(...Object.values(state.habits).map(h => h.streak));
-    document.getElementById('dc-habits-sub').textContent = maxStreak > 0 ? '🔥 ' + maxStreak + ' day streak' : 'done today';
-
-    // Mood card
-    const mood = MOODS.find(m => m.key === state.mood.today);
-    document.getElementById('dc-mood-em').textContent  = mood ? mood.emoji : '🤔';
-    document.getElementById('dc-mood-val').textContent = mood ? mood.label : 'Not set yet';
+    renderDashChores();
+    renderDashHomework();
+    renderDashPomoMini();
+    renderDashHabits();
+    renderDashMood();
+    renderDashGujarati();
+    renderDashCalendar();
+    renderDashPoints();
 }
+
+// ── Dashboard: Chores ──────────────────────────────
+function renderDashChores() {
+    const all  = allChoresCount();
+    const done = doneChoresCount();
+    const pct  = all.length ? (done / all.length * 100) : 0;
+    const pts  = all.filter(c => c.done).reduce((s,c) => s + c.pts, 0);
+
+    const sumEl = document.getElementById('db-chores-summary');
+    if (sumEl) sumEl.textContent = done + '/' + all.length + ' · ' + pts + ' pts';
+    const barEl = document.getElementById('db-chores-bar');
+    if (barEl) barEl.style.width = pct.toFixed(0) + '%';
+
+    const BLOCKS = [
+        { key:'morning',   label:'🌅 Morning',  cls:'morning'   },
+        { key:'afternoon', label:'☀️ Afternoon', cls:'afternoon' },
+        { key:'evening',   label:'🌙 Evening',   cls:'evening'   },
+    ];
+    let html = '';
+    BLOCKS.forEach(b => {
+        const ch = state.chores[b.key];
+        const bd = ch.filter(c => c.done).length;
+        html += `<div class="db-blk-hdr ${b.cls}">${b.label}<span class="db-blk-pts">${bd}/${ch.length}</span></div>`;
+        ch.forEach(c => {
+            html += `<div class="db-chore-row ${c.done?'done':''}" onclick="toggleChore('${b.key}','${c.id}')">
+                <div class="db-cb">${c.done ? '✓' : ''}</div>
+                <span class="db-ci">${c.icon}</span>
+                <span class="db-cl">${c.text}</span>
+                <span class="db-cp">+${c.pts}</span>
+            </div>`;
+        });
+    });
+    const el = document.getElementById('db-chores-content');
+    if (el) el.innerHTML = html;
+}
+
+// ── Dashboard: Homework ────────────────────────────
+function renderDashHomework() {
+    const pending  = state.homework.filter(h => !h.done);
+    const complete = state.homework.filter(h => h.done);
+
+    const sumEl = document.getElementById('db-hw-summary');
+    if (sumEl) sumEl.textContent = pending.length > 0 ? pending.length + ' pending' : 'All done! 🎉';
+
+    let html = '';
+    if (pending.length === 0 && complete.length === 0) {
+        html = `<div style="padding:16px;text-align:center;color:#94A3B8;font-size:0.85em">No assignments yet</div>`;
+    }
+    pending.forEach(hw => {
+        const due    = getDueStatus(hw.dueDate);
+        const colors = SUBJECT_COLORS[hw.subject] || SUBJECT_COLORS.Other;
+        html += `<div class="db-hw-row" onclick="toggleHomework('${hw.id}')">
+            <div class="db-hw-cb"></div>
+            <div class="db-hw-info">
+                <span class="db-hw-subj" style="background:${colors.bg};color:${colors.color}">${hw.subject}</span>
+                <div class="db-hw-title">${hw.title}</div>
+                <div class="db-hw-due ${due.cls}">${due.text}${hw.pomodorosUsed > 0 ? ' · 🍅×'+hw.pomodorosUsed : ''}</div>
+            </div>
+            <button class="db-pomo-launch" onclick="event.stopPropagation();startPomodoro('${hw.id}')">🍅</button>
+        </div>`;
+    });
+    complete.forEach(hw => {
+        const colors = SUBJECT_COLORS[hw.subject] || SUBJECT_COLORS.Other;
+        html += `<div class="db-hw-row done" onclick="toggleHomework('${hw.id}')">
+            <div class="db-hw-cb">✓</div>
+            <div class="db-hw-info">
+                <span class="db-hw-subj" style="background:${colors.bg};color:${colors.color}">${hw.subject}</span>
+                <div class="db-hw-title">${hw.title}</div>
+                <div class="db-hw-due">Done ✓</div>
+            </div>
+        </div>`;
+    });
+    html += `<div class="db-add-row"><button class="db-expand" style="width:100%" onclick="showBoard('homework')">+ Add Assignment</button></div>`;
+
+    const el = document.getElementById('db-hw-content');
+    if (el) el.innerHTML = html;
+}
+
+// ── Dashboard: Mini Pomodoro ───────────────────────
+function renderDashPomoMini() {
+    const el = document.getElementById('db-pomo-mini');
+    if (!el) return;
+    if (!state.pomodoro) { el.classList.add('hidden-pomo'); return; }
+    el.classList.remove('hidden-pomo');
+    const p  = state.pomodoro;
+    const hw = state.homework.find(h => h.id === p.hwId);
+    const mins = String(Math.floor(p.remaining / 60)).padStart(2,'0');
+    const secs = String(p.remaining % 60).padStart(2,'0');
+    el.innerHTML = `
+        <div class="db-pomo-info">
+            <div class="db-pomo-label">Pomodoro</div>
+            <div class="db-pomo-subj">${hw ? hw.title : 'Study session'}</div>
+            <div class="db-pomo-mode">${p.mode === 'work' ? '🎯 Focus Time' : '☕ Break Time'}</div>
+        </div>
+        <div class="db-pomo-time" id="db-pomo-time">${mins}:${secs}</div>
+        <div class="db-pomo-ctrl">
+            ${p.active
+                ? `<button class="db-pmb db-pmb-p" onclick="pausePomodoro()">⏸</button>`
+                : `<button class="db-pmb db-pmb-p" onclick="resumePomodoro()">▶</button>`
+            }
+            <button class="db-pmb db-pmb-r" onclick="resetPomodoro()">↺</button>
+        </div>`;
+}
+
+// ── Dashboard: Habits ──────────────────────────────
+function renderDashHabits() {
+    const today    = todayStr();
+    const weekDays = getWeekDayGrid();
+    const todayIdx = weekDays.indexOf(today);
+    const DAY_LBLS = ['M','T','W','T','F','S','S'];
+    const CFG = {
+        meditate: { icon:'🧘', name:'Meditate',    pts:10 },
+        pullups:  { icon:'💪', name:'Pull-ups',     pts:8  },
+        water:    { icon:'💧', name:'Drink Water',  pts:6  },
+    };
+
+    const doneTodayCount = Object.keys(CFG).filter(k => state.habits[k].todayDone).length;
+    const sumEl = document.getElementById('db-habits-summary');
+    if (sumEl) sumEl.textContent = doneTodayCount + '/3 today';
+
+    let html = '';
+    Object.entries(CFG).forEach(([key, cfg]) => {
+        const habit = state.habits[key];
+        html += `<div class="db-habit-block">
+            <div class="db-habit-top">
+                <span class="db-h-ico">${cfg.icon}</span>
+                <div class="db-h-meta">
+                    <div class="db-h-name">${cfg.name}</div>
+                    <div class="db-h-sub">${habit.weekDays.length}/5 this week · +${cfg.pts}pts</div>
+                </div>
+                <span class="db-h-streak">🔥 ${habit.streak}</span>
+                <button class="db-h-today-btn ${habit.todayDone?'done':''}"
+                    onclick="event.stopPropagation();toggleHabitDay('${key}','${today}')">
+                    ${habit.todayDone ? '✓ Done' : '+ Today'}
+                </button>
+            </div>
+            <div class="db-week-row">
+                ${weekDays.map((d, i) => {
+                    const isDone   = habit.weekDays.includes(d);
+                    const isToday  = d === today;
+                    const isFuture = todayIdx >= 0 && i > todayIdx;
+                    return `<div class="db-hd ${isDone?'done':''} ${isToday?'today':''} ${isFuture?'future':''}"
+                        onclick="toggleHabitDay('${key}','${d}')">${DAY_LBLS[i]}</div>`;
+                }).join('')}
+            </div>`;
+        if (key === 'pullups') {
+            html += `<div class="db-h-counter">
+                <span class="db-h-cntr-lbl">Today's reps</span>
+                <button class="db-cntr-btn" onclick="adjustPullups(-1)">−</button>
+                <span class="db-cntr-val" id="db-pullups-count">${habit.todayCount||0}</span>
+                <button class="db-cntr-btn" onclick="adjustPullups(1)">+</button>
+            </div>`;
+        }
+        if (key === 'water') {
+            html += `<div class="db-h-counter">
+                <span class="db-h-cntr-lbl">Glasses (goal: ${habit.dailyGoal||8})</span>
+                <button class="db-cntr-btn" onclick="adjustWater(-1)">−</button>
+                <span class="db-cntr-val" id="db-water-count">${habit.todayGlasses||0}</span>
+                <button class="db-cntr-btn" onclick="adjustWater(1)">+</button>
+            </div>`;
+        }
+        html += `</div>`;
+    });
+
+    const el = document.getElementById('db-habits-content');
+    if (el) el.innerHTML = html;
+}
+
+// ── Dashboard: Mood ────────────────────────────────
+function renderDashMood() {
+    const current = state.mood.today;
+    const history = state.mood.history.slice(-7).reverse();
+    const DAY_LBLS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    let html = `<div class="db-mood-row">
+        ${MOODS.map(m => `<div class="db-mood-btn ${current===m.key?'selected':''}" onclick="setMood('${m.key}')">
+            <div class="db-me">${m.emoji}</div>
+            <div class="db-ml">${m.label}</div>
+        </div>`).join('')}
+    </div>`;
+
+    if (history.length > 0) {
+        html += `<div class="db-mood-hist">${history.map(h => {
+            const d = new Date(h.date + 'T12:00:00');
+            return `<div class="db-mh-item"><div class="db-mh-em">${h.emoji}</div><div class="db-mh-day">${DAY_LBLS[d.getDay()]}</div></div>`;
+        }).join('')}</div>`;
+    } else {
+        html += `<div class="db-mood-set">Tap an emoji to log today's mood</div>`;
+    }
+
+    const el = document.getElementById('db-mood-content');
+    if (el) el.innerHTML = html;
+}
+
+// ── Dashboard: Gujarati ────────────────────────────
+function renderDashGujarati() {
+    const g   = state.gujarati;
+    const pct = Math.min(100, (g.todayMinutes / 10) * 100);
+    const html = `
+        <div class="db-guj-info">
+            <div>
+                <div class="db-guj-phase">Phase ${g.phase} · Lesson ${g.lesson}</div>
+                <div class="db-guj-subtext">${g.todayMinutes} / 10 min today</div>
+            </div>
+        </div>
+        <div class="db-guj-pbar"><div class="db-guj-pfill" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="db-guj-plbl">${pct.toFixed(0)}% of daily goal</div>
+        <div class="db-guj-acts">
+            <a class="db-guj-btn" href="${GUJARATI_MODULE_PATH}?user=krish&tab=learn" target="_blank">
+                <span class="db-guj-bi">📚</span><span class="db-guj-bl">Learn</span>
+            </a>
+            <a class="db-guj-btn" href="${GUJARATI_MODULE_PATH}?user=krish&tab=quiz" target="_blank">
+                <span class="db-guj-bi">🎯</span><span class="db-guj-bl">Quiz</span>
+            </a>
+            <a class="db-guj-btn" href="${GUJARATI_MODULE_PATH}?user=krish&tab=trace" target="_blank">
+                <span class="db-guj-bi">✏️</span><span class="db-guj-bl">Trace</span>
+            </a>
+        </div>`;
+    const el = document.getElementById('db-guj-content');
+    if (el) el.innerHTML = html;
+}
+
+// ── Dashboard: Calendar ────────────────────────────
+function renderDashCalendar() {
+    const today  = todayStr();
+    const events = [...state.calendar.events]
+        .filter(e => e.date >= today)
+        .sort((a,b) => a.date.localeCompare(b.date))
+        .slice(0, 5);
+
+    let html = '';
+    if (events.length === 0) {
+        html = `<div style="padding:14px;text-align:center;color:#94A3B8;font-size:0.82em">No upcoming events</div>`;
+    } else {
+        events.forEach(ev => {
+            const isToday = ev.date === today;
+            const d = new Date(ev.date + 'T12:00:00');
+            const when = isToday ? 'Today' : d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+            html += `<div class="db-ev-row">
+                <div class="db-ev-dot" style="background:${ev.color}"></div>
+                <div class="db-ev-info">
+                    <div class="db-ev-title">${ev.title}</div>
+                    <div class="db-ev-when">${when} · ${ev.time}</div>
+                </div>
+                ${isToday ? '<div class="db-today-tag">TODAY</div>' : ''}
+            </div>`;
+        });
+    }
+    const el = document.getElementById('db-cal-content');
+    if (el) el.innerHTML = html;
+}
+
+// ── Dashboard: Points ──────────────────────────────
+function renderDashPoints() {
+    const pts  = state.points;
+    const tier = getTier(pts.month);
+    const next = getNextTier(pts.month);
+    const nextMin = next ? next.min : tier.min + 1000;
+    const pct = next ? Math.min(100, ((pts.month - tier.min) / (nextMin - tier.min)) * 100) : 100;
+
+    const subEl = document.getElementById('db-pts-hdr-sub');
+    if (subEl) subEl.textContent = pts.today + ' pts today';
+
+    const html = `<div class="db-pts-inner">
+        <div class="db-pts-tier">
+            <span class="db-pts-t-ico">${tier.icon}</span>
+            <div>
+                <div class="db-pts-t-name">${tier.name}</div>
+                <div class="db-pts-t-sub">${pts.month} pts this month</div>
+            </div>
+        </div>
+        <div class="db-pts-row">
+            <div class="db-pts-stat"><div class="db-pts-val">${pts.today}</div><div class="db-pts-lbl">Today</div></div>
+            <div class="db-pts-stat"><div class="db-pts-val">${pts.week}</div><div class="db-pts-lbl">Week</div></div>
+            <div class="db-pts-stat"><div class="db-pts-val">${pts.total}</div><div class="db-pts-lbl">All Time</div></div>
+        </div>
+        ${next ? `<div class="db-pts-next-lbl">
+                <span>${tier.icon} ${tier.name}</span>
+                <span>${next.min - pts.month} to ${next.name} ${next.icon}</span>
+            </div>
+            <div class="db-pts-bar"><div class="db-pts-bfill" style="width:${pct.toFixed(0)}%"></div></div>`
+            : `<div style="text-align:center;font-size:0.78em;color:#6366F1;font-weight:700;margin-top:6px">Max tier! 🦁</div>`}
+    </div>`;
+
+    const el = document.getElementById('db-pts-content');
+    if (el) el.innerHTML = html;
+}
+
 
 // ═══════════════════════════════════════════════════
 //  CHORES PANEL
@@ -1396,6 +1903,7 @@ function resetPomodoro() {
     state.pomodoro = null;
     saveState();
     renderHomeworkPanel();
+    renderDashPomoMini();
 }
 
 function startPomoInterval() {
@@ -1474,6 +1982,10 @@ function updatePomoDisplay() {
             }
         }
     }
+
+    // Also update dashboard mini timer (lightweight — just the number)
+    const dashTime = document.getElementById('db-pomo-time');
+    if (dashTime) dashTime.textContent = mins + ':' + secs;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1965,8 +2477,10 @@ function adjustPullups(delta) {
         return;
     }
     saveState();
-    const el = document.getElementById('pullups-count');
-    if (el) { el.textContent = h.todayCount; el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),300); }
+    ['pullups-count','db-pullups-count'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = h.todayCount; el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),300); }
+    });
 }
 
 function adjustWater(delta) {
@@ -1978,8 +2492,10 @@ function adjustWater(delta) {
         return;
     }
     saveState();
-    const el = document.getElementById('water-count');
-    if (el) { el.textContent = h.todayGlasses; el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),300); }
+    ['water-count','db-water-count'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = h.todayGlasses; el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),300); }
+    });
 }
 
 // ═══════════════════════════════════════════════════
