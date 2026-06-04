@@ -1,0 +1,386 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace.family_hub",
+  "data": {
+    "config": {
+      "views": [
+        {
+          "type": "sections",
+          "sections": [
+            {
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "heading",
+                  "heading": "Family Announcements",
+                  "heading_style": "title"
+                },
+                {
+                  "type": "markdown",
+                  "content": "{% set travel = states('sensor.drive_to_pra') | float | int %}\n{% set now_min = now().hour * 60 + now().minute %}\n{% set leave_min = 7 * 60 + 45 - travel - 5 %}\n{% set mins_left = leave_min - now_min %}\n{% set temp = state_attr('weather.forecast_home_2', 'temperature') | float %}\n{% set hour = now().hour %}\n\n{% if hour >= 3 and hour < 8 and temp < 40 %}\n\ud83d\ude97 **Brrr! It's {{ temp | round(0) | int }}\u00b0F outside \u2014 don't forget to start the car to warm up!**\n{% elif now_min >= 6 * 60 and now_min < leave_min and states('calendar.thrillshare_cmsv2_services_thrillshare_com') == 'off' %}\n\u23f0 **{{ mins_left }} minutes until you need to leave for school!** Get moving Krish! \ud83c\udfc3\n{% elif now_min >= leave_min and now_min < 7 * 60 + 45 and states('calendar.thrillshare_cmsv2_services_thrillshare_com') == 'off' %}\n\ud83d\udea8 **Time to leave NOW!** You need to be at school by 7:45 AM!\n{% else %}\n\ud83d\udce2 Have a great day, Narsai family! \ud83c\udf1f\n{% endif %}",
+                  "text_only": true,
+                  "grid_options": {
+                    "columns": "full"
+                  }
+                },
+                {
+                  "type": "custom:clock-weather-card",
+                  "entity": "weather.forecast_home_2",
+                  "sun_entity": "sun.sun",
+                  "weather_icon_type": "fill",
+                  "animated_icon": true,
+                  "forecast_days": 5,
+                  "locale": "en-US",
+                  "time_format": 12,
+                  "date_pattern": "P",
+                  "hide_today_section": false,
+                  "hide_forecast_section": false,
+                  "show_humidity": false,
+                  "show_wind": false
+                },
+                {
+                  "initial_view": "dayGridMonth",
+                  "type": "calendar",
+                  "entities": [
+                    "calendar.holidays_in_united_states",
+                    "calendar.thenarsais_gmail_com",
+                    "calendar.13303_clarkson_st_thornton",
+                    "calendar.trash_recycling",
+                    "calendar.https_thrillshare_cmsv2_services_thrillshare_com_api_v4_o_14599_cms_events_generate_ical_filter_ids_section_ids"
+                  ],
+                  "grid_options": {
+                    "rows": 8,
+                    "columns": "full"
+                  }
+                },
+                {
+                  "display_order": "none",
+                  "type": "todo-list",
+                  "entity": "todo.shopping_list",
+                  "title": "Shopping List"
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "time",
+                      "after": "06:00:00",
+                      "before": "09:30:00"
+                    }
+                  ],
+                  "card": {
+                    "type": "entities",
+                    "title": "Krish's Morning Chores \ud83c\udf05",
+                    "entities": [
+                      {
+                        "entity": "counter.krish_points",
+                        "name": "Total Points"
+                      },
+                      {
+                        "entity": "input_boolean.krish_make_bed",
+                        "name": "Make Bed"
+                      },
+                      {
+                        "entity": "input_boolean.krish_get_dressed",
+                        "name": "Get Dressed"
+                      },
+                      {
+                        "entity": "input_boolean.krish_brush_teeth",
+                        "name": "Brush Teeth"
+                      },
+                      {
+                        "entity": "input_boolean.krish_lunchbag_water_bottle",
+                        "name": "Lunchbag & Water Bottle"
+                      },
+                      {
+                        "entity": "input_boolean.krish_pack_backpack",
+                        "name": "Pack Backpack"
+                      },
+                      {
+                        "entity": "input_boolean.krish_breakfast_dishes",
+                        "name": "Breakfast Dishes"
+                      }
+                    ],
+                    "show_header_toggle": false
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "time",
+                      "after": "15:00:00",
+                      "before": "17:00:00"
+                    }
+                  ],
+                  "card": {
+                    "type": "entities",
+                    "title": "Krish's Afternoon Chores \ud83c\udf92",
+                    "entities": [
+                      {
+                        "entity": "counter.krish_points",
+                        "name": "Total Points"
+                      },
+                      {
+                        "entity": "input_boolean.krish_put_away_backpack",
+                        "name": "Put Away Backpack"
+                      },
+                      {
+                        "entity": "input_boolean.krish_empty_lunchbox",
+                        "name": "Empty Lunchbox"
+                      },
+                      {
+                        "entity": "input_boolean.krish_empty_karishma_lunchbox",
+                        "name": "Empty Karishma's Lunchbox"
+                      },
+                      {
+                        "entity": "input_boolean.krish_workbook_pages",
+                        "name": "Workbook Pages"
+                      },
+                      {
+                        "entity": "input_boolean.krish_read",
+                        "name": "Read"
+                      },
+                      {
+                        "entity": "input_boolean.krish_share_school_papers",
+                        "name": "Share School Papers"
+                      }
+                    ],
+                    "show_header_toggle": false
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "time",
+                      "after": "17:00:00",
+                      "before": "21:00:00"
+                    }
+                  ],
+                  "card": {
+                    "type": "entities",
+                    "title": "Krish's Evening Chores \ud83c\udf19",
+                    "entities": [
+                      {
+                        "entity": "counter.krish_points",
+                        "name": "Total Points"
+                      },
+                      {
+                        "entity": "input_boolean.krish_prathna",
+                        "name": "Prathna with Maa"
+                      },
+                      {
+                        "entity": "input_boolean.krish_jai",
+                        "name": "Jai at Mandir"
+                      },
+                      {
+                        "entity": "input_boolean.krish_fill_water_bottles",
+                        "name": "Fill Water Bottles"
+                      },
+                      {
+                        "entity": "input_boolean.krish_put_away_shoes",
+                        "name": "Put Away Shoes"
+                      },
+                      {
+                        "entity": "input_boolean.krish_kung_fu_practice",
+                        "name": "Kung Fu Practice"
+                      },
+                      {
+                        "entity": "input_boolean.krish_put_away_coats",
+                        "name": "Put Away Coats"
+                      },
+                      {
+                        "entity": "input_boolean.krish_clothes_for_tomorrow",
+                        "name": "Clothes for Tomorrow"
+                      },
+                      {
+                        "entity": "input_boolean.krish_shower",
+                        "name": "Shower"
+                      }
+                    ],
+                    "show_header_toggle": false
+                  }
+                },
+                {
+                  "type": "markdown",
+                  "title": "Krish's Monthly Points \ud83c\udfc6",
+                  "content": "{% set points = states('counter.krish_monthly_points') | int %} {% set goal = 400 %} {% set pct = ((points / goal) * 100) | round %}\n**{{ points }} / {{ goal }} points**\n{% if points >= 400 %} \ud83e\udd47 Big Reward Unlocked! Amazing job Krish! {% elif points >= 300 %} \ud83e\udd48 Medium Reward Unlocked! Keep going for the big one! {% elif points >= 200 %} \ud83e\udd49 Small Reward Unlocked! Great work, keep it up! {% else %} Keep going! {{ 200 - points }} points to your first reward! {% endif %}\n\ud83e\udd49 200 pts &nbsp;&nbsp; \ud83e\udd48 300 pts &nbsp;&nbsp; \ud83e\udd47 400 pts\n"
+                },
+                {
+                  "type": "vertical-stack",
+                  "cards": [
+                    {
+                      "type": "iframe",
+                      "url": "/local/krish-tasks/krish-summary-card.html",
+                      "aspect_ratio": "42%",
+                      "grid_options": {
+                        "columns": "full",
+                        "rows": 5
+                      }
+                    },
+                    {
+                      "type": "button",
+                      "name": "Open Krish's Activity Board",
+                      "icon": "mdi:checkbox-marked-circle-outline",
+                      "show_state": false,
+                      "tap_action": {
+                        "action": "url",
+                        "url_path": "/local/krish-tasks/krish-daily-tasks.html?from=ha"
+                      }
+                    }
+                  ],
+                  "grid_options": {
+                    "columns": "full"
+                  }
+                },
+                {
+                  "maxDaysToShow": 365,
+                  "showLocation": false,
+                  "showDeclined": false,
+                  "type": "custom:atomic-calendar-revive",
+                  "title": "Upcoming Birthdays \ud83c\udf82",
+                  "entities": [
+                    {
+                      "entity": "calendar.birthdays",
+                      "color": "#ff6b6b"
+                    }
+                  ],
+                  "sortByStartTime": true,
+                  "mode": "list",
+                  "name": "Upcoming Birthdays \ud83c\udf82"
+                },
+                {
+                  "type": "markdown",
+                  "content": "| City | Time | Date |\n|------|------|------|\n| \ud83c\uddfa\ud83c\uddf8 Cleveland | {{ (now().timestamp() + 7200) | timestamp_custom('%I:%M %p', true) }} | {{ (now().timestamp() + 7200) | timestamp_custom('%m-%d-%Y', true) }} |\n| \ud83c\uddee\ud83c\uddf3 Vadodara | {{ (now().timestamp() + 3600 * 5.5) | timestamp_custom('%I:%M %p', false) }} | {{ (now().timestamp() + 3600 * 5.5) | timestamp_custom('%m-%d-%Y', false) }} |",
+                  "title": "World Clocks \ud83c\udf0d"
+                },
+                {
+                  "type": "iframe",
+                  "url": "http://localhost:8080/meal-planner.html",
+                  "aspect_ratio": "50%",
+                  "title": "Meal Planner",
+                  "hide_background": false,
+                  "grid_options": {
+                    "columns": "full",
+                    "rows": 8
+                  }
+                },
+                {
+                  "type": "markdown",
+                  "content": "**Next Pickup:** {{ as_timestamp(states('sensor.trash_recycling_current_pickup')) | timestamp_custom('%A, %B %-d') }}\n**Bins:** {{ state_attr('sensor.trash_recycling_current_pickup', 'pickup_types') | join(', ') | title }}\n\n**Following Pickup:** {{ as_timestamp(states('sensor.trash_recycling_next_pickup')) | timestamp_custom('%A, %B %-d') }}\n**Bins:** {{ state_attr('sensor.trash_recycling_next_pickup', 'pickup_types') | join(', ') | title }}",
+                  "title": "Trash & Recycling \ud83d\uddd1\ufe0f"
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "state",
+                      "entity": "calendar.thrillshare_cmsv2_services_thrillshare_com",
+                      "state": "on"
+                    },
+                    {
+                      "condition": "time",
+                      "after": "06:00:00",
+                      "before": "15:30:00"
+                    }
+                  ],
+                  "card": {
+                    "type": "markdown",
+                    "title": "School Transit \ud83d\ude97",
+                    "content": "{% set travel_to = states('sensor.drive_to_pra') | float %}\n{% set travel_home = states('sensor.drive_to_pra_pickup_from_pra') | float %}\n{% set arrive_min = 7 * 60 + 45 %}\n{% set leave_min = (arrive_min - travel_to - 5) | int %}\n{% set leave_hour = (leave_min // 60) | int %}\n{% set leave_m = (leave_min % 60) | int %}\n\n**\ud83c\udf05 Morning Drop-off** Leave by **{{ leave_hour }}:{{ '%02d' | format(leave_m) }} AM** \u00b7 {{ travel_to | round(0) | int }} min \u00b7 {{ state_attr('sensor.drive_to_pra', 'route') }}\n**\ud83c\udfeb Afternoon Pickup** Leave at **2:30 PM** \u00b7 {{ travel_to | round(0) | int }} min to school \u00b7 Pickup at 3:15 PM\nDrive home: {{ travel_home | round(0) | int }} min \u00b7 {{ state_attr('sensor.drive_to_pra_pickup_from_pra', 'route') }}\n"
+                  }
+                },
+                {
+                  "type": "vertical-stack",
+                  "cards": [
+                    {
+                      "type": "markdown",
+                      "title": "HVAC Filter \ud83d\udd27",
+                      "content": "{% set last = as_timestamp(states('input_datetime.hvac_filter_last_replaced')) %} {% set next = last + (90 * 86400) %} {% set days_left = ((next - as_timestamp(now())) / 86400) | round(0) | int %} {% set size = states('input_text.hvac_filter_size') %} **Filter Size:** {{ size }} **Last Replaced:** {{ states('input_datetime.hvac_filter_last_replaced') }} **Next Change Due:** {{ next | timestamp_custom('%B %-d, %Y') }} {% if days_left > 7 %} \u2705 Filter OK \u2014 {{ days_left }} days until next change {% elif days_left > 0 %} \u26a0\ufe0f **Change filter soon \u2014 only {{ days_left }} days left!** {% elif days_left == 0 %} \ud83d\udea8 **Filter change due TODAY!** {% else %} \ud83d\udea8 **Filter is {{ days_left | abs }} days OVERDUE! Change it now!** {% endif %}"
+                    },
+                    {
+                      "type": "button",
+                      "name": "\u2705 Mark Filter Replaced Today",
+                      "icon": "mdi:filter-check",
+                      "entity": "input_boolean.hvac_filter_replaced"
+                    }
+                  ]
+                }
+              ],
+              "column_span": 2
+            },
+            {
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "heading",
+                  "heading": "New section"
+                },
+                {
+                  "type": "heading",
+                  "heading": "Security Cameras \ud83d\udcf9",
+                  "heading_style": "title"
+                },
+                {
+                  "type": "horizontal-stack",
+                  "cards": [
+                    {
+                      "type": "picture-entity",
+                      "entity": "camera.front_door_doorbell",
+                      "name": "Front Door",
+                      "show_state": false
+                    },
+                    {
+                      "type": "picture-entity",
+                      "entity": "camera.garage_camera",
+                      "name": "Garage",
+                      "show_state": false
+                    },
+                    {
+                      "type": "picture-entity",
+                      "entity": "camera.kitchen",
+                      "name": "Kitchen",
+                      "show_state": false
+                    }
+                  ]
+                },
+                {
+                  "type": "entities",
+                  "title": "Recent Activity \ud83d\udd14",
+                  "entities": [
+                    {
+                      "entity": "event.front_door_doorbell_chime",
+                      "name": "\ud83d\udeaa Doorbell"
+                    },
+                    {
+                      "entity": "event.front_door_doorbell_motion",
+                      "name": "\ud83d\udeb6 Front Door Motion"
+                    },
+                    {
+                      "entity": "event.garage_camera_motion",
+                      "name": "\ud83d\ude97 Garage Motion"
+                    }
+                  ],
+                  "show_header_toggle": false
+                },
+                {
+                  "type": "iframe",
+                  "url": "/local/gujarati/gujarati-learning-module.html?v=29",
+                  "aspect_ratio": "16:9",
+                  "title": "Gujarati Learning \ud83c\udf93",
+                  "grid_options": {
+                    "columns": "full",
+                    "rows": 8
+                  }
+                }
+              ],
+              "column_span": 4
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
