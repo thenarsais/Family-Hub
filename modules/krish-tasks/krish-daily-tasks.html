@@ -800,6 +800,37 @@
         .db-ev-title { font-size:0.85em; font-weight:700; color:#1E293B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .db-ev-when  { font-size:0.68em; color:#64748B; }
         .db-today-tag { background:#6366F1; color:white; font-size:0.6em; font-weight:800; padding:1px 6px; border-radius:10px; flex-shrink:0; }
+
+        /* ── KUNG FU (dashboard) ───────────────────── */
+        .db-kf-goals { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; padding:11px 13px 8px; }
+        .db-kf-goal {
+            background:#F8FAFC; border:2.5px solid #E2E8F0; border-radius:12px;
+            padding:10px 6px; text-align:center; cursor:pointer; transition:var(--t);
+        }
+        .db-kf-goal.done { background:#ECFDF5; border-color:#10B981; }
+        .db-kf-goal:active { transform:scale(0.95); }
+        .db-kf-ico { font-size:1.4em; margin-bottom:3px; }
+        .db-kf-lbl { font-size:0.72em; font-weight:700; color:#1E293B; }
+        .db-kf-sub { font-size:0.62em; color:#64748B; margin-top:1px; }
+        .db-kf-goal.done .db-kf-lbl { color:#059669; }
+        .db-kf-goal.done .db-kf-ico::after { content:' ✓'; font-size:0.6em; }
+
+        .db-mini-fc {
+            margin:0 13px 9px;
+            background:linear-gradient(135deg,#1E293B,#334155);
+            border-radius:12px; padding:12px 14px;
+            cursor:pointer; color:white; min-height:66px;
+            display:flex; flex-direction:column; justify-content:center;
+            transition:var(--t); user-select:none;
+        }
+        .db-mini-fc:active { transform:scale(0.98); }
+        .db-fc-badge { font-size:0.6em; color:#94A3B8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px; }
+        .db-fc-term    { font-size:1.1em; font-weight:800; }
+        .db-fc-hint    { font-size:0.66em; color:#94A3B8; margin-top:3px; }
+        .db-fc-meaning { font-size:0.84em; line-height:1.4; color:#6EE7B7; }
+
+        .db-kf-log-row { display:flex; align-items:center; justify-content:space-between; padding:7px 13px 11px; }
+        .db-kf-week    { font-size:0.75em; color:#64748B; font-weight:600; }
     </style>
 </head>
 <body>
@@ -864,6 +895,16 @@
                     <button class="db-expand" onclick="showBoard('calendar')">Add ↗</button>
                 </div>
                 <div id="db-cal-content"></div>
+            </div>
+
+            <div class="db-card" id="db-kf-card">
+                <div class="db-card-hdr">
+                    <span class="db-card-ico">🥋</span>
+                    <span class="db-ct">Kung Fu</span>
+                    <span class="db-cs" id="db-kf-summary"></span>
+                    <button class="db-expand" onclick="showBoard('kungfu')">Full View ↗</button>
+                </div>
+                <div id="db-kf-content"></div>
             </div>
         </div>
 
@@ -1376,6 +1417,7 @@ function renderDashboard() {
     renderDashMood();
     renderDashGujarati();
     renderDashCalendar();
+    renderDashKungFu();
     renderDashPoints();
 }
 
@@ -1628,6 +1670,67 @@ function renderDashCalendar() {
     }
     const el = document.getElementById('db-cal-content');
     if (el) el.innerHTML = html;
+}
+
+// ── Dashboard: Kung Fu ────────────────────────────
+function renderDashKungFu() {
+    const kf = state.kungfu;
+    const weekSessions = kf.practiceLog.filter(l => l.date >= getMondayOfWeek(todayStr())).length;
+    const doneTodayCount = [kf.todayPractice, kf.todayFlashcards, kf.todayStudy].filter(Boolean).length;
+    const card = KF_FLASHCARDS[_fcIndex];
+
+    const sumEl = document.getElementById('db-kf-summary');
+    if (sumEl) sumEl.textContent = doneTodayCount + '/3 today';
+
+    const html = `
+        <div class="db-kf-goals">
+            <div class="db-kf-goal ${kf.todayPractice   ? 'done' : ''}" onclick="toggleKFGoal('practice')">
+                <div class="db-kf-ico">🥋</div>
+                <div class="db-kf-lbl">Practice</div>
+                <div class="db-kf-sub">${kf.practiceMinutes > 0 ? kf.practiceMinutes + ' min' : '+10 pts'}</div>
+            </div>
+            <div class="db-kf-goal ${kf.todayFlashcards ? 'done' : ''}" onclick="toggleKFGoal('flashcards')">
+                <div class="db-kf-ico">🃏</div>
+                <div class="db-kf-lbl">Flash Cards</div>
+                <div class="db-kf-sub">+5 pts</div>
+            </div>
+            <div class="db-kf-goal ${kf.todayStudy      ? 'done' : ''}" onclick="toggleKFGoal('study')">
+                <div class="db-kf-ico">📖</div>
+                <div class="db-kf-lbl">Study</div>
+                <div class="db-kf-sub">+5 pts</div>
+            </div>
+        </div>
+
+        <div class="db-mini-fc" onclick="dbFlipCard()">
+            <div class="db-fc-badge">Flash Card ${_fcIndex + 1} / ${KF_FLASHCARDS.length} — tap to flip</div>
+            ${_fcFlipped
+                ? `<div class="db-fc-meaning">${card.meaning}</div>`
+                : `<div class="db-fc-term">${card.term}</div>
+                   <div class="db-fc-hint">Tap to reveal meaning</div>`
+            }
+        </div>
+
+        <div class="db-kf-log-row">
+            <span class="db-kf-week">🗓 ${weekSessions} session${weekSessions !== 1 ? 's' : ''} this week</span>
+            <div style="display:flex;gap:6px">
+                <button class="db-expand" onclick="event.stopPropagation();_fcIndex=(_fcIndex-1+${KF_FLASHCARDS.length})%${KF_FLASHCARDS.length};_fcFlipped=false;renderDashKungFu()">←</button>
+                <button class="db-expand" onclick="event.stopPropagation();_fcIndex=(_fcIndex+1)%${KF_FLASHCARDS.length};_fcFlipped=false;renderDashKungFu()">→</button>
+            </div>
+        </div>`;
+
+    const el = document.getElementById('db-kf-content');
+    if (el) el.innerHTML = html;
+}
+
+function dbFlipCard() {
+    _fcFlipped = !_fcFlipped;
+    if (_fcFlipped && !state.kungfu.todayFlashcards) {
+        state.kungfu.todayFlashcards = true;
+        addPoints(5);
+        saveState();
+    }
+    renderDashKungFu();
+    if (currentTab === 'kungfu') renderKungFuPanel();
 }
 
 // ── Dashboard: Points ──────────────────────────────
@@ -2084,6 +2187,7 @@ function toggleKFGoal(type) {
     if (type === 'study')      { kf.todayStudy      = !kf.todayStudy;      if (kf.todayStudy)      { addPoints(5);  playTick(); } else subtractPoints(5);  }
     saveState();
     renderKungFuPanel();
+    renderDashKungFu();
 }
 
 function selectDuration(d) {
@@ -2103,6 +2207,7 @@ function logPractice() {
     playDone();
     saveState();
     renderKungFuPanel();
+    renderDashKungFu();
 }
 
 function flipCard() {
