@@ -1006,7 +1006,11 @@
 //  CONSTANTS
 // ═══════════════════════════════════════════════════
 const LS_KEY = 'krish_tasks_v1';
-const GUJARATI_MODULE_PATH = '../../gujarati-learning/gujarati-learning-module.html';
+// In Home Assistant: served from /local/krish-tasks/ so Gujarati is one level up
+// On local filesystem: ../../gujarati-learning/gujarati-learning-module.html
+const GUJARATI_MODULE_PATH = window.location.pathname.startsWith('/local/')
+    ? '../gujarati/gujarati-learning-module.html'
+    : '../../gujarati-learning/gujarati-learning-module.html';
 const DAILY_GOAL_PTS = 50;
 
 const MOODS = [
