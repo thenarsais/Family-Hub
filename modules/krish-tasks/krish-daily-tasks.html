@@ -1231,6 +1231,7 @@ function applyResets() {
 let currentTab = 'chores';
 
 function showDashboard() {
+    if (FROM_HA) { window.top.location.href = '/family-hub'; return; }
     document.getElementById('view-dashboard').classList.add('active');
     document.getElementById('view-board').classList.remove('active');
     renderDashboard();
@@ -1424,6 +1425,9 @@ function renderDashboard() {
     renderDashKungFu();
     renderDashPoints();
 }
+
+// When opened from the HA summary card, back button returns to HA dashboard
+const FROM_HA = new URLSearchParams(window.location.search).get('from') === 'ha';
 
 // ── Dashboard: Chores ──────────────────────────────
 function renderDashChores() {

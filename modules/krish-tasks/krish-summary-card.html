@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krish — Summary</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1E293B;
+            color: white;
+            padding: 14px 16px 12px;
+        }
+
+        /* ── HEADER ────────────────────────────────── */
+        .hdr {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .hdr-left { display: flex; align-items: center; gap: 10px; }
+        .avatar { font-size: 2em; line-height: 1; }
+        .hdr-name { font-size: 1.05em; font-weight: 800; line-height: 1.1; }
+        .hdr-tier { font-size: 0.72em; color: #94A3B8; margin-top: 1px; }
+        .hdr-right { display: flex; align-items: center; gap: 8px; }
+        .mood-em { font-size: 1.5em; }
+        .pts-chip {
+            background: rgba(245,158,11,0.18);
+            border: 1.5px solid rgba(245,158,11,0.5);
+            border-radius: 20px; padding: 4px 11px;
+            font-size: 0.82em; font-weight: 800; color: #FCD34D;
+        }
+
+        /* ── ALERTS ────────────────────────────────── */
+        .alerts { margin-bottom: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .alert {
+            border-radius: 8px; padding: 7px 11px;
+            font-size: 0.8em; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+            line-height: 1.3;
+        }
+        .alert-red    { background: rgba(239,68,68,0.18);  border-left: 3px solid #EF4444; color: #FCA5A5; }
+        .alert-orange { background: rgba(249,115,22,0.15); border-left: 3px solid #F97316; color: #FED7AA; }
+        .alert-blue   { background: rgba(99,102,241,0.15); border-left: 3px solid #6366F1; color: #C7D2FE; }
+
+        /* ── STAT STRIP ────────────────────────────── */
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+        .stat {
+            background: #334155; border-radius: 10px;
+            padding: 8px 10px;
+        }
+        .stat-lbl { font-size: 0.62em; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; font-weight: 700; }
+        .stat-val { font-size: 0.95em; font-weight: 800; line-height: 1.2; }
+        .stat-sub { font-size: 0.65em; color: #64748B; margin-top: 1px; }
+        .mini-bar { background: #475569; border-radius: 4px; height: 4px; margin-top: 5px; overflow: hidden; }
+        .mini-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+
+        /* ── HABIT DOTS ────────────────────────────── */
+        .habit-row { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+        .hdot {
+            width: 20px; height: 20px; border-radius: 50%;
+            border: 2px solid #475569; background: #2D3A4A;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65em;
+        }
+        .hdot.done { background: #10B981; border-color: #10B981; }
+
+        /* ── EVENTS ────────────────────────────────── */
+        .events { margin-bottom: 10px; }
+        .ev-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 0; border-bottom: 1px solid #2D3A4A;
+            font-size: 0.78em;
+        }
+        .ev-row:last-child { border-bottom: none; }
+        .ev-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .ev-when { color: #94A3B8; white-space: nowrap; flex-shrink: 0; }
+        .ev-when.today { color: #A78BFA; font-weight: 700; }
+        .ev-title { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ev-time { color: #64748B; white-space: nowrap; }
+
+        /* ── OPEN BUTTON ───────────────────────────── */
+        .open-btn {
+            display: block; width: 100%;
+            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            border: none; border-radius: 10px; padding: 11px;
+            color: white; font-size: 0.9em; font-weight: 800;
+            cursor: pointer; letter-spacing: 0.3px;
+            transition: opacity 0.2s, transform 0.15s;
+        }
+        .open-btn:hover  { opacity: 0.9; }
+        .open-btn:active { transform: scale(0.98); }
+
+        /* ── EMPTY / LOADING ───────────────────────── */
+        .empty {
+            text-align: center; padding: 22px 0;
+        }
+        .empty-ico { font-size: 2.4em; margin-bottom: 8px; }
+        .empty-msg { font-size: 0.88em; color: #64748B; margin-bottom: 14px; }
+
+        /* ── KF ROW ────────────────────────────────── */
+        .kf-row {
+            display: flex; gap: 6px; margin-bottom: 10px;
+        }
+        .kf-chip {
+            flex: 1; border-radius: 8px; padding: 5px 6px;
+            text-align: center; font-size: 0.7em; font-weight: 700;
+            background: #334155; color: #64748B;
+            border: 1.5px solid #3D4F63;
+        }
+        .kf-chip.done { background: #064E3B; color: #6EE7B7; border-color: #10B981; }
+        .kf-chip-ico { font-size: 1.3em; display: block; margin-bottom: 2px; }
+    </style>
+</head>
+<body>
+    <div id="app"><div class="empty"><div class="empty-ico">⏳</div></div></div>
+
+<script>
+'use strict';
+const LS_KEY   = 'krish_tasks_v1';
+const BOARD_URL = '/local/krish-tasks/krish-daily-tasks.html?from=ha';
+
+const MOODS = { amazing:'😄', good:'😊', okay:'😐', meh:'😕', sad:'😔' };
+const TIERS = [
+    { name:'Legend',   icon:'🦁', min:1000 },
+    { name:'Champion', icon:'🏆', min:500  },
+    { name:'Achiever', icon:'⭐', min:250  },
+    { name:'Explorer', icon:'🔍', min:100  },
+    { name:'Beginner', icon:'🌱', min:0    },
+];
+
+function getTier(pts) { return TIERS.find(t => pts >= t.min) || TIERS[TIERS.length-1]; }
+function today() { return new Date().toISOString().split('T')[0]; }
+function addDays(d, n) { const dt=new Date(d+'T12:00:00'); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; }
+function dayLabel(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'}); }
+
+function openBoard() { window.top.location.href = BOARD_URL; }
+
+function render() {
+    const app = document.getElementById('app');
+    const raw = localStorage.getItem(LS_KEY);
+
+    if (!raw) {
+        app.innerHTML = `<div class="empty">
+            <div class="empty-ico">👦</div>
+            <div class="empty-msg">Open the board once to get started</div>
+            <button class="open-btn" onclick="openBoard()">Open Krish's Activity Board →</button>
+        </div>`;
+        return;
+    }
+
+    let s;
+    try { s = JSON.parse(raw); } catch(e) { app.innerHTML = '<div class="empty"><div class="empty-msg">Data error</div></div>'; return; }
+
+    const td = today();
+    const tom = addDays(td, 1);
+
+    // Chores
+    const allC  = [...(s.chores?.morning||[]), ...(s.chores?.afternoon||[]), ...(s.chores?.evening||[])];
+    const doneC = allC.filter(c=>c.done).length;
+    const chorePct = allC.length ? Math.round(doneC/allC.length*100) : 0;
+
+    // Points + tier
+    const tier  = getTier(s.points?.month || 0);
+    const ptsToday = s.points?.today || 0;
+
+    // Homework alerts
+    const overdue  = (s.homework||[]).filter(h => !h.done && h.dueDate < td);
+    const dueToday = (s.homework||[]).filter(h => !h.done && h.dueDate === td);
+    const dueTom   = (s.homework||[]).filter(h => !h.done && h.dueDate === tom);
+    const hwPending = (s.homework||[]).filter(h=>!h.done).length;
+    const hwDone    = (s.homework||[]).filter(h=>h.done).length;
+    const hwTotal   = (s.homework||[]).length;
+
+    // Habits
+    const hab = s.habits || {};
+    const medDone  = hab.meditate?.todayDone || false;
+    const pullDone = hab.pullups?.todayDone  || false;
+    const watDone  = hab.water?.todayDone    || false;
+    const habitDoneCount = [medDone,pullDone,watDone].filter(Boolean).length;
+    const maxStreak = Math.max(...[hab.meditate,hab.pullups,hab.water].map(h=>h?.streak||0));
+
+    // Mood
+    const moodKey = s.mood?.today;
+    const moodEmoji = moodKey ? (MOODS[moodKey] || '') : '';
+
+    // KF
+    const kf = s.kungfu || {};
+
+    // Calendar
+    const events = (s.calendar?.events || [])
+        .filter(e => e.date >= td)
+        .sort((a,b) => a.date.localeCompare(b.date))
+        .slice(0, 3);
+
+    // ── Build HTML ──────────────────────────────────
+    let html = `
+        <div class="hdr">
+            <div class="hdr-left">
+                <span class="avatar">👦</span>
+                <div>
+                    <div class="hdr-name">Krish's Day</div>
+                    <div class="hdr-tier">${tier.icon} ${tier.name}</div>
+                </div>
+            </div>
+            <div class="hdr-right">
+                ${moodEmoji ? `<span class="mood-em" title="Mood">${moodEmoji}</span>` : ''}
+                <div class="pts-chip">⭐ ${ptsToday} pts</div>
+            </div>
+        </div>`;
+
+    // Alerts
+    const hasAlerts = overdue.length || dueToday.length || dueTom.length;
+    if (hasAlerts) {
+        html += `<div class="alerts">`;
+        overdue.forEach(h  => { html += `<div class="alert alert-red"><span>🚨</span><span>${h.subject}: <b>${h.title}</b> — OVERDUE!</span></div>`; });
+        dueToday.forEach(h => { html += `<div class="alert alert-red"><span>🔴</span><span>${h.subject}: <b>${h.title}</b> — DUE TODAY</span></div>`; });
+        dueTom.forEach(h   => { html += `<div class="alert alert-orange"><span>⚠️</span><span>${h.subject}: <b>${h.title}</b> — due tomorrow</span></div>`; });
+        html += `</div>`;
+    }
+
+    // Stat strip
+    const hwPct = hwTotal ? Math.round(hwDone/hwTotal*100) : 0;
+    html += `<div class="stats">
+        <div class="stat">
+            <div class="stat-lbl">Chores</div>
+            <div class="stat-val">${doneC} / ${allC.length}</div>
+            <div class="stat-sub">${chorePct}% done</div>
+            <div class="mini-bar"><div class="mini-bar-fill" style="width:${chorePct}%;background:#F59E0B"></div></div>
+        </div>
+        <div class="stat">
+            <div class="stat-lbl">Habits</div>
+            <div class="stat-val">${habitDoneCount} / 3</div>
+            <div class="stat-sub">🔥 ${maxStreak} day streak</div>
+            <div class="habit-row">
+                <div class="hdot ${medDone?'done':''}">🧘</div>
+                <div class="hdot ${pullDone?'done':''}">💪</div>
+                <div class="hdot ${watDone?'done':''}">💧</div>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-lbl">Homework</div>
+            <div class="stat-val">${hwPending} pending</div>
+            <div class="stat-sub">${hwDone} done</div>
+            <div class="mini-bar"><div class="mini-bar-fill" style="width:${hwPct}%;background:#6366F1"></div></div>
+        </div>
+    </div>`;
+
+    // Kung Fu daily goals
+    html += `<div class="kf-row">
+        <div class="kf-chip ${kf.todayPractice?'done':''}">
+            <span class="kf-chip-ico">🥋</span>Practice
+        </div>
+        <div class="kf-chip ${kf.todayFlashcards?'done':''}">
+            <span class="kf-chip-ico">🃏</span>Cards
+        </div>
+        <div class="kf-chip ${kf.todayStudy?'done':''}">
+            <span class="kf-chip-ico">📖</span>Study
+        </div>
+        <div class="kf-chip" style="flex:1.5">
+            <span class="kf-chip-ico">🇮🇳</span>
+            ${s.gujarati?.todayMinutes||0}/10 min
+        </div>
+    </div>`;
+
+    // Events
+    if (events.length) {
+        html += `<div class="events">`;
+        events.forEach(ev => {
+            const isToday = ev.date === td;
+            const when = isToday ? 'TODAY' : dayLabel(ev.date);
+            html += `<div class="ev-row">
+                <div class="ev-dot" style="background:${ev.color||'#6366F1'}"></div>
+                <span class="ev-when ${isToday?'today':''}">${when}</span>
+                <span class="ev-title">${ev.title}</span>
+                <span class="ev-time">${ev.time}</span>
+            </div>`;
+        });
+        html += `</div>`;
+    }
+
+    html += `<button class="open-btn" onclick="openBoard()">Open Krish's Activity Board →</button>`;
+    app.innerHTML = html;
+}
+
+render();
+setInterval(render, 60000); // refresh every minute
+</script>
+</body>
+</html>
