@@ -1979,7 +1979,12 @@ function startPomodoro(hwId) {
     if (_pomoInterval) clearInterval(_pomoInterval);
     state.pomodoro = { hwId, mode:'work', remaining:25*60, total:25*60, active:true };
     saveState();
-    switchTab('homework');
+    // If already on the board show the full panel; if on dashboard surface the mini widget
+    if (document.getElementById('view-board').classList.contains('active')) {
+        switchTab('homework');
+    } else {
+        renderDashPomoMini();
+    }
     startPomoInterval();
 }
 
