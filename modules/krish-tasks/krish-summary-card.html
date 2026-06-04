@@ -88,6 +88,7 @@
             color: white; font-size: 0.9em; font-weight: 800;
             cursor: pointer; letter-spacing: 0.3px;
             transition: opacity 0.2s, transform 0.15s;
+            text-decoration: none; text-align: center;
         }
         .open-btn:hover  { opacity: 0.9; }
         .open-btn:active { transform: scale(0.98); }
@@ -135,8 +136,6 @@ function today() { return new Date().toISOString().split('T')[0]; }
 function addDays(d, n) { const dt=new Date(d+'T12:00:00'); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; }
 function dayLabel(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'}); }
 
-function openBoard() { window.top.location.href = BOARD_URL; }
-
 function render() {
     const app = document.getElementById('app');
     const raw = localStorage.getItem(LS_KEY);
@@ -145,7 +144,7 @@ function render() {
         app.innerHTML = `<div class="empty">
             <div class="empty-ico">👦</div>
             <div class="empty-msg">Open the board once to get started</div>
-            <button class="open-btn" onclick="openBoard()">Open Krish's Activity Board →</button>
+            <a class="open-btn" href="${BOARD_URL}" target="_top">Open Krish's Activity Board →</a>
         </div>`;
         return;
     }
@@ -280,7 +279,7 @@ function render() {
         html += `</div>`;
     }
 
-    html += `<button class="open-btn" onclick="openBoard()">Open Krish's Activity Board →</button>`;
+    html += `<a class="open-btn" href="${BOARD_URL}" target="_top">Open Krish's Activity Board →</a>`;
     app.innerHTML = html;
 }
 
