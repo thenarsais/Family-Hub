@@ -210,14 +210,19 @@
                 },
                 {
                   "type": "vertical-stack",
+                  "card_mod": {
+                    "style": {
+                      ".": "ha-card { border-radius: 16px !important; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important; background: #1E293B !important; }",
+                      "$hui-vertical-stack-card$": "#root { gap: 0 !important; }"
+                    }
+                  },
                   "cards": [
                     {
                       "type": "iframe",
                       "url": "/local/krish-tasks/krish-summary-card.html",
                       "aspect_ratio": "42%",
-                      "grid_options": {
-                        "columns": "full",
-                        "rows": 5
+                      "card_mod": {
+                        "style": "ha-card { border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; border: none !important; display: block; }"
                       }
                     },
                     {
@@ -228,6 +233,9 @@
                       "tap_action": {
                         "action": "url",
                         "url_path": "/local/krish-tasks/krish-daily-tasks.html?from=ha"
+                      },
+                      "card_mod": {
+                        "style": "ha-card { border-radius: 0 !important; box-shadow: none !important; margin: -6px 0 0 0 !important; background: #1E293B !important; border: none !important; border-top: 1px solid rgba(99,102,241,0.3) !important; position: relative; z-index: 1; } .card-content { padding: 2px 0; } ha-icon { color: #818CF8; } .name { color: #C7D2FE; font-weight: 700; font-size: 0.9em; letter-spacing: 0.3px; }"
                       }
                     }
                   ],
