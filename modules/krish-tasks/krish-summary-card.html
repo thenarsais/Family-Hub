@@ -180,7 +180,6 @@ function render() {
         app.innerHTML = `<div class="empty">
             <div class="empty-ico">👦</div>
             <div class="empty-msg">Open the board once to get started</div>
-            <button class="open-btn" onclick="openBoardModal()">Open Krish's Activity Board →</button>
         </div>`;
         return;
     }
@@ -315,7 +314,7 @@ function render() {
         html += `</div>`;
     }
 
-    html += `<button class="open-btn" onclick="openBoardModal()">Open Krish's Activity Board →</button>`;
+    // Button removed - using native HA button card below instead
     app.innerHTML = html;
 }
 
