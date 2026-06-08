@@ -180,7 +180,7 @@ function render() {
         app.innerHTML = `<div class="empty">
             <div class="empty-ico">👦</div>
             <div class="empty-msg">Open the board once to get started</div>
-            <a class="open-btn" href="${BOARD_URL}" target="_top">Open Krish's Activity Board →</a>
+            <button class="open-btn" onclick="openBoardModal()">Open Krish's Activity Board →</button>
         </div>`;
         return;
     }
@@ -320,21 +320,22 @@ function render() {
 }
 
 function openBoardModal() {
-    const modal = document.getElementById('board-modal');
-    if (modal) modal.classList.add('active');
+    // Open Activity Board as a fullscreen popup (modal-style)
+    // Using noopener to isolate from opener, with fullscreen dimensions
+    const w = window.open('/local/krish-tasks/krish-daily-tasks.html?from=ha', 'KrishBoard',
+        'width=' + screen.width + ',height=' + screen.height +
+        ',left=0,top=0,noopener=yes,noreferrer=yes,modal=yes');
+    if (w) {
+        w.focus();
+        // Try to maximize
+        w.moveTo(0, 0);
+        w.resizeTo(screen.width, screen.height);
+    }
 }
 
 function closeBoardModal() {
-    const modal = document.getElementById('board-modal');
-    if (modal) modal.classList.remove('active');
-    // Reload summary card after returning (in case state changed)
-    setTimeout(() => render(), 300);
+    // Not used in popup mode, but kept for compatibility
 }
-
-// Close modal on Escape key
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeBoardModal();
-});
 
 render();
 setInterval(render, 60000); // refresh every minute
