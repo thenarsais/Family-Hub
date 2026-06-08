@@ -71,7 +71,7 @@
   description: Resets all of Krish's chores to off every morning at 6am
   triggers:
   - trigger: time
-    at: 06:00:00
+    at: '06:00:00'
   conditions: []
   actions:
   - action: input_boolean.turn_off
@@ -104,7 +104,7 @@
   description: Resets Krish's monthly points counter on the 1st of each month
   triggers:
   - trigger: time
-    at: 00:00:00
+    at: '00:00:00'
   conditions:
   - condition: template
     value_template: '{{ now().day == 1 }}'
@@ -123,10 +123,10 @@
   description: Night mode on at 9pm, off at 6am (consolidated from 2 automations)
   triggers:
   - trigger: time
-    at: 06:00:00
+    at: '06:00:00'
     id: morning
   - trigger: time
-    at: 21:00:00
+    at: '21:00:00'
     id: evening
   conditions: []
   actions:
@@ -214,7 +214,7 @@
   description: Reminds to take bins out the evening before pickup
   triggers:
   - trigger: time
-    at: 07:00:00
+    at: '07:00:00'
   conditions:
   - condition: template
     value_template: '{{ (as_timestamp(states(''sensor.trash_recycling_current_pickup''))
@@ -238,7 +238,7 @@
   description: Reminds to bring bins in the evening of pickup day
   triggers:
   - trigger: time
-    at: 18:00:00
+    at: '18:00:00'
   conditions:
   - condition: template
     value_template: '{{ as_timestamp(states(''sensor.trash_recycling_current_pickup''))
