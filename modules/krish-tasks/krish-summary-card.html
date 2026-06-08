@@ -112,10 +112,46 @@
         }
         .kf-chip.done { background: #064E3B; color: #6EE7B7; border-color: #10B981; }
         .kf-chip-ico { font-size: 1.3em; display: block; margin-bottom: 2px; }
+
+        /* ── MODAL OVERLAY ────────────────────────────── */
+        .modal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 99999;
+            flex-direction: column;
+        }
+        .modal.active { display: flex; }
+        .modal-hdr {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: #1E293B;
+        }
+        .modal-title { font-weight: 800; font-size: 1em; }
+        .modal-close {
+            background: none; border: none; color: white; font-size: 1.5em;
+            cursor: pointer; padding: 0; line-height: 1; transition: opacity 0.2s;
+        }
+        .modal-close:hover { opacity: 0.7; }
+        .modal-content {
+            flex: 1; overflow: hidden;
+            iframe { width: 100%; height: 100%; border: none; }
+        }
+        .modal iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
     <div id="app"><div class="empty"><div class="empty-ico">⏳</div></div></div>
+
+    <!-- Modal Overlay -->
+    <div id="board-modal" class="modal">
+        <div class="modal-hdr">
+            <span class="modal-title">Krish's Activity Board</span>
+            <button class="modal-close" onclick="closeBoardModal()">✕</button>
+        </div>
+        <div class="modal-content">
+            <iframe id="board-iframe" src="/local/krish-tasks/krish-daily-tasks.html" allow="same-origin"></iframe>
+        </div>
+    </div>
 
 <script>
 'use strict';
@@ -279,9 +315,26 @@ function render() {
         html += `</div>`;
     }
 
-    html += `<a class="open-btn" href="${BOARD_URL}" target="_top">Open Krish's Activity Board →</a>`;
+    html += `<button class="open-btn" onclick="openBoardModal()">Open Krish's Activity Board →</button>`;
     app.innerHTML = html;
 }
+
+function openBoardModal() {
+    const modal = document.getElementById('board-modal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeBoardModal() {
+    const modal = document.getElementById('board-modal');
+    if (modal) modal.classList.remove('active');
+    // Reload summary card after returning (in case state changed)
+    setTimeout(() => render(), 300);
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeBoardModal();
+});
 
 render();
 setInterval(render, 60000); // refresh every minute

@@ -209,38 +209,12 @@
                   "content": "{% set points = states('counter.krish_monthly_points') | int %} {% set goal = 400 %} {% set pct = ((points / goal) * 100) | round %}\n**{{ points }} / {{ goal }} points**\n{% if points >= 400 %} \ud83e\udd47 Big Reward Unlocked! Amazing job Krish! {% elif points >= 300 %} \ud83e\udd48 Medium Reward Unlocked! Keep going for the big one! {% elif points >= 200 %} \ud83e\udd49 Small Reward Unlocked! Great work, keep it up! {% else %} Keep going! {{ 200 - points }} points to your first reward! {% endif %}\n\ud83e\udd49 200 pts &nbsp;&nbsp; \ud83e\udd48 300 pts &nbsp;&nbsp; \ud83e\udd47 400 pts\n"
                 },
                 {
-                  "type": "vertical-stack",
-                  "card_mod": {
-                    "style": {
-                      ".": "ha-card { border-radius: 16px !important; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important; background: #1E293B !important; }",
-                      "$hui-vertical-stack-card$": "#root { gap: 0 !important; }"
-                    }
-                  },
-                  "cards": [
-                    {
-                      "type": "iframe",
-                      "url": "/local/krish-tasks/krish-summary-card.html",
-                      "aspect_ratio": "42%",
-                      "card_mod": {
-                        "style": "ha-card { border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; border: none !important; display: block; }"
-                      }
-                    },
-                    {
-                      "type": "button",
-                      "name": "Open Krish's Activity Board",
-                      "icon": "mdi:checkbox-marked-circle-outline",
-                      "show_state": false,
-                      "tap_action": {
-                        "action": "url",
-                        "url_path": "/local/krish-tasks/krish-daily-tasks.html?from=ha"
-                      },
-                      "card_mod": {
-                        "style": "ha-card { border-radius: 0 !important; box-shadow: none !important; margin: -6px 0 0 0 !important; background: #1E293B !important; border: none !important; border-top: 1px solid rgba(99,102,241,0.3) !important; position: relative; z-index: 1; } .card-content { padding: 2px 0; } ha-icon { color: #818CF8; } .name { color: #C7D2FE; font-weight: 700; font-size: 0.9em; letter-spacing: 0.3px; }"
-                      }
-                    }
-                  ],
+                  "type": "iframe",
+                  "url": "/local/krish-tasks/krish-summary-card.html",
+                  "aspect_ratio": "42%",
                   "grid_options": {
-                    "columns": "full"
+                    "columns": "full",
+                    "rows": 5
                   }
                 },
                 {
