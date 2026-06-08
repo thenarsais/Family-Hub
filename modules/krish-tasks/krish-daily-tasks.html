@@ -1361,6 +1361,7 @@ function switchTab(tab) {
         case 'chores':   renderChoresPanel();   break;
         case 'homework': renderHomeworkPanel(); break;
         case 'kungfu':   renderKungFuPanel();   break;
+        case 'trivia':   renderTriviaPanel();   break;
         case 'gujarati': renderGujaratiPanel(); break;
         case 'calendar': renderCalendarPanel(); break;
         case 'habits':   renderHabitsPanel();   break;
@@ -2321,6 +2322,106 @@ function renderKungFuPanel() {
     `;
 
     document.getElementById('panel-kungfu').innerHTML = html;
+}
+
+// ── TRIVIA PANEL ───────────────────────────────
+function renderTriviaPanel() {
+    const t = state.trivia || {};
+    const q = t.currentQuestion;
+
+    let html = `
+        <div class="sec-hdr">
+            <div>
+                <div class="sec-title">🧠 Daily Trivia</div>
+                <div class="sec-sub">${t.streak || 0 > 0 ? '🔥 ' + t.streak + ' day streak!' : 'Start your streak today'}</div>
+            </div>
+        </div>
+    `;
+
+    if (!q) {
+        html += `<div class="empty-state" style="padding:40px;text-align:center"><div class="empty-ico">🧠</div><div class="empty-txt">No question available</div></div>`;
+    } else {
+        const answered = t.todayAnswered;
+        html += `
+            <div style="padding:14px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                    <span style="font-size:0.8em;color:#818CF8;font-weight:600;text-transform:uppercase">${q.category}</span>
+                    <span style="font-size:0.8em;color:#94A3B8">${t.totalAnswered || 0} answered</span>
+                </div>
+
+                <div style="background:rgba(99,102,241,0.1);border-radius:12px;padding:20px;margin-bottom:16px">
+                    <div style="font-size:1.1em;font-weight:600;color:#F1F5F9;line-height:1.5">${q.q}</div>
+                </div>
+
+                ${answered ? `
+                    <div style="background:#10B98122;border-left:4px solid #10B981;border-radius:8px;padding:14px;margin-bottom:16px">
+                        <div style="color:#6EE7B7;font-weight:600;margin-bottom:6px">✓ You answered correctly!</div>
+                        <div style="color:#6EE7B7;font-size:0.9em">Streak: ${t.streak || 0} days</div>
+                    </div>
+                ` : `
+                    <div id="trivia-form">
+                        <input type="text" id="trivia-answer" placeholder="Your answer..."
+                            style="width:100%;padding:12px;border:2px solid #475569;background:#1E293B;color:white;border-radius:8px;font-size:1em;margin-bottom:10px;font-family:inherit"
+                            onkeypress="if(event.key==='Enter') checkTriviaAnswer()">
+
+                        <div style="display:flex;gap:8px">
+                            <button onclick="checkTriviaAnswer()" style="flex:1;padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer">
+                                Check Answer
+                            </button>
+                            <button onclick="toggleTriviaHint()" style="flex:0.3;padding:12px;background:#8B5CF6;color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em">
+                                💡
+                            </button>
+                        </div>
+
+                        <div id="trivia-hint" style="display:none;background:rgba(139,92,246,0.15);border-left:3px solid #8B5CF6;padding:12px;border-radius:8px;margin-top:10px;color:#C4B5FD">
+                            <strong>Hint:</strong> ${q.hint}
+                        </div>
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    document.getElementById('panel-trivia').innerHTML = html;
+}
+
+function toggleTriviaHint() {
+    const hint = document.getElementById('trivia-hint');
+    if (hint) {
+        hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function checkTriviaAnswer() {
+    const input = document.getElementById('trivia-answer');
+    if (!input || !state.trivia?.currentQuestion) return;
+
+    const answer = input.value.trim().toLowerCase();
+    const correct = state.trivia.currentQuestion.a.toLowerCase();
+
+    if (answer === correct) {
+        // Correct!
+        state.trivia.todayAnswered = true;
+        state.trivia.totalAnswered = (state.trivia.totalAnswered || 0) + 1;
+        state.trivia.lastAnsweredDate = todayStr();
+
+        // Increment streak (checked on daily reset in applyResets)
+        if (!state.trivia.streak) state.trivia.streak = 1;
+        else state.trivia.streak += 1;
+
+        addPoints(5);
+        playTick();
+        saveState();
+        renderTriviaPanel();
+    } else {
+        // Wrong - show feedback
+        input.style.borderColor = '#EF4444';
+        input.style.backgroundColor = '#4400001A';
+        setTimeout(() => {
+            input.style.borderColor = '#475569';
+            input.style.backgroundColor = '#1E293B';
+        }, 2000);
+    }
 }
 
 function toggleKFGoal(type) {
