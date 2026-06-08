@@ -1234,16 +1234,12 @@ function loadState() {
     try {
         const raw = localStorage.getItem(LS_KEY);
         if (raw) {
-            console.log('[loadState] Loading from localStorage');
             state = JSON.parse(raw);
             applyResets();
             return;
         }
     } catch (e) { console.warn('State parse error', e); }
-    console.log('[loadState] Creating new state from buildDefaultState');
     state = buildDefaultState();
-    console.log('[loadState] State keys:', Object.keys(state));
-    console.log('[loadState] state.trivia exists:', !!state.trivia);
     applyResets();
     saveState();
 }
@@ -1256,7 +1252,6 @@ function applyResets() {
     const today = todayStr();
     const weekStart = getMondayOfWeek(today);
     const month = today.slice(0, 7);
-    console.log('[applyResets] Called for', today);
 
     // Daily reset
     if (state.date !== today) {
@@ -1295,7 +1290,6 @@ function applyResets() {
 
     // Trivia: check streak, reset daily flag, and ensure question is set (always, not just on daily reset)
     if (state.trivia) {
-        console.log('[applyResets] Trivia processing - currentQuestion before:', !!state.trivia.currentQuestion);
         const lastDate = state.trivia.lastAnsweredDate;
         const prevDay = addDays(today, -1);
         if (state.date !== today && lastDate !== today) {
@@ -1306,9 +1300,7 @@ function applyResets() {
         }
         // Always ensure we have a question for today
         if (!state.trivia.currentQuestion) {
-            console.log('[applyResets] Setting trivia question...');
             state.trivia.currentQuestion = getTriviaQuestion(today);
-            console.log('[applyResets] Question set:', !!state.trivia.currentQuestion);
         }
     }
 
