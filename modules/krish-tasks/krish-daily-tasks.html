@@ -916,6 +916,16 @@
                 </div>
                 <div id="db-trivia-content"></div>
             </div>
+
+            <div class="db-card" id="db-reading-card">
+                <div class="db-card-hdr" onclick="showBoard('reading')" style="cursor:pointer">
+                    <span class="db-card-ico">📚</span>
+                    <span class="db-ct">Reading</span>
+                    <span class="db-cs" id="db-reading-summary"></span>
+                    <button class="db-expand" onclick="showBoard('reading')">Log ↗</button>
+                </div>
+                <div id="db-reading-content"></div>
+            </div>
         </div>
 
         <!-- COL 3: HABITS (full interactive) -->
@@ -978,6 +988,7 @@
         <button class="b-tab" data-tab="homework" onclick="switchTab('homework')"><span class="ti">📚</span>Homework  </button>
         <button class="b-tab" data-tab="kungfu"   onclick="switchTab('kungfu')">  <span class="ti">🥋</span>Kung Fu  </button>
         <button class="b-tab" data-tab="trivia"   onclick="switchTab('trivia')">   <span class="ti">🧠</span>Trivia   </button>
+        <button class="b-tab" data-tab="reading"  onclick="switchTab('reading')">  <span class="ti">📚</span>Reading  </button>
         <button class="b-tab" data-tab="gujarati" onclick="switchTab('gujarati')"><span class="ti">🇮🇳</span>Gujarati </button>
         <button class="b-tab" data-tab="calendar" onclick="switchTab('calendar')"><span class="ti">📅</span>Calendar  </button>
         <button class="b-tab" data-tab="habits"   onclick="switchTab('habits')">  <span class="ti">💪</span>Habits   </button>
@@ -996,6 +1007,9 @@
 
     <!-- TRIVIA PANEL -->
     <div id="panel-trivia" class="b-panel"></div>
+
+    <!-- READING PANEL -->
+    <div id="panel-reading" class="b-panel"></div>
 
     <!-- GUJARATI PANEL -->
     <div id="panel-gujarati" class="b-panel"></div>
@@ -1367,6 +1381,7 @@ function switchTab(tab) {
         case 'homework': renderHomeworkPanel(); break;
         case 'kungfu':   renderKungFuPanel();   break;
         case 'trivia':   renderTriviaPanel();   break;
+        case 'reading':  renderBoardReading();  break;
         case 'gujarati': renderGujaratiPanel(); break;
         case 'calendar': renderCalendarPanel(); break;
         case 'habits':   renderHabitsPanel();   break;
@@ -1528,6 +1543,7 @@ function renderDashboard() {
     renderDashCalendar();
     renderDashKungFu();
     renderDashTrivia();
+    renderDashReading();
     renderDashPoints();
 }
 
@@ -1874,6 +1890,31 @@ function renderDashTrivia() {
         `;
     }
     const el = document.getElementById('db-trivia-content');
+    if (el) el.innerHTML = html;
+}
+
+// ── Dashboard: Reading ──────────────────────────────
+function renderDashReading() {
+    const r = state.reading || {};
+    const pct = Math.min(100, (r.dailyMinutes / 20) * 100);
+    const weekPct = Math.min(100, (r.weeklyMinutes / 100) * 100);
+
+    let html = `
+        <div style="padding:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <span style="font-size:0.8em;color:#94A3B8">Today: ${r.dailyMinutes||0}/20 min</span>
+                <span style="font-size:0.8em;color:#818CF8;font-weight:600">Week: ${r.weeklyMinutes||0}/100</span>
+            </div>
+            <div style="background:#334155;border-radius:8px;height:6px;overflow:hidden;margin-bottom:10px">
+                <div style="background:linear-gradient(90deg,#10B981,#6EE7B7);height:100%;width:${pct}%;transition:width 0.3s"></div>
+            </div>
+            <button onclick="showBoard('reading')" style="width:100%;padding:8px;background:#10B981;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9em">
+                ${r.dailyMinutes >= 20 ? '✓ Daily Goal Done' : 'Log Reading →'}
+            </button>
+        </div>
+    `;
+
+    const el = document.getElementById('db-reading-content');
     if (el) el.innerHTML = html;
 }
 
@@ -2426,6 +2467,98 @@ function checkTriviaAnswer() {
             input.style.borderColor = '#475569';
             input.style.backgroundColor = '#1E293B';
         }, 2000);
+    }
+}
+
+// ── READING PANEL ──────────────────────────────
+function renderBoardReading() {
+    const r = state.reading || {};
+    const today = todayStr();
+    const isGoalMet = r.dailyMinutes >= 20;
+
+    let html = `
+        <div class="sec-hdr">
+            <div>
+                <div class="sec-title">📚 Daily Reading</div>
+                <div class="sec-sub">${r.dailyMinutes}/20 min today · ${r.weeklyMinutes}/100 min this week</div>
+            </div>
+        </div>
+
+        <div style="padding:16px">
+            <!-- Progress bars -->
+            <div style="margin-bottom:20px">
+                <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px">Today's Progress</div>
+                <div style="background:#334155;border-radius:8px;height:8px;overflow:hidden">
+                    <div style="background:linear-gradient(90deg,#10B981,#6EE7B7);height:100%;width:${Math.min(100, (r.dailyMinutes/20)*100)}%;transition:width 0.3s"></div>
+                </div>
+                <div style="font-size:0.75em;color:#64748B;margin-top:4px">${r.dailyMinutes} of 20 minutes</div>
+            </div>
+
+            <div style="margin-bottom:20px">
+                <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px">This Week</div>
+                <div style="background:#334155;border-radius:8px;height:8px;overflow:hidden">
+                    <div style="background:linear-gradient(90deg,#6366F1,#A78BFA);height:100%;width:${Math.min(100, (r.weeklyMinutes/100)*100)}%;transition:width 0.3s"></div>
+                </div>
+                <div style="font-size:0.75em;color:#64748B;margin-top:4px">${r.weeklyMinutes} of 100 minutes</div>
+            </div>
+
+            ${isGoalMet ? `
+                <div style="background:#10B98122;border-left:4px solid #10B981;border-radius:8px;padding:12px;margin-bottom:20px">
+                    <div style="color:#6EE7B7;font-weight:600">✓ Daily goal reached!</div>
+                </div>
+            ` : ''}
+
+            <!-- Quick add buttons -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+                <button onclick="addReadingMinutes(5)" style="padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+5 min</button>
+                <button onclick="addReadingMinutes(10)" style="padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+10 min</button>
+                <button onclick="addReadingMinutes(15)" style="padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+15 min</button>
+                <button onclick="addReadingMinutes(20)" style="padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+20 min</button>
+            </div>
+
+            <!-- Custom input -->
+            <div style="display:flex;gap:8px;margin-bottom:20px">
+                <input type="number" id="reading-custom-input" placeholder="Minutes" min="1" max="120"
+                    style="flex:1;padding:10px;border:2px solid #475569;background:#1E293B;color:white;border-radius:8px;font-size:1em;font-family:inherit">
+                <button onclick="addReadingCustom()" style="padding:10px 16px;background:#8B5CF6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">Add</button>
+            </div>
+
+            <!-- History -->
+            ${r.history && r.history.length > 0 ? `
+                <div style="margin-top:20px">
+                    <div style="font-size:0.85em;color:#94A3B8;margin-bottom:8px;font-weight:600">Week History</div>
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                        ${r.history.slice(-4).reverse().map(h =>
+                            `<div style="display:flex;justify-content:space-between;padding:8px;background:#1E293B;border-radius:6px;font-size:0.9em">
+                                <span style="color:#94A3B8">Week of ${h.week}</span>
+                                <span style="color:#10B981;font-weight:600">${h.minutes} min</span>
+                            </div>`
+                        ).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    document.getElementById('panel-reading').innerHTML = html;
+}
+
+function addReadingMinutes(minutes) {
+    state.reading.dailyMinutes = (state.reading.dailyMinutes || 0) + minutes;
+    state.reading.weeklyMinutes = (state.reading.weeklyMinutes || 0) + minutes;
+    addPoints(Math.ceil(minutes / 5)); // 1 pt per 5 min
+    playTick();
+    saveState();
+    renderBoardReading();
+    renderDashboard();
+}
+
+function addReadingCustom() {
+    const input = document.getElementById('reading-custom-input');
+    const val = parseInt(input.value);
+    if (val > 0 && val <= 120) {
+        addReadingMinutes(val);
+        input.value = '';
     }
 }
 
