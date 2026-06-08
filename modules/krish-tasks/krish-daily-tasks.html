@@ -1240,6 +1240,7 @@ function loadState() {
         }
     } catch (e) { console.warn('State parse error', e); }
     state = buildDefaultState();
+    applyResets();
     saveState();
 }
 
@@ -1280,7 +1281,7 @@ function applyResets() {
             if (h.todayCount !== undefined) h.todayCount = 0;
             if (h.todayGlasses !== undefined) h.todayGlasses = 0;
         });
-        // Trivia: check streak and reset daily flag
+        // Trivia: check streak, reset daily flag, and ensure question is set
         if (state.trivia) {
             const lastDate = state.trivia.lastAnsweredDate;
             const prevDay = addDays(today, -1);
@@ -1289,6 +1290,9 @@ function applyResets() {
                     state.trivia.streak = 0; // streak broken
                 }
                 state.trivia.todayAnswered = false;
+            }
+            // Always ensure we have a question for today
+            if (!state.trivia.currentQuestion) {
                 state.trivia.currentQuestion = getTriviaQuestion(today);
             }
         }
