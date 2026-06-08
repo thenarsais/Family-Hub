@@ -1,0 +1,147 @@
+# ==================== CALENDAR-BASED TRASH REMINDERS ====================
+# Smart trash reminders based on calendar events
+# Night before at 6pm + Morning of at 6am (persistent until dismissed)
+# =========================================================================
+
+# AUTOMATION 1: Night Before Reminder (6pm)
+- id: trash_reminder_night_before
+  alias: 'Trash Pickup - Night Before Reminder'
+  description: 'Sticky reminder at 6pm the night before trash pickup'
+  trigger:
+    - platform: time
+      at: '18:00:00'  # 6:00 PM
+  condition:
+    - condition: template
+      value_template: >
+        {% set trash_event = state_attr('calendar.trash_recycling', 'message') %}
+        {% set today = now().date() %}
+        {% set tomorrow = (now().date() + timedelta(days=1)) %}
+        {{ state_attr('calendar.trash_recycling', 'start_time')|default(None) != None
+           and as_datetime(state_attr('calendar.trash_recycling', 'start_time')|default(now())).date() == tomorrow }}
+  action:
+    - service: notify.notify
+      data:
+        title: '🗑️ Trash Pickup Tomorrow!'
+        message: >
+          Don't forget to put out the bins tonight.
+          Trash pickup is tomorrow morning.
+        notification_id: trash_night_before_reminder
+        data:
+          timeout: 0  # Persistent notification
+          tag: trash_before
+
+# AUTOMATION 2: Morning Of Reminder (6am)
+- id: trash_reminder_morning_of
+  alias: 'Trash Pickup - Morning Of Reminder'
+  description: 'Sticky reminder at 6am on trash pickup day'
+  trigger:
+    - platform: time
+      at: '06:00:00'  # 6:00 AM
+  condition:
+    - condition: template
+      value_template: >
+        {% set today = now().date() %}
+        {{ state_attr('calendar.trash_recycling', 'start_time')|default(None) != None
+           and as_datetime(state_attr('calendar.trash_recycling', 'start_time')|default(now())).date() == today
+           and states('calendar.trash_recycling') == 'on' }}
+  action:
+    - service: notify.notify
+      data:
+        title: '🗑️ Trash Pickup Today!'
+        message: >
+          It's trash day! Make sure the bins are out by 6am.
+          Don't forget to bring them back in this evening.
+        notification_id: trash_morning_reminder
+        data:
+          timeout: 0  # Persistent notification
+          tag: trash_morning
+
+# AUTOMATION 3: Evening Reminder (6pm) to Bring Bins In
+- id: trash_reminder_evening_bring_in
+  alias: 'Trash Pickup - Evening Bring Bins In'
+  description: 'Sticky reminder at 6pm on trash pickup day'
+  trigger:
+    - platform: time
+      at: '18:00:00'  # 6:00 PM (same time as night-before, but different day)
+  condition:
+    - condition: template
+      value_template: >
+        {% set today = now().date() %}
+        {{ state_attr('calendar.trash_recycling', 'start_time')|default(None) != None
+           and as_datetime(state_attr('calendar.trash_recycling', 'start_time')|default(now())).date() == today }}
+  action:
+    - service: notify.notify
+      data:
+        title: '🗑️ Bring Bins In!'
+        message: >
+          Trash pickup was this morning.
+          Don't forget to bring the bins back to the side of the house.
+        notification_id: trash_evening_reminder
+        data:
+          timeout: 0  # Persistent notification
+          tag: trash_evening
+
+# ==================== TEMPLATE SENSOR FOR TRASH STATUS ====================
+# Optional: Create a template sensor to track trash days more easily
+
+template:
+  - sensor:
+      - name: "Trash Pickup Today"
+        unique_id: trash_pickup_today
+        state: >
+          {% if state_attr('calendar.trash_recycling', 'start_time') %}
+            {% set today = now().date() %}
+            {% if as_datetime(state_attr('calendar.trash_recycling', 'start_time')).date() == today %}
+              yes
+            {% else %}
+              no
+            {% endif %}
+          {% else %}
+            no
+          {% endif %}
+
+      - name: "Trash Pickup Tomorrow"
+        unique_id: trash_pickup_tomorrow
+        state: >
+          {% if state_attr('calendar.trash_recycling', 'start_time') %}
+            {% set tomorrow = (now().date() + timedelta(days=1)) %}
+            {% if as_datetime(state_attr('calendar.trash_recycling', 'start_time')).date() == tomorrow %}
+              yes
+            {% else %}
+              no
+            {% endif %}
+          {% else %}
+            no
+          {% endif %}
+
+      - name: "Next Trash Pickup Date"
+        unique_id: next_trash_pickup_date
+        state: >
+          {% if state_attr('calendar.trash_recycling', 'start_time') %}
+            {{ as_datetime(state_attr('calendar.trash_recycling', 'start_time')).date() }}
+          {% else %}
+            Unknown
+          {% endif %}
+
+# ==================== NOTES ====================
+#
+# How it works:
+# 1. Automations trigger at specific times (6pm night before, 6am morning, 6pm evening)
+# 2. Conditions check if that day is a trash day using the calendar event
+# 3. Notifications are "sticky" (timeout: 0) and persistent
+# 4. Each notification has a unique_id so it only fires once per day
+# 5. Users can dismiss the notification, and it won't re-trigger that day
+#
+# To use:
+# 1. Ensure you have calendar.trash_recycling set up in HA
+# 2. Replace trash reminders in automations.yaml with these
+# 3. Add template sensors to template-sensors.yaml
+# 4. Restart HA or reload automations
+#
+# Customization:
+# - Change times: Modify '18:00:00' and '06:00:00'
+# - Change messages: Update 'message' field in notify action
+# - Change notification device: Change notify.notify to notify.[your_device]
+# - Add to specific device: Use service: notify.mobile_app_[phone_name]
+#
+# ==================== END TRASH REMINDERS ====================
