@@ -61,6 +61,13 @@
                   "title": "Shopping List"
                 },
                 {
+                  "type": "markdown",
+                  "content": "## \ud83c\udfaf **{{ states('counter.krish_points') }} Points** {% if states('counter.krish_monthly_points') | int >= 200 %}\u2b50{% endif %} {% if states('counter.krish_monthly_points') | int >= 300 %}\u2b50{% endif %} {% if states('counter.krish_monthly_points') | int >= 400 %}\u2b50{% endif %}",
+                  "grid_options": {
+                    "columns": "full"
+                  }
+                },
+                {
                   "type": "conditional",
                   "conditions": [
                     {
@@ -73,10 +80,6 @@
                     "type": "entities",
                     "title": "Krish's Morning Chores \ud83c\udf05",
                     "entities": [
-                      {
-                        "entity": "counter.krish_points",
-                        "name": "Total Points"
-                      },
                       {
                         "entity": "input_boolean.krish_make_bed",
                         "name": "Make Bed"
@@ -119,10 +122,6 @@
                     "title": "Krish's Afternoon Chores \ud83c\udf92",
                     "entities": [
                       {
-                        "entity": "counter.krish_points",
-                        "name": "Total Points"
-                      },
-                      {
                         "entity": "input_boolean.krish_put_away_backpack",
                         "name": "Put Away Backpack"
                       },
@@ -163,10 +162,6 @@
                     "type": "entities",
                     "title": "Krish's Evening Chores \ud83c\udf19",
                     "entities": [
-                      {
-                        "entity": "counter.krish_points",
-                        "name": "Total Points"
-                      },
                       {
                         "entity": "input_boolean.krish_prathna",
                         "name": "Prathna with Maa"
@@ -255,14 +250,24 @@
                   "title": "World Clocks \ud83c\udf0d"
                 },
                 {
-                  "type": "iframe",
-                  "url": "http://localhost:8080/meal-planner.html",
-                  "aspect_ratio": "50%",
-                  "title": "Meal Planner",
-                  "hide_background": false,
-                  "grid_options": {
-                    "columns": "full",
-                    "rows": 8
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "time",
+                      "after": "09:00:00",
+                      "before": "22:00:00"
+                    }
+                  ],
+                  "card": {
+                    "type": "iframe",
+                    "url": "http://localhost:8080/meal-planner.html",
+                    "aspect_ratio": "50%",
+                    "title": "Meal Planner",
+                    "hide_background": false,
+                    "grid_options": {
+                      "columns": "full",
+                      "rows": 8
+                    }
                   }
                 },
                 {
@@ -312,10 +317,6 @@
             {
               "type": "grid",
               "cards": [
-                {
-                  "type": "heading",
-                  "heading": "New section"
-                },
                 {
                   "type": "heading",
                   "heading": "Security Cameras \ud83d\udcf9",
