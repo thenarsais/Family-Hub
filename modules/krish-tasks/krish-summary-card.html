@@ -320,14 +320,25 @@ function render() {
 }
 
 function openBoardModal() {
-    // Open Activity Board in fullscreen popup window
-    const width = Math.max(screen.width - 100, 800);
-    const height = Math.max(screen.height - 100, 600);
-    const left = Math.max(0, (screen.width - width) / 2);
-    const top = Math.max(0, (screen.height - height) / 2);
+    const boardUrl = '/local/krish-tasks/krish-daily-tasks.html?from=ha';
 
-    window.open('/local/krish-tasks/krish-daily-tasks.html?from=ha', 'KrishBoard',
-        'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top);
+    // Try to navigate parent/top window
+    try {
+        if (window.top && window.top !== window) {
+            console.log('[openBoardModal] Navigating parent window');
+            window.top.location.href = boardUrl;
+        } else if (window.parent && window.parent !== window) {
+            console.log('[openBoardModal] Navigating parent');
+            window.parent.location.href = boardUrl;
+        } else {
+            console.log('[openBoardModal] No parent, navigating self');
+            window.location.href = boardUrl;
+        }
+    } catch (e) {
+        console.log('[openBoardModal] Navigation error:', e.message);
+        // If navigation fails, try window.open as fallback
+        window.open(boardUrl, '_blank');
+    }
 }
 
 function closeBoardModal() {

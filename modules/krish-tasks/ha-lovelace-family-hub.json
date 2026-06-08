@@ -218,6 +218,22 @@
                   }
                 },
                 {
+                  "type": "button",
+                  "name": "Open Krish's Activity Board",
+                  "icon": "mdi:checkbox-marked-circle-outline",
+                  "show_state": false,
+                  "tap_action": {
+                    "action": "url",
+                    "url_path": "/local/krish-tasks/krish-daily-tasks.html?from=ha"
+                  },
+                  "grid_options": {
+                    "columns": "full"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border-radius: 0; box-shadow: none; margin: 0; background: #1E293B; border-top: 1px solid rgba(99,102,241,0.2); } .card-content { padding: 12px 0; } ha-icon { color: #818CF8; } .name { color: #C7D2FE; font-weight: 700; font-size: 0.9em; }"
+                  }
+                },
+                {
                   "maxDaysToShow": 365,
                   "showLocation": false,
                   "showDeclined": false,

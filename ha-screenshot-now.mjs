@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+import path from 'path'; import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const browser = await chromium.connectOverCDP('http://localhost:9222');
+const pages = browser.contexts()[0].pages();
+console.log('Open pages:');
+for (const p of pages) console.log(' -', p.url());
+const page = pages[0];
+await page.setViewportSize({ width: 1280, height: 900 });
+await page.screenshot({ path: path.join(__dirname, 'current-screen.png') });
+console.log('Screenshot saved');
+await browser.close();
