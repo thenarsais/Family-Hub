@@ -365,13 +365,12 @@
                   "show_header_toggle": false
                 },
                 {
-                  "type": "iframe",
-                  "url": "/local/gujarati/gujarati-learning-module.html?v=29",
-                  "aspect_ratio": "16:9",
-                  "title": "Gujarati Learning \ud83c\udf93",
-                  "grid_options": {
-                    "columns": "full",
-                    "rows": 8
+                  "type": "button",
+                  "name": "\ud83d\udcda Open Gujarati Learning",
+                  "icon": "mdi:book-open-page-variant",
+                  "tap_action": {
+                    "action": "url",
+                    "url_path": "/local/gujarati/gujarati-learning-module.html?v=29"
                   }
                 }
               ],

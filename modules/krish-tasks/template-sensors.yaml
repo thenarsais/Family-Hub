@@ -1,0 +1,73 @@
+# Template Sensors for Family Hub Dashboard
+# Add these to configuration.yaml under "template:" section
+
+- sensor:
+    # HVAC Filter Status Sensor
+    - name: "HVAC Filter Status"
+      unique_id: "hvac_filter_status"
+      unit_of_measurement: "days"
+      icon: "mdi:filter"
+      state: >
+        {% set last = as_timestamp(states('input_datetime.hvac_filter_last_replaced')) %}
+        {% set next = last + (90 * 86400) %}
+        {% set days_left = ((next - as_timestamp(now())) / 86400) | round(0) | int %}
+        {{ days_left }}
+      attributes:
+        last_replaced: "{{ states('input_datetime.hvac_filter_last_replaced') }}"
+        next_change: "{{ (as_timestamp(states('input_datetime.hvac_filter_last_replaced')) + (90 * 86400)) | timestamp_custom('%B %-d, %Y') }}"
+        size: "{{ states('input_text.hvac_filter_size') }}"
+        status: >
+          {% set last = as_timestamp(states('input_datetime.hvac_filter_last_replaced')) %}
+          {% set next = last + (90 * 86400) %}
+          {% set days_left = ((next - as_timestamp(now())) / 86400) | round(0) | int %}
+          {% if days_left > 7 %}ok{% elif days_left > 0 %}warning{% elif days_left == 0 %}critical{% else %}overdue{% endif %}
+
+    # School Transit Status Sensor
+    - name: "School Morning Departure"
+      unique_id: "school_morning_departure"
+      icon: "mdi:clock-time-four"
+      state: >
+        {% set travel = states('sensor.drive_to_pra') | float %}
+        {% set leave_min = (7 * 60 + 45 - travel - 5) | int %}
+        {% set leave_hour = (leave_min // 60) | int %}
+        {% set leave_m = (leave_min % 60) | int %}
+        {{ "%02d:%02d" | format(leave_hour, leave_m) }} AM
+      attributes:
+        travel_time: "{{ states('sensor.drive_to_pra') | float | round(0) | int }} min"
+        route: "{{ state_attr('sensor.drive_to_pra', 'route') }}"
+        arrival_time: "7:45 AM"
+
+    # School Afternoon Pickup Sensor
+    - name: "School Afternoon Pickup"
+      unique_id: "school_afternoon_pickup"
+      icon: "mdi:clock-time-two"
+      state: >
+        {% set travel_home = states('sensor.drive_to_pra_pickup_from_pra') | float %}
+        {{ travel_home | round(0) | int }} min
+      attributes:
+        pickup_time: "3:15 PM"
+        leave_time: "2:30 PM"
+        route: "{{ state_attr('sensor.drive_to_pra_pickup_from_pra', 'route') }}"
+        arrival_estimate: "{{ (now().replace(hour=15, minute=30) + timedelta(minutes=states('sensor.drive_to_pra_pickup_from_pra') | float(0))) | as_local }}"
+
+    # Trash Pickup Status Sensor
+    - name: "Trash Pickup Current"
+      unique_id: "trash_current_pickup"
+      icon: "mdi:trash-can"
+      state: "{{ as_timestamp(states('sensor.trash_recycling_current_pickup')) | timestamp_custom('%A, %B %-d') }}"
+      attributes:
+        bins: "{{ state_attr('sensor.trash_recycling_current_pickup', 'pickup_types') | join(', ') | title }}"
+
+    - name: "Trash Pickup Next"
+      unique_id: "trash_next_pickup"
+      icon: "mdi:trash-can"
+      state: "{{ as_timestamp(states('sensor.trash_recycling_next_pickup')) | timestamp_custom('%A, %B %-d') }}"
+      attributes:
+        bins: "{{ state_attr('sensor.trash_recycling_next_pickup', 'pickup_types') | join(', ') | title }}"
+
+- binary_sensor:
+    # Is Krish in School Today?
+    - name: "Krish School Status"
+      unique_id: "krish_school_status"
+      icon: "mdi:school"
+      state: "{{ states('calendar.thrillshare_cmsv2_services_thrillshare_com') }}"
