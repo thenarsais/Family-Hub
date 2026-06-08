@@ -906,6 +906,16 @@
                 </div>
                 <div id="db-kf-content"></div>
             </div>
+
+            <div class="db-card" id="db-trivia-card">
+                <div class="db-card-hdr" onclick="showBoard('trivia')" style="cursor:pointer">
+                    <span class="db-card-ico">🧠</span>
+                    <span class="db-ct">Trivia</span>
+                    <span class="db-cs" id="db-trivia-summary"></span>
+                    <button class="db-expand" onclick="showBoard('trivia')">Answer ↗</button>
+                </div>
+                <div id="db-trivia-content"></div>
+            </div>
         </div>
 
         <!-- COL 3: HABITS (full interactive) -->
@@ -967,6 +977,7 @@
         <button class="b-tab" data-tab="chores"   onclick="switchTab('chores')">  <span class="ti">✅</span>Chores   </button>
         <button class="b-tab" data-tab="homework" onclick="switchTab('homework')"><span class="ti">📚</span>Homework  </button>
         <button class="b-tab" data-tab="kungfu"   onclick="switchTab('kungfu')">  <span class="ti">🥋</span>Kung Fu  </button>
+        <button class="b-tab" data-tab="trivia"   onclick="switchTab('trivia')">   <span class="ti">🧠</span>Trivia   </button>
         <button class="b-tab" data-tab="gujarati" onclick="switchTab('gujarati')"><span class="ti">🇮🇳</span>Gujarati </button>
         <button class="b-tab" data-tab="calendar" onclick="switchTab('calendar')"><span class="ti">📅</span>Calendar  </button>
         <button class="b-tab" data-tab="habits"   onclick="switchTab('habits')">  <span class="ti">💪</span>Habits   </button>
@@ -982,6 +993,9 @@
 
     <!-- KUNG FU PANEL -->
     <div id="panel-kungfu" class="b-panel"></div>
+
+    <!-- TRIVIA PANEL -->
+    <div id="panel-trivia" class="b-panel"></div>
 
     <!-- GUJARATI PANEL -->
     <div id="panel-gujarati" class="b-panel"></div>
@@ -1101,6 +1115,49 @@ function getMondayOfWeek(dateStr) {
     return d.toISOString().split('T')[0];
 }
 
+// ── TRIVIA QUESTIONS ────────────────────────────
+const TRIVIA_QUESTIONS = [
+    // Science
+    { category: 'Science', q: 'What is the chemical symbol for gold?', a: 'Au', hint: 'Think of the Latin name' },
+    { category: 'Science', q: 'How many bones are in the adult human body?', a: '206', hint: 'Between 200-210' },
+    { category: 'Science', q: 'What gas do plants absorb from the atmosphere?', a: 'Carbon dioxide', hint: 'Opposite of what we breathe' },
+    { category: 'Science', q: 'What is the hardest natural mineral on Earth?', a: 'Diamond', hint: 'A gemstone' },
+    { category: 'Science', q: 'What is the speed of light?', a: '299792458', hint: 'About 3 × 10⁸ m/s' },
+
+    // History
+    { category: 'History', q: 'In what year did the Titanic sink?', a: '1912', hint: 'Early 1900s' },
+    { category: 'History', q: 'Who was the first President of the United States?', a: 'George Washington', hint: 'First in many things' },
+    { category: 'History', q: 'In which year did World War II end?', a: '1945', hint: '1940s' },
+    { category: 'History', q: 'Who invented the telephone?', a: 'Alexander Graham Bell', hint: 'Scottish inventor' },
+    { category: 'History', q: 'In what year did the Berlin Wall fall?', a: '1989', hint: 'Late 1980s' },
+
+    // Geography
+    { category: 'Geography', q: 'What is the capital of France?', a: 'Paris', hint: 'City of lights' },
+    { category: 'Geography', q: 'What is the largest country in the world?', a: 'Russia', hint: 'Spans 11 time zones' },
+    { category: 'Geography', q: 'Which river is the longest in the world?', a: 'Nile', hint: 'In Africa' },
+    { category: 'Geography', q: 'How many continents are there?', a: '7', hint: 'Include Antarctica' },
+    { category: 'Geography', q: 'What is the capital of India?', a: 'New Delhi', hint: 'In the north' },
+
+    // Literature
+    { category: 'Literature', q: 'Who wrote "Romeo and Juliet"?', a: 'William Shakespeare', hint: 'Famous playwright' },
+    { category: 'Literature', q: 'Who is the author of "Harry Potter"?', a: 'J.K. Rowling', hint: 'Joanne K.' },
+    { category: 'Literature', q: 'Who wrote "1984"?', a: 'George Orwell', hint: 'Dystopian novel' },
+    { category: 'Literature', q: 'What is the first book in the Percy Jackson series?', a: 'The Lightning Thief', hint: 'Involves Greek gods' },
+    { category: 'Literature', q: 'Who wrote "The Hobbit"?', a: 'J.R.R. Tolkien', hint: 'Created Middle-earth' },
+
+    // Math
+    { category: 'Math', q: 'What is 12 × 15?', a: '180', hint: 'Between 150-200' },
+    { category: 'Math', q: 'What is the square root of 144?', a: '12', hint: 'A dozen' },
+    { category: 'Math', q: 'What is the value of π to two decimal places?', a: '3.14', hint: 'About 3.14...' },
+    { category: 'Math', q: 'If a triangle has angles of 60° and 70°, what is the third angle?', a: '50', hint: 'Sum is 180' },
+    { category: 'Math', q: 'What is 25% of 200?', a: '50', hint: 'One quarter' },
+];
+
+function getTriviaQuestion(dateStr) {
+    const index = parseInt(dateStr.replace(/-/g, '')) % TRIVIA_QUESTIONS.length;
+    return { ...TRIVIA_QUESTIONS[index] };
+}
+
 function buildDefaultState() {
     const today = todayStr();
     const weekStart = getMondayOfWeek(today);
@@ -1151,6 +1208,19 @@ function buildDefaultState() {
         },
         mood: { today: null, history: [] },
         pomodoro: null, // set when active: { hwId, mode, remaining, total, active }
+        trivia: {
+            streak: 0,
+            lastAnsweredDate: null,
+            todayAnswered: false,
+            totalAnswered: 0,
+            currentQuestion: null,
+        },
+        reading: {
+            dailyMinutes: 0,
+            weeklyMinutes: 0,
+            weekStart: null,
+            history: [],
+        },
     };
 }
 
@@ -1210,12 +1280,39 @@ function applyResets() {
             if (h.todayCount !== undefined) h.todayCount = 0;
             if (h.todayGlasses !== undefined) h.todayGlasses = 0;
         });
+        // Trivia: check streak and reset daily flag
+        if (state.trivia) {
+            const lastDate = state.trivia.lastAnsweredDate;
+            const prevDay = addDays(today, -1);
+            if (lastDate !== today) {
+                if (lastDate !== prevDay) {
+                    state.trivia.streak = 0; // streak broken
+                }
+                state.trivia.todayAnswered = false;
+                state.trivia.currentQuestion = getTriviaQuestion(today);
+            }
+        }
+        // Reading: reset daily minutes
+        if (state.reading) {
+            state.reading.dailyMinutes = 0;
+        }
         state.date = today;
     }
 
     // Weekly reset
     if (state.weekStart !== weekStart) {
         Object.values(state.habits).forEach(h => { h.weekDays = []; });
+        // Reading: reset weekly minutes and log the previous week
+        if (state.reading) {
+            if (state.reading.weeklyMinutes > 0) {
+                if (!state.reading.history) state.reading.history = [];
+                state.reading.history.push({
+                    week: state.weekStart,
+                    minutes: state.reading.weeklyMinutes
+                });
+            }
+            state.reading.weeklyMinutes = 0;
+        }
         state.weekStart = weekStart;
     }
 
@@ -1424,6 +1521,7 @@ function renderDashboard() {
     renderDashGujarati();
     renderDashCalendar();
     renderDashKungFu();
+    renderDashTrivia();
     renderDashPoints();
 }
 
@@ -1740,6 +1838,37 @@ function dbFlipCard() {
     }
     renderDashKungFu();
     if (currentTab === 'kungfu') renderKungFuPanel();
+}
+
+// ── Dashboard: Trivia ──────────────────────────────
+function renderDashTrivia() {
+    const sumEl = document.getElementById('db-trivia-summary');
+    if (sumEl) sumEl.textContent = state.trivia?.streak || 0 ? '🔥 ' + (state.trivia.streak) : 'Start';
+
+    let html = '';
+    const q = state.trivia?.currentQuestion;
+    if (!q) {
+        html = `<div style="padding:16px;text-align:center;color:#94A3B8;font-size:0.85em">No question available</div>`;
+    } else {
+        const answered = state.trivia?.todayAnswered;
+        html = `
+            <div style="padding:12px">
+                <div style="font-size:0.8em;color:#94A3B8;margin-bottom:8px">${q.category}</div>
+                <div style="font-weight:600;margin-bottom:12px">${q.q}</div>
+                ${answered ? `
+                    <div style="padding:8px;background:#10B98122;border-radius:8px;border-left:3px solid #10B981;color:#6EE7B7">
+                        ✓ Answered today
+                    </div>
+                ` : `
+                    <button onclick="showBoard('trivia')" style="width:100%;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">
+                        Answer →
+                    </button>
+                `}
+            </div>
+        `;
+    }
+    const el = document.getElementById('db-trivia-content');
+    if (el) el.innerHTML = html;
 }
 
 // ── Dashboard: Points ──────────────────────────────
