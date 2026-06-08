@@ -320,17 +320,14 @@ function render() {
 }
 
 function openBoardModal() {
-    // Open Activity Board as a fullscreen popup (modal-style)
-    // Using noopener to isolate from opener, with fullscreen dimensions
-    const w = window.open('/local/krish-tasks/krish-daily-tasks.html?from=ha', 'KrishBoard',
-        'width=' + screen.width + ',height=' + screen.height +
-        ',left=0,top=0,noopener=yes,noreferrer=yes,modal=yes');
-    if (w) {
-        w.focus();
-        // Try to maximize
-        w.moveTo(0, 0);
-        w.resizeTo(screen.width, screen.height);
-    }
+    // Open Activity Board in fullscreen popup window
+    const width = Math.max(screen.width - 100, 800);
+    const height = Math.max(screen.height - 100, 600);
+    const left = Math.max(0, (screen.width - width) / 2);
+    const top = Math.max(0, (screen.height - height) / 2);
+
+    window.open('/local/krish-tasks/krish-daily-tasks.html?from=ha', 'KrishBoard',
+        'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top);
 }
 
 function closeBoardModal() {
