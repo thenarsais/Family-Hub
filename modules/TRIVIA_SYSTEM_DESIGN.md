@@ -33,7 +33,7 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 
 ### 🏗️ Architecture
 - **Frontend:** Single-file HTML/CSS/JS (Activity Board tab in Family Hub)
-- **Storage:** localStorage (Phase 1-8), Cloud sync planned (Phase 9+)
+- **Storage:** IndexedDB (Phase 1-8, primary) with localStorage fallback, Cloud sync (Phase 9+)
 - **Data:** Multi-user profiles, individual progress tracking, family-level insights
 - **Sequential Enforcement:** Only one child playing at a time
 
@@ -59,11 +59,16 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
   - Hint
   - Source attribution (Khan Academy, Wikipedia, Parent-created, etc.)
 
-### 📚 Question Sources
+### 📚 Question Sources & Sourcing Process
 - **Reputable sources:** Khan Academy, Wikipedia, educational sites
 - **Cultural content:** Diwali, Holi, Independence Day, Gujarati culture
-- **Parent involvement:** Priya sources and validates all questions before launch
+- **Claude automation:** AI generates complete questions with metadata, fun facts, learning links
+- **Quality validation:** 
+  - Phase 1: Start with high automation (Claude generates, Priya spot-checks 20%)
+  - Monitor accuracy and quality during Phase 1
+  - Phase 7+: Adjust to moderate automation (Claude generates, Priya edits/approves ~50%) if feedback indicates lower quality
 - **Validation checklist:** Accuracy ✓ Age-appropriate ✓ Quality ✓ Bias check ✓
+- **Feedback loop:** User accuracy data informs whether to maintain high automation or shift to moderate
 
 ### 📂 Category Distribution (1000 questions)
 | Category | Count | Focus |
@@ -106,7 +111,10 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
   - Learning improvements (% week-over-week)
 - **Metadata:** Thinking time (optional), attempt number, hint usage
 
-### 📊 Data Structure (localStorage)
+### 📊 Data Structure (IndexedDB with localStorage Fallback)
+**Primary:** IndexedDB (50MB+ capacity, optimized for large datasets)
+**Fallback:** localStorage (for edge cases where IndexedDB unavailable)
+
 ```json
 {
   "userId": "krish",
@@ -145,7 +153,10 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
   - No separate scoring, just organic reinforcement
 
 ### 💾 Data Lifecycle
-- **Backup strategy:** Cloud storage sync (Dropbox/Google Drive) + Phase 9 backend
+- **Backup strategy:** 
+  - Phase 1-8: Auto-export to Google Drive on schedule (daily/weekly, parent-configurable)
+  - Creates timestamped JSON backups in Google Drive folder
+  - Phase 9: Cloud backend replaces Google Drive backups
 - **Archival:** After 1 year, archive (keep but don't load actively)
 - **Deletion:** Parents can request deletion with approval
 - **Right to be forgotten:** Krish can request deletion, parent approves
@@ -166,14 +177,27 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 - **Progress bar:** Visual feedback (questions answered this session)
 - **Streak counter:** Prominent display of current streak (🔥 X day streak!)
 - **Category tag:** Shows what category the question is
-- **Difficulty indicator:** Color-coded icon (pre-answer visible)
+- **Difficulty display (Progressive Disclosure):**
+  - Always visible: Color-coded icon + difficulty name (Easy/Medium/Hard)
+  - On hover: Tagline appears ("Uses inference skills", "Tests memory")
+  - On tap: Full explanation ("This question requires analyzing information to draw conclusions")
 - **Hint button:** 💡 Easy access
 
 ### 📱 Responsive Design
 - **Desktop-first:** Optimized for iPad/tablet (Activity Board primary interface)
 - **Mobile-friendly:** Works on smaller phones, but not primary platform
 - **Touch-friendly:** Large buttons (≥48px) for touch targets
-- **Performance:** Question load <2 seconds target
+- **Performance:** 
+  - Target: <2 second full question load
+  - Graceful degradation: Show question text immediately, images load in background
+  - Never blocks Krish from answering while waiting for images
+
+### 📥 Question Loading Strategy (Hybrid Pre-load + Lazy-load)
+- **Buffer approach:** Pre-load 3-5 questions ahead (user never waits)
+- **Background loading:** Load next batch while user plays current question
+- **Depletion handling:** When buffer drops below 2 questions, refill automatically
+- **Memory efficient:** Keeps 5-10 questions in memory max
+- **Network resilient:** Graceful degradation if loading fails (show alternative activity suggestion)
 
 ### ♿ Accessibility Features
 - **Text-to-speech:** Read questions aloud (high contrast mode)
@@ -232,8 +256,11 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 
 ### 🔥 Streak System (Three Types)
 1. **Daily streak:** Consecutive days of playing (any questions)
-   - Resets if missed day
-   - Grace-save cost: 10% of daily points earned
+   - Resets if missed day (if no questions answered)
+   - **Grace-save mechanic:** Costs 10% of previous day's points earned
+     - Effect: Prevents streak reset (streak number preserved)
+     - Does NOT affect question rotation (weekly rotation unaffected)
+     - Used when: Krish misses a day but wants to keep streak alive
    - Visual: 🔥 X day streak display
 2. **Category streak:** Consecutive correct answers in same category
    - Shows "5 correct in Science row"
@@ -274,11 +301,20 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
   - Effort recognition: "You answered 147 questions!"
   - Personalized suggestions: "Keep working on Geography!"
 
-### 📊 Family Stats View
-- **Summary:** Who answered more questions (volume)
-- **Comparison:** Side-by-side stats (accuracy, streaks, badges)
-- **Trends:** Week-over-week improvement/growth
-- **No ranking:** Focus on individual growth, not comparison
+### 📊 Family Stats View (Parent Dashboard Only — Not Visible to Krish)
+**Krish's View:** Personal stats only (his own progress, no family comparison)
+- Accuracy by category
+- Current streaks
+- Badges earned
+- Personal goals progress
+- Learning trends
+
+**Parent Dashboard View:** Full family stats (for monitoring, not shown to Krish)
+- Summary: Volume per child
+- Comparison: Side-by-side stats (accuracy, streaks, badges)
+- Trends: Week-over-week improvement/growth per child
+- No ranking/leaderboard, but full visibility for parents
+- **Design principle:** Krish never sees sibling comparison to avoid competition anxiety
 
 ### 🎓 Difficulty Progression
 - **Unlock system:**
@@ -321,11 +357,24 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 - Guessing game with feedback
 
 ### 🎮 Mini-Game Mechanics
-- **Unlock progression:** Sequential by milestones
-  - Game 1: 25 correct answers
-  - Game 2: 50 correct answers
-  - Game 3: 100 correct answers
-  - Etc.
+- **Unlock progression:** Hybrid volume + achievement-based
+  
+| Game | Unlock Trigger |
+|------|---|
+| Daily Wordle | Day 1 (available immediately) |
+| Brain Teaser | 25 correct answers |
+| Speed Challenge | 50 correct answers |
+| Category Expert | 75 correct answers |
+| Accuracy Challenge | 100 correct answers |
+| Memory Match | Silver badge earned |
+| Guess the Category | 150 correct answers |
+| Rhyme Time | Gold badge earned |
+| Pattern Detective | 200 correct answers |
+| Word Scramble | 30-day streak achieved |
+| Story Builder | Pro difficulty unlocked |
+| Elimination | 300 correct answers |
+| Prediction | Legend difficulty unlocked |
+
 - **Unlock presentation:** Subtle indicator with "NEW" badge, highlighted when opened
 - **Base points:** Varies per game (10-50 base)
 - **Bonuses:**
@@ -382,7 +431,9 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 - **Parent customization:** Control theme intensity (full/subtle/off)
 
 ### 🔔 Notifications (Smart Management)
-- **Consolidation:** Daily/weekly digest instead of constant alerts
+- **Consolidation:** Single daily/weekly digest (not multiple notifications)
+  - Contains: Goal progress + Learning improvements + Weekly summary + Suggestions
+- **Persistence:** Digest stays on-screen until Krish dismisses (never auto-disappears)
 - **Priority tiers:** Important → push, minor → in-app only
 - **Parent control:** Customizable notification types, frequency, timing
 - **Smart scheduling:** No notifications during school hours/bedtime (parent-set)
@@ -402,8 +453,12 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
   - Optional learning link to explore further
 
 ### 🎯 Learning Validation (Two-Layer)
-1. **Automatic tracking:** System flags if same question answered wrong 3+ times
+1. **Explicit tracking with Krish:** When question answered wrong 3+ times, Krish sees:
+   - "You've struggled with this question. Want extra help?" (optional, not forced)
+   - If yes: Enhanced learning content, learning link, fun fact
+   - If no: Question continues to re-appear organically with extended fun facts
 2. **Parent oversight:** Phase 8 alerts parent ("Krish answered Question #47 wrong 3x. Needs intervention in Geography")
+   - Parents can proactively intervene or discuss with Krish
 
 ### 🧠 Learning Metrics Dashboard
 - **Displayed to Krish:** Key stats (accuracy, streak, badges, favorite category)
@@ -461,6 +516,9 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 
 ### 📝 Question Retirement & Archiving
 - **Update in place:** Time-sensitive questions (current President) just get updated
+  - Updates create new version (UUID + version number)
+  - Krish's old answers linked to old version (historical accuracy preserved)
+  - New players see latest version
 - **Retire & replace:** Obsolete questions removed, new similar ones added
 - **Archive:** All retired questions kept (viewable for history, not shown to new players)
 - **Lifecycle:** Auto-update old data, notify parents before deletion (manual approval required)
@@ -526,6 +584,8 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 
 **Feature management:**
 - Feature flags for Phase 4-5 features (enable/disable)
+  - Disabled features: Hidden from Krish's UI but progress tracked behind scenes
+  - If re-enabled: Krish sees unlocks continue where they left off (progress preserved)
 - Soft-launch features (gradual rollout over weeks, not all at once)
 - Power-up customization (map which earned from which milestones)
 
@@ -581,6 +641,12 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 
 ## Cross-Phase Features & Suggestions (25 Total)
 
+### 0. Data Update & Maintenance Window
+- **Off-peak update window:** 2-3 AM Denver time (Mountain Time)
+- Updates only occur during this window (never during play hours)
+- Includes: Question additions, improvements, fixes, syncs
+- No disruptions to Krish's gameplay
+
 ### 1. First-Week Onboarding Path
 - Day 1: Profile setup + first 5 questions
 - Day 2: Earn streak/points celebration
@@ -590,8 +656,9 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 - Structured introduction to system features
 
 ### 2. Cloud Storage & Backup Strategy
-- **Phase 8:** Dropbox/Google Drive sync (user-configurable)
-- **Phase 9:** Dedicated cloud backend (more robust)
+- **Phase 1-8:** Auto-export to Google Drive on schedule (daily/weekly, parent-configurable)
+  - Timestamped JSON backups in Google Drive folder
+- **Phase 9:** Dedicated cloud backend replaces Google Drive backups
 - Two-layer approach: simple protection now, proper backend later
 
 ### 3. Parent Control Presets
@@ -622,10 +689,12 @@ A comprehensive, engaging trivia system for Krish (age 9) that:
 - **Validates system:** Proof that learning actually improves over time
 
 ### 8. Storage Scalability (3-Layer)
-- **Compress data:** Gzip questions and metadata
-- **Use IndexedDB:** Larger capacity (50MB vs 5-10MB localStorage)
+- **IndexedDB primary:** 50MB capacity, optimized for large datasets (Phase 1+)
+- **localStorage fallback:** For edge cases where IndexedDB unavailable
+- **Compress data:** Gzip questions and metadata for efficiency
 - **Archive old:** Move historical questions to archive storage
 - Supports growth to 5000+ questions over years
+- Migration strategy: Phase 9 transitions to cloud backend (IndexedDB → JSON migration straightforward)
 
 ### 9. Parent-Child Communication
 - **Two-way chat:** Parent and Krish message about progress/learning
