@@ -1653,37 +1653,54 @@ function showBadgeCelebration(category, tier) {
     }, 5000);
 }
 
-function showBadgesPage() {
+function showBadgesModal() {
     const badges = state.trivia.badges.byCategory || {};
     const categories = Object.keys(badges).sort();
 
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.5);display:flex;
+        justify-content:center;align-items:center;z-index:9998;
+        overflow-y:auto;padding:20px
+    `;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        background:white;border-radius:20px;padding:24px;
+        max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2)
+    `;
+
     let html = `
-        <div style="padding:20px;background:#F8FAFC;min-height:100vh">
-            <h2 style="color:#1E293B;font-size:1.6em;margin-bottom:20px;font-weight:800">🏆 My Badges</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h2 style="color:#1E293B;font-size:1.6em;font-weight:800">🏆 My Badges</h2>
+            <button onclick="this.closest('[style*=position:fixed]').remove()" style="
+                background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8
+            ">✕</button>
+        </div>
     `;
 
     if (categories.length === 0) {
-        html += `<div style="text-align:center;color:#64748B;padding:40px">Answer trivia to unlock badges!</div>`;
+        html += `<div style="text-align:center;color:#64748B;padding:40px;font-size:0.95em">Answer trivia questions to unlock badges!</div>`;
     } else {
         categories.forEach(cat => {
             const catBadges = badges[cat];
             html += `
-                <div style="background:white;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
-                    <div style="font-weight:700;color:#1E293B;margin-bottom:12px">${cat}</div>
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+                <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #E2E8F0">
+                    <div style="font-weight:700;color:#1E293B;margin-bottom:10px;font-size:0.95em">${cat}</div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
             `;
             Object.entries(BADGE_TIERS).forEach(([tier, threshold]) => {
                 const unlocked = !!catBadges[tier];
                 const info = getBadgeInfo(cat, tier);
                 html += `
                     <div style="
-                        text-align:center;padding:12px;border-radius:12px;
-                        background:${unlocked ? info.color + '20' : '#E2E8F0'};
-                        border:2px solid ${unlocked ? info.color : '#CBD5E1'}
-                    ">
-                        <div style="font-size:2em;margin-bottom:6px;opacity:${unlocked ? 1 : 0.4}">${info.emoji}</div>
-                        <div style="font-size:0.75em;color:#475569;font-weight:600">${info.label}</div>
-                        ${unlocked ? `<div style="font-size:0.7em;color:#059669;margin-top:4px">✓</div>` : ''}
+                        text-align:center;padding:10px;border-radius:10px;
+                        background:${unlocked ? info.color + '20' : '#F1F5F9'};
+                        border:2px solid ${unlocked ? info.color : '#E2E8F0'}
+                    " title="${info.requirement}">
+                        <div style="font-size:1.8em;margin-bottom:4px;opacity:${unlocked ? 1 : 0.4}">${info.emoji}</div>
+                        <div style="font-size:0.7em;color:#475569;font-weight:600">${info.label}</div>
                     </div>
                 `;
             });
@@ -1691,10 +1708,9 @@ function showBadgesPage() {
         });
     }
 
-    html += `</div>`;
-
-    const panel = document.getElementById('panel-trivia');
-    if (panel) panel.innerHTML = html;
+    card.innerHTML = html;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
 }
 
 async function saveTriviaAnswer(questionId, isCorrect) {
@@ -2859,7 +2875,7 @@ function renderDashTrivia() {
             <!-- Buttons -->
             <div style="display:flex;gap:8px">
                 <button onclick="showBoard('trivia')" style="flex:1;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em">Answer ↗</button>
-                <button onclick="showBadgesPage()" style="flex:0.4;padding:8px;background:#FCD34D;color:#1E293B;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em;align-self:center" title="View all badges">🏆</button>
+                <button onclick="showBadgesModal()" style="flex:0.4;padding:8px;background:#FCD34D;color:#1E293B;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em;align-self:center;transition:all 0.2s" onmouseover="this.style.background='#FBBF24'" onmouseout="this.style.background='#FCD34D'" title="View all badges">🏆</button>
             </div>
         </div>`;
 }
