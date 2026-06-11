@@ -39,6 +39,36 @@
         .view.active { display:block; }
         .hidden { display:none !important; }
 
+        /* ── HIGH CONTRAST MODE ──────────────────── */
+        body.high-contrast {
+            background: #000000;
+            color: #FFFFFF;
+        }
+        body.high-contrast .view { background: #000000 !important; }
+        body.high-contrast button, body.high-contrast input, body.high-contrast textarea {
+            border-width: 2px !important;
+        }
+        body.high-contrast .trivia-opt {
+            border: 2px solid #FFFFFF !important;
+            background: #000000 !important;
+            color: #FFFFFF !important;
+            font-weight: 700 !important;
+        }
+
+        /* ── RESPONSIVE DESIGN ──────────────────── */
+        @media (max-width: 768px) {
+            html { font-size: 14px; }
+            #trivia-options { grid-template-columns: 1fr !important; }
+            .dash-header { padding: 16px 14px; }
+            .dash-header-row { flex-direction: column; gap: 12px; }
+            #onboarding-modal { padding: 0 16px; }
+        }
+        @media (max-width: 480px) {
+            html { font-size: 13px; }
+            body { overflow-x: hidden; }
+            .view { padding: 0; }
+        }
+
         /* ── DASHBOARD ─────────────────────────── */
         #view-dashboard { background:linear-gradient(160deg,#1E293B 0%,#0F172A 100%); padding-bottom:30px; }
 
@@ -1371,8 +1401,130 @@ async function initTriviaSystem() {
 async function loadNextTriviaQuestion() {
     if (triviaBuffer.length < 2) refillTriviaBuffer();
     triviaCurrentQuestion = triviaBuffer.shift() || TRIVIA_QUESTION_BANK[Math.floor(Math.random() * TRIVIA_QUESTION_BANK.length)];
+    state.trivia.onboarding.milestones.firstQuestion = true;
+    saveState();
     renderTriviaPanel();
 }
+
+// ── TTS (Text-to-Speech) ──────────────────────────
+function speakQuestion() {
+    if (!state.trivia.onboarding.showTTS || !triviaCurrentQuestion) return;
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const text = `${triviaCurrentQuestion.question}\n\nOptions are: ${triviaCurrentQuestion.options.join(', ')}`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    synth.speak(utterance);
+}
+
+// ── Onboarding Wizard ─────────────────────────────
+function showOnboardingWizard() {
+    const modal = document.createElement('div');
+    modal.id = 'onboarding-modal';
+    modal.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.6);display:flex;
+        justify-content:center;align-items:center;z-index:9999
+    `;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        background:white;border-radius:20px;padding:30px;
+        max-width:400px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.2)
+    `;
+
+    const step = state.trivia.onboarding.name ? 2 : 1;
+
+    if (step === 1) {
+        card.innerHTML = `
+            <div style="text-align:center;margin-bottom:24px">
+                <div style="font-size:3em;margin-bottom:12px">🎯</div>
+                <h2 style="color:#1E293B;font-size:1.5em;margin-bottom:8px">Welcome to Trivia!</h2>
+                <p style="color:#64748B;font-size:0.95em">Let's set up your profile.</p>
+            </div>
+            <div style="margin-bottom:18px">
+                <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">What's your name?</label>
+                <input type="text" id="onboarding-name" placeholder="Your name..." style="
+                    width:100%;padding:10px 12px;border:2px solid #E2E8F0;border-radius:8px;
+                    font-size:1em;color:#1E293B
+                " autofocus>
+            </div>
+            <div style="margin-bottom:24px">
+                <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Pick your avatar:</label>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+                    ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
+                        <button onclick="selectAvatar('${emoji}')" style="
+                            font-size:2em;padding:12px;border:2px solid #E2E8F0;
+                            border-radius:12px;background:#F8FAFC;cursor:pointer;
+                            transition:all 0.2s
+                        " onmouseover="this.style.borderColor='#818CF8';this.style.background='#EEF2FF'"
+                        onmouseout="this.style.borderColor='#E2E8F0';this.style.background='#F8FAFC'"
+                        >${emoji}</button>
+                    `).join('')}
+                </div>
+            </div>
+            <button onclick="completeOnboardingStep1()" style="
+                width:100%;padding:12px;background:linear-gradient(135deg,#6366F1,#8B5CF6);
+                color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em
+            ">Next →</button>
+        `;
+    } else {
+        card.innerHTML = `
+            <div style="text-align:center;margin-bottom:24px">
+                <div style="font-size:3em;margin-bottom:12px">${state.trivia.onboarding.avatar}</div>
+                <h2 style="color:#1E293B;font-size:1.5em;margin-bottom:8px">Hey ${state.trivia.onboarding.name}!</h2>
+                <p style="color:#64748B;font-size:0.95em">One more thing...</p>
+            </div>
+            <div style="margin-bottom:24px;padding:16px;background:#F0F9FF;border-radius:12px;border-left:3px solid #3B82F6">
+                <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-weight:600;color:#1E293B">
+                    <input type="checkbox" id="tts-toggle" checked style="width:18px;height:18px;cursor:pointer">
+                    🔊 Read questions aloud (TTS)
+                </label>
+                <p style="font-size:0.85em;color:#64748B;margin-top:8px;margin-left:30px">I'll read each question to you!</p>
+            </div>
+            <button onclick="completeOnboarding()" style="
+                width:100%;padding:12px;background:linear-gradient(135deg,#10B981,#059669);
+                color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em
+            ">Let's Go! 🚀</button>
+        `;
+    }
+
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+
+    if (step === 1) {
+        setTimeout(() => document.getElementById('onboarding-name')?.focus(), 100);
+    }
+}
+
+window.selectAvatar = function(emoji) {
+    state.trivia.onboarding.avatar = emoji;
+    document.querySelectorAll('#onboarding-modal button').forEach(btn => {
+        btn.style.borderColor = btn.textContent.trim() === emoji ? '#818CF8' : '#E2E8F0';
+        btn.style.background = btn.textContent.trim() === emoji ? '#EEF2FF' : '#F8FAFC';
+    });
+};
+
+window.completeOnboardingStep1 = function() {
+    const name = document.getElementById('onboarding-name')?.value.trim();
+    if (!name) {
+        alert('Please enter your name!');
+        return;
+    }
+    state.trivia.onboarding.name = name;
+    document.getElementById('onboarding-modal').remove();
+    showOnboardingWizard();
+};
+
+window.completeOnboarding = function() {
+    state.trivia.onboarding.showTTS = document.getElementById('tts-toggle')?.checked ?? true;
+    state.trivia.onboarding.completed = true;
+    state.trivia.onboarding.setupDate = todayStr();
+    saveState();
+    document.getElementById('onboarding-modal').remove();
+    renderTriviaPanel();
+};
 
 async function saveTriviaAnswer(questionId, isCorrect) {
     const today = todayStr();
@@ -1405,6 +1557,12 @@ async function saveTriviaAnswer(questionId, isCorrect) {
         }
         triviaProgress.streaks.lastDate = today;
         triviaProgress.totalAnswered = (triviaProgress.totalAnswered || 0) + 1;
+
+        // ── PHASE 3: Milestone Tracking ────────────────
+        if (triviaProgress.streaks.daily > 0 && !state.trivia.onboarding.milestones.firstStreak) {
+            state.trivia.onboarding.milestones.firstStreak = true;
+            saveState();
+        }
 
         // ── PHASE 2: Extended Metrics ──────────────────
         const q = triviaCurrentQuestion;
@@ -1551,6 +1709,11 @@ function renderTriviaPanel() {
     const panel = document.getElementById('panel-trivia');
     if (!panel) return;
 
+    if (!state.trivia.onboarding.completed) {
+        showOnboardingWizard();
+        return;
+    }
+
     if (!triviaCurrentQuestion) {
         panel.innerHTML = '<div style="padding:40px;text-align:center;color:#64748B"><div style="font-size:2em;margin-bottom:12px">⏳</div><div>Loading trivia...</div></div>';
         initTriviaSystem().then(() => renderTriviaPanel());
@@ -1602,6 +1765,12 @@ function renderTriviaPanel() {
             </div>
         </div>
 
+        <!-- Phase 2: Export Buttons -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;justify-content:flex-end">
+            <button onclick="exportTriviaDataJSON()" style="background:#EEF2FF;border:1px solid #C7D2FE;color:#4338CA;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.75em;font-weight:600">📥 JSON</button>
+            <button onclick="exportTriviaDataCSV()" style="background:#F5F3FF;border:1px solid #DDD6FE;color:#5B21B6;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.75em;font-weight:600">📥 CSV</button>
+        </div>
+
         ${triedBefore ? `<div style="background:#FFFBEB;border-left:3px solid #F59E0B;padding:10px 14px;margin:0 0 12px;font-size:0.88em;color:#78350F;font-weight:600">💪 You found this tricky before — give it another shot!</div>` : ''}
 
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
@@ -1612,7 +1781,16 @@ function renderTriviaPanel() {
         </div>
 
         <div style="background:white;border-radius:14px;padding:18px;margin-bottom:16px;font-size:1.05em;line-height:1.65;font-weight:500;color:#1E293B;box-shadow:0 1px 6px rgba(0,0,0,0.07)">
-            ${q.question}
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+                <div style="flex:1">${q.question}</div>
+                <button onclick="speakQuestion()" style="
+                    background:#F0F9FF;border:1px solid #BFDBFE;color:#1E40AF;padding:6px 10px;
+                    border-radius:8px;cursor:pointer;font-size:0.85em;font-weight:600;
+                    white-space:nowrap;transition:all 0.2s
+                " title="Read question aloud" onmouseover="this.style.background='#E0F2FE'" onmouseout="this.style.background='#F0F9FF'">
+                    🔊
+                </button>
+            </div>
         </div>
 
         <div id="trivia-options" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
@@ -1779,6 +1957,19 @@ function buildDefaultState() {
             totalAnswered: 0,
             currentQuestion: null,
             _migrated: false,
+            onboarding: {
+                completed: false,
+                setupDate: null,
+                name: '',
+                avatar: '🧠',
+                milestones: {
+                    firstQuestion: false,
+                    firstStreak: false,
+                    firstBadge: false,
+                },
+                showTTS: true,
+                showHighContrast: false,
+            },
         },
         reading: {
             dailyMinutes: 0,
@@ -1817,6 +2008,20 @@ function applyResets() {
     const today = todayStr();
     const weekStart = getMondayOfWeek(today);
     const month = today.slice(0, 7);
+
+    // Ensure trivia onboarding object exists (for migration from old state)
+    if (!state.trivia) state.trivia = {};
+    if (!state.trivia.onboarding) {
+        state.trivia.onboarding = {
+            completed: false,
+            setupDate: null,
+            name: '',
+            avatar: '🧠',
+            milestones: { firstQuestion: false, firstStreak: false, firstBadge: false },
+            showTTS: true,
+            showHighContrast: false,
+        };
+    }
 
     // Daily reset
     if (state.date !== today) {
