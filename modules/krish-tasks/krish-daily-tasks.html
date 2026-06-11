@@ -1691,20 +1691,20 @@ function showOnboardingWizard() {
                 <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Pick your avatar:</label>
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
                     ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
-                        <button onclick="selectAvatar('${emoji}')" style="
-                            font-size:2em;padding:12px;border:2px solid #E2E8F0;
-                            border-radius:12px;background:#F8FAFC;cursor:pointer;
-                            transition:all 0.2s
-                        " onmouseover="this.style.borderColor='#818CF8';this.style.background='#EEF2FF'"
-                        onmouseout="this.style.borderColor='#E2E8F0';this.style.background='#F8FAFC'"
+                        <button onclick="selectOnboardingAvatar('${emoji}')" style="
+                            font-size:2em;padding:12px;border:3px solid ${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : '#E2E8F0'};
+                            border-radius:12px;background:${state.trivia.onboarding.avatar === emoji ? '#EEF2FF' : '#F8FAFC'};cursor:pointer;
+                            transition:all 0.2s;font-weight:${state.trivia.onboarding.avatar === emoji ? '700' : '400'}
+                        " onmouseover="this.style.borderColor='#4F46E5';this.style.background='#EEF2FF'"
+                        onmouseout="this.style.borderColor='${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : '#E2E8F0'}';this.style.background='${state.trivia.onboarding.avatar === emoji ? '#EEF2FF' : '#F8FAFC'}'"
                         >${emoji}</button>
                     `).join('')}
                 </div>
             </div>
             <button onclick="completeOnboardingStep1()" style="
-                width:100%;padding:12px;background:#4F46E5;
+                width:100%;padding:12px;background:#1E293B;
                 color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:background 0.2s
-            " onmouseover="this.style.background='#4338CA'" onmouseout="this.style.background='#4F46E5'">Next →</button>
+            " onmouseover="this.style.background='#0F172A'" onmouseout="this.style.background='#1E293B'">Next →</button>
         `;
     } else {
         card.innerHTML = `
@@ -1735,12 +1735,16 @@ function showOnboardingWizard() {
     }
 }
 
+window.selectOnboardingAvatar = function(emoji) {
+    state.trivia.onboarding.avatar = emoji;
+    saveState();
+    showOnboardingWizard(); // Re-render to show selection highlighted
+};
+
 window.selectAvatar = function(emoji) {
     state.trivia.onboarding.avatar = emoji;
-    document.querySelectorAll('#onboarding-modal button').forEach(btn => {
-        btn.style.borderColor = btn.textContent.trim() === emoji ? '#818CF8' : '#E2E8F0';
-        btn.style.background = btn.textContent.trim() === emoji ? '#EEF2FF' : '#F8FAFC';
-    });
+    saveState();
+    showProfileSettings(); // Refresh modal
 };
 
 window.completeOnboardingStep1 = function() {
