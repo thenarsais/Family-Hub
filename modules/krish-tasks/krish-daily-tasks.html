@@ -1736,25 +1736,25 @@ function showOnboardingWizard() {
 }
 
 window.selectOnboardingAvatar = function(emoji) {
-    // Save name before re-rendering so it doesn't get lost
-    const nameInput = document.getElementById('onboarding-name');
-    const currentName = nameInput?.value.trim() || '';
+    const AVATARS = ['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'];
 
+    // Just update avatar in state, don't save name yet
     state.trivia.onboarding.avatar = emoji;
-    if (currentName) state.trivia.onboarding.name = currentName;
     saveState();
 
-    // Re-render form with saved name and selected avatar
-    showOnboardingWizard();
-
-    // Restore the name in the input field after re-render
-    setTimeout(() => {
-        const newNameInput = document.getElementById('onboarding-name');
-        if (newNameInput && currentName) {
-            newNameInput.value = currentName;
-            newNameInput.focus();
+    // Update button styles only (no re-render, keeps name field intact)
+    const buttons = document.querySelectorAll('#onboarding-modal button');
+    buttons.forEach(btn => {
+        const btnText = btn.textContent.trim();
+        // Check if this is an avatar button
+        if (AVATARS.includes(btnText)) {
+            const isSelected = btnText === emoji;
+            btn.style.borderColor = isSelected ? '#4F46E5' : '#E2E8F0';
+            btn.style.borderWidth = isSelected ? '3px' : '2px';
+            btn.style.background = isSelected ? '#EEF2FF' : '#F8FAFC';
+            btn.style.fontWeight = isSelected ? '700' : '400';
         }
-    }, 10);
+    });
 };
 
 window.selectAvatar = function(emoji) {
