@@ -1736,18 +1736,25 @@ function showOnboardingWizard() {
 }
 
 window.selectOnboardingAvatar = function(emoji) {
+    // Save name before re-rendering so it doesn't get lost
+    const nameInput = document.getElementById('onboarding-name');
+    const currentName = nameInput?.value.trim() || '';
+
     state.trivia.onboarding.avatar = emoji;
+    if (currentName) state.trivia.onboarding.name = currentName;
     saveState();
-    // Update button styles without re-rendering (keeps name field intact)
-    document.querySelectorAll('#onboarding-modal button').forEach(btn => {
-        // Only update avatar emoji buttons (not the Next button)
-        if (['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].includes(btn.textContent.trim())) {
-            const isSelected = btn.textContent.trim() === emoji;
-            btn.style.borderColor = isSelected ? '#4F46E5' : '#E2E8F0';
-            btn.style.background = isSelected ? '#EEF2FF' : '#F8FAFC';
-            btn.style.fontWeight = isSelected ? '700' : '400';
+
+    // Re-render form with saved name and selected avatar
+    showOnboardingWizard();
+
+    // Restore the name in the input field after re-render
+    setTimeout(() => {
+        const newNameInput = document.getElementById('onboarding-name');
+        if (newNameInput && currentName) {
+            newNameInput.value = currentName;
+            newNameInput.focus();
         }
-    });
+    }, 10);
 };
 
 window.selectAvatar = function(emoji) {
