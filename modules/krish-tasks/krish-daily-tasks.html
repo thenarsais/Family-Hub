@@ -1467,8 +1467,8 @@ function checkTriviaAnswer(btn) {
             b.dataset.locked = '1';
             b.onclick = null; b.onmouseover = null; b.onmouseout = null;
             b.style.cursor = 'default';
-            if (b.dataset.answer === q.correct) { b.style.background='rgba(16,185,129,0.25)'; b.style.borderColor='#10B981'; b.style.color='#6EE7B7'; }
-            else if (!b.dataset.wrong) b.style.opacity = '0.35';
+            if (b.dataset.answer === q.correct) { b.style.background='#DCFCE7'; b.style.borderColor='#16A34A'; b.style.color='#14532D'; b.style.fontWeight='700'; }
+            else if (!b.dataset.wrong) { b.style.opacity = '0.45'; }
         });
         triviaAttemptCount = 0;
         saveTriviaAnswer(q.uuid, true);
@@ -1482,9 +1482,10 @@ function checkTriviaAnswer(btn) {
     btn.dataset.wrong = '1';
     btn.onclick = null; btn.onmouseover = null; btn.onmouseout = null;
     btn.style.cursor = 'default';
-    btn.style.background = 'rgba(239,68,68,0.2)';
-    btn.style.borderColor = '#EF4444';
-    btn.style.color = '#FCA5A5';
+    btn.style.background = '#FEE2E2';
+    btn.style.borderColor = '#DC2626';
+    btn.style.color = '#7F1D1D';
+    btn.style.fontWeight = '700';
 
     if (triviaAttemptCount >= 2) {
         // Second wrong — reveal correct, show full result
@@ -1492,8 +1493,8 @@ function checkTriviaAnswer(btn) {
             b.dataset.locked = '1';
             b.onclick = null; b.onmouseover = null; b.onmouseout = null;
             b.style.cursor = 'default';
-            if (b.dataset.answer === q.correct) { b.style.background='rgba(16,185,129,0.25)'; b.style.borderColor='#10B981'; b.style.color='#6EE7B7'; }
-            else if (!b.dataset.wrong) b.style.opacity = '0.35';
+            if (b.dataset.answer === q.correct) { b.style.background='#DCFCE7'; b.style.borderColor='#16A34A'; b.style.color='#14532D'; b.style.fontWeight='700'; }
+            else if (!b.dataset.wrong) { b.style.opacity = '0.45'; }
         });
         triviaAttemptCount = 0;
         saveTriviaAnswer(q.uuid, false);
