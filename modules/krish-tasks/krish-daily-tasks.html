@@ -1558,7 +1558,12 @@ function renderTriviaPanel() {
     }
 
     const q = triviaCurrentQuestion;
-    const streak = triviaProgress?.streaks?.daily || 0;
+    // Phase 2: Get all three streaks
+    const streakInfo = getStreakInfo();
+    const dailyStreak = streakInfo.daily;
+    const categoryStreak = streakInfo.category;
+    const accuracyStreak = streakInfo.accuracy;
+    const accuracy = (getOverallAccuracy() * 100).toFixed(0);
     const total = triviaProgress?.totalAnswered || 0;
     const options = shuffleArr(q.options);
     const dLabel = trivDiffLabel(q.difficulty);
@@ -1574,7 +1579,26 @@ function renderTriviaPanel() {
         <div class="sec-hdr">
             <div>
                 <div class="sec-title">🧠 Daily Trivia</div>
-                <div class="sec-sub">${total} answered${streak > 0 ? ' · 🔥 ' + streak + ' day streak' : ' · Start your streak today!'}</div>
+                <div class="sec-sub">${total} answered · 💯 ${accuracy}%</div>
+            </div>
+        </div>
+
+        <!-- Phase 2: Three Streak Metrics -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;padding:0 0">
+            <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:10px;text-align:center">
+                <div style="font-size:1.3em;font-weight:800;color:#DC2626">🔥</div>
+                <div style="font-size:0.75em;color:#7F1D1D;font-weight:700;margin-top:2px">${dailyStreak}</div>
+                <div style="font-size:0.65em;color:#991B1B;margin-top:1px">Day${dailyStreak !== 1 ? 's' : ''}</div>
+            </div>
+            <div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:10px;text-align:center">
+                <div style="font-size:1.3em;font-weight:800;color:#059669">📚</div>
+                <div style="font-size:0.75em;color:#065F46;font-weight:700;margin-top:2px">${categoryStreak}</div>
+                <div style="font-size:0.65em;color:#047857;margin-top:1px">Category</div>
+            </div>
+            <div style="background:#EEF2FF;border:1px solid #C7D2FE;border-radius:10px;padding:10px;text-align:center">
+                <div style="font-size:1.3em;font-weight:800;color:#4338CA">⚡</div>
+                <div style="font-size:0.75em;color:#312E81;font-weight:700;margin-top:2px">${accuracyStreak}</div>
+                <div style="font-size:0.65em;color:#4C1D95;margin-top:1px">Correct</div>
             </div>
         </div>
 
