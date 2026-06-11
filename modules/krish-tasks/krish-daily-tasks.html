@@ -1447,33 +1447,75 @@ function renderTriviaPanel() {
         </div>`;
 }
 
+let triviaAttemptCount = 0;
+
 function checkTriviaAnswer(btn) {
     const q = triviaCurrentQuestion;
     if (!q || btn.dataset.locked) return;
     const selected = btn.dataset.answer;
     const isCorrect = selected === q.correct;
 
-    document.querySelectorAll('.trivia-opt').forEach(b => {
-        b.dataset.locked = '1';
-        b.onclick = null; b.onmouseover = null; b.onmouseout = null;
-        b.style.cursor = 'default';
-        const ans = b.dataset.answer;
-        if (ans === q.correct) { b.style.background='rgba(16,185,129,0.25)'; b.style.borderColor='#10B981'; b.style.color='#6EE7B7'; }
-        else if (ans === selected && !isCorrect) { b.style.background='rgba(239,68,68,0.2)'; b.style.borderColor='#EF4444'; b.style.color='#FCA5A5'; }
-        else b.style.opacity = '0.35';
-    });
+    if (isCorrect) {
+        // Correct — lock all, highlight green, show result
+        document.querySelectorAll('.trivia-opt').forEach(b => {
+            b.dataset.locked = '1';
+            b.onclick = null; b.onmouseover = null; b.onmouseout = null;
+            b.style.cursor = 'default';
+            if (b.dataset.answer === q.correct) { b.style.background='rgba(16,185,129,0.25)'; b.style.borderColor='#10B981'; b.style.color='#6EE7B7'; }
+            else if (!b.dataset.wrong) b.style.opacity = '0.35';
+        });
+        triviaAttemptCount = 0;
+        saveTriviaAnswer(q.uuid, true);
+        showTriviaResult(true, q);
+        return;
+    }
 
-    saveTriviaAnswer(q.uuid, isCorrect);
+    // Wrong answer
+    triviaAttemptCount++;
+    btn.dataset.locked = '1';
+    btn.dataset.wrong = '1';
+    btn.onclick = null; btn.onmouseover = null; btn.onmouseout = null;
+    btn.style.cursor = 'default';
+    btn.style.background = 'rgba(239,68,68,0.2)';
+    btn.style.borderColor = '#EF4444';
+    btn.style.color = '#FCA5A5';
 
+    if (triviaAttemptCount >= 2) {
+        // Second wrong — reveal correct, show full result
+        document.querySelectorAll('.trivia-opt').forEach(b => {
+            b.dataset.locked = '1';
+            b.onclick = null; b.onmouseover = null; b.onmouseout = null;
+            b.style.cursor = 'default';
+            if (b.dataset.answer === q.correct) { b.style.background='rgba(16,185,129,0.25)'; b.style.borderColor='#10B981'; b.style.color='#6EE7B7'; }
+            else if (!b.dataset.wrong) b.style.opacity = '0.35';
+        });
+        triviaAttemptCount = 0;
+        saveTriviaAnswer(q.uuid, false);
+        showTriviaResult(false, q);
+    } else {
+        // First wrong — encourage retry, don't reveal
+        const resultEl = document.getElementById('trivia-result');
+        if (resultEl) {
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = `
+                <div style="background:rgba(239,68,68,0.12);border-left:3px solid #EF4444;padding:14px;border-radius:0 12px 12px 0">
+                    <div style="font-weight:700;color:#FCA5A5">❌ Not quite — give it one more try! 💪</div>
+                    <div style="font-size:0.85em;color:#FCA5A5;margin-top:4px;opacity:0.8">That option's been crossed out for you.</div>
+                </div>`;
+            resultEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        }
+    }
+}
+
+function showTriviaResult(isCorrect, q) {
     const wrongCount = (triviaProgress?.incorrectPool?.find(p => p.questionId === q.uuid)?.count || 0) + (isCorrect ? 0 : 1);
     const showEnhanced = !isCorrect && wrongCount >= 2 && q.enhancedFunFact;
-
     const resultEl = document.getElementById('trivia-result');
     if (!resultEl) return;
     resultEl.style.display = 'block';
     resultEl.innerHTML = `
         <div style="background:rgba(${isCorrect?'16,185,129':'239,68,68'},0.12);border-left:3px solid ${isCorrect?'#10B981':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
-            <div style="font-weight:700;font-size:1.05em">${isCorrect ? '✅ Correct! Great job!' : `❌ Not quite — the answer is: <span style="color:#F9FAFB">${q.correct}</span>`}</div>
+            <div style="font-weight:700;font-size:1.05em">${isCorrect ? '✅ Correct! Great job!' : `❌ The answer was: <span style="color:#F9FAFB">${q.correct}</span>`}</div>
         </div>
         <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);padding:14px;border-radius:12px;margin-bottom:14px">
             <div style="font-size:0.8em;color:#818CF8;font-weight:600;margin-bottom:6px">${showEnhanced ? '🔍 DEEP DIVE' : 'FUN FACT'}</div>
@@ -1483,7 +1525,6 @@ function checkTriviaAnswer(btn) {
         <button onclick="loadNextTriviaQuestion()" style="width:100%;padding:13px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:white;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:1em" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
             Next Question →
         </button>`;
-
     resultEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
     if (isCorrect) { try { playTick(); } catch(e) {} }
 }
