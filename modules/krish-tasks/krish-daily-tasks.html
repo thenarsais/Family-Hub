@@ -1526,6 +1526,89 @@ function getBadgeInfo(category, tier) {
     };
 }
 
+// ── PHASE 4: Goals System ────────────────────────
+function createGoal(type, target, setBy = 'krish', category = null) {
+    if (!state.trivia.goals) state.trivia.goals = [];
+    const id = 'goal_' + Date.now();
+    const goal = {
+        id,
+        type, // 'daily' | 'weekly' | 'category' | 'points'
+        target,
+        current: 0,
+        category, // for category mastery goals
+        setBy, // 'krish' | 'parent'
+        createdDate: todayStr(),
+        completed: false,
+        completedDate: null
+    };
+    state.trivia.goals.push(goal);
+    saveState();
+    return goal;
+}
+
+function updateGoalProgress() {
+    if (!state.trivia.goals) return [];
+    const today = todayStr();
+    const weekStart = getMondayOfWeek(today);
+    let completedGoals = [];
+
+    state.trivia.goals.forEach(goal => {
+        if (goal.completed) return;
+
+        let current = 0;
+        switch (goal.type) {
+            case 'daily':
+                current = state.points.today;
+                break;
+            case 'weekly':
+                current = state.points.week;
+                break;
+            case 'category':
+                const catStats = triviaProgress?.categoryPerformance?.[goal.category];
+                current = catStats ? ((catStats.correct / catStats.total) * 100).toFixed(0) : 0;
+                break;
+            case 'points':
+                current = state.points.today; // daily points goal
+                break;
+        }
+
+        goal.current = current;
+
+        if (current >= goal.target) {
+            goal.completed = true;
+            goal.completedDate = today;
+            completedGoals.push(goal);
+        }
+    });
+
+    // Reset daily goals at end of day
+    state.trivia.goals.forEach(goal => {
+        if (goal.type === 'daily' && goal.createdDate !== today && goal.completed && !goal.completedDate.includes(today)) {
+            const newGoal = createGoal(goal.type, goal.target, goal.setBy);
+            // Remove old goal
+            state.trivia.goals = state.trivia.goals.filter(g => g.id !== goal.id);
+        }
+    });
+
+    return completedGoals;
+}
+
+function deleteGoal(goalId) {
+    if (!state.trivia.goals) return;
+    state.trivia.goals = state.trivia.goals.filter(g => g.id !== goalId);
+    saveState();
+}
+
+function getActiveGoals() {
+    if (!state.trivia.goals) return [];
+    return state.trivia.goals.filter(g => !g.completed);
+}
+
+function getGoalProgress(goal) {
+    const pct = Math.min(100, (goal.current / goal.target) * 100);
+    return pct;
+}
+
 // ── PHASE 4: Points System ────────────────────────
 function calculatePoints(question, isCorrect) {
     if (!isCorrect) return 0;
@@ -1672,6 +1755,52 @@ window.completeOnboarding = function() {
     document.getElementById('onboarding-modal').remove();
     renderTriviaPanel();
 };
+
+// ── Goal Completion Popup ─────────────────────────
+function showGoalCompletion(goal) {
+    const goalLabels = {
+        daily: '📅 Daily Goal',
+        weekly: '📊 Weekly Goal',
+        category: '🎯 Category Goal',
+        points: '⭐ Points Goal'
+    };
+
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.7);display:flex;
+        justify-content:center;align-items:center;z-index:9998;
+        animation:fadeIn 0.3s ease
+    `;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        background:linear-gradient(135deg,#10B981,#059669);
+        border-radius:24px;padding:40px;max-width:350px;
+        text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+        animation:popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
+    `;
+
+    card.innerHTML = `
+        <div style="font-size:4em;margin-bottom:16px;animation:spin 1s ease-in-out">🎉</div>
+        <h2 style="color:white;font-size:1.8em;margin-bottom:8px;font-weight:800">Goal Completed!</h2>
+        <div style="color:#ECFDF5;font-size:1em;margin-bottom:12px;font-weight:700">${goalLabels[goal.type]}</div>
+        <div style="color:#DCFCE7;font-size:0.9em;margin-bottom:20px">
+            ${goal.type === 'category' ? `${goal.category}: ${goal.current}% accuracy` : `${goal.current} / ${goal.target}`}
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" style="
+            background:white;color:#059669;border:none;padding:12px 24px;
+            border-radius:10px;cursor:pointer;font-weight:700;font-size:1em
+        ">Amazing Work! 🚀</button>
+    `;
+
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+
+    setTimeout(() => {
+        if (modal.parentElement) modal.remove();
+    }, 5000);
+}
 
 // ── Difficulty Unlock Popup ───────────────────────
 function showDifficultyUnlock(mode) {
@@ -1955,6 +2084,12 @@ async function saveTriviaAnswer(questionId, isCorrect) {
         newModes.forEach(mode => showDifficultyUnlock(mode));
     }
 
+    // ── Check for goal completions ──────────────────
+    const completedGoals = updateGoalProgress();
+    if (completedGoals.length > 0) {
+        completedGoals.forEach(goal => showGoalCompletion(goal));
+    }
+
     saveState();
     renderDashboard();
     renderDashTrivia();
@@ -1965,6 +2100,28 @@ function trivDiffColor(d) { return { easy:'#10B981', medium:'#F59E0B', hard:'#EF
 function trivDiffLabel(d) { return { easy:'Rookie', medium:'Pro', hard:'Legend' }[d] || d; }
 function trivDiffTagline(d) { return { easy:'Builds foundational knowledge', medium:'Tests deeper understanding', hard:'Challenges critical thinking' }[d] || ''; }
 function trivDiffTooltip(d) { return { easy:'Rookie — Clear, foundational questions.', medium:'Pro — Requires deeper knowledge and context.', hard:'Legend — Challenges specific knowledge and critical thinking.' }[d] || ''; }
+
+function renderGoalsPreview() {
+    const goals = getActiveGoals();
+    if (goals.length === 0) return `<div style="font-size:0.85em;color:#94A3B8;padding:10px">Set a goal to get started! 🎯</div>`;
+
+    return goals.slice(0, 2).map(goal => {
+        const pct = getGoalProgress(goal);
+        const goalLabel = { daily: '📅', weekly: '📊', category: '🎯', points: '⭐' }[goal.type];
+        const goalDesc = goal.type === 'category' ? `${goal.category}: ${goal.target}%` : `${goal.target}`;
+        return `
+            <div style="margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;font-size:0.8em;font-weight:600;margin-bottom:4px">
+                    <span style="color:#475569">${goalLabel} ${goal.type}</span>
+                    <span style="color:#6366F1">${goal.current}/${goalDesc}</span>
+                </div>
+                <div style="background:#E2E8F0;border-radius:6px;height:6px;overflow:hidden">
+                    <div style="background:linear-gradient(90deg,#6366F1,#818CF8);height:100%;width:${pct}%;transition:width 0.3s"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
 // ── TRIVIA PANEL (Phase 1 — Multiple Choice) ─────
 // ── PHASE 2: Export Functions ──────────────────────
@@ -2318,6 +2475,9 @@ function buildDefaultState() {
                 legendUnlocked: false,
                 legendUnlockedDate: null,
             },
+            goals: [
+                // { id, type: 'daily|weekly|category|points', target, current, setBy: 'krish|parent', createdDate, completed, completedDate }
+            ],
         },
         reading: {
             dailyMinutes: 0,
@@ -2381,6 +2541,9 @@ function applyResets() {
             legendUnlocked: false,
             legendUnlockedDate: null,
         };
+    }
+    if (!state.trivia.goals) {
+        state.trivia.goals = [];
     }
 
     // Daily reset
@@ -3017,6 +3180,12 @@ function renderDashTrivia() {
             <!-- Question preview -->
             <div style="font-size:0.78em;font-weight:600;color:#64748B;margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
             <div style="font-size:0.9em;color:#1E293B;margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,85)}${q.question.length>85?'...':''}</div>
+
+            <!-- Phase 4: Goals Preview -->
+            <div style="background:#F0F9FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px;margin-bottom:10px">
+                <div style="font-size:0.75em;font-weight:700;color:#1E40AF;margin-bottom:8px">🎯 Goals</div>
+                ${renderGoalsPreview()}
+            </div>
 
             <!-- Buttons -->
             <div style="display:flex;gap:8px">
