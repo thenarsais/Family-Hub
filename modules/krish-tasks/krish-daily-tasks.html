@@ -892,9 +892,16 @@
                 <h1 id="greeting-text">Hey Krish! 👋</h1>
                 <div class="date-sub" id="date-display"></div>
             </div>
-            <div class="pts-badge" onclick="showBoard('points')">
-                <span class="num" id="hdr-pts">0</span>
-                <span class="lbl">pts today</span>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+                <div class="pts-badge" onclick="showBoard('points')">
+                    <span class="num" id="hdr-pts">0</span>
+                    <span class="lbl">pts today</span>
+                </div>
+                <button id="profile-btn" onclick="showProfileSettings()" style="
+                    background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.35);
+                    border-radius:30px;padding:8px 14px;text-align:center;cursor:pointer;
+                    font-size:1.4em;line-height:1;transition:all 0.2s
+                " onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.18)'" title="Profile settings"></button>
             </div>
         </div>
         <div class="dash-bar-wrap">
@@ -1754,6 +1761,77 @@ window.completeOnboarding = function() {
     saveState();
     document.getElementById('onboarding-modal').remove();
     renderTriviaPanel();
+};
+
+// ── Profile/Avatar Management ──────────────────────
+function showProfileSettings() {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.6);display:flex;
+        justify-content:center;align-items:center;z-index:9999;
+        padding:20px
+    `;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        background:white;border-radius:20px;padding:30px;
+        max-width:400px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2)
+    `;
+
+    const profile = state.trivia.onboarding;
+    card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">${profile.name || 'Profile'}</h2>
+            <button onclick="this.closest('[style*=position:fixed]').remove()" style="
+                background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8
+            ">✕</button>
+        </div>
+
+        <div style="text-align:center;margin-bottom:24px">
+            <div style="font-size:3em;margin-bottom:12px">${profile.avatar}</div>
+            <div style="color:#64748B;font-size:0.9em;margin-bottom:16px">Change avatar:</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+                ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
+                    <button onclick="changeAvatar('${emoji}')" style="
+                        font-size:2em;padding:12px;border:2px solid ${profile.avatar === emoji ? '#818CF8' : '#E2E8F0'};
+                        border-radius:12px;background:${profile.avatar === emoji ? '#EEF2FF' : '#F8FAFC'};
+                        cursor:pointer;transition:all 0.2s
+                    " onmouseover="this.style.borderColor='#818CF8';this.style.background='#EEF2FF'"
+                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? '#818CF8' : '#E2E8F0'}';this.style.background='${profile.avatar === emoji ? '#EEF2FF' : '#F8FAFC'}'"
+                    >${emoji}</button>
+                `).join('')}
+            </div>
+        </div>
+
+        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:12px;margin-bottom:16px">
+            <button onclick="resetOnboarding()" style="
+                width:100%;padding:10px;background:#DC2626;color:white;border:none;
+                border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9em
+            ">🔄 Reset Onboarding (for testing)</button>
+        </div>
+
+        <button onclick="this.closest('[style*=position:fixed]').remove()" style="
+            width:100%;padding:12px;background:#6366F1;color:white;border:none;
+            border-radius:10px;cursor:pointer;font-weight:700
+        ">Done</button>
+    `;
+
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+}
+
+window.changeAvatar = function(emoji) {
+    state.trivia.onboarding.avatar = emoji;
+    saveState();
+    showProfileSettings(); // Refresh modal
+};
+
+window.resetOnboarding = function() {
+    state.trivia.onboarding.completed = false;
+    saveState();
+    document.querySelector('[style*=position:fixed]')?.remove();
+    showOnboardingWizard();
 };
 
 // ── Goal Completion Popup ─────────────────────────
@@ -2788,6 +2866,10 @@ function renderDashboard() {
     if (gEl) gEl.textContent = greeting + ', Krish! 👋';
     const dEl = document.getElementById('date-display');
     if (dEl) dEl.textContent = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+
+    // Update profile button with current avatar
+    const profileBtn = document.getElementById('profile-btn');
+    if (profileBtn) profileBtn.textContent = state.trivia.onboarding.avatar || '🧠';
 
     const all  = allChoresCount();
     const done = doneChoresCount();
