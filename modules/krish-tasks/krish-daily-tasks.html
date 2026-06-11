@@ -1720,10 +1720,10 @@ function showOnboardingWizard() {
                 </label>
                 <p style="font-size:0.85em;color:#64748B;margin-top:8px;margin-left:30px">You can always turn this on or off later</p>
             </div>
-            <button onclick="completeOnboarding()" style="
+            <button id="complete-onboarding-btn" style="
                 width:100%;padding:12px;background:linear-gradient(135deg,#10B981,#059669);
-                color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em
-            ">Let's Go! 🚀</button>
+                color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:opacity 0.2s
+            " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Let's Go! 🚀</button>
         `;
     }
 
@@ -1739,6 +1739,21 @@ function showOnboardingWizard() {
                 nameInput.addEventListener('input', () => {
                     state.trivia.onboarding.name = nameInput.value.trim();
                     saveState();
+                });
+            }
+        }, 10);
+    } else if (step === 2) {
+        // Attach event listener to Let's Go button
+        setTimeout(() => {
+            const completeBtn = document.getElementById('complete-onboarding-btn');
+            if (completeBtn) {
+                completeBtn.addEventListener('click', () => {
+                    state.trivia.onboarding.showTTS = document.getElementById('tts-toggle')?.checked ?? true;
+                    state.trivia.onboarding.completed = true;
+                    state.trivia.onboarding.setupDate = todayStr();
+                    saveState();
+                    document.getElementById('onboarding-modal')?.remove();
+                    renderTriviaPanel();
                 });
             }
         }, 10);
