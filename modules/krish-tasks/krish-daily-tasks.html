@@ -1671,7 +1671,7 @@ function showOnboardingWizard() {
         max-width:400px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.2)
     `;
 
-    const step = state.trivia.onboarding.name ? 2 : 1;
+    const step = state.trivia.onboarding.step1Complete ? 2 : 1;
 
     if (step === 1) {
         card.innerHTML = `
@@ -1736,25 +1736,25 @@ function showOnboardingWizard() {
 }
 
 window.selectOnboardingAvatar = function(emoji) {
-    const AVATARS = ['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'];
+    // Save current name before re-render
+    const nameInput = document.getElementById('onboarding-name');
+    const currentName = nameInput?.value.trim() || '';
 
-    // Just update avatar in state, don't save name yet
+    // Update avatar and save to state
     state.trivia.onboarding.avatar = emoji;
     saveState();
 
-    // Update button styles only (no re-render, keeps name field intact)
-    const buttons = document.querySelectorAll('#onboarding-modal button');
-    buttons.forEach(btn => {
-        const btnText = btn.textContent.trim();
-        // Check if this is an avatar button
-        if (AVATARS.includes(btnText)) {
-            const isSelected = btnText === emoji;
-            btn.style.borderColor = isSelected ? '#4F46E5' : '#E2E8F0';
-            btn.style.borderWidth = isSelected ? '3px' : '2px';
-            btn.style.background = isSelected ? '#EEF2FF' : '#F8FAFC';
-            btn.style.fontWeight = isSelected ? '700' : '400';
+    // Re-render to show highlighted avatar (won't advance because step1Complete is false)
+    showOnboardingWizard();
+
+    // Restore name in field after re-render
+    setTimeout(() => {
+        const newNameInput = document.getElementById('onboarding-name');
+        if (newNameInput && currentName) {
+            newNameInput.value = currentName;
+            newNameInput.focus();
         }
-    });
+    }, 10);
 };
 
 window.selectAvatar = function(emoji) {
@@ -1770,7 +1770,8 @@ window.completeOnboardingStep1 = function() {
         return;
     }
     state.trivia.onboarding.name = name;
-    document.getElementById('onboarding-modal').remove();
+    state.trivia.onboarding.step1Complete = true;
+    saveState();
     showOnboardingWizard();
 };
 
@@ -1865,8 +1866,9 @@ function resetOnboardingData() {
     state.trivia.onboarding = {
         completed: false,
         setupDate: null,
-        name: '', // Clear name to show step 1
-        avatar: '🧠', // Reset to default
+        name: '',
+        avatar: '🧠',
+        step1Complete: false, // Reset step progress
         milestones: { firstQuestion: false, firstStreak: false, firstBadge: false },
         showTTS: true,
         showHighContrast: false,
@@ -2593,6 +2595,7 @@ function buildDefaultState() {
                 setupDate: null,
                 name: '',
                 avatar: '🧠',
+                step1Complete: false, // Explicitly track when Step 1 is done
                 milestones: {
                     firstQuestion: false,
                     firstStreak: false,
@@ -2662,10 +2665,15 @@ function applyResets() {
             setupDate: null,
             name: '',
             avatar: '🧠',
+            step1Complete: false,
             milestones: { firstQuestion: false, firstStreak: false, firstBadge: false },
             showTTS: true,
             showHighContrast: false,
         };
+    }
+    // Ensure step1Complete exists for old saves
+    if (state.trivia.onboarding && state.trivia.onboarding.step1Complete === undefined) {
+        state.trivia.onboarding.step1Complete = state.trivia.onboarding.completed;
     }
     if (!state.trivia.badges) {
         state.trivia.badges = { byCategory: {}, special: {} };
