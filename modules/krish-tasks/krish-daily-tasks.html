@@ -1743,7 +1743,7 @@ function showOnboardingWizard() {
             }
         }, 10);
     } else if (step === 2) {
-        // Attach event listener to Let's Go button
+        // Attach ONE-TIME event listener to Let's Go button (prevents stacking)
         setTimeout(() => {
             const completeBtn = document.getElementById('complete-onboarding-btn');
             if (completeBtn) {
@@ -1754,7 +1754,7 @@ function showOnboardingWizard() {
                     saveState();
                     document.getElementById('onboarding-modal')?.remove();
                     renderTriviaPanel();
-                });
+                }, { once: true }); // Fire only once, then remove listener
             }
         }, 10);
     }
