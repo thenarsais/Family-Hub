@@ -1828,8 +1828,7 @@ function showProfileSettings() {
         document.getElementById('close-profile')?.addEventListener('click', closeModal);
         document.getElementById('done-profile-btn')?.addEventListener('click', closeModal);
         document.getElementById('reset-onboarding-btn')?.addEventListener('click', () => {
-            state.trivia.onboarding.completed = false;
-            saveState();
+            resetOnboardingData();
             closeModal();
             showOnboardingWizard();
         });
@@ -1841,6 +1840,19 @@ window.changeAvatar = function(emoji) {
     saveState();
     showProfileSettings(); // Refresh modal
 };
+
+function resetOnboardingData() {
+    state.trivia.onboarding = {
+        completed: false,
+        setupDate: null,
+        name: '', // Clear name to show step 1
+        avatar: '🧠', // Reset to default
+        milestones: { firstQuestion: false, firstStreak: false, firstBadge: false },
+        showTTS: true,
+        showHighContrast: false,
+    };
+    saveState();
+}
 
 window.resetOnboarding = function() {
     state.trivia.onboarding.completed = false;
