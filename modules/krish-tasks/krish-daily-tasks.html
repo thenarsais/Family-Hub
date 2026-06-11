@@ -1766,6 +1766,7 @@ window.completeOnboarding = function() {
 // ── Profile/Avatar Management ──────────────────────
 function showProfileSettings() {
     const modal = document.createElement('div');
+    modal.id = 'profile-modal';
     modal.style.cssText = `
         position:fixed;top:0;left:0;right:0;bottom:0;
         background:rgba(0,0,0,0.6);display:flex;
@@ -1780,11 +1781,13 @@ function showProfileSettings() {
     `;
 
     const profile = state.trivia.onboarding;
+    const closeModal = () => document.getElementById('profile-modal')?.remove();
+
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
             <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">${profile.name || 'Profile'}</h2>
-            <button onclick="this.closest('[style*=position:fixed]').remove()" style="
-                background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8
+            <button id="close-profile" style="
+                background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px
             ">✕</button>
         </div>
 
@@ -1805,20 +1808,32 @@ function showProfileSettings() {
         </div>
 
         <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:12px;margin-bottom:16px">
-            <button onclick="resetOnboarding()" style="
-                width:100%;padding:10px;background:#DC2626;color:white;border:none;
-                border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9em
-            ">🔄 Reset Onboarding (for testing)</button>
+            <button id="reset-onboarding-btn" style="
+                width:100%;padding:12px;background:#DC2626;color:white;border:none;
+                border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9em;transition:background 0.2s
+            " onmouseover="this.style.background='#B91C1C'" onmouseout="this.style.background='#DC2626'">🔄 Reset Onboarding (for testing)</button>
         </div>
 
-        <button onclick="this.closest('[style*=position:fixed]').remove()" style="
+        <button id="done-profile-btn" style="
             width:100%;padding:12px;background:#6366F1;color:white;border:none;
-            border-radius:10px;cursor:pointer;font-weight:700
-        ">Done</button>
+            border-radius:10px;cursor:pointer;font-weight:700;transition:background 0.2s
+        " onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='#6366F1'">Done</button>
     `;
 
     modal.appendChild(card);
     document.body.appendChild(modal);
+
+    // Attach event listeners after element is in DOM
+    setTimeout(() => {
+        document.getElementById('close-profile')?.addEventListener('click', closeModal);
+        document.getElementById('done-profile-btn')?.addEventListener('click', closeModal);
+        document.getElementById('reset-onboarding-btn')?.addEventListener('click', () => {
+            state.trivia.onboarding.completed = false;
+            saveState();
+            closeModal();
+            showOnboardingWizard();
+        });
+    }, 10);
 }
 
 window.changeAvatar = function(emoji) {
