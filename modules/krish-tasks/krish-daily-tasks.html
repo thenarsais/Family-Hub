@@ -55,6 +55,21 @@
             font-weight: 700 !important;
         }
 
+        /* ── BADGE ANIMATIONS ────────────────────── */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes spin {
+            0%, 100% { transform: rotateZ(0deg); }
+            50% { transform: rotateZ(10deg); }
+        }
+
         /* ── RESPONSIVE DESIGN ──────────────────── */
         @media (max-width: 768px) {
             html { font-size: 14px; }
@@ -1406,6 +1421,53 @@ async function loadNextTriviaQuestion() {
     renderTriviaPanel();
 }
 
+// ── PHASE 4: Badge System ────────────────────────
+const BADGE_TIERS = {
+    bronze:     { correct: 10,  accuracy: 0.70, emoji: '🥉', color: '#CD7F32' },
+    silver:     { correct: 20,  accuracy: 0.75, emoji: '🥈', color: '#C0C0C0' },
+    gold:       { correct: 50,  accuracy: 0.80, emoji: '🥇', color: '#FFD700' },
+    platinum:   { correct: 100, accuracy: 0.90, emoji: '💎', color: '#E5E4E2' },
+};
+
+function checkBadges() {
+    if (!state.trivia.badges.byCategory) state.trivia.badges.byCategory = {};
+
+    // Check category badges
+    const cats = triviaProgress?.categoryPerformance || {};
+    let newBadges = [];
+
+    Object.entries(cats).forEach(([category, stats]) => {
+        if (!state.trivia.badges.byCategory[category]) {
+            state.trivia.badges.byCategory[category] = {};
+        }
+
+        const accuracy = stats.total > 0 ? (stats.correct / stats.total) : 0;
+        const badges = state.trivia.badges.byCategory[category];
+
+        Object.entries(BADGE_TIERS).forEach(([tier, threshold]) => {
+            // Check if threshold is met and badge not yet unlocked
+            if (!badges[tier] && stats.correct >= threshold.correct && accuracy >= threshold.accuracy) {
+                badges[tier] = todayStr();
+                newBadges.push({ category, tier, threshold });
+            }
+        });
+    });
+
+    return newBadges;
+}
+
+function getBadgeInfo(category, tier) {
+    const badge = BADGE_TIERS[tier];
+    return {
+        tier,
+        emoji: badge.emoji,
+        color: badge.color,
+        label: tier.charAt(0).toUpperCase() + tier.slice(1),
+        requirement: `${badge.correct} correct · ${(badge.accuracy * 100).toFixed(0)}% accuracy`,
+        category
+    };
+}
+
 // ── PHASE 4: Points System ────────────────────────
 function calculatePoints(question, isCorrect) {
     if (!isCorrect) return 0;
@@ -1553,6 +1615,88 @@ window.completeOnboarding = function() {
     renderTriviaPanel();
 };
 
+// ── Badge Celebration Popup ────────────────────
+function showBadgeCelebration(category, tier) {
+    const badge = getBadgeInfo(category, tier);
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.7);display:flex;
+        justify-content:center;align-items:center;z-index:9998;
+        animation:fadeIn 0.3s ease
+    `;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        background:linear-gradient(135deg,#FCD34D,#FBBF24);
+        border-radius:24px;padding:40px;max-width:350px;
+        text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+        animation:popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
+    `;
+
+    card.innerHTML = `
+        <div style="font-size:4em;margin-bottom:16px;animation:spin 1s ease-in-out">${badge.emoji}</div>
+        <h2 style="color:#1E293B;font-size:1.8em;margin-bottom:8px;font-weight:800">Badge Unlocked!</h2>
+        <div style="color:#92400E;font-size:1.1em;margin-bottom:12px;font-weight:700">${badge.label} Badge — ${category}</div>
+        <div style="color:#78350F;font-size:0.9em;margin-bottom:20px">${badge.requirement}</div>
+        <button onclick="this.parentElement.parentElement.remove()" style="
+            background:#DC2626;color:white;border:none;padding:12px 24px;
+            border-radius:10px;cursor:pointer;font-weight:700;font-size:1em
+        ">Awesome! 🎉</button>
+    `;
+
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+
+    setTimeout(() => {
+        if (modal.parentElement) modal.remove();
+    }, 5000);
+}
+
+function showBadgesPage() {
+    const badges = state.trivia.badges.byCategory || {};
+    const categories = Object.keys(badges).sort();
+
+    let html = `
+        <div style="padding:20px;background:#F8FAFC;min-height:100vh">
+            <h2 style="color:#1E293B;font-size:1.6em;margin-bottom:20px;font-weight:800">🏆 My Badges</h2>
+    `;
+
+    if (categories.length === 0) {
+        html += `<div style="text-align:center;color:#64748B;padding:40px">Answer trivia to unlock badges!</div>`;
+    } else {
+        categories.forEach(cat => {
+            const catBadges = badges[cat];
+            html += `
+                <div style="background:white;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
+                    <div style="font-weight:700;color:#1E293B;margin-bottom:12px">${cat}</div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+            `;
+            Object.entries(BADGE_TIERS).forEach(([tier, threshold]) => {
+                const unlocked = !!catBadges[tier];
+                const info = getBadgeInfo(cat, tier);
+                html += `
+                    <div style="
+                        text-align:center;padding:12px;border-radius:12px;
+                        background:${unlocked ? info.color + '20' : '#E2E8F0'};
+                        border:2px solid ${unlocked ? info.color : '#CBD5E1'}
+                    ">
+                        <div style="font-size:2em;margin-bottom:6px;opacity:${unlocked ? 1 : 0.4}">${info.emoji}</div>
+                        <div style="font-size:0.75em;color:#475569;font-weight:600">${info.label}</div>
+                        ${unlocked ? `<div style="font-size:0.7em;color:#059669;margin-top:4px">✓</div>` : ''}
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+        });
+    }
+
+    html += `</div>`;
+
+    const panel = document.getElementById('panel-trivia');
+    if (panel) panel.innerHTML = html;
+}
+
 async function saveTriviaAnswer(questionId, isCorrect) {
     const today = todayStr();
     try {
@@ -1681,6 +1825,12 @@ async function saveTriviaAnswer(questionId, isCorrect) {
         await idbPut(ptx.objectStore('userProgress'), triviaProgress);
     } catch (err) {
         console.error('[Trivia] Failed to save answer:', err);
+    }
+
+    // ── Check for badge unlocks ────────────────────
+    const newBadges = checkBadges();
+    if (newBadges.length > 0) {
+        newBadges.forEach(b => showBadgeCelebration(b.category, b.tier));
     }
 
     saveState();
@@ -2011,6 +2161,10 @@ function buildDefaultState() {
                 showTTS: true,
                 showHighContrast: false,
             },
+            badges: {
+                byCategory: {}, // { 'Science': { bronze: unlockedDate, silver: null, ... }, ... }
+                special: {}, // { 'streak_7': unlockedDate, ... }
+            },
         },
         reading: {
             dailyMinutes: 0,
@@ -2062,6 +2216,9 @@ function applyResets() {
             showTTS: true,
             showHighContrast: false,
         };
+    }
+    if (!state.trivia.badges) {
+        state.trivia.badges = { byCategory: {}, special: {} };
     }
 
     // Daily reset
@@ -2678,12 +2835,32 @@ function renderDashTrivia() {
                 <span style="color:#059669">🪙 ${state.points.today || 0} pts</span>
             </div>
 
+            <!-- Badges row -->
+            ${(() => {
+                const badges = state.trivia.badges.byCategory || {};
+                let badgeEmojis = [];
+                Object.values(badges).forEach(catBadges => {
+                    Object.entries(catBadges).forEach(([tier, date]) => {
+                        if (date) badgeEmojis.push(BADGE_TIERS[tier].emoji);
+                    });
+                });
+                return badgeEmojis.length > 0 ? `
+                    <div style="margin-bottom:10px;display:flex;gap:4px;flex-wrap:wrap">
+                        ${badgeEmojis.slice(0, 6).map(e => `<span style="font-size:1.2em">${e}</span>`).join('')}
+                        ${badgeEmojis.length > 6 ? `<span style="font-size:0.75em;color:#94A3B8;align-self:center">+${badgeEmojis.length - 6}</span>` : ''}
+                    </div>
+                ` : '';
+            })()}
+
             <!-- Question preview -->
             <div style="font-size:0.78em;font-weight:600;color:#64748B;margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
             <div style="font-size:0.9em;color:#1E293B;margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,85)}${q.question.length>85?'...':''}</div>
 
-            <!-- Answer button -->
-            <button onclick="showBoard('trivia')" style="width:100%;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em">Answer ↗</button>
+            <!-- Buttons -->
+            <div style="display:flex;gap:8px">
+                <button onclick="showBoard('trivia')" style="flex:1;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em">Answer ↗</button>
+                <button onclick="showBadgesPage()" style="flex:0.4;padding:8px;background:#FCD34D;color:#1E293B;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em;align-self:center" title="View all badges">🏆</button>
+            </div>
         </div>`;
 }
 
