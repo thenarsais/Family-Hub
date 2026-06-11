@@ -1720,7 +1720,7 @@ function showOnboardingWizard() {
                 </label>
                 <p style="font-size:0.85em;color:#64748B;margin-top:8px;margin-left:30px">You can always turn this on or off later</p>
             </div>
-            <button id="complete-onboarding-btn" style="
+            <button onclick="finishOnboarding()" style="
                 width:100%;padding:12px;background:linear-gradient(135deg,#10B981,#059669);
                 color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:opacity 0.2s
             " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Let's Go! 🚀</button>
@@ -1740,21 +1740,6 @@ function showOnboardingWizard() {
                     state.trivia.onboarding.name = nameInput.value.trim();
                     saveState();
                 });
-            }
-        }, 10);
-    } else if (step === 2) {
-        // Attach ONE-TIME event listener to Let's Go button (prevents stacking)
-        setTimeout(() => {
-            const completeBtn = document.getElementById('complete-onboarding-btn');
-            if (completeBtn) {
-                completeBtn.addEventListener('click', () => {
-                    state.trivia.onboarding.showTTS = document.getElementById('tts-toggle')?.checked ?? true;
-                    state.trivia.onboarding.completed = true;
-                    state.trivia.onboarding.setupDate = todayStr();
-                    saveState();
-                    document.getElementById('onboarding-modal')?.remove();
-                    renderTriviaPanel();
-                }, { once: true }); // Fire only once, then remove listener
             }
         }, 10);
     }
@@ -1788,13 +1773,25 @@ window.completeOnboardingStep1 = function() {
     showOnboardingWizard();
 };
 
+window.finishOnboarding = function() {
+    try {
+        const ttsToggle = document.getElementById('tts-toggle');
+        state.trivia.onboarding.showTTS = ttsToggle ? ttsToggle.checked : true;
+        state.trivia.onboarding.completed = true;
+        state.trivia.onboarding.setupDate = todayStr();
+        saveState();
+
+        const modal = document.getElementById('onboarding-modal');
+        if (modal) modal.remove();
+
+        renderTriviaPanel();
+    } catch (e) {
+        console.error('Error finishing onboarding:', e);
+    }
+};
+
 window.completeOnboarding = function() {
-    state.trivia.onboarding.showTTS = document.getElementById('tts-toggle')?.checked ?? true;
-    state.trivia.onboarding.completed = true;
-    state.trivia.onboarding.setupDate = todayStr();
-    saveState();
-    document.getElementById('onboarding-modal').remove();
-    renderTriviaPanel();
+    window.finishOnboarding();
 };
 
 // ── Profile/Avatar Management ──────────────────────
