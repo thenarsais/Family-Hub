@@ -1747,14 +1747,14 @@ window.selectOnboardingAvatar = function(emoji) {
     // Re-render to show highlighted avatar (won't advance because step1Complete is false)
     showOnboardingWizard();
 
-    // Restore name in field after re-render
+    // Restore name in field after re-render (with longer delay to ensure DOM is ready)
     setTimeout(() => {
         const newNameInput = document.getElementById('onboarding-name');
-        if (newNameInput && currentName) {
+        if (newNameInput) {
             newNameInput.value = currentName;
             newNameInput.focus();
         }
-    }, 10);
+    }, 50);
 };
 
 window.selectAvatar = function(emoji) {
