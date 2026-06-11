@@ -620,25 +620,44 @@ modules/krish-tasks/
 
 ---
 
-## ✅ Pre-Coding Checklist
+## ✅ CRITICAL DECISIONS LOCKED IN ✅
 
-Before writing a single line of code:
+### 9 Critical Issues Resolved (2026-06-11)
 
-- [ ] Resolve all 36 gaps (confirm decisions)
-- [ ] Lock in algorithms (time-decay formula, badge scaling, etc.)
-- [ ] Define image storage strategy
-- [ ] Clarify weekly rotation logic
-- [ ] Assess mini-game scope (12 games = realistic?)
-- [ ] Define parent authentication model
+| # | Issue | Decision | Impact |
+|---|-------|----------|--------|
+| 1 | Mini-game scope | 4 core games (Phase 5), 8 deferred to Phase 8 | Saves 2 weeks |
+| 2 | Weekly rotation | Exclusion list (7-day memory per answer) | Clear algorithm |
+| 3 | Image storage | Text-only Phase 1-8, images Phase 9+ | Simplifies Phase 1 |
+| 4 | Parent auth | PIN-protected /family-hub/parent URL | Secure & clear |
+| 5 | Seasonal content | Pre-source 3-4 months before launch | Ready at go-live |
+| 6 | Google Drive backup | Local export Phase 2, automation Phase 9 | Defers complexity |
+| 7 | Content sourcing | Build Phase 7 early (parallel Weeks 1-3) | Automated from day 1 |
+| 8 | Time-decay formula | Exponential: `weight = exp(-daysSince * 0.1)` | Locked algorithm |
+| 9 | Timeline | **30 weeks (27 + 3-week buffer)** | Realistic schedule |
+
+### Pre-Coding Checklist (UPDATED)
+
+- [x] Resolve 9 critical issues ✅
+- [x] Lock in algorithms ✅
+- [x] Define image storage strategy ✅
+- [x] Clarify weekly rotation logic ✅
+- [x] Mini-game scope ✅
+- [x] Define parent authentication ✅
 - [ ] Create threat model / security review
 - [ ] Define browser compatibility matrix
 - [ ] Create example data structures (IndexedDB schema)
-- [ ] Document all edge cases (0 points grace-save, etc.)
-- [ ] Create testing strategy (what to test, how)
-- [ ] Get stakeholder (Krish!) buy-in on scope
+- [ ] Document all edge cases
+- [ ] Create testing strategy
+- [ ] Get stakeholder (Krish!) feedback on scope
 
 ---
 
-**This implementation is solid, but the gaps above should be addressed before coding begins.**
+## 🚀 READY FOR IMPLEMENTATION
 
-**Recommended next step:** Go through critical issues (1, 2, 6, 11, 19, 22, 24, 27, 32, 36) and lock in decisions.
+**All critical decisions made. System design is solid.**
+
+**Next Step:** Begin Phase 1 implementation (Weeks 1-3)
+- Question bank architecture
+- IndexedDB schema design
+- Phase 7 parallel sourcing system setup
