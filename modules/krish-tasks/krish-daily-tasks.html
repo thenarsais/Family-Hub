@@ -1230,11 +1230,21 @@ async function migrateFromLocalStorage(db) {
 
     const progress = {
         userId: TRIVIA_USER_ID,
-        streaks: { daily: old.streak || 0, lastDate: old.lastAnsweredDate || null },
+        // Phase 1: Basic streaks
+        streaks: {
+            daily: { count: old.streak || 0, lastDate: old.lastAnsweredDate || null },
+            category: { category: null, count: 0, lastDate: null },
+            accuracy: { count: 0, lastDate: null }
+        },
         totalAnswered: old.totalAnswered || 0,
         exclusionList: [],
         incorrectPool: [],
+        // Phase 1: Category performance
         categoryPerformance: {},
+        // Phase 2: New fields
+        difficultyPerformance: { easy: { total: 0, correct: 0 }, medium: { total: 0, correct: 0 }, hard: { total: 0, correct: 0 } },
+        answerHistory: [],
+        stats: { total: old.totalAnswered || 0, correct: 0, accuracy: 0 },
         points: { today: 0, week: 0, month: 0, total: 0 },
         migratedAt: new Date().toISOString()
     };
@@ -1304,6 +1314,43 @@ async function refillTriviaBuffer() {
     }
 }
 
+// ── PHASE 2: Metric Getters ────────────────────────
+function getOverallAccuracy() {
+    if (!triviaProgress?.stats) return 0;
+    return parseFloat(triviaProgress.stats.accuracy) || 0;
+}
+
+function getCategoryAccuracy(category) {
+    if (!triviaProgress?.categoryPerformance?.[category]) return 0;
+    const c = triviaProgress.categoryPerformance[category];
+    return c.total > 0 ? ((c.correct / c.total) * 100).toFixed(1) : 0;
+}
+
+function getDifficultyAccuracy(difficulty) {
+    if (!triviaProgress?.difficultyPerformance?.[difficulty]) return 0;
+    const d = triviaProgress.difficultyPerformance[difficulty];
+    return d.total > 0 ? ((d.correct / d.total) * 100).toFixed(1) : 0;
+}
+
+function getStreakInfo() {
+    return {
+        daily: triviaProgress?.streaks?.daily?.count || 0,
+        category: triviaProgress?.streaks?.category?.count || 0,
+        accuracy: triviaProgress?.streaks?.accuracy?.count || 0
+    };
+}
+
+function getCategoryStats() {
+    const cats = triviaProgress?.categoryPerformance || {};
+    return Object.entries(cats).map(([cat, stats]) => ({
+        category: cat,
+        total: stats.total,
+        correct: stats.correct,
+        accuracy: stats.total > 0 ? ((stats.correct / stats.total) * 100).toFixed(1) : 0,
+        streak: stats.streak || 0
+    })).sort((a, b) => b.accuracy - a.accuracy);
+}
+
 // ── Init trivia system ────────────────────────────
 async function initTriviaSystem() {
     try {
@@ -1359,14 +1406,80 @@ async function saveTriviaAnswer(questionId, isCorrect) {
         triviaProgress.streaks.lastDate = today;
         triviaProgress.totalAnswered = (triviaProgress.totalAnswered || 0) + 1;
 
-        // Update category performance
+        // ── PHASE 2: Extended Metrics ──────────────────
         const q = triviaCurrentQuestion;
         if (q) {
+            // Category performance + streak
             triviaProgress.categoryPerformance = triviaProgress.categoryPerformance || {};
-            if (!triviaProgress.categoryPerformance[q.category]) triviaProgress.categoryPerformance[q.category] = { correct: 0, total: 0 };
+            if (!triviaProgress.categoryPerformance[q.category]) {
+                triviaProgress.categoryPerformance[q.category] = { total: 0, correct: 0, streak: 0, lastDate: null };
+            }
             triviaProgress.categoryPerformance[q.category].total++;
             if (isCorrect) triviaProgress.categoryPerformance[q.category].correct++;
+            triviaProgress.categoryPerformance[q.category].lastDate = today;
+
+            // Update category streak
+            if (isCorrect) {
+                const catLastDate = triviaProgress.categoryPerformance[q.category].lastDate;
+                if (catLastDate === today || catLastDate === yStr) {
+                    triviaProgress.categoryPerformance[q.category].streak = (triviaProgress.categoryPerformance[q.category].streak || 0) + 1;
+                } else {
+                    triviaProgress.categoryPerformance[q.category].streak = 1;
+                }
+            } else {
+                triviaProgress.categoryPerformance[q.category].streak = 0;
+            }
+
+            // Difficulty performance
+            triviaProgress.difficultyPerformance = triviaProgress.difficultyPerformance || {};
+            const diff = q.difficulty || 'medium';
+            if (!triviaProgress.difficultyPerformance[diff]) {
+                triviaProgress.difficultyPerformance[diff] = { total: 0, correct: 0 };
+            }
+            triviaProgress.difficultyPerformance[diff].total++;
+            if (isCorrect) triviaProgress.difficultyPerformance[diff].correct++;
         }
+
+        // Update accuracy streak (consecutive correct answers)
+        triviaProgress.streaks.accuracy = triviaProgress.streaks.accuracy || { count: 0, lastDate: null };
+        if (isCorrect) {
+            const accLastDate = triviaProgress.streaks.accuracy.lastDate;
+            if (accLastDate === today || accLastDate === yStr) {
+                triviaProgress.streaks.accuracy.count = (triviaProgress.streaks.accuracy.count || 0) + 1;
+            } else {
+                triviaProgress.streaks.accuracy.count = 1;
+            }
+            triviaProgress.streaks.accuracy.lastDate = today;
+        } else {
+            triviaProgress.streaks.accuracy.count = 0;
+        }
+
+        // Update category streak in streaks object
+        if (q && isCorrect) {
+            triviaProgress.streaks.category = triviaProgress.streaks.category || { category: null, count: 0 };
+            triviaProgress.streaks.category.category = q.category;
+            triviaProgress.streaks.category.count = triviaProgress.categoryPerformance[q.category].streak;
+            triviaProgress.streaks.category.lastDate = today;
+        }
+
+        // Full answer history (for trends + export)
+        triviaProgress.answerHistory = triviaProgress.answerHistory || [];
+        triviaProgress.answerHistory.push({
+            qId: questionId,
+            cat: q?.category || 'Unknown',
+            diff: q?.difficulty || 'medium',
+            correct: isCorrect,
+            time: new Date().toISOString()
+        });
+
+        // Calculate overall stats
+        const totalAnswered = triviaProgress.answerHistory.length;
+        const totalCorrect = triviaProgress.answerHistory.filter(a => a.correct).length;
+        triviaProgress.stats = {
+            total: totalAnswered,
+            correct: totalCorrect,
+            accuracy: totalAnswered > 0 ? (totalCorrect / totalAnswered).toFixed(4) : 0
+        };
 
         const ptx = db.transaction('userProgress', 'readwrite');
         await idbPut(ptx.objectStore('userProgress'), triviaProgress);
@@ -1385,6 +1498,50 @@ function trivDiffTagline(d) { return { easy:'Builds foundational knowledge', med
 function trivDiffTooltip(d) { return { easy:'Rookie — Clear, foundational questions.', medium:'Pro — Requires deeper knowledge and context.', hard:'Legend — Challenges specific knowledge and critical thinking.' }[d] || ''; }
 
 // ── TRIVIA PANEL (Phase 1 — Multiple Choice) ─────
+// ── PHASE 2: Export Functions ──────────────────────
+async function exportTriviaDataJSON() {
+    if (!triviaProgress) return alert('No data to export');
+    const data = {
+        exportDate: new Date().toISOString(),
+        userId: triviaProgress.userId,
+        stats: triviaProgress.stats,
+        streaks: triviaProgress.streaks,
+        categoryPerformance: triviaProgress.categoryPerformance,
+        difficultyPerformance: triviaProgress.difficultyPerformance,
+        answerHistory: triviaProgress.answerHistory || []
+    };
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trivia-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function exportTriviaDataCSV() {
+    if (!triviaProgress || !triviaProgress.answerHistory) return alert('No data to export');
+    const rows = [
+        ['Date', 'Category', 'Difficulty', 'Correct', 'Overall Accuracy'],
+        ...triviaProgress.answerHistory.map(a => [
+            new Date(a.time).toLocaleDateString(),
+            a.cat,
+            a.diff,
+            a.correct ? 'Yes' : 'No',
+            triviaProgress.stats.accuracy
+        ])
+    ];
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trivia-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 // Light-mode diff colors for trivia panel (activity board is #F1F5F9)
 function trivDiffBg(d)   { return { easy:'#ECFDF5', medium:'#FFFBEB', hard:'#FEF2F2' }[d] || '#EEF2FF'; }
 function trivDiffText(d) { return { easy:'#065F46', medium:'#78350F', hard:'#7F1D1D' }[d] || '#312E81'; }
