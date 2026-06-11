@@ -1330,10 +1330,21 @@ async function refillTriviaBuffer() {
     const db = await openTriviaDB();
     const tx = db.transaction('questions', 'readonly');
     const all = await idbGetAll(tx.objectStore('questions'));
+
+    // Filter by difficulty mode
+    const mode = state.trivia.difficulty.currentMode || 'rookie';
+    const modeMap = {
+        rookie: ['easy'],
+        pro: ['easy', 'medium'],
+        legend: ['easy', 'medium', 'hard']
+    };
+    const difficulties = modeMap[mode] || ['easy'];
+    const filtered = all.filter(q => difficulties.includes(q.difficulty || 'medium'));
+
     const excluded = getExcludedIds(triviaProgress?.exclusionList || []);
     const incorrectPool = triviaProgress?.incorrectPool || [];
     const bufferIds = new Set(triviaBuffer.map(q => q.uuid));
-    let available = all.filter(q => !excluded.has(q.uuid) && !bufferIds.has(q.uuid));
+    let available = filtered.filter(q => !excluded.has(q.uuid) && !bufferIds.has(q.uuid));
 
     if (available.length === 0) {
         // All excluded — reset oldest half of exclusion list
@@ -1428,6 +1439,53 @@ const BADGE_TIERS = {
     gold:       { correct: 50,  accuracy: 0.80, emoji: '🥇', color: '#FFD700' },
     platinum:   { correct: 100, accuracy: 0.90, emoji: '💎', color: '#E5E4E2' },
 };
+
+// ── PHASE 4: Difficulty Progression ──────────────
+function checkDifficultyUnlocks() {
+    const accuracy = getOverallAccuracy();
+    let unlockedModes = [];
+
+    // Pro unlock: 80% accuracy overall
+    if (!state.trivia.difficulty.proUnlocked && accuracy >= 0.80) {
+        state.trivia.difficulty.proUnlocked = true;
+        state.trivia.difficulty.proUnlockedDate = todayStr();
+        unlockedModes.push('pro');
+    }
+
+    // Legend unlock: 80% accuracy in medium difficulty
+    const mediumStats = triviaProgress?.difficultyPerformance?.medium;
+    if (!state.trivia.difficulty.legendUnlocked && mediumStats) {
+        const mediumAccuracy = mediumStats.total > 0 ? (mediumStats.correct / mediumStats.total) : 0;
+        if (mediumAccuracy >= 0.80) {
+            state.trivia.difficulty.legendUnlocked = true;
+            state.trivia.difficulty.legendUnlockedDate = todayStr();
+            unlockedModes.push('legend');
+        }
+    }
+
+    return unlockedModes;
+}
+
+function getQuestionsForMode(mode) {
+    // Filter questions based on difficulty mode
+    const allQuestions = TRIVIA_QUESTION_BANK || [];
+    const modeMap = {
+        rookie: ['easy'],
+        pro: ['easy', 'medium'],
+        legend: ['easy', 'medium', 'hard']
+    };
+    const difficulties = modeMap[mode] || ['easy'];
+    return allQuestions.filter(q => difficulties.includes(q.difficulty || 'medium'));
+}
+
+function setDifficultyMode(mode) {
+    if (mode === 'pro' && !state.trivia.difficulty.proUnlocked) return;
+    if (mode === 'legend' && !state.trivia.difficulty.legendUnlocked) return;
+    state.trivia.difficulty.currentMode = mode;
+    saveState();
+    refillTriviaBuffer();
+    renderTriviaPanel();
+}
 
 function checkBadges() {
     if (!state.trivia.badges.byCategory) state.trivia.badges.byCategory = {};
@@ -1614,6 +1672,48 @@ window.completeOnboarding = function() {
     document.getElementById('onboarding-modal').remove();
     renderTriviaPanel();
 };
+
+// ── Difficulty Unlock Popup ───────────────────────
+function showDifficultyUnlock(mode) {
+    const modeInfo = {
+        pro: { emoji: '⭐', label: 'Pro Mode', desc: 'You\'re ready for medium difficulty questions!' },
+        legend: { emoji: '🔥', label: 'Legend Mode', desc: 'Master of the questions! Take on the hardest challenges!' }
+    };
+    const info = modeInfo[mode] || {};
+
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.7);display:flex;
+        justify-content:center;align-items:center;z-index:9998;
+        animation:fadeIn 0.3s ease
+    `;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        background:linear-gradient(135deg,#818CF8,#6366F1);
+        border-radius:24px;padding:40px;max-width:350px;
+        text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+        animation:popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
+    `;
+
+    card.innerHTML = `
+        <div style="font-size:4em;margin-bottom:16px;animation:spin 1s ease-in-out">${info.emoji}</div>
+        <h2 style="color:white;font-size:1.8em;margin-bottom:8px;font-weight:800">${info.label} Unlocked!</h2>
+        <div style="color:#E0E7FF;font-size:1em;margin-bottom:20px">${info.desc}</div>
+        <button onclick="this.parentElement.parentElement.remove()" style="
+            background:white;color:#6366F1;border:none;padding:12px 24px;
+            border-radius:10px;cursor:pointer;font-weight:700;font-size:1em
+        ">Let's Go! 🚀</button>
+    `;
+
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+
+    setTimeout(() => {
+        if (modal.parentElement) modal.remove();
+    }, 5000);
+}
 
 // ── Badge Celebration Popup ────────────────────
 function showBadgeCelebration(category, tier) {
@@ -1849,6 +1949,12 @@ async function saveTriviaAnswer(questionId, isCorrect) {
         newBadges.forEach(b => showBadgeCelebration(b.category, b.tier));
     }
 
+    // ── Check for difficulty unlocks ────────────────
+    const newModes = checkDifficultyUnlocks();
+    if (newModes.length > 0) {
+        newModes.forEach(mode => showDifficultyUnlock(mode));
+    }
+
     saveState();
     renderDashboard();
     renderDashTrivia();
@@ -1949,6 +2055,30 @@ function renderTriviaPanel() {
                 <div class="sec-title">🧠 Daily Trivia</div>
                 <div class="sec-sub">${total} answered · 💯 ${accuracy}%</div>
             </div>
+        </div>
+
+        <!-- Phase 4: Difficulty Mode Selector -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;justify-content:center">
+            <button onclick="setDifficultyMode('rookie')" style="
+                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'rookie' ? '#10B981' : '#E2E8F0'};
+                background:${state.trivia.difficulty.currentMode === 'rookie' ? '#ECFDF5' : 'white'};
+                color:${state.trivia.difficulty.currentMode === 'rookie' ? '#065F46' : '#64748B'};
+                cursor:pointer;font-weight:700;font-size:0.85em;transition:all 0.2s
+            ">🎓 Rookie</button>
+            <button onclick="setDifficultyMode('pro')" ${!state.trivia.difficulty.proUnlocked ? 'disabled' : ''} style="
+                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'pro' ? '#F59E0B' : '#E2E8F0'};
+                background:${state.trivia.difficulty.currentMode === 'pro' ? '#FFFBEB' : 'white'};
+                color:${state.trivia.difficulty.currentMode === 'pro' ? '#78350F' : '#64748B'};
+                cursor:${state.trivia.difficulty.proUnlocked ? 'pointer' : 'not-allowed'};font-weight:700;font-size:0.85em;
+                opacity:${state.trivia.difficulty.proUnlocked ? '1' : '0.5'};transition:all 0.2s
+            ">⭐ Pro ${!state.trivia.difficulty.proUnlocked ? '(80%)' : ''}</button>
+            <button onclick="setDifficultyMode('legend')" ${!state.trivia.difficulty.legendUnlocked ? 'disabled' : ''} style="
+                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'legend' ? '#EF4444' : '#E2E8F0'};
+                background:${state.trivia.difficulty.currentMode === 'legend' ? '#FEF2F2' : 'white'};
+                color:${state.trivia.difficulty.currentMode === 'legend' ? '#7F1D1D' : '#64748B'};
+                cursor:${state.trivia.difficulty.legendUnlocked ? 'pointer' : 'not-allowed'};font-weight:700;font-size:0.85em;
+                opacity:${state.trivia.difficulty.legendUnlocked ? '1' : '0.5'};transition:all 0.2s
+            ">🔥 Legend ${!state.trivia.difficulty.legendUnlocked ? '(80%)' : ''}</button>
         </div>
 
         <!-- Phase 2: Three Streak Metrics -->
@@ -2181,6 +2311,13 @@ function buildDefaultState() {
                 byCategory: {}, // { 'Science': { bronze: unlockedDate, silver: null, ... }, ... }
                 special: {}, // { 'streak_7': unlockedDate, ... }
             },
+            difficulty: {
+                currentMode: 'rookie', // rookie | pro | legend
+                proUnlocked: false,
+                proUnlockedDate: null,
+                legendUnlocked: false,
+                legendUnlockedDate: null,
+            },
         },
         reading: {
             dailyMinutes: 0,
@@ -2235,6 +2372,15 @@ function applyResets() {
     }
     if (!state.trivia.badges) {
         state.trivia.badges = { byCategory: {}, special: {} };
+    }
+    if (!state.trivia.difficulty) {
+        state.trivia.difficulty = {
+            currentMode: 'rookie',
+            proUnlocked: false,
+            proUnlockedDate: null,
+            legendUnlocked: false,
+            legendUnlockedDate: null,
+        };
     }
 
     // Daily reset
