@@ -1682,7 +1682,7 @@ function showOnboardingWizard() {
             </div>
             <div style="margin-bottom:18px">
                 <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">What's your name?</label>
-                <input type="text" id="onboarding-name" placeholder="Your name..." style="
+                <input type="text" id="onboarding-name" placeholder="Your name..." value="${state.trivia.onboarding.name || ''}" style="
                     width:100%;padding:10px 12px;border:2px solid #E2E8F0;border-radius:8px;
                     font-size:1em;color:#1E293B
                 " autofocus>
@@ -1731,30 +1731,28 @@ function showOnboardingWizard() {
     document.body.appendChild(modal);
 
     if (step === 1) {
-        setTimeout(() => document.getElementById('onboarding-name')?.focus(), 100);
+        setTimeout(() => {
+            const nameInput = document.getElementById('onboarding-name');
+            if (nameInput) {
+                nameInput.focus();
+                // Save name to state as user types (so it persists through avatar selection)
+                nameInput.addEventListener('input', () => {
+                    state.trivia.onboarding.name = nameInput.value.trim();
+                    saveState();
+                });
+            }
+        }, 10);
     }
 }
 
 window.selectOnboardingAvatar = function(emoji) {
-    // Save current name before re-render
-    const nameInput = document.getElementById('onboarding-name');
-    const currentName = nameInput?.value.trim() || '';
-
-    // Update avatar and save to state
+    // Update avatar in state
     state.trivia.onboarding.avatar = emoji;
     saveState();
 
-    // Re-render to show highlighted avatar (won't advance because step1Complete is false)
+    // Re-render to show highlighted avatar
+    // Name will be restored automatically from state.trivia.onboarding.name
     showOnboardingWizard();
-
-    // Restore name in field after re-render (with longer delay to ensure DOM is ready)
-    setTimeout(() => {
-        const newNameInput = document.getElementById('onboarding-name');
-        if (newNameInput) {
-            newNameInput.value = currentName;
-            newNameInput.focus();
-        }
-    }, 50);
 };
 
 window.selectAvatar = function(emoji) {
