@@ -1385,12 +1385,17 @@ function trivDiffTagline(d) { return { easy:'Builds foundational knowledge', med
 function trivDiffTooltip(d) { return { easy:'Rookie — Clear, foundational questions.', medium:'Pro — Requires deeper knowledge and context.', hard:'Legend — Challenges specific knowledge and critical thinking.' }[d] || ''; }
 
 // ── TRIVIA PANEL (Phase 1 — Multiple Choice) ─────
+// Light-mode diff colors for trivia panel (activity board is #F1F5F9)
+function trivDiffBg(d)   { return { easy:'#ECFDF5', medium:'#FFFBEB', hard:'#FEF2F2' }[d] || '#EEF2FF'; }
+function trivDiffText(d) { return { easy:'#065F46', medium:'#78350F', hard:'#7F1D1D' }[d] || '#312E81'; }
+function trivDiffBorder(d){ return { easy:'#6EE7B7', medium:'#FCD34D', hard:'#FCA5A5' }[d] || '#C7D2FE'; }
+
 function renderTriviaPanel() {
     const panel = document.getElementById('panel-trivia');
     if (!panel) return;
 
     if (!triviaCurrentQuestion) {
-        panel.innerHTML = '<div style="padding:40px;text-align:center;color:#94A3B8"><div style="font-size:2em;margin-bottom:12px">⏳</div><div>Loading trivia...</div></div>';
+        panel.innerHTML = '<div style="padding:40px;text-align:center;color:#64748B"><div style="font-size:2em;margin-bottom:12px">⏳</div><div>Loading trivia...</div></div>';
         initTriviaSystem().then(() => renderTriviaPanel());
         return;
     }
@@ -1399,10 +1404,12 @@ function renderTriviaPanel() {
     const streak = triviaProgress?.streaks?.daily || 0;
     const total = triviaProgress?.totalAnswered || 0;
     const options = shuffleArr(q.options);
-    const dColor = trivDiffColor(q.difficulty);
     const dLabel = trivDiffLabel(q.difficulty);
     const dTagline = trivDiffTagline(q.difficulty);
     const dTooltip = trivDiffTooltip(q.difficulty);
+    const dBg = trivDiffBg(q.difficulty);
+    const dText = trivDiffText(q.difficulty);
+    const dBorder = trivDiffBorder(q.difficulty);
     const wrongCount = triviaProgress?.incorrectPool?.find(p => p.questionId === q.uuid)?.count || 0;
     const triedBefore = wrongCount > 0;
 
@@ -1413,38 +1420,37 @@ function renderTriviaPanel() {
                 <div class="sec-sub">${total} answered${streak > 0 ? ' · 🔥 ' + streak + ' day streak' : ' · Start your streak today!'}</div>
             </div>
         </div>
-        <div style="padding:16px">
-            ${triedBefore ? '<div style="background:rgba(245,158,11,0.12);border-left:3px solid #F59E0B;padding:10px 14px;border-radius:0 10px 10px 0;margin-bottom:14px;font-size:0.88em;color:#FCD34D">You found this tricky before — let\'s try again! 💪</div>' : ''}
 
-            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-                <span style="background:rgba(99,102,241,0.2);color:#A5B4FC;padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:600">${q.category}</span>
-                <span style="background:rgba(255,255,255,0.06);color:${dColor};padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:600;border:1px solid ${dColor}40;cursor:help" title="${dTooltip}">
-                    ${dLabel} <span style="opacity:0.75;font-size:0.9em">— ${dTagline}</span>
-                </span>
-            </div>
+        ${triedBefore ? `<div style="background:#FFFBEB;border-left:3px solid #F59E0B;padding:10px 14px;margin:0 0 12px;font-size:0.88em;color:#78350F;font-weight:600">💪 You found this tricky before — give it another shot!</div>` : ''}
 
-            <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px;margin-bottom:18px;font-size:1.08em;line-height:1.6;font-weight:500">
-                ${q.question}
-            </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+            <span style="background:#EEF2FF;color:#4338CA;padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:700">${q.category}</span>
+            <span style="background:${dBg};color:${dText};border:1px solid ${dBorder};padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:700;cursor:help" title="${dTooltip}">
+                ${dLabel} <span style="opacity:0.7;font-weight:500">— ${dTagline}</span>
+            </span>
+        </div>
 
-            <div id="trivia-options" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-                ${options.map((opt,i) => `<button class="trivia-opt"
-                    data-answer="${opt.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}"
-                    onclick="checkTriviaAnswer(this)"
-                    style="padding:13px 14px;background:rgba(99,102,241,0.12);border:2px solid rgba(99,102,241,0.25);border-radius:12px;color:#E2E8F0;cursor:pointer;font-size:0.92em;text-align:left;line-height:1.4;transition:all 0.15s;font-family:inherit"
-                    onmouseover="if(!this.dataset.locked){this.style.background='rgba(99,102,241,0.25)';this.style.borderColor='rgba(99,102,241,0.5)'}"
-                    onmouseout="if(!this.dataset.locked){this.style.background='rgba(99,102,241,0.12)';this.style.borderColor='rgba(99,102,241,0.25)'}">
-                    <span style="display:inline-block;background:rgba(99,102,241,0.3);border-radius:6px;padding:1px 7px;margin-right:8px;font-size:0.82em;font-weight:700">${String.fromCharCode(65+i)}</span>${opt}
-                </button>`).join('')}
-            </div>
+        <div style="background:white;border-radius:14px;padding:18px;margin-bottom:16px;font-size:1.05em;line-height:1.65;font-weight:500;color:#1E293B;box-shadow:0 1px 6px rgba(0,0,0,0.07)">
+            ${q.question}
+        </div>
 
-            <div style="margin-bottom:14px">
-                <button onclick="toggleTriviaHint()" style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:#C4B5FD;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.88em">💡 Show Hint</button>
-                <div id="trivia-hint" style="display:none;margin-top:10px;background:rgba(139,92,246,0.12);border-left:3px solid #8B5CF6;padding:12px;border-radius:0 10px 10px 0;color:#C4B5FD;font-size:0.92em">${q.hint}</div>
-            </div>
+        <div id="trivia-options" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            ${options.map((opt,i) => `<button class="trivia-opt"
+                data-answer="${opt.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}"
+                onclick="checkTriviaAnswer(this)"
+                style="padding:13px 14px;background:white;border:2px solid #E2E8F0;border-radius:12px;color:#1E293B;cursor:pointer;font-size:0.92em;text-align:left;line-height:1.4;transition:all 0.15s;font-family:inherit;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
+                onmouseover="if(!this.dataset.locked){this.style.background='#EEF2FF';this.style.borderColor='#6366F1'}"
+                onmouseout="if(!this.dataset.locked){this.style.background='white';this.style.borderColor='#E2E8F0'}">
+                <span style="display:inline-block;background:#EEF2FF;color:#4338CA;border-radius:6px;padding:1px 7px;margin-right:8px;font-size:0.8em;font-weight:800">${String.fromCharCode(65+i)}</span>${opt}
+            </button>`).join('')}
+        </div>
 
-            <div id="trivia-result" style="display:none"></div>
-        </div>`;
+        <div style="margin-bottom:14px">
+            <button onclick="toggleTriviaHint()" style="background:#F5F3FF;border:1px solid #DDD6FE;color:#5B21B6;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.88em;font-weight:600">💡 Show Hint</button>
+            <div id="trivia-hint" style="display:none;margin-top:10px;background:#F5F3FF;border-left:3px solid #8B5CF6;padding:12px;border-radius:0 10px 10px 0;color:#5B21B6;font-size:0.92em">${q.hint}</div>
+        </div>
+
+        <div id="trivia-result" style="display:none"></div>`;
 }
 
 let triviaAttemptCount = 0;
@@ -1498,9 +1504,9 @@ function checkTriviaAnswer(btn) {
         if (resultEl) {
             resultEl.style.display = 'block';
             resultEl.innerHTML = `
-                <div style="background:rgba(239,68,68,0.12);border-left:3px solid #EF4444;padding:14px;border-radius:0 12px 12px 0">
-                    <div style="font-weight:700;color:#FCA5A5">❌ Not quite — give it one more try! 💪</div>
-                    <div style="font-size:0.85em;color:#FCA5A5;margin-top:4px;opacity:0.8">That option's been crossed out for you.</div>
+                <div style="background:#FEF2F2;border-left:3px solid #EF4444;padding:14px;border-radius:0 12px 12px 0">
+                    <div style="font-weight:700;color:#7F1D1D">❌ Not quite — give it one more try! 💪</div>
+                    <div style="font-size:0.85em;color:#991B1B;margin-top:4px">That option's been crossed out.</div>
                 </div>`;
             resultEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
         }
@@ -1514,15 +1520,15 @@ function showTriviaResult(isCorrect, q) {
     if (!resultEl) return;
     resultEl.style.display = 'block';
     resultEl.innerHTML = `
-        <div style="background:rgba(${isCorrect?'16,185,129':'239,68,68'},0.12);border-left:3px solid ${isCorrect?'#10B981':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
-            <div style="font-weight:700;font-size:1.05em">${isCorrect ? '✅ Correct! Great job!' : `❌ The answer was: <span style="color:#F9FAFB">${q.correct}</span>`}</div>
+        <div style="background:${isCorrect?'#ECFDF5':'#FEF2F2'};border-left:3px solid ${isCorrect?'#10B981':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
+            <div style="font-weight:700;font-size:1.05em;color:${isCorrect?'#065F46':'#7F1D1D'}">${isCorrect ? '✅ Correct! Great job!' : `❌ The answer was: <strong style="color:#1E293B">${q.correct}</strong>`}</div>
         </div>
-        <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);padding:14px;border-radius:12px;margin-bottom:14px">
-            <div style="font-size:0.8em;color:#818CF8;font-weight:600;margin-bottom:6px">${showEnhanced ? '🔍 DEEP DIVE' : 'FUN FACT'}</div>
-            <div style="font-size:0.92em;line-height:1.5;color:#C7D2FE">${showEnhanced ? q.enhancedFunFact : q.funFact}</div>
+        <div style="background:#EEF2FF;border:1px solid #C7D2FE;padding:14px;border-radius:12px;margin-bottom:14px">
+            <div style="font-size:0.78em;color:#4338CA;font-weight:800;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${showEnhanced ? '🔍 Deep Dive' : '💡 Fun Fact'}</div>
+            <div style="font-size:0.92em;line-height:1.55;color:#312E81">${showEnhanced ? q.enhancedFunFact : q.funFact}</div>
         </div>
-        ${q.learningLink ? `<a href="${q.learningLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:#818CF8;font-size:0.85em;text-decoration:none;margin-bottom:16px;padding:6px 12px;background:rgba(99,102,241,0.1);border-radius:8px;border:1px solid rgba(99,102,241,0.2)" onmouseover="this.style.background='rgba(99,102,241,0.2)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">📚 Learn more →</a>` : ''}
-        <button onclick="loadNextTriviaQuestion()" style="width:100%;padding:13px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:white;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:1em" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+        ${q.learningLink ? `<a href="${q.learningLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:#4338CA;font-size:0.85em;font-weight:600;text-decoration:none;margin-bottom:16px;padding:6px 12px;background:#EEF2FF;border-radius:8px;border:1px solid #C7D2FE" onmouseover="this.style.background='#E0E7FF'" onmouseout="this.style.background='#EEF2FF'">📚 Learn more →</a>` : ''}
+        <button onclick="loadNextTriviaQuestion()" style="width:100%;padding:13px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:white;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:1em" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
             Next Question →
         </button>`;
     resultEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
@@ -2224,14 +2230,16 @@ function renderDashTrivia() {
     if (!el) return;
     const q = triviaCurrentQuestion;
     if (!q) {
-        el.innerHTML = '<div style="padding:8px;color:#94A3B8;font-size:0.85em">Loading...</div>';
+        el.innerHTML = '<div style="padding:10px 14px;color:#64748B;font-size:0.85em">Loading...</div>';
         return;
     }
+    const diffColors = { easy:'#059669', medium:'#B45309', hard:'#DC2626' };
+    const dc = diffColors[q.difficulty] || '#6366F1';
     el.innerHTML = `
-        <div style="padding:8px 0">
-            <div style="font-size:0.8em;color:#94A3B8;margin-bottom:6px">${q.category} · <span style="color:${trivDiffColor(q.difficulty)}">${trivDiffLabel(q.difficulty)}</span></div>
-            <div style="font-size:0.9em;color:#CBD5E1;margin-bottom:10px;line-height:1.4">${q.question.substring(0,90)}${q.question.length>90?'...':''}</div>
-            <button onclick="showBoard('trivia')" style="width:100%;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9em">Answer ↗</button>
+        <div style="padding:10px 14px 14px">
+            <div style="font-size:0.78em;font-weight:600;color:#64748B;margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
+            <div style="font-size:0.9em;color:#1E293B;margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,90)}${q.question.length>90?'...':''}</div>
+            <button onclick="showBoard('trivia')" style="width:100%;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em">Answer ↗</button>
         </div>`;
 }
 
