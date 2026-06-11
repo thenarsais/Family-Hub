@@ -1996,6 +1996,7 @@ function showBadgesModal() {
     const categories = Object.keys(badges).sort();
 
     const modal = document.createElement('div');
+    modal.id = 'badges-modal';
     modal.style.cssText = `
         position:fixed;top:0;left:0;right:0;bottom:0;
         background:rgba(0,0,0,0.5);display:flex;
@@ -2009,11 +2010,13 @@ function showBadgesModal() {
         max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2)
     `;
 
+    const closeBadgesModal = () => document.getElementById('badges-modal')?.remove();
+
     let html = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h2 style="color:#1E293B;font-size:1.6em;font-weight:800">🏆 My Badges</h2>
-            <button onclick="this.closest('[style*=position:fixed]').remove()" style="
-                background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8
+            <button id="close-badges-btn" style="
+                background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px
             ">✕</button>
         </div>
     `;
@@ -2049,6 +2052,15 @@ function showBadgesModal() {
     card.innerHTML = html;
     modal.appendChild(card);
     document.body.appendChild(modal);
+
+    // Attach event listener after element is in DOM
+    setTimeout(() => {
+        document.getElementById('close-badges-btn')?.addEventListener('click', closeBadgesModal);
+        // Also allow clicking outside the card to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeBadgesModal();
+        });
+    }, 10);
 }
 
 async function saveTriviaAnswer(questionId, isCorrect) {
