@@ -2380,9 +2380,13 @@ function dbFlipCard() {
 
 // ── Dashboard: Trivia ──────────────────────────────
 function renderDashTrivia() {
-    const streak = triviaProgress?.streaks?.daily || 0;
+    // Phase 2: Display daily streak + accuracy %
+    const streakInfo = getStreakInfo();
+    const dailyStreak = streakInfo.daily;
+    const accuracy = (getOverallAccuracy() * 100).toFixed(0);
+
     const sumEl = document.getElementById('db-trivia-summary');
-    if (sumEl) sumEl.textContent = streak > 0 ? '🔥 ' + streak : 'Start';
+    if (sumEl) sumEl.textContent = dailyStreak > 0 ? `🔥 ${dailyStreak}` : 'Start';
 
     const el = document.getElementById('db-trivia-content');
     if (!el) return;
@@ -2391,12 +2395,23 @@ function renderDashTrivia() {
         el.innerHTML = '<div style="padding:10px 14px;color:#64748B;font-size:0.85em">Loading...</div>';
         return;
     }
+
     const diffColors = { easy:'#059669', medium:'#B45309', hard:'#DC2626' };
     const dc = diffColors[q.difficulty] || '#6366F1';
+
     el.innerHTML = `
-        <div style="padding:10px 14px 14px">
+        <div style="padding:12px 14px 14px">
+            <!-- Phase 2: Metrics row -->
+            <div style="display:flex;gap:8px;margin-bottom:10px;font-size:0.85em;font-weight:600">
+                <span style="color:#DC2626">🔥 ${dailyStreak} day${dailyStreak !== 1 ? 's' : ''}</span>
+                <span style="color:#6366F1">💯 ${accuracy}%</span>
+            </div>
+
+            <!-- Question preview -->
             <div style="font-size:0.78em;font-weight:600;color:#64748B;margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
-            <div style="font-size:0.9em;color:#1E293B;margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,90)}${q.question.length>90?'...':''}</div>
+            <div style="font-size:0.9em;color:#1E293B;margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,85)}${q.question.length>85?'...':''}</div>
+
+            <!-- Answer button -->
             <button onclick="showBoard('trivia')" style="width:100%;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em">Answer ↗</button>
         </div>`;
 }
