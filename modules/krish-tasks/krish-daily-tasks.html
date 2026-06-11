@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Krish's Daily Tasks — Family Hub</title>
+    <script src="trivia-questions.js"></script>
     <style>
         :root {
             --primary: #6366F1;
@@ -1129,143 +1130,367 @@ function getMondayOfWeek(dateStr) {
     return d.toISOString().split('T')[0];
 }
 
-// ── TRIVIA QUESTIONS ────────────────────────────
-const TRIVIA_QUESTIONS = [
-  // ========== SCIENCE (15) ==========
-  {id:'sci_001',category:'Science',q:'What is the largest planet in our solar system?',a:'Jupiter',hint:'Starts with J',funFact:'Jupiter is so large that over 1,300 Earths could fit inside it!',links:{correct:'https://spaceplace.nasa.gov/all-about-jupiter/en/',incorrect:'https://spaceplace.nasa.gov/all-about-planets/en/'}},
-  {id:'sci_002',category:'Science',q:'What gas do plants absorb from the air?',a:'Carbon dioxide',hint:'What we breathe out',funFact:'Plants convert CO₂ into oxygen through photosynthesis. One large tree can produce oxygen for 2 people per year!',links:{correct:'https://www.khanacademy.org/science/biology/photosynthesis-and-cellular-respiration/photosynthesis/a/intro-to-photosynthesis',incorrect:'https://www.khanacademy.org/science/biology'}},
-  {id:'sci_003',category:'Science',q:'What is the hardest natural substance on Earth?',a:'Diamond',hint:'A precious gemstone',funFact:'Diamonds are made of carbon atoms in a crystal structure. They form deep underground under extreme heat and pressure!',links:{correct:'https://www.usgs.gov/faqs/what-diamond',incorrect:'https://geology.com/diamonds/'}},
-  {id:'sci_004',category:'Science',q:'How many bones does an adult human have?',a:'206',hint:'Between 200-210',funFact:'Babies are born with about 270 bones, but many fuse together. Adults have stronger bones!',links:{correct:'https://www.khanacademy.org/science/health-and-medicine/human-anatomy-and-physiology/skeletal-system/a/skeleton-anatomy-and-physiology',incorrect:'https://www.britannica.com/science/human-skeleton'}},
-  {id:'sci_005',category:'Science',q:'What is the smallest unit of life?',a:'Cell',hint:'All living things are made of these',funFact:'Your body has about 37.2 trillion cells! They\'re the building blocks of all life.',links:{correct:'https://www.khanacademy.org/science/biology/cell-biology/intro-to-cells/a/what-is-a-cell',incorrect:'https://www.britannica.com/science/cell'}},
-  {id:'sci_006',category:'Science',q:'What is the process by which water changes from liquid to gas?',a:'Evaporation',hint:'When wet clothes dry in sun',funFact:'Evaporation drives the water cycle! The sun\'s heat causes water to evaporate, forming clouds.',links:{correct:'https://www.usgs.gov/faqs/what-water-cycle',incorrect:'https://www.khanacademy.org/science/earth-science'}},
-  {id:'sci_007',category:'Science',q:'What do bees do that helps flowers?',a:'Pollinate',hint:'They carry pollen flower to flower',funFact:'About 1 in 3 food items depends on bee pollination. Bees pollinate 300 million flowers in a single day!',links:{correct:'https://www.britannica.com/animal/bee/Pollination',incorrect:'https://www.khanacademy.org/science/biology/ecology/pollination/a/pollination-and-seed-dispersal'}},
-  {id:'sci_008',category:'Science',q:'What is the second most abundant element in Earth\'s atmosphere?',a:'Oxygen',hint:'What we breathe',funFact:'Oxygen makes up 21% of the atmosphere. Nitrogen is most abundant at 78%.',links:{correct:'https://www.britannica.com/science/atmosphere-of-earth',incorrect:'https://www.usgs.gov/faqs/what-composition-earths-atmosphere'}},
-  {id:'sci_009',category:'Science',q:'What force pulls objects toward Earth\'s center?',a:'Gravity',hint:'Why things fall down',funFact:'The Moon\'s gravity causes ocean tides. Without the Moon, we\'d lose our tides!',links:{correct:'https://www.khanacademy.org/science/physics/forces-newtons-laws/newtons-law-universal-gravitation/a/gravitational-force',incorrect:'https://www.britannica.com/science/gravity'}},
-  {id:'sci_010',category:'Science',q:'What is the study of rocks and minerals called?',a:'Geology',hint:'Contains word geo (Earth)',funFact:'Geologists use radiometric dating to determine rock age. The oldest rocks on Earth are 4 billion years old!',links:{correct:'https://www.britannica.com/science/geology',incorrect:'https://www.usgs.gov/products/publications/geology'}},
-  {id:'sci_011',category:'Science',q:'What gas do animals produce that plants need?',a:'Carbon dioxide',hint:'We breathe it out',funFact:'There\'s a beautiful cycle: Animals breathe out CO₂, plants absorb it and make oxygen!',links:{correct:'https://www.khanacademy.org/science/biology/ecology/energy-flow-through-ecosystems/a/the-carbon-cycle',incorrect:'https://www.britannica.com/science/carbon-cycle'}},
-  {id:'sci_012',category:'Science',q:'What is the process of breaking down food for energy?',a:'Digestion',hint:'Happens in stomach/intestines',funFact:'Your digestive system is 30 feet long! Food takes 24-72 hours to travel through it.',links:{correct:'https://www.khanacademy.org/science/health-and-medicine/human-anatomy-and-physiology/digestive-system/a/digestive-system-introduction',incorrect:'https://www.britannica.com/science/digestion'}},
-  {id:'sci_013',category:'Science',q:'How many chambers does a human heart have?',a:'4',hint:'Between 2 and 6',funFact:'Your heart beats 100,000 times per day. That\'s 60,000 miles of blood vessels!',links:{correct:'https://www.khanacademy.org/science/health-and-medicine/human-anatomy-and-physiology/circulatory-system/a/heart-anatomy-and-function',incorrect:'https://www.britannica.com/science/heart'}},
-  {id:'sci_014',category:'Science',q:'What do we call the movement of continents over time?',a:'Continental drift',hint:'Continents are moving',funFact:'Continents move at the speed of fingernail growth! Africa moves away from Europe at 2cm/year.',links:{correct:'https://www.britannica.com/science/continental-drift',incorrect:'https://www.usgs.gov/faqs/what-plate-tectonics'}},
-  {id:'sci_015',category:'Science',q:'What is the process of plants making food from sunlight?',a:'Photosynthesis',hint:'Photo=light, synthesis=making',funFact:'Photosynthesis is essential for life! Without it, most life forms wouldn\'t exist.',links:{correct:'https://www.khanacademy.org/science/biology/photosynthesis-and-cellular-respiration/photosynthesis/a/intro-to-photosynthesis',incorrect:'https://www.britannica.com/science/photosynthesis'}},
+// ── TRIVIA ENGINE (Phase 1) ──────────────────────
+// Questions: loaded from trivia-questions.js
+// Storage: IndexedDB primary, localStorage fallback
 
-  // ========== HISTORY (15) ==========
-  {id:'hist_001',category:'History',q:'In what year did Christopher Columbus sail to America?',a:'1492',hint:'Fourteen ninety-two',funFact:'Vikings arrived 500 years earlier! But Columbus led to lasting European settlement.',links:{correct:'https://www.britannica.com/biography/Christopher-Columbus',incorrect:'https://www.history.com/topics/exploration/christopher-columbus'}},
-  {id:'hist_002',category:'History',q:'Who was the first President of the United States?',a:'George Washington',hint:'Face on the dollar bill',funFact:'George Washington had false teeth made from hippopotamus ivory and gold!',links:{correct:'https://www.whitehouse.gov/about-the-white-house/presidents/george-washington/',incorrect:'https://www.britannica.com/biography/George-Washington'}},
-  {id:'hist_003',category:'History',q:'What year did the Titanic sink?',a:'1912',hint:'Early 1900s',funFact:'The Titanic sank after hitting an iceberg. Over 1,500 people died.',links:{correct:'https://www.britannica.com/event/Sinking-of-the-Titanic',incorrect:'https://www.history.com/topics/early-20th-century-us/titanic'}},
-  {id:'hist_004',category:'History',q:'Which ancient wonder of the world still stands?',a:'Great Pyramid of Giza',hint:'In Egypt, a tomb',funFact:'The Great Pyramid was tallest man-made structure for 3,800 years! Built with 2.3 million stone blocks.',links:{correct:'https://www.britannica.com/technology/Seven-Wonders-of-the-Ancient-World',incorrect:'https://www.history.com/topics/ancient-rome/seven-wonders-of-the-ancient-world'}},
-  {id:'hist_005',category:'History',q:'Who wrote the Declaration of Independence?',a:'Thomas Jefferson',hint:'On the nickel',funFact:'Jefferson wrote it at age 33. He also designed Monticello!',links:{correct:'https://www.britannica.com/biography/Thomas-Jefferson',incorrect:'https://www.history.com/topics/early-us/thomas-jefferson'}},
-  {id:'hist_006',category:'History',q:'What war did American colonies fight for independence?',a:'American Revolution',hint:'Against British rule',funFact:'The American Revolution lasted 8 years and inspired revolutions worldwide!',links:{correct:'https://www.britannica.com/event/American-Revolution',incorrect:'https://www.history.com/topics/american-revolution/american-revolution-history'}},
-  {id:'hist_007',category:'History',q:'In what year did World War II end?',a:'1945',hint:'In the 1940s',funFact:'WWII was the deadliest conflict ever. It lasted 6 years.',links:{correct:'https://www.britannica.com/event/World-War-II',incorrect:'https://www.history.com/topics/world-war-ii'}},
-  {id:'hist_008',category:'History',q:'Who was the first person to walk on the Moon?',a:'Neil Armstrong',hint:'Last name is tool + clothing',funFact:'Neil Armstrong said "One small step for man, one giant leap for mankind" on July 20, 1969.',links:{correct:'https://www.britannica.com/biography/Neil-Armstrong',incorrect:'https://www.nasa.gov/about-nasa/astronauts/'}},
-  {id:'hist_009',category:'History',q:'Which empire built the Great Wall of China?',a:'Chinese Empire',hint:'It\'s in Asia',funFact:'The Great Wall is 13,000 miles long! Construction took over 2,000 years.',links:{correct:'https://www.britannica.com/structure/Great-Wall-of-China',incorrect:'https://www.history.com/topics/ancient-asia/great-wall-of-china'}},
-  {id:'hist_010',category:'History',q:'What year did the Roman Empire fall?',a:'476',hint:'In the 400s',funFact:'The fall marked the end of ancient times and beginning of the Middle Ages.',links:{correct:'https://www.britannica.com/event/fall-of-Rome',incorrect:'https://www.history.com/topics/ancient-rome/roman-empire'}},
-  {id:'hist_011',category:'History',q:'Who invented the printing press?',a:'Johannes Gutenberg',hint:'First name is Johannes',funFact:'The printing press revolutionized the world! It\'s one of history\'s most important inventions.',links:{correct:'https://www.britannica.com/biography/Johannes-Gutenberg',incorrect:'https://www.history.com/topics/inventions/printing-press'}},
-  {id:'hist_012',category:'History',q:'Which president ended slavery in the United States?',a:'Abraham Lincoln',hint:'Face on the penny',funFact:'Lincoln issued the Emancipation Proclamation in 1863. He\'s highly respected as a president.',links:{correct:'https://www.britannica.com/biography/Abraham-Lincoln',incorrect:'https://www.history.com/topics/american-civil-war/abraham-lincoln'}},
-  {id:'hist_013',category:'History',q:'What year did the American Civil War begin?',a:'1861',hint:'In the 1800s',funFact:'The Civil War lasted 4 years with over 600,000 deaths.',links:{correct:'https://www.britannica.com/event/American-Civil-War',incorrect:'https://www.history.com/topics/american-civil-war'}},
-  {id:'hist_014',category:'History',q:'Which Greek philosopher taught Aristotle?',a:'Plato',hint:'Sounds like play-toe',funFact:'Plato founded the Academy, one of the first institutions of higher learning!',links:{correct:'https://www.britannica.com/biography/Plato',incorrect:'https://www.history.com/topics/ancient-greece/plato'}},
-  {id:'hist_015',category:'History',q:'In what year did the Berlin Wall fall?',a:'1989',hint:'In the 1980s',funFact:'The wall had divided East and West Berlin for 28 years!',links:{correct:'https://www.britannica.com/event/Berlin-Wall',incorrect:'https://www.history.com/topics/cold-war/berlin-wall'}},
+let triviaDB = null;
+let triviaBuffer = [];
+let triviaCurrentQuestion = null;
+let triviaProgress = null;
+const TRIVIA_USER_ID = 'krish';
+const TRIVIA_DB_NAME = 'family_hub_trivia_v1';
 
-  // ========== GEOGRAPHY (15) ==========
-  {id:'geo_001',category:'Geography',q:'What is the capital of France?',a:'Paris',hint:'City of Light',funFact:'Paris is built on the Seine River and home to the Eiffel Tower, built in 1889.',links:{correct:'https://www.britannica.com/place/Paris',incorrect:'https://www.britannica.com/place/France'}},
-  {id:'geo_002',category:'Geography',q:'Which is the largest country in the world by area?',a:'Russia',hint:'Largest country',funFact:'Russia covers 17.1 million km² and stretches across 11 time zones!',links:{correct:'https://www.britannica.com/place/Russia',incorrect:'https://www.britannica.com/place/Canada'}},
-  {id:'geo_003',category:'Geography',q:'What is the capital of Japan?',a:'Tokyo',hint:'Largest city by population',funFact:'Tokyo has over 37 million people in its metro area!',links:{correct:'https://www.britannica.com/place/Tokyo',incorrect:'https://www.britannica.com/place/Japan'}},
-  {id:'geo_004',category:'Geography',q:'Which is the smallest continent by area?',a:'Australia',hint:'Also a country',funFact:'Australia has kangaroos, koalas, and platypuses found nowhere else!',links:{correct:'https://www.britannica.com/place/Australia',incorrect:'https://www.britannica.com/place/Antarctica'}},
-  {id:'geo_005',category:'Geography',q:'What is the longest river in the world?',a:'Nile River',hint:'Flows through Egypt',funFact:'The Nile is about 4,135 miles long! Ancient Egypt was built along this river.',links:{correct:'https://www.britannica.com/place/Nile-River',incorrect:'https://www.britannica.com/place/Amazon-River'}},
-  {id:'geo_006',category:'Geography',q:'Which ocean is the largest?',a:'Pacific Ocean',hint:'Between Asia and America',funFact:'The Pacific is so large that all land could fit inside it! It covers 46% of ocean surface.',links:{correct:'https://www.britannica.com/place/Pacific-Ocean',incorrect:'https://www.britannica.com/place/Atlantic-Ocean'}},
-  {id:'geo_007',category:'Geography',q:'What is the capital of India?',a:'New Delhi',hint:'Northern part of India',funFact:'New Delhi was built in the early 1900s. It\'s home to over 25 million people!',links:{correct:'https://www.britannica.com/place/New-Delhi',incorrect:'https://www.britannica.com/place/India'}},
-  {id:'geo_008',category:'Geography',q:'Which mountain is the highest in the world?',a:'Mount Everest',hint:'In the Himalayas',funFact:'Mount Everest is 29,032 feet tall! Climbing it is extremely challenging.',links:{correct:'https://www.britannica.com/place/Mount-Everest',incorrect:'https://www.britannica.com/place/K2'}},
-  {id:'geo_009',category:'Geography',q:'What is the capital of Brazil?',a:'Brasília',hint:'Built in the 1960s',funFact:'Brasília is a UNESCO World Heritage site. It\'s known for modernist architecture!',links:{correct:'https://www.britannica.com/place/Brasilia',incorrect:'https://www.britannica.com/place/Rio-de-Janeiro'}},
-  {id:'geo_010',category:'Geography',q:'Which desert is the largest in the world?',a:'Antarctica',hint:'At the South Pole',funFact:'Antarctica is officially a desert! It\'s the coldest place on Earth.',links:{correct:'https://www.britannica.com/place/Antarctica',incorrect:'https://www.britannica.com/place/Sahara'}},
-  {id:'geo_011',category:'Geography',q:'How many continents are there?',a:'7',hint:'Between 5 and 9',funFact:'Some countries count them differently! The 7 are: North America, South America, Europe, Africa, Asia, Australia, Antarctica.',links:{correct:'https://www.britannica.com/topic/continent',incorrect:'https://www.britannica.com/place/Earth'}},
-  {id:'geo_012',category:'Geography',q:'What is the capital of Egypt?',a:'Cairo',hint:'Largest city in Africa',funFact:'Cairo is home to over 20 million people! It\'s close to the Great Pyramids of Giza.',links:{correct:'https://www.britannica.com/place/Cairo',incorrect:'https://www.britannica.com/place/Egypt'}},
-  {id:'geo_013',category:'Geography',q:'Which country is the most populous in the world?',a:'India',hint:'In South Asia',funFact:'India has over 1.4 billion people and recently became the most populous country!',links:{correct:'https://www.britannica.com/place/India',incorrect:'https://www.britannica.com/place/China'}},
-  {id:'geo_014',category:'Geography',q:'What is the capital of Australia?',a:'Canberra',hint:'Not Sydney or Melbourne',funFact:'Canberra was chosen as a compromise between Sydney and Melbourne!',links:{correct:'https://www.britannica.com/place/Canberra',incorrect:'https://www.britannica.com/place/Sydney'}},
-  {id:'geo_015',category:'Geography',q:'Which country is home to the Amazon Rainforest?',a:'Brazil',hint:'In South America',funFact:'The Amazon covers 5.5 million km² and is home to 10% of all species! It produces 20% of world oxygen.',links:{correct:'https://www.britannica.com/place/Amazon-Rainforest',incorrect:'https://www.britannica.com/place/Brazil'}},
+// ── IndexedDB helpers ─────────────────────────────
+async function openTriviaDB() {
+    if (triviaDB) return triviaDB;
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(TRIVIA_DB_NAME, 1);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('questions')) {
+                const qs = db.createObjectStore('questions', { keyPath: 'uuid' });
+                qs.createIndex('by_category', 'category');
+                qs.createIndex('by_difficulty', 'difficulty');
+            }
+            if (!db.objectStoreNames.contains('userProgress')) {
+                db.createObjectStore('userProgress', { keyPath: 'userId' });
+            }
+            if (!db.objectStoreNames.contains('answerHistory')) {
+                const ah = db.createObjectStore('answerHistory', { keyPath: 'id', autoIncrement: true });
+                ah.createIndex('by_user', 'userId');
+                ah.createIndex('by_question', 'questionId');
+            }
+        };
+        req.onsuccess = e => { triviaDB = e.target.result; resolve(triviaDB); };
+        req.onerror = e => { console.error('[Trivia] IndexedDB error:', e.target.error); reject(e.target.error); };
+    });
+}
 
-  // ========== TECHNOLOGY (12) ==========
-  {id:'tech_001',category:'Technology',q:'What does AI stand for?',a:'Artificial Intelligence',hint:'Starts with A and I',funFact:'AI is rapidly changing how we live! AI systems can now write essays and create images.',links:{correct:'https://www.britannica.com/technology/artificial-intelligence',incorrect:'https://en.wikipedia.org/wiki/Artificial_intelligence'}},
-  {id:'tech_002',category:'Technology',q:'What does HTML stand for?',a:'HyperText Markup Language',hint:'Used to create web pages',funFact:'HTML was created by Tim Berners-Lee in 1989. It\'s the foundation of all websites!',links:{correct:'https://www.w3schools.com/whatis/whatis_html.asp',incorrect:'https://developer.mozilla.org/en-US/docs/Web/HTML'}},
-  {id:'tech_003',category:'Technology',q:'What does CPU stand for?',a:'Central Processing Unit',hint:'Brain of a computer',funFact:'Modern CPUs perform billions of operations per second!',links:{correct:'https://www.britannica.com/technology/CPU',incorrect:'https://en.wikipedia.org/wiki/Central_processing_unit'}},
-  {id:'tech_004',category:'Technology',q:'Who invented the World Wide Web?',a:'Tim Berners-Lee',hint:'Last name is Berners-Lee',funFact:'Tim invented the web at CERN in 1989. He made it open and free for everyone!',links:{correct:'https://www.britannica.com/biography/Tim-Berners-Lee',incorrect:'https://en.wikipedia.org/wiki/Tim_Berners-Lee'}},
-  {id:'tech_005',category:'Technology',q:'What does WiFi stand for?',a:'Wireless Fidelity',hint:'Used for wireless internet',funFact:'WiFi revolutionized how we access the internet at home and work!',links:{correct:'https://www.britannica.com/technology/Wi-Fi',incorrect:'https://en.wikipedia.org/wiki/Wi-Fi'}},
-  {id:'tech_006',category:'Technology',q:'What does USB stand for?',a:'Universal Serial Bus',hint:'Used to connect devices',funFact:'The first USB standard was released in 1996 and has been improved many times!',links:{correct:'https://www.britannica.com/technology/USB',incorrect:'https://en.wikipedia.org/wiki/USB'}},
-  {id:'tech_007',category:'Technology',q:'What does RAM stand for?',a:'Random Access Memory',hint:'Type of computer memory',funFact:'RAM is much faster than storage but loses data when powered off!',links:{correct:'https://www.britannica.com/technology/RAM',incorrect:'https://en.wikipedia.org/wiki/Random-access_memory'}},
-  {id:'tech_008',category:'Technology',q:'Who is called the father of computers?',a:'Charles Babbage',hint:'Last name is Babbage',funFact:'Babbage designed the Analytical Engine in the 1800s, the first general-purpose computer!',links:{correct:'https://www.britannica.com/biography/Charles-Babbage',incorrect:'https://en.wikipedia.org/wiki/Charles_Babbage'}},
-  {id:'tech_009',category:'Technology',q:'What does GPU stand for?',a:'Graphics Processing Unit',hint:'Specialized for graphics',funFact:'GPUs now power AI, cryptocurrency, and scientific simulations!',links:{correct:'https://www.britannica.com/technology/GPU',incorrect:'https://en.wikipedia.org/wiki/Graphics_processing_unit'}},
-  {id:'tech_010',category:'Technology',q:'What does SSD stand for?',a:'Solid State Drive',hint:'Type of storage device',funFact:'SSDs have no moving parts and are faster than hard drives!',links:{correct:'https://www.britannica.com/technology/SSD',incorrect:'https://en.wikipedia.org/wiki/Solid-state_drive'}},
-  {id:'tech_011',category:'Technology',q:'What year was the first iPhone released?',a:'2007',hint:'In the 2000s',funFact:'Steve Jobs introduced the iPhone on January 9, 2007. It revolutionized mobile technology!',links:{correct:'https://www.britannica.com/technology/iPhone',incorrect:'https://en.wikipedia.org/wiki/IPhone'}},
-  {id:'tech_012',category:'Technology',q:'Who founded Microsoft?',a:'Bill Gates',hint:'First name is Bill',funFact:'Bill Gates founded Microsoft in 1975 and became the world\'s richest person!',links:{correct:'https://www.britannica.com/biography/Bill-Gates',incorrect:'https://en.wikipedia.org/wiki/Bill_Gates'}},
+function idbGet(store, key) {
+    return new Promise((resolve, reject) => {
+        const req = store.get(key);
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
 
-  // ========== ANIMALS (12) ==========
-  {id:'animal_001',category:'Animals',q:'What is the fastest land animal?',a:'Cheetah',hint:'A big cat',funFact:'Cheetahs can run up to 70 mph! They have special claws like running cleats.',links:{correct:'https://www.britannica.com/animal/cheetah',incorrect:'https://www.britannica.com/animal/Lion'}},
-  {id:'animal_002',category:'Animals',q:'How many legs does an octopus have?',a:'8',hint:'The name says it',funFact:'Each tentacle has 200-300 suckers! Octopuses are highly intelligent.',links:{correct:'https://www.britannica.com/animal/octopus',incorrect:'https://www.britannica.com/animal/squid'}},
-  {id:'animal_003',category:'Animals',q:'What is the largest animal in the world?',a:'Blue Whale',hint:'It\'s a whale',funFact:'Blue whales can weigh up to 200 tons! Even larger than the biggest dinosaurs.',links:{correct:'https://www.britannica.com/animal/blue-whale',incorrect:'https://www.britannica.com/animal/African-elephant'}},
-  {id:'animal_004',category:'Animals',q:'How many chambers does a cow\'s stomach have?',a:'4',hint:'More than 2',funFact:'Cows are ruminants with 4 chambers. They regurgitate food and chew it again!',links:{correct:'https://www.britannica.com/animal/cow',incorrect:'https://www.britannica.com/animal/sheep'}},
-  {id:'animal_005',category:'Animals',q:'What bird can fly backwards?',a:'Hummingbird',hint:'Drinks nectar from flowers',funFact:'Hummingbirds are the only birds that can fly backwards! Their wings beat 50-80 times per second.',links:{correct:'https://www.britannica.com/animal/hummingbird',incorrect:'https://www.britannica.com/animal/dove'}},
-  {id:'animal_006',category:'Animals',q:'How long can a polar bear swim without stopping?',a:'6 days',hint:'Measured in days',funFact:'Polar bears are incredible swimmers and travel hundreds of miles across ocean!',links:{correct:'https://www.britannica.com/animal/polar-bear',incorrect:'https://www.britannica.com/animal/walrus'}},
-  {id:'animal_007',category:'Animals',q:'What is the slowest mammal in the world?',a:'Sloth',hint:'Lives in rainforests',funFact:'Sloths move so slowly that algae grows on their fur!',links:{correct:'https://www.britannica.com/animal/sloth',incorrect:'https://www.britannica.com/animal/tortoise'}},
-  {id:'animal_008',category:'Animals',q:'How many eyes does a spider have?',a:'8',hint:'More than most animals',funFact:'Most spiders have 8 eyes. Some are nearly blind while others have excellent vision!',links:{correct:'https://www.britannica.com/animal/spider',incorrect:'https://www.britannica.com/animal/insect'}},
-  {id:'animal_009',category:'Animals',q:'What animal can change color to match surroundings?',a:'Chameleon',hint:'It\'s a reptile',funFact:'Chameleons change color for camouflage AND to communicate emotions!',links:{correct:'https://www.britannica.com/animal/chameleon',incorrect:'https://www.britannica.com/animal/gecko'}},
-  {id:'animal_010',category:'Animals',q:'How long can a bear sleep in hibernation?',a:'7 months',hint:'Measured in months',funFact:'Bears don\'t eat, drink, or go to bathroom during hibernation! They survive on stored fat.',links:{correct:'https://www.britannica.com/animal/bear',incorrect:'https://www.britannica.com/animal/squirrel'}},
-  {id:'animal_011',category:'Animals',q:'What is the only mammal that lays eggs?',a:'Platypus',hint:'From Australia',funFact:'The platypus is venomous, lays eggs, has a duck bill, and produces milk without nipples!',links:{correct:'https://www.britannica.com/animal/platypus',incorrect:'https://www.britannica.com/animal/echidna'}},
-  {id:'animal_012',category:'Animals',q:'How many bones does a snake have?',a:'300',hint:'More than 200',funFact:'Snakes have incredible flexibility because of their vertebrae and ribs!',links:{correct:'https://www.britannica.com/animal/snake',incorrect:'https://www.britannica.com/animal/lizard'}},
+function idbPut(store, value) {
+    return new Promise((resolve, reject) => {
+        const req = store.put(value);
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
 
-  // ========== SPORTS (10) ==========
-  {id:'sport_001',category:'Sports',q:'In basketball, how many points is a three-pointer?',a:'3',hint:'It\'s in the name',funFact:'Three-pointers have become increasingly important in basketball!',links:{correct:'https://www.britannica.com/sports/basketball',incorrect:'https://www.britannica.com/sports/American-football'}},
-  {id:'sport_002',category:'Sports',q:'How many players are on a soccer team on field?',a:'11',hint:'More than 10',funFact:'Soccer is the most popular sport in the world! Over 4 billion people watch it.',links:{correct:'https://www.britannica.com/sports/soccer',incorrect:'https://www.britannica.com/sports/American-football'}},
-  {id:'sport_003',category:'Sports',q:'What sport takes place in a boxing ring?',a:'Boxing',hint:'A combat sport',funFact:'Boxing dates back thousands of years! Evidence exists from 3000 BC.',links:{correct:'https://www.britannica.com/sports/boxing',incorrect:'https://www.britannica.com/sports/wrestling'}},
-  {id:'sport_004',category:'Sports',q:'In American football, how many points is a touchdown?',a:'6',hint:'More than 3',funFact:'After a touchdown, teams can kick for 1 point or run/pass for 2 points!',links:{correct:'https://www.britannica.com/sports/American-football',incorrect:'https://www.britannica.com/sports/rugby'}},
-  {id:'sport_005',category:'Sports',q:'What sport involves swimming, cycling, and running?',a:'Triathlon',hint:'Three sports in one',funFact:'The Ironman requires swimming 2.4 miles, biking 112 miles, running 26.2 miles!',links:{correct:'https://www.britannica.com/sports/triathlon',incorrect:'https://www.britannica.com/sports/marathon'}},
-  {id:'sport_006',category:'Sports',q:'How many innings are in a baseball game?',a:'9',hint:'Single digit',funFact:'If tied after 9 innings, the game goes to extra innings!',links:{correct:'https://www.britannica.com/sports/baseball',incorrect:'https://www.britannica.com/sports/cricket'}},
-  {id:'sport_007',category:'Sports',q:'Which tennis tournament is played on clay courts?',a:'French Open',hint:'It\'s in France',funFact:'The French Open is one of four Grand Slam tournaments!',links:{correct:'https://www.britannica.com/sports/French-Open',incorrect:'https://www.britannica.com/sports/Wimbledon'}},
-  {id:'sport_008',category:'Sports',q:'What is the highest score in one frame of bowling?',a:'300',hint:'A perfect game',funFact:'A perfect 300 requires 12 consecutive strikes!',links:{correct:'https://www.britannica.com/sports/bowling',incorrect:'https://www.britannica.com/sports/golf'}},
-  {id:'sport_009',category:'Sports',q:'How many holes are on a standard golf course?',a:'18',hint:'More than 9',funFact:'Golf courses started with 9 holes, but 18 became standard in the 1700s!',links:{correct:'https://www.britannica.com/sports/golf',incorrect:'https://www.britannica.com/sports/tennis'}},
-  {id:'sport_010',category:'Sports',q:'How many players are on a volleyball team on court?',a:'6',hint:'Less than 11',funFact:'Beach volleyball has only 2 players per side!',links:{correct:'https://www.britannica.com/sports/volleyball',incorrect:'https://www.britannica.com/sports/badminton'}},
+function idbAdd(store, value) {
+    return new Promise((resolve, reject) => {
+        const req = store.add(value);
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
 
-  // ========== MATHEMATICS (12) ==========
-  {id:'math_001',category:'Mathematics',q:'What is 2 + 2?',a:'4',hint:'A small number',funFact:'This is the foundation of arithmetic! Mathematics builds on basic operations.',links:{correct:'https://www.khanacademy.org/math/arithmetic/add-subtract',incorrect:'https://www.khanacademy.org/math/arithmetic'}},
-  {id:'math_002',category:'Mathematics',q:'What is the square root of 16?',a:'4',hint:'It\'s 4 × 4',funFact:'Square roots are the opposite of squaring. Powers show repeated multiplication!',links:{correct:'https://www.khanacademy.org/math/pre-algebra/exponents-radicals',incorrect:'https://www.khanacademy.org/math/pre-algebra'}},
-  {id:'math_003',category:'Mathematics',q:'How many degrees are in a circle?',a:'360',hint:'A large number',funFact:'Ancient Babylonians used a 60-based system. 360 is divisible by many numbers!',links:{correct:'https://www.khanacademy.org/math/geometry/gg-angles',incorrect:'https://www.khanacademy.org/math/geometry'}},
-  {id:'math_004',category:'Mathematics',q:'What is the value of Pi (π) rounded to 2 decimal places?',a:'3.14',hint:'Used for circumference',funFact:'Pi is irrational and goes on forever! Mathematicians calculated it to 1 trillion places!',links:{correct:'https://www.khanacademy.org/math/geometry/gg-circles',incorrect:'https://www.britannica.com/science/pi'}},
-  {id:'math_005',category:'Mathematics',q:'What is 10% of 50?',a:'5',hint:'A small number',funFact:'Percentages mean "per hundred." 10% = 10 out of 100!',links:{correct:'https://www.khanacademy.org/math/pre-algebra/ratios-rates',incorrect:'https://www.khanacademy.org/math/pre-algebra'}},
-  {id:'math_006',category:'Mathematics',q:'What is 5 × 6?',a:'30',hint:'In the 20s or 30s',funFact:'Multiplication is repeated addition. 5 × 6 = 5+5+5+5+5+5 = 30!',links:{correct:'https://www.khanacademy.org/math/arithmetic/multiply-divide',incorrect:'https://www.khanacademy.org/math/arithmetic'}},
-  {id:'math_007',category:'Mathematics',q:'How many sides does a hexagon have?',a:'6',hint:'Starts with H',funFact:'Hexagons are efficient in nature! Honeycomb cells are hexagons.',links:{correct:'https://www.khanacademy.org/math/geometry/gg-polygons',incorrect:'https://www.khanacademy.org/math/geometry'}},
-  {id:'math_008',category:'Mathematics',q:'What is the area of a square with sides of 4 cm?',a:'16 square cm',hint:'Area = side × side',funFact:'Area tells you how much space is covered!',links:{correct:'https://www.khanacademy.org/math/geometry/gg-area-perimeter',incorrect:'https://www.britannica.com/science/area'}},
-  {id:'math_009',category:'Mathematics',q:'What is 100 ÷ 5?',a:'20',hint:'In the 15-25 range',funFact:'Division splits things into equal groups!',links:{correct:'https://www.khanacademy.org/math/arithmetic/multiply-divide',incorrect:'https://www.khanacademy.org/math/arithmetic'}},
-  {id:'math_010',category:'Mathematics',q:'What is 3²? (3 squared)',a:'9',hint:'It\'s 3 × 3',funFact:'Powers show repeated multiplication!',links:{correct:'https://www.khanacademy.org/math/pre-algebra/exponents-radicals',incorrect:'https://www.britannica.com/science/exponent'}},
-  {id:'math_011',category:'Mathematics',q:'What is 50% of 200?',a:'100',hint:'It\'s half of 200',funFact:'Percent means "per hundred." 50% = half!',links:{correct:'https://www.khanacademy.org/math/pre-algebra/ratios-rates',incorrect:'https://www.britannica.com/science/percentage'}},
-  {id:'math_012',category:'Mathematics',q:'How many millimeters are in 1 centimeter?',a:'10',hint:'A small number',funFact:'The metric system uses powers of 10! It makes math much simpler.',links:{correct:'https://www.khanacademy.org/math/pre-algebra/measurement',incorrect:'https://www.britannica.com/science/metric-system'}},
+function idbCount(store) {
+    return new Promise((resolve, reject) => {
+        const req = store.count();
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
 
-  // ========== LITERATURE (12) ==========
-  {id:'lit_001',category:'Literature',q:'Who wrote "Romeo and Juliet"?',a:'William Shakespeare',hint:'Famous playwright',funFact:'Shakespeare wrote 39 plays and 154 sonnets! His works are performed more than any other playwright\'s.',links:{correct:'https://www.britannica.com/biography/William-Shakespeare',incorrect:'https://www.britannica.com/topic/Romeo-and-Juliet'}},
-  {id:'lit_002',category:'Literature',q:'Who wrote "The Great Gatsby"?',a:'F. Scott Fitzgerald',hint:'Initials are F.S.',funFact:'"The Great Gatsby" is one of the greatest American novels!',links:{correct:'https://www.britannica.com/biography/F-Scott-Fitzgerald',incorrect:'https://www.britannica.com/topic/The-Great-Gatsby'}},
-  {id:'lit_003',category:'Literature',q:'In "Harry Potter," what spell creates light?',a:'Lumos',hint:'Sounds like loom-us',funFact:'Harry Potter sold over 500 million copies! It\'s one of the most successful series ever.',links:{correct:'https://www.britannica.com/topic/Harry-Potter',incorrect:'https://www.britannica.com/biography/J-K-Rowling'}},
-  {id:'lit_004',category:'Literature',q:'Who wrote "To Kill a Mockingbird"?',a:'Harper Lee',hint:'First name is Harper',funFact:'"To Kill a Mockingbird" won the Pulitzer Prize! It addresses racism and injustice.',links:{correct:'https://www.britannica.com/biography/Harper-Lee',incorrect:'https://www.britannica.com/topic/To-Kill-a-Mockingbird'}},
-  {id:'lit_005',category:'Literature',q:'Who wrote "Jane Eyre"?',a:'Charlotte Brontë',hint:'Last name is Brontë',funFact:'Many female authors used male pen names to be taken seriously!',links:{correct:'https://www.britannica.com/biography/Charlotte-Bronte',incorrect:'https://www.britannica.com/topic/Jane-Eyre'}},
-  {id:'lit_006',category:'Literature',q:'In "The Lord of the Rings," who must destroy the ring?',a:'Frodo Baggins',hint:'First name is Frodo',funFact:'Tolkien spent 10+ years writing LOTR! It was published in 3 volumes between 1954-1955.',links:{correct:'https://www.britannica.com/topic/The-Lord-of-the-Rings',incorrect:'https://www.britannica.com/biography/J-R-R-Tolkien'}},
-  {id:'lit_007',category:'Literature',q:'Who wrote "The Catcher in the Rye"?',a:'J.D. Salinger',hint:'Initials are J.D.',funFact:'"The Catcher in the Rye" captures teenage angst perfectly!',links:{correct:'https://www.britannica.com/biography/J-D-Salinger',incorrect:'https://www.britannica.com/topic/The-Catcher-in-the-Rye'}},
-  {id:'lit_008',category:'Literature',q:'Who wrote "1984"?',a:'George Orwell',hint:'Pen name George Orwell',funFact:'"1984" is a dystopian novel. Words like "Big Brother" are still used today!',links:{correct:'https://www.britannica.com/biography/George-Orwell',incorrect:'https://www.britannica.com/topic/1984'}},
-  {id:'lit_009',category:'Literature',q:'In "Alice\'s Adventures in Wonderland," what rabbit does Alice follow?',a:'White Rabbit',hint:'His color is white',funFact:'Written by Lewis Carroll in 1865. It remains a children\'s literature classic!',links:{correct:'https://www.britannica.com/topic/Alices-Adventures-in-Wonderland',incorrect:'https://www.britannica.com/biography/Lewis-Carroll'}},
-  {id:'lit_010',category:'Literature',q:'Who wrote "Pride and Prejudice"?',a:'Jane Austen',hint:'First name is Jane',funFact:'Jane Austen wrote 6 major novels. All are still widely read and adapted today!',links:{correct:'https://www.britannica.com/biography/Jane-Austen',incorrect:'https://www.britannica.com/topic/Pride-and-Prejudice'}},
-  {id:'lit_011',category:'Literature',q:'What genre is "The Hobbit"?',a:'Fantasy',hint:'Contains magic and fictional worlds',funFact:'"The Hobbit" is considered the first modern fantasy novel!',links:{correct:'https://www.britannica.com/topic/The-Hobbit',incorrect:'https://www.britannica.com/topic/fantasy-literature'}},
-  {id:'lit_012',category:'Literature',q:'Who wrote "Frankenstein"?',a:'Mary Shelley',hint:'First name is Mary',funFact:'Mary Shelley wrote it at age 18! It\'s considered the first sci-fi novel.',links:{correct:'https://www.britannica.com/biography/Mary-Shelley',incorrect:'https://www.britannica.com/topic/Frankenstein'}},
+function idbGetAll(store) {
+    return new Promise((resolve, reject) => {
+        const req = store.getAll();
+        req.onsuccess = e => resolve(e.target.result);
+        req.onerror = e => reject(e.target.error);
+    });
+}
 
-  // ========== GENERAL KNOWLEDGE (10) ==========
-  {id:'gen_001',category:'General Knowledge',q:'What is the smallest country in the world by area?',a:'Vatican City',hint:'It\'s in Europe',funFact:'Vatican City is only 0.44 km²! Despite its size, it\'s an independent nation.',links:{correct:'https://www.britannica.com/place/Vatican-City',incorrect:'https://www.britannica.com/place/Monaco'}},
-  {id:'gen_002',category:'General Knowledge',q:'How many strings does a standard guitar have?',a:'6',hint:'Less than 10',funFact:'Some guitars have 7, 8, or 12 strings!',links:{correct:'https://www.britannica.com/technology/guitar',incorrect:'https://www.britannica.com/technology/violin'}},
-  {id:'gen_003',category:'General Knowledge',q:'What is the most spoken language by native speakers?',a:'Mandarin Chinese',hint:'An Asian language',funFact:'Mandarin has 900+ million native speakers!',links:{correct:'https://www.britannica.com/topic/Mandarin-Chinese',incorrect:'https://www.britannica.com/topic/English-language'}},
-  {id:'gen_004',category:'General Knowledge',q:'How many sides does a pentagon have?',a:'5',hint:'It\'s in the name',funFact:'"Penta" means five and "gonia" means angle!',links:{correct:'https://www.britannica.com/topic/polygon',incorrect:'https://www.britannica.com/science/geometry'}},
-  {id:'gen_005',category:'General Knowledge',q:'What is the symbol for the element gold?',a:'Au',hint:'From Latin "aurum"',funFact:'Gold has been valued for thousands of years!',links:{correct:'https://www.britannica.com/science/gold',incorrect:'https://www.britannica.com/science/element'}},
-  {id:'gen_006',category:'General Knowledge',q:'What is the boiling point of water in Celsius?',a:'100',hint:'A round number',funFact:'Freezing point is 0°C, boiling is 100°C! The Celsius scale is perfect for water.',links:{correct:'https://www.britannica.com/science/water',incorrect:'https://www.britannica.com/science/temperature'}},
-  {id:'gen_007',category:'General Knowledge',q:'How many stripes are on the American flag?',a:'13',hint:'Original 13 states',funFact:'The 13 stripes represent the original colonies. There are 50 stars for 50 states!',links:{correct:'https://www.britannica.com/topic/United-States-flag',incorrect:'https://www.britannica.com/place/United-States'}},
-  {id:'gen_008',category:'General Knowledge',q:'How many colors are in a rainbow?',a:'7',hint:'Same as continents',funFact:'ROYGBIV: Red, Orange, Yellow, Green, Blue, Indigo, Violet!',links:{correct:'https://www.britannica.com/science/rainbow',incorrect:'https://www.britannica.com/science/light'}},
-  {id:'gen_009',category:'General Knowledge',q:'How many chambers does a human heart have?',a:'4',hint:'Two and two',funFact:'The 4 chambers work together to pump blood throughout your body!',links:{correct:'https://www.britannica.com/science/heart',incorrect:'https://www.britannica.com/science/organ'}},
-  {id:'gen_010',category:'General Knowledge',q:'How many continents are there?',a:'7',hint:'Between 5 and 9',funFact:'Some countries teach 5 or 6 continents instead!',links:{correct:'https://www.britannica.com/topic/continent',incorrect:'https://www.britannica.com/place/Earth'}}
-];
+// ── Seed questions on first load ──────────────────
+async function seedTriviaQuestions(db) {
+    const tx = db.transaction('questions', 'readwrite');
+    const store = tx.objectStore('questions');
+    const count = await idbCount(store);
+    if (count > 0) return;
+    for (const q of TRIVIA_QUESTION_BANK) store.put(q);
+    await new Promise((r, rj) => { tx.oncomplete = r; tx.onerror = e => rj(e.target.error); });
+    console.log('[Trivia] Seeded', TRIVIA_QUESTION_BANK.length, 'questions');
+}
 
-function getTriviaQuestion(dateStr) {
-    const index = parseInt(dateStr.replace(/-/g, '')) % TRIVIA_QUESTIONS.length;
-    return { ...TRIVIA_QUESTIONS[index] };
+// ── Migration from old localStorage state ────────
+async function migrateFromLocalStorage(db) {
+    const tx = db.transaction('userProgress', 'readwrite');
+    const store = tx.objectStore('userProgress');
+    const existing = await idbGet(store, TRIVIA_USER_ID);
+    if (existing) return existing;
+
+    const lsRaw = (() => { try { return JSON.parse(localStorage.getItem('krish_tasks_v1')); } catch(e) { return null; } })();
+    const old = lsRaw?.trivia || {};
+
+    const progress = {
+        userId: TRIVIA_USER_ID,
+        streaks: { daily: old.streak || 0, lastDate: old.lastAnsweredDate || null },
+        totalAnswered: old.totalAnswered || 0,
+        exclusionList: [],
+        incorrectPool: [],
+        categoryPerformance: {},
+        points: { today: 0, week: 0, month: 0, total: 0 },
+        migratedAt: new Date().toISOString()
+    };
+    await idbPut(store, progress);
+    console.log('[Trivia] Migrated from localStorage. Streak:', progress.streaks.daily, 'Total:', progress.totalAnswered);
+    return progress;
+}
+
+// ── Question selection helpers ────────────────────
+function shuffleArr(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function calcDecayWeight(lastWrongDateStr) {
+    const daysSince = (Date.now() - new Date(lastWrongDateStr).getTime()) / 86400000;
+    return Math.exp(-daysSince * 0.1);
+}
+
+function weightedRandom(items, weights) {
+    const total = weights.reduce((s, w) => s + w, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < items.length; i++) { r -= weights[i]; if (r <= 0) return items[i]; }
+    return items[items.length - 1];
+}
+
+function getExcludedIds(exclusionList) {
+    const cutoff = Date.now() - 7 * 86400000;
+    return new Set(exclusionList.filter(e => new Date(e.answeredDate).getTime() > cutoff).map(e => e.questionId));
+}
+
+// ── Buffer management ─────────────────────────────
+async function refillTriviaBuffer() {
+    const db = await openTriviaDB();
+    const tx = db.transaction('questions', 'readonly');
+    const all = await idbGetAll(tx.objectStore('questions'));
+    const excluded = getExcludedIds(triviaProgress?.exclusionList || []);
+    const incorrectPool = triviaProgress?.incorrectPool || [];
+    const bufferIds = new Set(triviaBuffer.map(q => q.uuid));
+    let available = all.filter(q => !excluded.has(q.uuid) && !bufferIds.has(q.uuid));
+
+    if (available.length === 0) {
+        // All excluded — reset oldest half of exclusion list
+        triviaProgress.exclusionList = (triviaProgress.exclusionList || []).slice(-20);
+        available = all.filter(q => !bufferIds.has(q.uuid));
+    }
+
+    const needed = 5 - triviaBuffer.length;
+    for (let i = 0; i < needed && available.length > 0; i++) {
+        let q;
+        const poolMatches = available.filter(q => incorrectPool.some(p => p.questionId === q.uuid));
+        if (poolMatches.length > 0 && Math.random() < 0.7) {
+            const weights = poolMatches.map(q => {
+                const p = incorrectPool.find(p => p.questionId === q.uuid);
+                return calcDecayWeight(p.lastWrong);
+            });
+            q = weightedRandom(poolMatches, weights);
+        } else {
+            q = available[Math.floor(Math.random() * available.length)];
+        }
+        triviaBuffer.push(q);
+        available = available.filter(a => a.uuid !== q.uuid);
+    }
+}
+
+// ── Init trivia system ────────────────────────────
+async function initTriviaSystem() {
+    try {
+        const db = await openTriviaDB();
+        await seedTriviaQuestions(db);
+        triviaProgress = await migrateFromLocalStorage(db);
+        await refillTriviaBuffer();
+        if (!triviaCurrentQuestion && triviaBuffer.length > 0) {
+            triviaCurrentQuestion = triviaBuffer.shift();
+        }
+    } catch (err) {
+        console.error('[Trivia] Init failed, using fallback:', err);
+        triviaProgress = { userId: TRIVIA_USER_ID, streaks: { daily: 0, lastDate: null }, totalAnswered: 0, exclusionList: [], incorrectPool: [], categoryPerformance: {} };
+        triviaCurrentQuestion = TRIVIA_QUESTION_BANK[Math.floor(Math.random() * TRIVIA_QUESTION_BANK.length)];
+    }
+}
+
+async function loadNextTriviaQuestion() {
+    if (triviaBuffer.length < 2) refillTriviaBuffer();
+    triviaCurrentQuestion = triviaBuffer.shift() || TRIVIA_QUESTION_BANK[Math.floor(Math.random() * TRIVIA_QUESTION_BANK.length)];
+    renderTriviaPanel();
+}
+
+async function saveTriviaAnswer(questionId, isCorrect) {
+    const today = todayStr();
+    try {
+        const db = await openTriviaDB();
+        const htx = db.transaction('answerHistory', 'readwrite');
+        await idbAdd(htx.objectStore('answerHistory'), { userId: TRIVIA_USER_ID, questionId, correct: isCorrect, timestamp: new Date().toISOString(), date: today });
+
+        // Update exclusion list
+        triviaProgress.exclusionList = triviaProgress.exclusionList || [];
+        triviaProgress.exclusionList.push({ questionId, answeredDate: today });
+
+        // Update incorrect pool
+        triviaProgress.incorrectPool = triviaProgress.incorrectPool || [];
+        if (!isCorrect) {
+            const ex = triviaProgress.incorrectPool.find(p => p.questionId === questionId);
+            if (ex) { ex.lastWrong = today; ex.count = (ex.count || 1) + 1; }
+            else triviaProgress.incorrectPool.push({ questionId, lastWrong: today, count: 1 });
+        }
+
+        // Update streak
+        triviaProgress.streaks = triviaProgress.streaks || { daily: 0, lastDate: null };
+        const lastDate = triviaProgress.streaks.lastDate;
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        const yStr = yesterday.toISOString().split('T')[0];
+        if (!lastDate || lastDate === yStr) {
+            triviaProgress.streaks.daily = (triviaProgress.streaks.daily || 0) + 1;
+        } else if (lastDate !== today) {
+            triviaProgress.streaks.daily = 1;
+        }
+        triviaProgress.streaks.lastDate = today;
+        triviaProgress.totalAnswered = (triviaProgress.totalAnswered || 0) + 1;
+
+        // Update category performance
+        const q = triviaCurrentQuestion;
+        if (q) {
+            triviaProgress.categoryPerformance = triviaProgress.categoryPerformance || {};
+            if (!triviaProgress.categoryPerformance[q.category]) triviaProgress.categoryPerformance[q.category] = { correct: 0, total: 0 };
+            triviaProgress.categoryPerformance[q.category].total++;
+            if (isCorrect) triviaProgress.categoryPerformance[q.category].correct++;
+        }
+
+        const ptx = db.transaction('userProgress', 'readwrite');
+        await idbPut(ptx.objectStore('userProgress'), triviaProgress);
+    } catch (err) {
+        console.error('[Trivia] Failed to save answer:', err);
+    }
+
+    if (isCorrect) { try { addPoints(5); } catch(e) {} }
+    renderDashTrivia();
+}
+
+// ── Difficulty display helpers ────────────────────
+function trivDiffColor(d) { return { easy:'#10B981', medium:'#F59E0B', hard:'#EF4444' }[d] || '#6366F1'; }
+function trivDiffLabel(d) { return { easy:'Rookie', medium:'Pro', hard:'Legend' }[d] || d; }
+function trivDiffTagline(d) { return { easy:'Builds foundational knowledge', medium:'Tests deeper understanding', hard:'Challenges critical thinking' }[d] || ''; }
+function trivDiffTooltip(d) { return { easy:'Rookie — Clear, foundational questions.', medium:'Pro — Requires deeper knowledge and context.', hard:'Legend — Challenges specific knowledge and critical thinking.' }[d] || ''; }
+
+// ── TRIVIA PANEL (Phase 1 — Multiple Choice) ─────
+function renderTriviaPanel() {
+    const panel = document.getElementById('panel-trivia');
+    if (!panel) return;
+
+    if (!triviaCurrentQuestion) {
+        panel.innerHTML = '<div style="padding:40px;text-align:center;color:#94A3B8"><div style="font-size:2em;margin-bottom:12px">⏳</div><div>Loading trivia...</div></div>';
+        initTriviaSystem().then(() => renderTriviaPanel());
+        return;
+    }
+
+    const q = triviaCurrentQuestion;
+    const streak = triviaProgress?.streaks?.daily || 0;
+    const total = triviaProgress?.totalAnswered || 0;
+    const options = shuffleArr(q.options);
+    const dColor = trivDiffColor(q.difficulty);
+    const dLabel = trivDiffLabel(q.difficulty);
+    const dTagline = trivDiffTagline(q.difficulty);
+    const dTooltip = trivDiffTooltip(q.difficulty);
+    const wrongCount = triviaProgress?.incorrectPool?.find(p => p.questionId === q.uuid)?.count || 0;
+    const triedBefore = wrongCount > 0;
+
+    panel.innerHTML = `
+        <div class="sec-hdr">
+            <div>
+                <div class="sec-title">🧠 Daily Trivia</div>
+                <div class="sec-sub">${total} answered${streak > 0 ? ' · 🔥 ' + streak + ' day streak' : ' · Start your streak today!'}</div>
+            </div>
+        </div>
+        <div style="padding:16px">
+            ${triedBefore ? '<div style="background:rgba(245,158,11,0.12);border-left:3px solid #F59E0B;padding:10px 14px;border-radius:0 10px 10px 0;margin-bottom:14px;font-size:0.88em;color:#FCD34D">You found this tricky before — let\'s try again! 💪</div>' : ''}
+
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+                <span style="background:rgba(99,102,241,0.2);color:#A5B4FC;padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:600">${q.category}</span>
+                <span style="background:rgba(255,255,255,0.06);color:${dColor};padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:600;border:1px solid ${dColor}40;cursor:help" title="${dTooltip}">
+                    ${dLabel} <span style="opacity:0.75;font-size:0.9em">— ${dTagline}</span>
+                </span>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px;margin-bottom:18px;font-size:1.08em;line-height:1.6;font-weight:500">
+                ${q.question}
+            </div>
+
+            <div id="trivia-options" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+                ${options.map((opt,i) => `<button class="trivia-opt"
+                    data-answer="${opt.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}"
+                    onclick="checkTriviaAnswer(this)"
+                    style="padding:13px 14px;background:rgba(99,102,241,0.12);border:2px solid rgba(99,102,241,0.25);border-radius:12px;color:#E2E8F0;cursor:pointer;font-size:0.92em;text-align:left;line-height:1.4;transition:all 0.15s;font-family:inherit"
+                    onmouseover="if(!this.dataset.locked){this.style.background='rgba(99,102,241,0.25)';this.style.borderColor='rgba(99,102,241,0.5)'}"
+                    onmouseout="if(!this.dataset.locked){this.style.background='rgba(99,102,241,0.12)';this.style.borderColor='rgba(99,102,241,0.25)'}">
+                    <span style="display:inline-block;background:rgba(99,102,241,0.3);border-radius:6px;padding:1px 7px;margin-right:8px;font-size:0.82em;font-weight:700">${String.fromCharCode(65+i)}</span>${opt}
+                </button>`).join('')}
+            </div>
+
+            <div style="margin-bottom:14px">
+                <button onclick="toggleTriviaHint()" style="background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:#C4B5FD;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.88em">💡 Show Hint</button>
+                <div id="trivia-hint" style="display:none;margin-top:10px;background:rgba(139,92,246,0.12);border-left:3px solid #8B5CF6;padding:12px;border-radius:0 10px 10px 0;color:#C4B5FD;font-size:0.92em">${q.hint}</div>
+            </div>
+
+            <div id="trivia-result" style="display:none"></div>
+        </div>`;
+}
+
+function checkTriviaAnswer(btn) {
+    const q = triviaCurrentQuestion;
+    if (!q || btn.dataset.locked) return;
+    const selected = btn.dataset.answer;
+    const isCorrect = selected === q.correct;
+
+    document.querySelectorAll('.trivia-opt').forEach(b => {
+        b.dataset.locked = '1';
+        b.onclick = null; b.onmouseover = null; b.onmouseout = null;
+        b.style.cursor = 'default';
+        const ans = b.dataset.answer;
+        if (ans === q.correct) { b.style.background='rgba(16,185,129,0.25)'; b.style.borderColor='#10B981'; b.style.color='#6EE7B7'; }
+        else if (ans === selected && !isCorrect) { b.style.background='rgba(239,68,68,0.2)'; b.style.borderColor='#EF4444'; b.style.color='#FCA5A5'; }
+        else b.style.opacity = '0.35';
+    });
+
+    saveTriviaAnswer(q.uuid, isCorrect);
+
+    const wrongCount = (triviaProgress?.incorrectPool?.find(p => p.questionId === q.uuid)?.count || 0) + (isCorrect ? 0 : 1);
+    const showEnhanced = !isCorrect && wrongCount >= 2 && q.enhancedFunFact;
+
+    const resultEl = document.getElementById('trivia-result');
+    if (!resultEl) return;
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+        <div style="background:rgba(${isCorrect?'16,185,129':'239,68,68'},0.12);border-left:3px solid ${isCorrect?'#10B981':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
+            <div style="font-weight:700;font-size:1.05em">${isCorrect ? '✅ Correct! Great job!' : `❌ Not quite — the answer is: <span style="color:#F9FAFB">${q.correct}</span>`}</div>
+        </div>
+        <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);padding:14px;border-radius:12px;margin-bottom:14px">
+            <div style="font-size:0.8em;color:#818CF8;font-weight:600;margin-bottom:6px">${showEnhanced ? '🔍 DEEP DIVE' : 'FUN FACT'}</div>
+            <div style="font-size:0.92em;line-height:1.5;color:#C7D2FE">${showEnhanced ? q.enhancedFunFact : q.funFact}</div>
+        </div>
+        ${q.learningLink ? `<a href="${q.learningLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:#818CF8;font-size:0.85em;text-decoration:none;margin-bottom:16px;padding:6px 12px;background:rgba(99,102,241,0.1);border-radius:8px;border:1px solid rgba(99,102,241,0.2)" onmouseover="this.style.background='rgba(99,102,241,0.2)'" onmouseout="this.style.background='rgba(99,102,241,0.1)'">📚 Learn more →</a>` : ''}
+        <button onclick="loadNextTriviaQuestion()" style="width:100%;padding:13px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:white;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:1em" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            Next Question →
+        </button>`;
+
+    resultEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    if (isCorrect) { try { playTick(); } catch(e) {} }
+}
+
+function toggleTriviaHint() {
+    const h = document.getElementById('trivia-hint');
+    if (h) h.style.display = h.style.display === 'none' ? 'block' : 'none';
 }
 
 function buildDefaultState() {
@@ -1324,6 +1549,7 @@ function buildDefaultState() {
             todayAnswered: false,
             totalAnswered: 0,
             currentQuestion: null,
+            _migrated: false,
         },
         reading: {
             dailyMinutes: 0,
@@ -1398,21 +1624,8 @@ function applyResets() {
         state.date = today;
     }
 
-    // Trivia: check streak, reset daily flag, and ensure question is set (always, not just on daily reset)
-    if (state.trivia) {
-        const lastDate = state.trivia.lastAnsweredDate;
-        const prevDay = addDays(today, -1);
-        if (state.date !== today && lastDate !== today) {
-            if (lastDate !== prevDay) {
-                state.trivia.streak = 0; // streak broken
-            }
-            state.trivia.todayAnswered = false;
-        }
-        // Always ensure we have a question for today
-        if (!state.trivia.currentQuestion) {
-            state.trivia.currentQuestion = getTriviaQuestion(today);
-        }
-    }
+    // Trivia: streak/question management now handled by IndexedDB engine (initTriviaSystem)
+    // state.trivia kept only for migration data (streak/totalAnswered from old localStorage)
 
     // Weekly reset
     if (state.weekStart !== weekStart) {
@@ -1641,6 +1854,8 @@ function renderDashboard() {
     renderDashTrivia();
     renderDashReading();
     renderDashPoints();
+    // Initialize trivia system (IndexedDB + question buffer)
+    initTriviaSystem().then(() => renderDashTrivia());
 }
 
 // When opened from the HA summary card, back button returns to HA dashboard
@@ -1960,33 +2175,23 @@ function dbFlipCard() {
 
 // ── Dashboard: Trivia ──────────────────────────────
 function renderDashTrivia() {
+    const streak = triviaProgress?.streaks?.daily || 0;
     const sumEl = document.getElementById('db-trivia-summary');
-    if (sumEl) sumEl.textContent = state.trivia?.streak || 0 ? '🔥 ' + (state.trivia.streak) : 'Start';
+    if (sumEl) sumEl.textContent = streak > 0 ? '🔥 ' + streak : 'Start';
 
-    let html = '';
-    const q = state.trivia?.currentQuestion;
-    if (!q) {
-        html = `<div style="padding:16px;text-align:center;color:#94A3B8;font-size:0.85em">No question available</div>`;
-    } else {
-        const answered = state.trivia?.todayAnswered;
-        html = `
-            <div style="padding:12px">
-                <div style="font-size:0.8em;color:#94A3B8;margin-bottom:8px">${q.category}</div>
-                <div style="font-weight:600;margin-bottom:12px">${q.q}</div>
-                ${answered ? `
-                    <div style="padding:8px;background:#10B98122;border-radius:8px;border-left:3px solid #10B981;color:#6EE7B7">
-                        ✓ Answered today
-                    </div>
-                ` : `
-                    <button onclick="showBoard('trivia')" style="width:100%;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">
-                        Answer →
-                    </button>
-                `}
-            </div>
-        `;
-    }
     const el = document.getElementById('db-trivia-content');
-    if (el) el.innerHTML = html;
+    if (!el) return;
+    const q = triviaCurrentQuestion;
+    if (!q) {
+        el.innerHTML = '<div style="padding:8px;color:#94A3B8;font-size:0.85em">Loading...</div>';
+        return;
+    }
+    el.innerHTML = `
+        <div style="padding:8px 0">
+            <div style="font-size:0.8em;color:#94A3B8;margin-bottom:6px">${q.category} · <span style="color:${trivDiffColor(q.difficulty)}">${trivDiffLabel(q.difficulty)}</span></div>
+            <div style="font-size:0.9em;color:#CBD5E1;margin-bottom:10px;line-height:1.4">${q.question.substring(0,90)}${q.question.length>90?'...':''}</div>
+            <button onclick="showBoard('trivia')" style="width:100%;padding:8px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9em">Answer ↗</button>
+        </div>`;
 }
 
 // ── Dashboard: Reading ──────────────────────────────
@@ -2466,8 +2671,8 @@ function renderKungFuPanel() {
     document.getElementById('panel-kungfu').innerHTML = html;
 }
 
-// ── TRIVIA PANEL ───────────────────────────────
-function renderTriviaPanel() {
+// ── TRIVIA PANEL (legacy stub — real implementation in engine above) ──
+function _legacyTriviaPanel_unused() {
     const t = state.trivia || {};
     const q = t.currentQuestion;
 
@@ -2548,60 +2753,7 @@ function renderTriviaPanel() {
     document.getElementById('panel-trivia').innerHTML = html;
 }
 
-function toggleTriviaHint() {
-    const hint = document.getElementById('trivia-hint');
-    if (hint) {
-        hint.style.display = hint.style.display === 'none' ? 'block' : 'none';
-    }
-}
-
-function checkTriviaAnswer() {
-    const input = document.getElementById('trivia-answer');
-    const wrongDiv = document.getElementById('trivia-wrong');
-    if (!input || !state.trivia?.currentQuestion) return;
-
-    const answer = input.value.trim().toLowerCase();
-    const correct = state.trivia.currentQuestion.a.toLowerCase();
-
-    if (answer === correct) {
-        // Correct!
-        state.trivia.todayAnswered = true;
-        state.trivia.totalAnswered = (state.trivia.totalAnswered || 0) + 1;
-        state.trivia.lastAnsweredDate = todayStr();
-
-        // Increment streak (checked on daily reset in applyResets)
-        if (!state.trivia.streak) state.trivia.streak = 1;
-        else state.trivia.streak += 1;
-
-        addPoints(5);
-        playTick();
-        saveState();
-        renderTriviaPanel();
-    } else {
-        // Wrong - show feedback and learning resources
-        input.style.borderColor = '#EF4444';
-        input.style.backgroundColor = '#4400001A';
-
-        if (wrongDiv) {
-            wrongDiv.style.display = 'block';
-        }
-
-        // Show correct answer after a brief moment
-        setTimeout(() => {
-            if (wrongDiv) {
-                wrongDiv.innerHTML = `
-                    <div style="font-weight:600;margin-bottom:8px">The answer was: <strong>${state.trivia.currentQuestion.a}</strong></div>
-                    <div style="font-size:0.9em;margin-bottom:12px;color:#FCA5A5">Keep learning and try again tomorrow!</div>
-                    ${state.trivia.currentQuestion.links && state.trivia.currentQuestion.links.incorrect ? `
-                        <a href="${state.trivia.currentQuestion.links.incorrect}" target="_blank" style="display:inline-block;padding:8px 14px;background:#EF4444;color:white;text-decoration:none;border-radius:6px;font-size:0.85em;font-weight:600;transition:0.2s" onmouseover="this.style.background='#DC2626'" onmouseout="this.style.background='#EF4444'">
-                            📚 Learn This Topic
-                        </a>
-                    ` : ''}
-                `;
-            }
-        }, 800);
-    }
-}
+// (toggleTriviaHint and checkTriviaAnswer are defined in the trivia engine above)
 
 // ── READING PANEL ──────────────────────────────
 function renderBoardReading() {
