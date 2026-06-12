@@ -1125,6 +1125,51 @@
                 min-height: 140px;
             }
         }
+
+        /* Memory Tiles Game */
+        @keyframes tileFlip {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(0deg); }
+        }
+
+        @keyframes matchPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .memory-tile {
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            font-family: inherit;
+        }
+
+        .memory-tile:hover:not(:disabled) {
+            transform: scale(1.05) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .memory-tile:active:not(:disabled) {
+            transform: scale(0.98) !important;
+        }
+
+        .memory-tile.matched {
+            animation: matchPop 0.4s ease-out;
+        }
+
+        @media (max-width: 480px) {
+            #memory-grid {
+                grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)) !important;
+                gap: 8px !important;
+            }
+            .memory-tile {
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 0.65em !important;
+                padding: 4px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -3998,17 +4043,19 @@ window.renderMemoryGame = function(game) {
             width:fit-content;
             margin-left:auto;
             margin-right:auto;
+            padding:10px;
         ">
             ${game.tiles.map(tile => `
                 <button id="tile-${tile.id}"
-                    class="memory-tile"
+                    class="memory-tile${tile.matched ? ' matched' : ''}"
                     data-tile-id="${tile.id}"
+                    data-pair-id="${tile.pairId}"
                     onclick="flipMemoryTile('${tile.id}')"
                     style="
                         width:${tileSize}px;
                         height:${tileSize}px;
-                        background:${tile.matched ? '#DCFCE7' : tile.flipped ? 'white' : '#475569'};
-                        border:2px solid ${tile.matched ? '#16A34A' : '#64748B'};
+                        background:${tile.matched ? '#DCFCE7' : tile.flipped ? '#FFFFFF' : '#475569'};
+                        border:2px solid ${tile.matched ? '#10B981' : tile.flipped ? '#CBD5E1' : '#64748B'};
                         border-radius:8px;
                         color:${tile.matched ? '#94A3B8' : tile.flipped ? '#1E293B' : '#94A3B8'};
                         cursor:${tile.matched ? 'default' : 'pointer'};
@@ -4019,10 +4066,11 @@ window.renderMemoryGame = function(game) {
                         display:flex;
                         align-items:center;
                         justify-content:center;
-                        transition:all 0.3s ease;
+                        transition:all 0.2s ease;
                         line-height:1.2;
                         word-break:break-word;
                         overflow:hidden;
+                        box-shadow:${tile.matched ? '0 2px 8px rgba(16, 185, 129, 0.2)' : 'none'};
                     "
                     ${tile.matched ? 'disabled' : ''}
                 >
@@ -4120,13 +4168,17 @@ window.checkMemoryMatch = function(game) {
             const btn1 = document.getElementById(`tile-${tile1.id}`);
             const btn2 = document.getElementById(`tile-${tile2.id}`);
             if (btn1 && btn2) {
+                btn1.classList.add('matched');
+                btn2.classList.add('matched');
                 btn1.style.background = '#DCFCE7';
                 btn1.style.color = '#94A3B8';
-                btn1.style.borderColor = '#16A34A';
+                btn1.style.borderColor = '#10B981';
+                btn1.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
                 btn1.disabled = true;
                 btn2.style.background = '#DCFCE7';
                 btn2.style.color = '#94A3B8';
-                btn2.style.borderColor = '#16A34A';
+                btn2.style.borderColor = '#10B981';
+                btn2.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
                 btn2.disabled = true;
             }
 
