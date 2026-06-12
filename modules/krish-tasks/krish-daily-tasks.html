@@ -2389,6 +2389,23 @@ function renderTriviaPanel() {
     const triedBefore = wrongCount > 0;
 
     panel.innerHTML = `
+        <!-- Profile Section: Nickname & Avatar -->
+        <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:12px;padding:12px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:12px;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div style="font-size:2em">${profile.avatar}</div>
+                    <div>
+                        <div style="font-size:0.9em;color:#64748B;font-weight:600">${profile.name || 'Pick a nickname'}</div>
+                        <div style="font-size:0.8em;color:#94A3B8">Trivia Player</div>
+                    </div>
+                </div>
+                <button onclick="showProfileSettings()" style="
+                    background:#3B82F6;color:white;border:none;border-radius:8px;padding:6px 12px;
+                    font-size:0.85em;cursor:pointer;font-weight:600;transition:background 0.2s
+                " onmouseover="this.style.background='#2563EB'" onmouseout="this.style.background='#3B82F6'">Edit</button>
+            </div>
+        </div>
+
         <div class="sec-hdr">
             <div>
                 <div class="sec-title">🧠 Daily Trivia</div>
