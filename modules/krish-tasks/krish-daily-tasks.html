@@ -3597,13 +3597,32 @@ window.renderQuickFireGame = function(game) {
     modal.id = 'quickfire-modal';
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
 
+    // Determine which answer to hide if Hint boost is active
+    let hiddenAnswerIndex = -1;
+    if (game.selectedBoost === 'hint' && !game.boostUsed) {
+        // Find a wrong answer to hide
+        const wrongIndices = options
+            .map((opt, i) => opt !== q.correct ? i : -1)
+            .filter(i => i !== -1);
+        if (wrongIndices.length > 0) {
+            hiddenAnswerIndex = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+        }
+    }
+
+    const boostIndicator = game.selectedBoost ? `<div style="font-size:0.8em;color:#FCD34D;font-weight:800;padding:4px 8px;background:#7C2D12;border-radius:6px">${
+        game.selectedBoost === 'double_points' ? '2️⃣ 2× Active' :
+        game.selectedBoost === 'skip' && !game.boostUsed ? '⏭️ Skip Ready' :
+        game.selectedBoost === 'hint' && !game.boostUsed ? '💡 Hint Ready' : ''
+    }</div>` : '';
+
     const card = document.createElement('div');
     card.style.cssText = 'background:#1E293B;border-radius:20px;padding:24px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
     card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <h2 style="font-size:1.5em;font-weight:800;margin:0">⚡ Quick-Fire</h2>
                 <div style="font-size:0.9em;color:#94A3B8">${progress}/10</div>
+                ${boostIndicator}
             </div>
             <div style="text-align:right">
                 <div id="qf-timer" style="font-size:1.8em;font-weight:800;color:#10B981">15s</div>
@@ -3614,14 +3633,17 @@ window.renderQuickFireGame = function(game) {
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:16px">
             <div style="font-size:0.9em;color:#94A3B8;margin-bottom:8px">Question ${progress}/10</div>
             <div style="font-size:1.1em;font-weight:600;color:white;margin-bottom:16px;line-height:1.5">${q.question}</div>
+            ${hiddenAnswerIndex >= 0 ? '<div style="font-size:0.8em;color:#FCD34D;margin-bottom:8px">💡 1 incorrect answer hidden</div>' : ''}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 ${options.map((opt, i) => `
-                    <button class="qf-answer"
-                        data-answer="${opt.replace(/"/g,'&quot;')}"
-                        onclick="quickFireAnswerClick(this)"
-                        style="padding:12px;background:white;border:2px solid #E2E8F0;border-radius:10px;color:#1E293B;cursor:pointer;font-weight:600;font-size:0.9em;transition:all 0.2s;text-align:left">
-                        <span style="display:inline-block;background:#EEF2FF;color:#4338CA;border-radius:6px;padding:2px 8px;margin-right:8px;font-weight:800;font-size:0.85em">${String.fromCharCode(65+i)}</span>${opt}
-                    </button>
+                    ${i === hiddenAnswerIndex ? '<div style="padding:12px;background:#334155;border:2px solid #475569;border-radius:10px;color:#94A3B8;font-weight:600;font-size:0.9em;text-align:center">❌ Hidden</div>' : `
+                        <button class="qf-answer"
+                            data-answer="${opt.replace(/"/g,'&quot;')}"
+                            onclick="quickFireAnswerClick(this)"
+                            style="padding:12px;background:white;border:2px solid #E2E8F0;border-radius:10px;color:#1E293B;cursor:pointer;font-weight:600;font-size:0.9em;transition:all 0.2s;text-align:left">
+                            <span style="display:inline-block;background:#EEF2FF;color:#4338CA;border-radius:6px;padding:2px 8px;margin-right:8px;font-weight:800;font-size:0.85em">${String.fromCharCode(65+i)}</span>${opt}
+                        </button>
+                    `}
                 `).join('')}
             </div>
         </div>
@@ -3696,6 +3718,11 @@ window.quickFireAnswerClick = function(btn) {
     // Check for Skip boost (first answer auto-correct)
     const skipBoost = game.selectedBoost === 'skip' && !game.boostUsed;
     const answerIsCorrect = isCorrect || skipBoost;
+
+    // Mark Hint boost as used on first answer
+    if (game.selectedBoost === 'hint' && !game.boostUsed) {
+        game.boostUsed = true;
+    }
 
     // Highlight answer
     if (answerIsCorrect) {
@@ -3786,6 +3813,17 @@ window.showQuickFireResults = function(game, accuracy) {
     const maxCombo = Math.max(...game.answers.map(a => a.combo || 1));
     const modal = document.getElementById('quickfire-modal');
 
+    const boostSummary = game.selectedBoost ? `
+        <div style="background:#7C2D12;border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
+            <div style="font-size:0.9em;color:#FCD34D;font-weight:800">💫 Boost Used</div>
+            <div style="font-size:1em;color:#FED7AA;margin-top:4px">
+                ${game.selectedBoost === 'double_points' ? '2️⃣ Double Points — Score was 2×' :
+                  game.selectedBoost === 'skip' ? '⏭️ Skip — First answer auto-correct' :
+                  game.selectedBoost === 'hint' ? '💡 Hint — 1 incorrect answer hidden' : ''}
+            </div>
+        </div>
+    ` : '';
+
     modal.innerHTML = '';
     const card = document.createElement('div');
     card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center';
@@ -3811,6 +3849,8 @@ window.showQuickFireResults = function(game, accuracy) {
                 <div style="height:100%;background:#10B981;border-radius:2px;width:${(game.stats.correctCount/10)*100}%"></div>
             </div>
         </div>
+
+        ${boostSummary}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <button onclick="playAgainQuickFire()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
