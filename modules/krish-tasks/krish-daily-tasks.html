@@ -3445,17 +3445,12 @@ window.renderQuickFireGame = function(game) {
         return;
     }
 
-    const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
-    const timeRemaining = Math.max(0, 15 - elapsed);
     const progress = game.currentQuestionIndex + 1;
     const options = shuffleArr(q.options);
 
     const modal = document.getElementById('quickfire-modal') || document.createElement('div');
     modal.id = 'quickfire-modal';
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
-
-    const gameColor = timeRemaining > 10 ? '#10B981' : timeRemaining > 5 ? '#F59E0B' : '#EF4444';
-    const comboDisplay = game.combo > 1 ? `<div style="font-size:0.9em;color:#FCD34D;font-weight:800">🔥 ${game.combo}× Combo</div>` : '';
 
     const card = document.createElement('div');
     card.style.cssText = 'background:#1E293B;border-radius:20px;padding:24px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
@@ -3466,8 +3461,8 @@ window.renderQuickFireGame = function(game) {
                 <div style="font-size:0.9em;color:#94A3B8">${progress}/10</div>
             </div>
             <div style="text-align:right">
-                <div style="font-size:1.8em;font-weight:800;color:${gameColor}">${timeRemaining}s</div>
-                ${comboDisplay}
+                <div id="qf-timer" style="font-size:1.8em;font-weight:800;color:#10B981">15s</div>
+                <div id="qf-combo" style="font-size:0.9em;color:#FCD34D;font-weight:800;display:${game.combo > 1 ? 'block' : 'none'}">🔥 ${game.combo}× Combo</div>
             </div>
         </div>
 
@@ -3506,16 +3501,30 @@ window.renderQuickFireGame = function(game) {
         document.body.appendChild(modal);
     }
 
-    // Start timer if not already running
+    // Start timer update loop if not already running
     if (!window._quickFireTimer) {
+        game.questionStartTime = Date.now();
         window._quickFireTimer = setInterval(() => {
             const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
-            if (elapsed >= 15) {
+            const timeRemaining = Math.max(0, 15 - elapsed);
+
+            // Update only timer display (not entire game)
+            const timerEl = document.getElementById('qf-timer');
+            const comboEl = document.getElementById('qf-combo');
+            if (timerEl) {
+                const gameColor = timeRemaining > 10 ? '#10B981' : timeRemaining > 5 ? '#F59E0B' : '#EF4444';
+                timerEl.textContent = timeRemaining + 's';
+                timerEl.style.color = gameColor;
+            }
+            if (comboEl) {
+                comboEl.style.display = game.combo > 1 ? 'block' : 'none';
+                comboEl.textContent = `🔥 ${game.combo}× Combo`;
+            }
+
+            if (timeRemaining <= 0) {
                 clearInterval(window._quickFireTimer);
                 window._quickFireTimer = null;
                 quickFireTimeoutQuestion();
-            } else {
-                renderQuickFireGame(game);
             }
         }, 100);
     }
