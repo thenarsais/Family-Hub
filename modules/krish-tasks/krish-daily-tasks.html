@@ -3380,6 +3380,8 @@ window.startGameFromCard = function(gameId) {
             startQuickFireGame();
             break;
         case 'memory':
+            startMemoryGame();
+            break;
         case 'scramble':
             // Game implementations coming in future sprints
             console.log(`${gameId} game not yet implemented`);
@@ -3871,6 +3873,388 @@ window.backToTriviaFromQuickFire = function() {
     const modal = document.getElementById('quickfire-modal');
     if (modal) modal.remove();
     window._quickFireGame = null;
+};
+
+// ── MEMORY TILES GAME ENGINE ──────────────────────────
+window.startMemoryGame = function(difficulty = 'easy') {
+    // For Task 3.3, add difficulty selection modal
+    // For now, default to easy
+    window._memoryGame = initializeMemoryGame(difficulty);
+    renderMemoryGame(window._memoryGame);
+};
+
+window.initializeMemoryGame = function(difficulty) {
+    const config = {
+        easy: { pairs: 4, time: 120, cols: 4, rows: 2 },
+        medium: { pairs: 6, time: 180, cols: 4, rows: 3 },
+        hard: { pairs: 8, time: 240, cols: 4, rows: 4 }
+    };
+    const settings = config[difficulty] || config.easy;
+
+    // Select random Q&A pairs from trivia bank
+    const questionBank = TRIVIA_QUESTION_BANK;
+    const selectedPairs = [];
+    for (let i = 0; i < settings.pairs; i++) {
+        const q = questionBank[Math.floor(Math.random() * questionBank.length)];
+        selectedPairs.push({
+            pairId: i,
+            question: q.question,
+            answer: q.correct,
+            category: q.category
+        });
+    }
+
+    // Create tiles (each pair appears twice: question & answer)
+    const tiles = [];
+    selectedPairs.forEach(pair => {
+        tiles.push({
+            id: `${pair.pairId}-q`,
+            pairId: pair.pairId,
+            text: pair.question,
+            type: 'question',
+            flipped: false,
+            matched: false
+        });
+        tiles.push({
+            id: `${pair.pairId}-a`,
+            pairId: pair.pairId,
+            text: pair.answer,
+            type: 'answer',
+            flipped: false,
+            matched: false
+        });
+    });
+
+    // Shuffle tiles
+    tiles.sort(() => Math.random() - 0.5);
+
+    return {
+        gameId: 'memory',
+        difficulty: difficulty,
+        gameState: 'playing',
+        tiles: tiles,
+        settings: settings,
+        score: 0,
+        combo: 1,
+        matchesFound: 0,
+        totalMatches: settings.pairs,
+        attempts: 0,
+        flippedTiles: [],
+        timerStartTime: Date.now(),
+        stats: {
+            pairs_matched: 0,
+            total_pairs: settings.pairs,
+            time_used: 0
+        }
+    };
+};
+
+window.renderMemoryGame = function(game) {
+    if (!game) return;
+
+    const { cols, rows } = game.settings;
+    const tileSize = game.difficulty === 'easy' ? 70 : game.difficulty === 'medium' ? 60 : 50;
+    const gap = 10;
+    const gridWidth = (tileSize + gap) * cols;
+
+    const modal = document.getElementById('memory-modal') || document.createElement('div');
+    modal.id = 'memory-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:24px;max-width:700px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
+
+    // Header
+    const diffLabel = { easy: '🟢 Easy', medium: '🟡 Medium', hard: '🔴 Hard' }[game.difficulty];
+    const headerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div>
+                <h2 style="font-size:1.5em;font-weight:800;margin:0">🧠 Memory Tiles</h2>
+                <div style="font-size:0.85em;color:#94A3B8">${diffLabel}</div>
+            </div>
+            <div style="text-align:right">
+                <div id="mem-timer" style="font-size:1.8em;font-weight:800;color:#10B981">${game.settings.time}s</div>
+                <div id="mem-combo" style="font-size:0.9em;color:#FCD34D;font-weight:800;display:${game.combo > 1 ? 'block' : 'none'}">🔥 ${game.combo}× Combo</div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div style="background:#064E3B;padding:12px;border-radius:10px;text-align:center">
+                <div style="font-size:0.9em;color:#D1FAE5">Score</div>
+                <div id="mem-score" style="font-size:1.8em;font-weight:800;color:#10B981">${game.score}</div>
+            </div>
+            <div style="background:#1E3A8A;padding:12px;border-radius:10px;text-align:center">
+                <div style="font-size:0.9em;color:#DBEAFE">Progress</div>
+                <div style="font-size:1.4em;font-weight:800;color:#60A5FA">${game.matchesFound}/${game.totalMatches}</div>
+            </div>
+        </div>
+
+        <!-- Tile Grid -->
+        <div id="memory-grid" style="
+            display:grid;
+            grid-template-columns:repeat(${cols}, 1fr);
+            gap:${gap}px;
+            margin:20px auto;
+            width:fit-content;
+            margin-left:auto;
+            margin-right:auto;
+        ">
+            ${game.tiles.map(tile => `
+                <button id="tile-${tile.id}"
+                    class="memory-tile"
+                    data-tile-id="${tile.id}"
+                    onclick="flipMemoryTile('${tile.id}')"
+                    style="
+                        width:${tileSize}px;
+                        height:${tileSize}px;
+                        background:${tile.matched ? '#DCFCE7' : tile.flipped ? 'white' : '#475569'};
+                        border:2px solid ${tile.matched ? '#16A34A' : '#64748B'};
+                        border-radius:8px;
+                        color:${tile.matched ? '#94A3B8' : tile.flipped ? '#1E293B' : '#94A3B8'};
+                        cursor:${tile.matched ? 'default' : 'pointer'};
+                        font-weight:600;
+                        font-size:${tileSize > 60 ? '0.85em' : '0.75em'};
+                        padding:8px;
+                        text-align:center;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        transition:all 0.3s ease;
+                        line-height:1.2;
+                        word-break:break-word;
+                        overflow:hidden;
+                    "
+                    ${tile.matched ? 'disabled' : ''}
+                >
+                    ${tile.flipped || tile.matched ? tile.text : '?'}
+                </button>
+            `).join('')}
+        </div>
+
+        <div style="text-align:center;margin-top:16px;font-size:0.9em;color:#94A3B8">
+            Attempts: <span style="font-weight:800;color:white">${game.attempts}/${Math.ceil((game.settings.pairs * 2) / 2)}</span>
+        </div>
+
+        <button onclick="quitMemoryGame()" style="width:100%;margin-top:16px;padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.9em">Quit Game</button>
+    `;
+
+    card.innerHTML = headerHTML;
+    modal.innerHTML = '';
+    modal.appendChild(card);
+
+    if (!document.getElementById('memory-modal')) {
+        document.body.appendChild(modal);
+    }
+
+    // Start timer if not already running
+    if (!window._memoryTimer) {
+        game.timerStartTime = Date.now();
+        window._memoryTimer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - game.timerStartTime) / 1000);
+            const timeRemaining = Math.max(0, game.settings.time - elapsed);
+
+            const timerEl = document.getElementById('mem-timer');
+            if (timerEl) {
+                const gameColor = timeRemaining > game.settings.time / 2 ? '#10B981' : timeRemaining > game.settings.time / 4 ? '#F59E0B' : '#EF4444';
+                timerEl.textContent = timeRemaining + 's';
+                timerEl.style.color = gameColor;
+            }
+
+            if (timeRemaining <= 0) {
+                clearInterval(window._memoryTimer);
+                window._memoryTimer = null;
+                endMemoryGame(game, false);
+            }
+        }, 100);
+    }
+};
+
+window.flipMemoryTile = function(tileId) {
+    const game = window._memoryGame;
+    const tile = game.tiles.find(t => t.id === tileId);
+
+    if (!tile || tile.matched || game.flippedTiles.length >= 2) return;
+
+    // Flip tile
+    tile.flipped = true;
+    game.flippedTiles.push(tile);
+
+    // Update button display
+    const btn = document.getElementById(`tile-${tileId}`);
+    if (btn) {
+        btn.textContent = tile.text;
+        btn.style.background = 'white';
+        btn.style.color = '#1E293B';
+    }
+
+    // Check for match if 2 tiles flipped
+    if (game.flippedTiles.length === 2) {
+        game.attempts++;
+        checkMemoryMatch(game);
+    }
+};
+
+window.checkMemoryMatch = function(game) {
+    const [tile1, tile2] = game.flippedTiles;
+    const isMatch = tile1.pairId === tile2.pairId;
+
+    setTimeout(() => {
+        if (isMatch) {
+            // Match found!
+            tile1.matched = true;
+            tile2.matched = true;
+            game.matchesFound++;
+            game.combo++;
+            game.stats.pairs_matched++;
+
+            // Calculate points
+            const elapsed = Math.floor((Date.now() - game.timerStartTime) / 1000);
+            const timeRemaining = Math.max(0, game.settings.time - elapsed);
+            const timeBonus = timeRemaining / game.settings.time;
+            const basePoints = 50;
+            const comboMultiplier = game.combo > 2 ? 1.5 : 1;
+            const pointsAwarded = Math.max(0, Math.floor(basePoints * timeBonus * comboMultiplier));
+            game.score += pointsAwarded;
+
+            // Update UI
+            const btn1 = document.getElementById(`tile-${tile1.id}`);
+            const btn2 = document.getElementById(`tile-${tile2.id}`);
+            if (btn1 && btn2) {
+                btn1.style.background = '#DCFCE7';
+                btn1.style.color = '#94A3B8';
+                btn1.style.borderColor = '#16A34A';
+                btn1.disabled = true;
+                btn2.style.background = '#DCFCE7';
+                btn2.style.color = '#94A3B8';
+                btn2.style.borderColor = '#16A34A';
+                btn2.disabled = true;
+            }
+
+            // Update score display
+            const scoreEl = document.getElementById('mem-score');
+            if (scoreEl) scoreEl.textContent = game.score;
+
+            // Update progress
+            const progressEl = document.querySelectorAll('[style*="1E3A8A"]')[0];
+            if (progressEl) {
+                const div = progressEl.querySelector('div:last-child');
+                if (div) div.textContent = `${game.matchesFound}/${game.totalMatches}`;
+            }
+
+            // Update combo display
+            const comboEl = document.getElementById('mem-combo');
+            if (comboEl) {
+                comboEl.style.display = game.combo > 1 ? 'block' : 'none';
+                comboEl.textContent = `🔥 ${game.combo}× Combo`;
+            }
+
+            // Check if game won
+            if (game.matchesFound === game.totalMatches) {
+                clearInterval(window._memoryTimer);
+                window._memoryTimer = null;
+                setTimeout(() => endMemoryGame(game, true), 500);
+            }
+        } else {
+            // No match - flip back
+            game.combo = 1;
+            tile1.flipped = false;
+            tile2.flipped = false;
+
+            // Flash red
+            const btn1 = document.getElementById(`tile-${tile1.id}`);
+            const btn2 = document.getElementById(`tile-${tile2.id}`);
+            if (btn1 && btn2) {
+                btn1.style.background = '#FEE2E2';
+                btn2.style.background = '#FEE2E2';
+                setTimeout(() => {
+                    btn1.style.background = '#475569';
+                    btn1.textContent = '?';
+                    btn1.style.color = '#94A3B8';
+                    btn2.style.background = '#475569';
+                    btn2.textContent = '?';
+                    btn2.style.color = '#94A3B8';
+                }, 200);
+            }
+
+            // Update combo display
+            const comboEl = document.getElementById('mem-combo');
+            if (comboEl) comboEl.style.display = 'none';
+        }
+
+        game.flippedTiles = [];
+    }, isMatch ? 500 : 1000);
+};
+
+window.quitMemoryGame = function() {
+    if (window._memoryTimer) {
+        clearInterval(window._memoryTimer);
+        window._memoryTimer = null;
+    }
+    const modal = document.getElementById('memory-modal');
+    if (modal) modal.remove();
+    window._memoryGame = null;
+};
+
+window.endMemoryGame = function(game, won) {
+    clearInterval(window._memoryTimer);
+    window._memoryTimer = null;
+
+    // Save stats
+    const elapsed = Math.floor((Date.now() - game.timerStartTime) / 1000);
+    game.stats.time_used = elapsed;
+    recordGamePlay('memory', game.score, won);
+
+    showMemoryResults(game, won);
+};
+
+window.showMemoryResults = function(game, won) {
+    const modal = document.getElementById('memory-modal');
+    const timeUsed = `${Math.floor(game.stats.time_used / 60)}m ${game.stats.time_used % 60}s`;
+    const diffLabel = { easy: '🟢 Easy', medium: '🟡 Medium', hard: '🔴 Hard' }[game.difficulty];
+
+    modal.innerHTML = '';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center';
+    card.innerHTML = `
+        <div style="font-size:3em;margin-bottom:16px">${won ? '🎉' : '⏱️'}</div>
+        <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Game ${won ? 'Won!' : 'Over'}</h2>
+        <div style="font-size:3.5em;font-weight:900;color:#10B981;margin-bottom:24px">${game.score}</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+            <div style="background:#064E3B;padding:16px;border-radius:12px">
+                <div style="font-size:0.9em;color:#D1FAE5">Pairs Matched</div>
+                <div style="font-size:1.8em;font-weight:800;color:#10B981">${game.matchesFound}/${game.totalMatches}</div>
+            </div>
+            <div style="background:#1E3A8A;padding:16px;border-radius:12px">
+                <div style="font-size:0.9em;color:#DBEAFE">Time Used</div>
+                <div style="font-size:1.4em;font-weight:800;color:#60A5FA">${timeUsed}</div>
+            </div>
+        </div>
+
+        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:center">
+            <div style="font-size:0.9em;color:#94A3B8;margin-bottom:8px">Difficulty: ${diffLabel}</div>
+            ${game.combo > 1 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800">Max Combo: 🔥 ${game.combo}×</div>` : ''}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button onclick="playAgainMemory()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
+            <button onclick="backToTriviaFromMemory()" style="padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
+        </div>
+    `;
+
+    modal.appendChild(card);
+};
+
+window.playAgainMemory = function() {
+    const difficulty = window._memoryGame?.difficulty || 'easy';
+    window._memoryGame = initializeMemoryGame(difficulty);
+    renderMemoryGame(window._memoryGame);
+};
+
+window.backToTriviaFromMemory = function() {
+    const modal = document.getElementById('memory-modal');
+    if (modal) modal.remove();
+    window._memoryGame = null;
 };
 
 function buildDefaultState() {
