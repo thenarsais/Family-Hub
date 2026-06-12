@@ -3431,7 +3431,152 @@ window.initializeQuickFireGame = function() {
 };
 
 window.startQuickFireGame = function() {
-    // For now, skip boost modal (Task 2.2) - just start the game
+    // Show boost selection modal before starting game
+    showQuickFireBoostModal();
+};
+
+window.showQuickFireBoostModal = function() {
+    const boosts = state.boosts || { double_points: 0, skip: 0, extra_time: 0, hint: 0, combo_freeze: 0 };
+
+    const boostOptions = [
+        { id: 'hint', name: 'Hint', icon: '💡', count: boosts.hint, effect: 'Reveal 1 incorrect answer' },
+        { id: 'double_points', name: 'Double Points', icon: '2️⃣', count: boosts.double_points, effect: '2× your score' },
+        { id: 'skip', name: 'Skip Question', icon: '⏭️', count: boosts.skip, effect: 'Auto-correct 1 question' },
+    ];
+
+    const modal = document.createElement('div');
+    modal.id = 'boost-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.innerHTML = `
+        <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">⚡ Quick-Fire</h2>
+        <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your score?</p>
+
+        <div id="boost-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+            ${boostOptions.map(boost => `
+                <button class="boost-option"
+                    data-boost="${boost.id}"
+                    onclick="selectBoost('${boost.id}')"
+                    style="
+                        padding:16px;
+                        background:${boost.count > 0 ? '#0F172A' : '#334155'};
+                        border:2px solid #475569;
+                        border-radius:12px;
+                        color:${boost.count > 0 ? 'white' : '#94A3B8'};
+                        cursor:${boost.count > 0 ? 'pointer' : 'not-allowed'};
+                        text-align:left;
+                        font-weight:600;
+                        transition:all 0.2s;
+                        opacity:${boost.count > 0 ? '1' : '0.6'};
+                    "
+                    ${boost.count === 0 ? 'disabled' : ''}
+                    onmouseover="if(${boost.count > 0}) this.style.background='#1E293B'"
+                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : '#334155'}'"
+                >
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <div style="display:flex;align-items:center;gap:12px">
+                            <span style="font-size:1.5em">${boost.icon}</span>
+                            <div>
+                                <div style="font-weight:800">${boost.name}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? '#94A3B8' : '#64748B'}">Count: ${boost.count}</div>
+                            </div>
+                        </div>
+                        ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
+                    </div>
+                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : '#64748B'}">${boost.effect}</div>
+                </button>
+            `).join('')}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <button onclick="startQuickFireWithoutBoost()" style="
+                padding:14px;
+                background:#475569;
+                border:none;
+                color:white;
+                border-radius:10px;
+                cursor:pointer;
+                font-weight:700;
+                font-size:0.95em;
+                transition:all 0.2s;
+            "
+            onmouseover="this.style.background='#64748B'"
+            onmouseout="this.style.background='#475569'">
+                Play without boost
+            </button>
+            <button id="play-with-boost" onclick="startQuickFireWithBoost()" style="
+                padding:14px;
+                background:#64748B;
+                border:none;
+                color:#94A3B8;
+                border-radius:10px;
+                cursor:not-allowed;
+                font-weight:700;
+                font-size:0.95em;
+                transition:all 0.2s;
+                opacity:0.6;
+            " disabled>
+                Play with boost
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+};
+
+window.selectBoost = function(boostId) {
+    // Clear previous selection
+    document.querySelectorAll('.boost-option').forEach(btn => {
+        btn.style.borderColor = '#475569';
+        btn.style.background = '#0F172A';
+    });
+
+    // Highlight selected
+    const selected = document.querySelector(`[data-boost="${boostId}"]`);
+    if (selected) {
+        selected.style.borderColor = '#0EA5E9';
+        selected.style.background = '#0F172A';
+    }
+
+    // Enable "Play with boost" button
+    const playBtn = document.getElementById('play-with-boost');
+    playBtn.style.background = '#0EA5E9';
+    playBtn.style.color = 'white';
+    playBtn.style.cursor = 'pointer';
+    playBtn.style.opacity = '1';
+    playBtn.disabled = false;
+    playBtn.innerHTML = `Play with ${boostId}`;
+    playBtn.onclick = () => startQuickFireWithBoost(boostId);
+
+    // Store selection
+    window._selectedBoost = boostId;
+};
+
+window.startQuickFireWithBoost = function(boostId) {
+    boostId = boostId || window._selectedBoost;
+    if (!boostId) return;
+
+    // Deduct boost from inventory
+    state.boosts[boostId]--;
+    saveState();
+
+    // Close modal and start game
+    const modal = document.getElementById('boost-modal');
+    if (modal) modal.remove();
+
+    // Initialize game with boost
+    window._quickFireGame = initializeQuickFireGame();
+    window._quickFireGame.selectedBoost = boostId;
+    renderQuickFireGame(window._quickFireGame);
+};
+
+window.startQuickFireWithoutBoost = function() {
+    // Close modal and start game without boost
+    const modal = document.getElementById('boost-modal');
+    if (modal) modal.remove();
+
     window._quickFireGame = initializeQuickFireGame();
     renderQuickFireGame(window._quickFireGame);
 };
@@ -3548,33 +3693,42 @@ window.quickFireAnswerClick = function(btn) {
     });
     btn.style.opacity = '1';
 
+    // Check for Skip boost (first answer auto-correct)
+    const skipBoost = game.selectedBoost === 'skip' && !game.boostUsed;
+    const answerIsCorrect = isCorrect || skipBoost;
+
     // Highlight answer
-    if (isCorrect) {
+    if (answerIsCorrect) {
         btn.style.background = '#DCFCE7';
         btn.style.borderColor = '#16A34A';
         btn.style.color = '#14532D';
         game.combo++;
         game.stats.correctCount++;
+        if (skipBoost) {
+            game.boostUsed = true;
+        }
     } else {
         btn.style.background = '#FEE2E2';
         btn.style.borderColor = '#DC2626';
         game.combo = 1; // Reset combo on wrong
     }
 
-    // Calculate points
+    // Calculate points with Double Points boost if active
     const basePoints = 10;
     const timeBonus = (15 - timeTaken) / 15;
     const comboMultiplier = game.combo;
-    const pointsAwarded = Math.max(0, Math.floor(basePoints * comboMultiplier * timeBonus));
+    const doublePointsMultiplier = game.selectedBoost === 'double_points' ? 2 : 1;
+    const pointsAwarded = Math.max(0, Math.floor(basePoints * comboMultiplier * timeBonus * doublePointsMultiplier));
 
     game.score += pointsAwarded;
     game.answers.push({
         questionId: q.uuid,
         selected,
-        correct: isCorrect,
+        correct: answerIsCorrect,
         timeTaken,
         combo: comboMultiplier,
-        pointsAwarded
+        pointsAwarded,
+        boostApplied: skipBoost ? 'skip' : null
     });
 
     // Wait 800ms then advance
