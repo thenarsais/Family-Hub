@@ -1681,8 +1681,8 @@ function showOnboardingWizard() {
                 <p style="color:#64748B;font-size:0.95em">Let's set up your profile.</p>
             </div>
             <div style="margin-bottom:18px">
-                <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">What's your name?</label>
-                <input type="text" id="onboarding-name" placeholder="Your name..." value="${state.trivia.onboarding.name || ''}" style="
+                <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Pick a nickname</label>
+                <input type="text" id="onboarding-name" placeholder="e.g. Quiz Master, Brain..." value="${state.trivia.onboarding.name || ''}" style="
                     width:100%;padding:10px 12px;border:2px solid #E2E8F0;border-radius:8px;
                     font-size:1em;color:#1E293B
                 " autofocus>
@@ -1845,7 +1845,7 @@ function showProfileSettings() {
     `;
 
     const profile = state.trivia.onboarding;
-    const closeModal = () => document.getElementById('profile-modal')?.remove();
+    const closeModal = () => document.querySelectorAll('#profile-modal').forEach(m => m.remove());
 
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
