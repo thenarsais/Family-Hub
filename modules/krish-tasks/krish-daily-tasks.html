@@ -2956,8 +2956,9 @@ window.checkGameUnlocks = function() {
     if (!state.trivia) return [];
     if (!state.games) state.games = { unlocked: [], stats: {} };
 
-    // Get current trivia stats
-    const correctCount = triviaProgress?.correctCount || 0;
+    // Get current trivia stats - calculate from categoryPerformance
+    const cats = triviaProgress?.categoryPerformance || {};
+    const correctCount = Object.values(cats).reduce((sum, cat) => sum + (cat.correct || 0), 0);
     const totalAnswered = triviaProgress?.totalAnswered || 1;
     const accuracy = totalAnswered > 0 ? correctCount / totalAnswered : 0;
 
@@ -2989,10 +2990,12 @@ window.getGameUnlockProgress = function(gameId) {
     if (!state.trivia) return { current: 0, threshold: 1, pct: 0 };
     if (!GAME_UNLOCK_THRESHOLDS[gameId]) return { current: 0, threshold: 1, pct: 0 };
 
-    const correctCount = triviaProgress?.correctCount || 0;
+    // Calculate total correct from categoryPerformance
+    const cats = triviaProgress?.categoryPerformance || {};
+    const correctCount = Object.values(cats).reduce((sum, cat) => sum + (cat.correct || 0), 0);
     const threshold = GAME_UNLOCK_THRESHOLDS[gameId].correctCount;
     const current = Math.min(correctCount, threshold);
-    const pct = Math.round((current / threshold) * 100);
+    const pct = threshold > 0 ? (current / threshold) : 0;
 
     return { current, threshold, pct };
 };
