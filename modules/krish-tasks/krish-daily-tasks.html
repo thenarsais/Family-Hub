@@ -2766,6 +2766,25 @@ function renderTriviaPanel() {
             ">🔥 Legend ${!state.trivia.difficulty.legendUnlocked ? '(80%)' : ''}</button>
         </div>
 
+        <!-- Boost Points Display -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;padding:10px;background:#F8FAFC;border-radius:10px;justify-content:center;flex-wrap:wrap">
+            ${(() => {
+                const boosts = state.boosts || { double_points: 0, skip: 0, extra_time: 0, hint: 0, combo_freeze: 0 };
+                const boostItems = [
+                    { icon: '2️⃣', name: 'Double Points', key: 'double_points' },
+                    { icon: '⏭️', name: 'Skip', key: 'skip' },
+                    { icon: '⏱️', name: 'Extra Time', key: 'extra_time' },
+                    { icon: '💡', name: 'Hint', key: 'hint' }
+                ];
+                return boostItems.map(item => `
+                    <div style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:white;border:1px solid #CBD5E1;border-radius:8px;font-size:0.8em;color:#475569">
+                        <span style="font-size:1em">${item.icon}</span>
+                        <span style="font-weight:600">${boosts[item.key] || 0}</span>
+                    </div>
+                `).join('');
+            })()}
+        </div>
+
         <!-- Phase 2: Three Streak Metrics -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;padding:0 0">
             <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:10px;text-align:center">
