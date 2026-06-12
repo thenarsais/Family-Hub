@@ -3377,12 +3377,296 @@ window.startGameFromCard = function(gameId) {
             startWordleGame();
             break;
         case 'quickfire':
+            startQuickFireGame();
+            break;
         case 'memory':
         case 'scramble':
             // Game implementations coming in future sprints
             console.log(`${gameId} game not yet implemented`);
             break;
     }
+};
+
+// ── QUICK-FIRE GAME ENGINE ────────────────────────────
+window.initializeQuickFireGame = function() {
+    // Select 10 random questions (avoid recently answered)
+    const pool = TRIVIA_QUESTION_BANK.filter(q => {
+        // Filter by difficulty mode
+        if (state.trivia.difficulty.currentMode === 'rookie') {
+            return q.difficulty === 'easy';
+        } else if (state.trivia.difficulty.currentMode === 'pro') {
+            return q.difficulty === 'medium';
+        } else {
+            return q.difficulty === 'hard';
+        }
+    });
+
+    // Exclude recently answered questions
+    const exclusions = (triviaProgress?.exclusionList || []).map(e => e.questionId);
+    const available = pool.filter(q => !exclusions.includes(q.uuid));
+
+    // If not enough available, use pool as fallback
+    const questions = (available.length >= 10 ? available : pool)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 10);
+
+    return {
+        gameId: 'quickfire',
+        gameState: 'playing', // playing | won | lost
+        questions: questions,
+        currentQuestionIndex: 0,
+        score: 0,
+        answers: [], // Array of { questionId, selected, correct, timeTaken, combo, pointsAwarded }
+        combo: 1, // Starts at 1×
+        timerStartTime: Date.now(),
+        questionStartTime: Date.now(),
+        selectedBoost: null,
+        boostUsed: false,
+        stats: {
+            correctCount: 0,
+            wrongCount: 0,
+            totalTime: 0
+        }
+    };
+};
+
+window.startQuickFireGame = function() {
+    // For now, skip boost modal (Task 2.2) - just start the game
+    window._quickFireGame = initializeQuickFireGame();
+    renderQuickFireGame(window._quickFireGame);
+};
+
+window.renderQuickFireGame = function(game) {
+    if (!game) return;
+
+    const q = game.questions[game.currentQuestionIndex];
+    if (!q) {
+        endQuickFireGame(game);
+        return;
+    }
+
+    const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
+    const timeRemaining = Math.max(0, 15 - elapsed);
+    const progress = game.currentQuestionIndex + 1;
+    const options = shuffleArr(q.options);
+
+    const modal = document.getElementById('quickfire-modal') || document.createElement('div');
+    modal.id = 'quickfire-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
+
+    const gameColor = timeRemaining > 10 ? '#10B981' : timeRemaining > 5 ? '#F59E0B' : '#EF4444';
+    const comboDisplay = game.combo > 1 ? `<div style="font-size:0.9em;color:#FCD34D;font-weight:800">🔥 ${game.combo}× Combo</div>` : '';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:24px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
+    card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:8px">
+                <h2 style="font-size:1.5em;font-weight:800;margin:0">⚡ Quick-Fire</h2>
+                <div style="font-size:0.9em;color:#94A3B8">${progress}/10</div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-size:1.8em;font-weight:800;color:${gameColor}">${timeRemaining}s</div>
+                ${comboDisplay}
+            </div>
+        </div>
+
+        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:16px">
+            <div style="font-size:0.9em;color:#94A3B8;margin-bottom:8px">Question ${progress}/10</div>
+            <div style="font-size:1.1em;font-weight:600;color:white;margin-bottom:16px;line-height:1.5">${q.question}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                ${options.map((opt, i) => `
+                    <button class="qf-answer"
+                        data-answer="${opt.replace(/"/g,'&quot;')}"
+                        onclick="quickFireAnswerClick(this)"
+                        style="padding:12px;background:white;border:2px solid #E2E8F0;border-radius:10px;color:#1E293B;cursor:pointer;font-weight:600;font-size:0.9em;transition:all 0.2s;text-align:left">
+                        <span style="display:inline-block;background:#EEF2FF;color:#4338CA;border-radius:6px;padding:2px 8px;margin-right:8px;font-weight:800;font-size:0.85em">${String.fromCharCode(65+i)}</span>${opt}
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+            <div style="background:#064E3B;padding:12px;border-radius:10px;text-align:center">
+                <div style="font-size:0.9em;color:#D1FAE5">Score</div>
+                <div style="font-size:1.8em;font-weight:800;color:#10B981">${game.score}</div>
+            </div>
+            <div style="background:#1E3A8A;padding:12px;border-radius:10px;text-align:center">
+                <div style="font-size:0.9em;color:#DBEAFE">Progress</div>
+                <div style="font-size:1.4em;font-weight:800;color:#60A5FA">${game.stats.correctCount}/${progress}</div>
+            </div>
+        </div>
+
+        <button onclick="quitQuickFireGame()" style="width:100%;margin-top:16px;padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.9em">Quit Game</button>
+    `;
+
+    modal.innerHTML = '';
+    modal.appendChild(card);
+    if (!document.getElementById('quickfire-modal')) {
+        document.body.appendChild(modal);
+    }
+
+    // Start timer if not already running
+    if (!window._quickFireTimer) {
+        window._quickFireTimer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
+            if (elapsed >= 15) {
+                clearInterval(window._quickFireTimer);
+                window._quickFireTimer = null;
+                quickFireTimeoutQuestion();
+            } else {
+                renderQuickFireGame(game);
+            }
+        }, 100);
+    }
+};
+
+window.quickFireAnswerClick = function(btn) {
+    if (btn.dataset.locked) return;
+
+    const game = window._quickFireGame;
+    const q = game.questions[game.currentQuestionIndex];
+    const selected = btn.dataset.answer;
+    const isCorrect = selected === q.correct;
+    const timeTaken = Math.floor((Date.now() - game.questionStartTime) / 1000);
+
+    // Lock all buttons
+    document.querySelectorAll('.qf-answer').forEach(b => {
+        b.dataset.locked = '1';
+        b.onclick = null;
+        b.style.cursor = 'default';
+        b.style.opacity = '0.5';
+    });
+    btn.style.opacity = '1';
+
+    // Highlight answer
+    if (isCorrect) {
+        btn.style.background = '#DCFCE7';
+        btn.style.borderColor = '#16A34A';
+        btn.style.color = '#14532D';
+        game.combo++;
+        game.stats.correctCount++;
+    } else {
+        btn.style.background = '#FEE2E2';
+        btn.style.borderColor = '#DC2626';
+        game.combo = 1; // Reset combo on wrong
+    }
+
+    // Calculate points
+    const basePoints = 10;
+    const timeBonus = (15 - timeTaken) / 15;
+    const comboMultiplier = game.combo;
+    const pointsAwarded = Math.max(0, Math.floor(basePoints * comboMultiplier * timeBonus));
+
+    game.score += pointsAwarded;
+    game.answers.push({
+        questionId: q.uuid,
+        selected,
+        correct: isCorrect,
+        timeTaken,
+        combo: comboMultiplier,
+        pointsAwarded
+    });
+
+    // Wait 800ms then advance
+    setTimeout(() => {
+        game.currentQuestionIndex++;
+        clearInterval(window._quickFireTimer);
+        window._quickFireTimer = null;
+        if (game.currentQuestionIndex >= 10) {
+            endQuickFireGame(game);
+        } else {
+            game.questionStartTime = Date.now();
+            renderQuickFireGame(game);
+        }
+    }, 800);
+};
+
+window.quickFireTimeoutQuestion = function() {
+    const game = window._quickFireGame;
+    game.combo = 1; // Reset combo on timeout
+    game.currentQuestionIndex++;
+
+    if (game.currentQuestionIndex >= 10) {
+        endQuickFireGame(game);
+    } else {
+        game.questionStartTime = Date.now();
+        renderQuickFireGame(game);
+    }
+};
+
+window.quitQuickFireGame = function() {
+    if (window._quickFireTimer) {
+        clearInterval(window._quickFireTimer);
+        window._quickFireTimer = null;
+    }
+    const modal = document.getElementById('quickfire-modal');
+    if (modal) modal.remove();
+    window._quickFireGame = null;
+};
+
+window.endQuickFireGame = function(game) {
+    clearInterval(window._quickFireTimer);
+    window._quickFireTimer = null;
+
+    const accuracy = game.stats.correctCount / 10;
+    const won = game.stats.correctCount >= 7; // Arbitrary threshold for "win"
+
+    // Save game stats
+    recordGamePlay('quickfire', game.score, won);
+
+    // Show results
+    showQuickFireResults(game, accuracy);
+};
+
+window.showQuickFireResults = function(game, accuracy) {
+    const maxCombo = Math.max(...game.answers.map(a => a.combo || 1));
+    const modal = document.getElementById('quickfire-modal');
+
+    modal.innerHTML = '';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center';
+    card.innerHTML = `
+        <div style="font-size:3em;margin-bottom:16px">${game.stats.correctCount >= 7 ? '🎉' : '🎮'}</div>
+        <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Final Score</h2>
+        <div style="font-size:3.5em;font-weight:900;color:#10B981;margin-bottom:24px">${game.score}</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+            <div style="background:#064E3B;padding:16px;border-radius:12px">
+                <div style="font-size:0.9em;color:#D1FAE5">Accuracy</div>
+                <div style="font-size:1.8em;font-weight:800;color:#10B981">${(accuracy * 100).toFixed(0)}%</div>
+            </div>
+            <div style="background:#1E3A8A;padding:16px;border-radius:12px">
+                <div style="font-size:0.9em;color:#DBEAFE">Max Combo</div>
+                <div style="font-size:1.8em;font-weight:800;color:#60A5FA">🔥 ${maxCombo}×</div>
+            </div>
+        </div>
+
+        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
+            <div style="font-size:0.9em;color:#94A3B8;margin-bottom:12px">Correct: ${game.stats.correctCount}/10</div>
+            <div style="height:4px;background:#334155;border-radius:2px">
+                <div style="height:100%;background:#10B981;border-radius:2px;width:${(game.stats.correctCount/10)*100}%"></div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button onclick="playAgainQuickFire()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
+            <button onclick="backToTriviaFromQuickFire()" style="padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
+        </div>
+    `;
+
+    modal.appendChild(card);
+};
+
+window.playAgainQuickFire = function() {
+    window._quickFireGame = initializeQuickFireGame();
+    renderQuickFireGame(window._quickFireGame);
+};
+
+window.backToTriviaFromQuickFire = function() {
+    const modal = document.getElementById('quickfire-modal');
+    if (modal) modal.remove();
+    window._quickFireGame = null;
 };
 
 function buildDefaultState() {
