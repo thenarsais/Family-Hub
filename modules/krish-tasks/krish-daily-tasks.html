@@ -1774,17 +1774,22 @@ window.completeOnboardingStep1 = function() {
 };
 
 window.finishOnboarding = function() {
+    console.log('finishOnboarding called');
     try {
         const ttsToggle = document.getElementById('tts-toggle');
         state.trivia.onboarding.showTTS = ttsToggle ? ttsToggle.checked : true;
         state.trivia.onboarding.completed = true;
         state.trivia.onboarding.setupDate = todayStr();
         saveState();
+        console.log('State saved, completed =', state.trivia.onboarding.completed);
 
         const modal = document.getElementById('onboarding-modal');
+        console.log('Modal found:', !!modal);
         if (modal) modal.remove();
 
-        renderTriviaPanel();
+        console.log('About to render trivia panel');
+        // Small delay to ensure state is fully saved before rendering
+        setTimeout(() => renderTriviaPanel(), 10);
     } catch (e) {
         console.error('Error finishing onboarding:', e);
     }
