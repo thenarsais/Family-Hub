@@ -1312,7 +1312,6 @@
         <button class="b-tab" data-tab="homework" onclick="switchTab('homework')"><span class="ti">📚</span>Homework  </button>
         <button class="b-tab" data-tab="kungfu"   onclick="switchTab('kungfu')">  <span class="ti">🥋</span>Kung Fu  </button>
         <button class="b-tab" data-tab="trivia"   onclick="switchTab('trivia')">   <span class="ti">🧠</span>Trivia   </button>
-        <button class="b-tab" data-tab="games"   onclick="switchTab('games')">   <span class="ti">🎮</span>Games   </button>
         <button class="b-tab" data-tab="reading"  onclick="switchTab('reading')">  <span class="ti">📚</span>Reading  </button>
         <button class="b-tab" data-tab="gujarati" onclick="switchTab('gujarati')"><span class="ti">🇮🇳</span>Gujarati </button>
         <button class="b-tab" data-tab="calendar" onclick="switchTab('calendar')"><span class="ti">📅</span>Calendar  </button>
@@ -1332,9 +1331,6 @@
 
     <!-- TRIVIA PANEL -->
     <div id="panel-trivia" class="b-panel"></div>
-
-    <!-- GAMES PANEL -->
-    <div id="panel-games" class="b-panel"></div>
 
     <!-- READING PANEL -->
     <div id="panel-reading" class="b-panel"></div>
@@ -2146,7 +2142,6 @@ function showProfileSettings() {
         // Refresh current panel to show updated profile
         switch(currentTab) {
             case 'trivia':   renderTriviaPanel();   break;
-            case 'games':    renderGamesPanel();    break;
             case 'chores':   renderChoresPanel();   break;
             case 'homework': renderHomeworkPanel(); break;
             case 'reading':  renderBoardReading();  break;
@@ -2587,9 +2582,9 @@ async function saveTriviaAnswer(questionId, isCorrect) {
         newGameUnlocks.forEach(gameId => {
             showUnlockToast(gameId);
         });
-        // Refresh Games tab if currently viewing it
-        if (currentTab === 'games') {
-            renderGamesPanel();
+        // Refresh Trivia panel to show new game cards
+        if (currentTab === 'trivia') {
+            renderTriviaPanel();
         }
     }
 
@@ -2852,7 +2847,64 @@ function renderTriviaPanel() {
             <div id="trivia-hint" style="display:none;margin-top:10px;background:#F5F3FF;border-left:3px solid #8B5CF6;padding:12px;border-radius:0 10px 10px 0;color:#5B21B6;font-size:0.92em">${q.hint}</div>
         </div>
 
-        <div id="trivia-result" style="display:none"></div>`;
+        <div id="trivia-result" style="display:none"></div>
+
+        <!-- Games Section -->
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid #E2E8F0">
+            <div style="font-size:0.9em;font-weight:700;color:#475569;margin-bottom:12px">🎮 Mini-Games</div>
+            <div class="games-grid">
+                ${(() => {
+                    const games = state.games || { unlocked: [], stats: {} };
+                    const gameList = [
+                        { id: 'wordle', name: 'Category Wordle', emoji: '🎯', threshold: 5, metric: 'correct' },
+                        { id: 'quickfire', name: 'Quick-Fire', emoji: '⚡', threshold: 10, metric: 'correct + 70% accuracy' },
+                        { id: 'memory', name: 'Memory Tiles', emoji: '🧠', threshold: 50, metric: 'correct' },
+                        { id: 'scramble', name: 'Word Scramble', emoji: '🔤', threshold: 100, metric: 'correct' }
+                    ];
+
+                    return gameList.map(game => {
+                        const isUnlocked = games.unlocked.includes(game.id);
+                        const gameStats = games.stats[game.id] || { played: 0, bestScore: 0 };
+                        const progress = getGameUnlockProgress(game.id);
+
+                        if (isUnlocked) {
+                            return `
+                                <div class="game-card unlocked">
+                                    <div class="game-header">
+                                        <span class="game-emoji">${game.emoji}</span>
+                                        <span class="game-name">${game.name}</span>
+                                    </div>
+                                    <div class="game-stats">
+                                        ${gameStats.bestScore > 0 ? `<p>Best: ${gameStats.bestScore} pts</p>` : ''}
+                                        ${gameStats.played > 0 ? `<p>Played: ${gameStats.played}x</p>` : ''}
+                                    </div>
+                                    <button class="btn btn-game" onclick="startGameFromCard('${game.id}')">Play</button>
+                                </div>
+                            `;
+                        } else {
+                            const pctWidth = progress.pct * 100;
+                            return `
+                                <div class="game-card locked">
+                                    <div class="game-header">
+                                        <span class="lock-icon">🔒</span>
+                                        <span class="game-emoji">${game.emoji}</span>
+                                        <span class="game-name">${game.name}</span>
+                                    </div>
+                                    <div class="unlock-info">
+                                        <p class="unlock-requirement">Unlock: ${progress.threshold} ${game.metric}</p>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: ${pctWidth}%"></div>
+                                        </div>
+                                        <p class="progress-text">${progress.current}/${progress.threshold}</p>
+                                    </div>
+                                    <button class="btn btn-unlock-required" disabled>Locked</button>
+                                </div>
+                            `;
+                        }
+                    }).join('');
+                })()}
+            </div>
+        </div>`;
 }
 
 let triviaAttemptCount = 0;
@@ -3630,7 +3682,6 @@ function switchTab(tab) {
         case 'homework': renderHomeworkPanel(); break;
         case 'kungfu':   renderKungFuPanel();   break;
         case 'trivia':   renderTriviaPanel();   break;
-        case 'games':    renderGamesPanel();    break;
         case 'reading':  renderBoardReading();  break;
         case 'gujarati': renderGujaratiPanel(); break;
         case 'calendar': renderCalendarPanel(); break;
@@ -4762,78 +4813,6 @@ function _legacyTriviaPanel_unused() {
     }
 
     document.getElementById('panel-trivia').innerHTML = html;
-}
-
-// ── GAMES PANEL ────────────────────────────────
-function renderGamesPanel() {
-    const games = state.games || { unlocked: [], stats: {} };
-    const gameList = [
-        { id: 'wordle', name: 'Category Wordle', emoji: '🎯', threshold: 5, metric: 'correct' },
-        { id: 'quickfire', name: 'Quick-Fire', emoji: '⚡', threshold: 10, metric: 'correct + 70% accuracy' },
-        { id: 'memory', name: 'Memory Tiles', emoji: '🧠', threshold: 50, metric: 'correct' },
-        { id: 'scramble', name: 'Word Scramble', emoji: '🔤', threshold: 100, metric: 'correct' }
-    ];
-
-    let html = `
-        ${getProfileDisplay('Games Master')}
-
-        <div class="sec-hdr">
-            <div>
-                <div class="sec-title">🎮 Available Games</div>
-                <div class="sec-sub">Unlock new challenges as you progress</div>
-            </div>
-        </div>
-        <div class="games-grid">
-    `;
-
-    gameList.forEach(game => {
-        const isUnlocked = games.unlocked.includes(game.id);
-        const gameStats = games.stats[game.id] || { played: 0, bestScore: 0 };
-        const progress = getGameUnlockProgress(game.id);
-
-        let cardContent;
-        if (isUnlocked) {
-            cardContent = `
-                <div class="game-card unlocked">
-                    <div class="game-header">
-                        <span class="game-emoji">${game.emoji}</span>
-                        <span class="game-name">${game.name}</span>
-                    </div>
-                    <div class="game-stats">
-                        ${gameStats.bestScore > 0 ? `<p>Best: ${gameStats.bestScore} pts</p>` : ''}
-                        ${gameStats.played > 0 ? `<p>Played: ${gameStats.played}x</p>` : ''}
-                    </div>
-                    <button class="btn btn-game" onclick="startGameFromCard('${game.id}')">Play</button>
-                </div>
-            `;
-        } else {
-            const pctWidth = progress.pct * 100;
-            cardContent = `
-                <div class="game-card locked">
-                    <div class="game-header">
-                        <span class="lock-icon">🔒</span>
-                        <span class="game-emoji">${game.emoji}</span>
-                        <span class="game-name">${game.name}</span>
-                    </div>
-                    <div class="unlock-info">
-                        <p class="unlock-requirement">Unlock: ${progress.threshold} ${game.metric}</p>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${pctWidth}%"></div>
-                        </div>
-                        <p class="progress-text">${progress.current}/${progress.threshold}</p>
-                    </div>
-                    <button class="btn btn-unlock-required" disabled>Locked</button>
-                </div>
-            `;
-        }
-        html += cardContent;
-    });
-
-    html += `
-        </div>
-    `;
-
-    document.getElementById('panel-games').innerHTML = html;
 }
 
 // (toggleTriviaHint and checkTriviaAnswer are defined in the trivia engine above)
