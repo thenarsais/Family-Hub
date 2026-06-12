@@ -916,6 +916,15 @@
     <!-- ══ BENTO GRID ══ -->
     <div class="dash-bento">
 
+        <!-- PROFILE CARD -->
+        <div class="db-card" id="db-profile-card" style="cursor:pointer;background:linear-gradient(135deg,#667EEA,#764BA2)" onclick="showProfileSettings()">
+            <div style="padding:20px;color:white;text-align:center">
+                <div style="font-size:3em;margin-bottom:12px" id="db-profile-avatar">🧠</div>
+                <div style="font-size:1.1em;font-weight:800;margin-bottom:4px" id="db-profile-name">Profile</div>
+                <div style="font-size:0.85em;opacity:0.9">Click to edit</div>
+            </div>
+        </div>
+
         <!-- COL 1: CHORES (interactive list) -->
         <div class="db-card" id="db-chores-card">
             <div class="db-card-hdr" onclick="showBoard('chores')" style="cursor:pointer">
