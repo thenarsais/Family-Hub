@@ -893,10 +893,6 @@
                 <div class="date-sub" id="date-display"></div>
             </div>
             <div style="display:flex;gap:12px;align-items:center">
-                <div class="pts-badge" onclick="showBoard('points')">
-                    <span class="num" id="hdr-pts">0</span>
-                    <span class="lbl">pts today</span>
-                </div>
                 <div id="dash-profile-chip" style="
                     display:flex;align-items:center;gap:8px;padding:8px 12px;
                     background:rgba(255,255,255,0.1);border-radius:20px;cursor:pointer;
@@ -904,6 +900,14 @@
                 " onclick="showProfileSettings()" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
                     <span id="dash-profile-avatar" style="font-size:1.3em">🧠</span>
                     <span id="dash-profile-name" style="color:white;font-size:0.9em;font-weight:600">Profile</span>
+                </div>
+                <div id="dash-pts-chip" onclick="showBoard('points')" style="
+                    display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 12px;
+                    background:#FCD34D;border-radius:20px;cursor:pointer;
+                    transition:all 0.2s
+                " onmouseover="this.style.background='#FBBF24'" onmouseout="this.style.background='#FCD34D'">
+                    <span id="dash-pts-num" style="font-size:1.1em;font-weight:800;color:#78350F">0</span>
+                    <span style="font-size:0.75em;color:#78350F;font-weight:600">pts</span>
                 </div>
                 <button id="profile-btn" onclick="showProfileSettings()" style="
                     background:rgba(255,255,255,0.18);border:2px solid rgba(255,255,255,0.35);
@@ -3072,6 +3076,10 @@ function renderDashboard() {
     const boardProfileName = document.getElementById('board-profile-name');
     if (boardProfileAvatar) boardProfileAvatar.textContent = state.trivia.onboarding.avatar || '🧠';
     if (boardProfileName) boardProfileName.textContent = state.trivia.onboarding.name || 'Profile';
+
+    // Update points display in new dashboard header chip
+    const dashPtsNum = document.getElementById('dash-pts-num');
+    if (dashPtsNum) dashPtsNum.textContent = state.points.today;
 
     const all  = allChoresCount();
     const done = doneChoresCount();
