@@ -1839,6 +1839,9 @@ window.completeOnboarding = function() {
 
 // ── Profile/Avatar Management ──────────────────────
 function showProfileSettings() {
+    // Remove any existing profile modals first
+    document.querySelectorAll('#profile-modal').forEach(m => m.remove());
+
     const modal = document.createElement('div');
     modal.id = 'profile-modal';
     modal.style.cssText = `
