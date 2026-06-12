@@ -3921,11 +3921,242 @@ window.backToTriviaFromQuickFire = function() {
 };
 
 // ── MEMORY TILES GAME ENGINE ──────────────────────────
-window.startMemoryGame = function(difficulty = 'easy') {
-    // For Task 3.3, add difficulty selection modal
-    // For now, default to easy
+window.startMemoryGame = function() {
+    // Show difficulty selection modal first
+    showMemoryDifficultyModal();
+};
+
+window.showMemoryDifficultyModal = function() {
+    const difficulties = [
+        { id: 'easy', name: 'Easy', icon: '🟢', tiles: 8, pairs: 4, time: '2 min', cols: 4, rows: 2 },
+        { id: 'medium', name: 'Medium', icon: '🟡', tiles: 12, pairs: 6, time: '3 min', cols: 4, rows: 3 },
+        { id: 'hard', name: 'Hard', icon: '🔴', tiles: 16, pairs: 8, time: '4 min', cols: 4, rows: 4 }
+    ];
+
+    const modal = document.createElement('div');
+    modal.id = 'memory-difficulty-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.innerHTML = `
+        <h2 style="font-size:1.8em;font-weight:800;margin:0 0 8px 0">🧠 Memory Tiles</h2>
+        <p style="color:#94A3B8;margin:0 0 28px 0">Select a difficulty level</p>
+
+        <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:24px">
+            ${difficulties.map(diff => `
+                <button class="memory-difficulty-btn"
+                    data-difficulty="${diff.id}"
+                    onclick="selectMemoryDifficulty('${diff.id}')"
+                    style="
+                        padding:20px;
+                        background:#0F172A;
+                        border:2px solid #475569;
+                        border-radius:12px;
+                        color:white;
+                        cursor:pointer;
+                        text-align:left;
+                        transition:all 0.2s;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                    "
+                    onmouseover="this.style.background='#1E293B'; this.style.borderColor='#64748B'"
+                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='#475569'"
+                >
+                    <div>
+                        <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
+                        <div style="font-size:0.9em;color:#94A3B8">
+                            ${diff.tiles} tiles • ${diff.pairs} pairs • ${diff.time}
+                        </div>
+                        <div style="font-size:0.8em;color:#64748B;margin-top:6px">Grid: ${diff.cols}×${diff.rows}</div>
+                    </div>
+                    <div style="font-size:2.5em;opacity:0.3">?</div>
+                </button>
+            `).join('')}
+        </div>
+
+        <button onclick="closeMemoryDifficultyModal()" style="
+            width:100%;
+            padding:12px;
+            background:#475569;
+            border:none;
+            color:white;
+            border-radius:10px;
+            cursor:pointer;
+            font-weight:600;
+            font-size:0.95em;
+        "
+        onmouseover="this.style.background='#64748B'"
+        onmouseout="this.style.background='#475569'">
+            Cancel
+        </button>
+    `;
+
+    document.body.appendChild(modal);
+    modal.appendChild(card);
+};
+
+window.selectMemoryDifficulty = function(difficulty) {
+    // Close difficulty modal
+    const modal = document.getElementById('memory-difficulty-modal');
+    if (modal) modal.remove();
+
+    // Show boost modal
+    showMemoryBoostModal(difficulty);
+};
+
+window.showMemoryBoostModal = function(difficulty) {
+    const boosts = state.boosts || { double_points: 0, skip: 0, extra_time: 0, hint: 0, combo_freeze: 0 };
+
+    const boostOptions = [
+        { id: 'hint', name: 'Hint', icon: '💡', count: boosts.hint, effect: 'Reveal matching pair location' },
+        { id: 'double_points', name: 'Double Points', icon: '2️⃣', count: boosts.double_points, effect: '2× your score' },
+        { id: 'skip', name: 'Skip Match', icon: '⏭️', count: boosts.skip, effect: 'Auto-match 1 pair' },
+    ];
+
+    const modal = document.createElement('div');
+    modal.id = 'memory-boost-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.innerHTML = `
+        <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">🧠 Memory Tiles</h2>
+        <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your score?</p>
+
+        <div id="memory-boost-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+            ${boostOptions.map(boost => `
+                <button class="memory-boost-option"
+                    data-boost="${boost.id}"
+                    onclick="selectMemoryBoost('${boost.id}', '${difficulty}')"
+                    style="
+                        padding:16px;
+                        background:${boost.count > 0 ? '#0F172A' : '#334155'};
+                        border:2px solid #475569;
+                        border-radius:12px;
+                        color:${boost.count > 0 ? 'white' : '#94A3B8'};
+                        cursor:${boost.count > 0 ? 'pointer' : 'not-allowed'};
+                        text-align:left;
+                        font-weight:600;
+                        transition:all 0.2s;
+                        opacity:${boost.count > 0 ? '1' : '0.6'};
+                    "
+                    ${boost.count === 0 ? 'disabled' : ''}
+                    onmouseover="if(${boost.count > 0}) this.style.background='#1E293B'"
+                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : '#334155'}'"
+                >
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <div style="display:flex;align-items:center;gap:12px">
+                            <span style="font-size:1.5em">${boost.icon}</span>
+                            <div>
+                                <div style="font-weight:800">${boost.name}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? '#94A3B8' : '#64748B'}">Count: ${boost.count}</div>
+                            </div>
+                        </div>
+                        ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
+                    </div>
+                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : '#64748B'}">${boost.effect}</div>
+                </button>
+            `).join('')}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <button onclick="startMemoryWithoutBoost('${difficulty}')" style="
+                padding:14px;
+                background:#475569;
+                border:none;
+                color:white;
+                border-radius:10px;
+                cursor:pointer;
+                font-weight:700;
+                font-size:0.95em;
+                transition:all 0.2s;
+            "
+            onmouseover="this.style.background='#64748B'"
+            onmouseout="this.style.background='#475569'">
+                Play without boost
+            </button>
+            <button id="play-memory-with-boost" onclick="startMemoryWithBoost('${difficulty}')" style="
+                padding:14px;
+                background:#64748B;
+                border:none;
+                color:#94A3B8;
+                border-radius:10px;
+                cursor:not-allowed;
+                font-weight:700;
+                font-size:0.95em;
+                transition:all 0.2s;
+                opacity:0.6;
+            " disabled>
+                Play with boost
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.appendChild(card);
+};
+
+window.selectMemoryBoost = function(boostId, difficulty) {
+    // Clear previous selection
+    document.querySelectorAll('.memory-boost-option').forEach(btn => {
+        btn.style.borderColor = '#475569';
+        btn.style.background = '#0F172A';
+    });
+
+    // Highlight selected
+    const selected = document.querySelector(`[data-boost="${boostId}"]`);
+    if (selected) {
+        selected.style.borderColor = '#0EA5E9';
+        selected.style.background = '#0F172A';
+    }
+
+    // Enable "Play with boost" button
+    const playBtn = document.getElementById('play-memory-with-boost');
+    playBtn.style.background = '#0EA5E9';
+    playBtn.style.color = 'white';
+    playBtn.style.cursor = 'pointer';
+    playBtn.style.opacity = '1';
+    playBtn.disabled = false;
+    playBtn.innerHTML = `Play with ${boostId}`;
+    playBtn.onclick = () => startMemoryWithBoost(difficulty, boostId);
+
+    // Store selection
+    window._selectedMemoryBoost = boostId;
+};
+
+window.startMemoryWithBoost = function(difficulty, boostId) {
+    boostId = boostId || window._selectedMemoryBoost;
+    if (!boostId) return;
+
+    // Deduct boost from inventory
+    state.boosts[boostId]--;
+    saveState();
+
+    // Close modal and start game
+    const modal = document.getElementById('memory-boost-modal');
+    if (modal) modal.remove();
+
+    // Initialize and render game
+    window._memoryGame = initializeMemoryGame(difficulty);
+    window._memoryGame.selectedBoost = boostId;
+    renderMemoryGame(window._memoryGame);
+};
+
+window.startMemoryWithoutBoost = function(difficulty) {
+    // Close modal and start game
+    const modal = document.getElementById('memory-boost-modal');
+    if (modal) modal.remove();
+
+    // Initialize and render game
     window._memoryGame = initializeMemoryGame(difficulty);
     renderMemoryGame(window._memoryGame);
+};
+
+window.closeMemoryDifficultyModal = function() {
+    const modal = document.getElementById('memory-difficulty-modal');
+    if (modal) modal.remove();
 };
 
 window.initializeMemoryGame = function(difficulty) {
