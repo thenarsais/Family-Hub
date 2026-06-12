@@ -1004,6 +1004,127 @@
 
         .db-kf-log-row { display:flex; align-items:center; justify-content:space-between; padding:7px 13px 11px; }
         .db-kf-week    { font-size:0.75em; color:#64748B; font-weight:600; }
+
+        /* Games Panel */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            padding: 16px 0;
+        }
+        .game-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            min-height: 160px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .game-card.unlocked {
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            border-color: #0EA5E9;
+            box-shadow: 0 0 12px rgba(14, 165, 233, 0.15);
+        }
+        .game-card.unlocked:hover {
+            border-color: #06B6D4;
+            box-shadow: 0 0 16px rgba(6, 182, 212, 0.25);
+            transform: translateY(-2px);
+        }
+        .game-card.locked {
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            border-color: #475569;
+            opacity: 0.7;
+        }
+        .game-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .game-emoji {
+            font-size: 1.8em;
+        }
+        .lock-icon {
+            font-size: 1.2em;
+        }
+        .game-name {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #E2E8F0;
+        }
+        .game-stats {
+            margin: 8px 0;
+            font-size: 0.8em;
+            color: #94A3B8;
+        }
+        .game-stats p {
+            margin: 2px 0;
+        }
+        .unlock-info {
+            margin: 8px 0;
+        }
+        .unlock-requirement {
+            font-size: 0.75em;
+            color: #CBD5E1;
+            margin-bottom: 6px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10B981, #06B6D4);
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            font-size: 0.7em;
+            color: #94A3B8;
+        }
+        .btn-game {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #0EA5E9;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-game:hover {
+            background: #06B6D4;
+        }
+        .btn-unlock-required {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #475569;
+            border: none;
+            color: #94A3B8;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: not-allowed;
+        }
+        @media (max-width: 480px) {
+            .games-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .game-card {
+                min-height: 140px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1191,6 +1312,7 @@
         <button class="b-tab" data-tab="homework" onclick="switchTab('homework')"><span class="ti">📚</span>Homework  </button>
         <button class="b-tab" data-tab="kungfu"   onclick="switchTab('kungfu')">  <span class="ti">🥋</span>Kung Fu  </button>
         <button class="b-tab" data-tab="trivia"   onclick="switchTab('trivia')">   <span class="ti">🧠</span>Trivia   </button>
+        <button class="b-tab" data-tab="games"   onclick="switchTab('games')">   <span class="ti">🎮</span>Games   </button>
         <button class="b-tab" data-tab="reading"  onclick="switchTab('reading')">  <span class="ti">📚</span>Reading  </button>
         <button class="b-tab" data-tab="gujarati" onclick="switchTab('gujarati')"><span class="ti">🇮🇳</span>Gujarati </button>
         <button class="b-tab" data-tab="calendar" onclick="switchTab('calendar')"><span class="ti">📅</span>Calendar  </button>
@@ -1210,6 +1332,9 @@
 
     <!-- TRIVIA PANEL -->
     <div id="panel-trivia" class="b-panel"></div>
+
+    <!-- GAMES PANEL -->
+    <div id="panel-games" class="b-panel"></div>
 
     <!-- READING PANEL -->
     <div id="panel-reading" class="b-panel"></div>
@@ -2021,6 +2146,7 @@ function showProfileSettings() {
         // Refresh current panel to show updated profile
         switch(currentTab) {
             case 'trivia':   renderTriviaPanel();   break;
+            case 'games':    renderGamesPanel();    break;
             case 'chores':   renderChoresPanel();   break;
             case 'homework': renderHomeworkPanel(); break;
             case 'reading':  renderBoardReading();  break;
@@ -3167,6 +3293,19 @@ window.startWordleGame = function() {
     setTimeout(() => document.getElementById('wordle-input')?.focus(), 100);
 };
 
+window.startGameFromCard = function(gameId) {
+    switch(gameId) {
+        case 'wordle':
+            startWordleGame();
+            break;
+        case 'quickfire':
+        case 'memory':
+        case 'scramble':
+            alert(`${gameId} coming soon!`);
+            break;
+    }
+};
+
 function buildDefaultState() {
     const today = todayStr();
     const weekStart = getMondayOfWeek(today);
@@ -3464,6 +3603,7 @@ function switchTab(tab) {
         case 'homework': renderHomeworkPanel(); break;
         case 'kungfu':   renderKungFuPanel();   break;
         case 'trivia':   renderTriviaPanel();   break;
+        case 'games':    renderGamesPanel();    break;
         case 'reading':  renderBoardReading();  break;
         case 'gujarati': renderGujaratiPanel(); break;
         case 'calendar': renderCalendarPanel(); break;
@@ -4595,6 +4735,78 @@ function _legacyTriviaPanel_unused() {
     }
 
     document.getElementById('panel-trivia').innerHTML = html;
+}
+
+// ── GAMES PANEL ────────────────────────────────
+function renderGamesPanel() {
+    const games = state.games || { unlocked: [], stats: {} };
+    const gameList = [
+        { id: 'wordle', name: 'Category Wordle', emoji: '🎯', threshold: 5, metric: 'correct' },
+        { id: 'quickfire', name: 'Quick-Fire', emoji: '⚡', threshold: 10, metric: 'correct + 70% accuracy' },
+        { id: 'memory', name: 'Memory Tiles', emoji: '🧠', threshold: 50, metric: 'correct' },
+        { id: 'scramble', name: 'Word Scramble', emoji: '🔤', threshold: 100, metric: 'correct' }
+    ];
+
+    let html = `
+        ${getProfileDisplay('Games Master')}
+
+        <div class="sec-hdr">
+            <div>
+                <div class="sec-title">🎮 Available Games</div>
+                <div class="sec-sub">Unlock new challenges as you progress</div>
+            </div>
+        </div>
+        <div class="games-grid">
+    `;
+
+    gameList.forEach(game => {
+        const isUnlocked = games.unlocked.includes(game.id);
+        const gameStats = games.stats[game.id] || { played: 0, bestScore: 0 };
+        const progress = getGameUnlockProgress(game.id);
+
+        let cardContent;
+        if (isUnlocked) {
+            cardContent = `
+                <div class="game-card unlocked">
+                    <div class="game-header">
+                        <span class="game-emoji">${game.emoji}</span>
+                        <span class="game-name">${game.name}</span>
+                    </div>
+                    <div class="game-stats">
+                        ${gameStats.bestScore > 0 ? `<p>Best: ${gameStats.bestScore} pts</p>` : ''}
+                        ${gameStats.played > 0 ? `<p>Played: ${gameStats.played}x</p>` : ''}
+                    </div>
+                    <button class="btn btn-game" onclick="startGameFromCard('${game.id}')">Play</button>
+                </div>
+            `;
+        } else {
+            const pctWidth = progress.pct * 100;
+            cardContent = `
+                <div class="game-card locked">
+                    <div class="game-header">
+                        <span class="lock-icon">🔒</span>
+                        <span class="game-emoji">${game.emoji}</span>
+                        <span class="game-name">${game.name}</span>
+                    </div>
+                    <div class="unlock-info">
+                        <p class="unlock-requirement">Unlock: ${progress.threshold} ${game.metric}</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${pctWidth}%"></div>
+                        </div>
+                        <p class="progress-text">${progress.current}/${progress.threshold}</p>
+                    </div>
+                    <button class="btn btn-unlock-required" disabled>Locked</button>
+                </div>
+            `;
+        }
+        html += cardContent;
+    });
+
+    html += `
+        </div>
+    `;
+
+    document.getElementById('panel-games').innerHTML = html;
 }
 
 // (toggleTriviaHint and checkTriviaAnswer are defined in the trivia engine above)
