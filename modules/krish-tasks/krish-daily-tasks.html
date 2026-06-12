@@ -1935,6 +1935,12 @@ function showProfileSettings() {
 }
 
 window.changeAvatar = function(emoji) {
+    // First, save the current name from any input fields (in case it was just typed)
+    const nickInput = document.querySelector('input[type="text"]');
+    if (nickInput && nickInput.value.trim()) {
+        state.trivia.onboarding.name = nickInput.value.trim();
+    }
+
     state.trivia.onboarding.avatar = emoji;
     saveState();
     showProfileSettings(); // Refresh modal
