@@ -2587,6 +2587,10 @@ async function saveTriviaAnswer(questionId, isCorrect) {
         newGameUnlocks.forEach(gameId => {
             showUnlockToast(gameId);
         });
+        // Refresh Games tab if currently viewing it
+        if (currentTab === 'games') {
+            renderGamesPanel();
+        }
     }
 
     // ── Check for difficulty unlocks ────────────────
