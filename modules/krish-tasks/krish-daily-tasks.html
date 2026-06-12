@@ -4605,6 +4605,17 @@ window.showMemoryResults = function(game, won) {
             ${personalBest > 0 && !isNewBest ? `<div style="font-size:0.9em;color:#94A3B8;margin-top:8px">Your Best: ${personalBest} pts</div>` : ''}
         </div>
 
+        ${game.selectedBoost ? `
+            <div style="background:#7C2D12;border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
+                <div style="font-size:0.9em;color:#FCD34D;font-weight:800">💫 Boost Used</div>
+                <div style="font-size:1em;color:#FED7AA;margin-top:4px">
+                    ${game.selectedBoost === 'double_points' ? '2️⃣ Double Points — Score was 2×' :
+                      game.selectedBoost === 'skip' ? '⏭️ Skip Match — 1 pair auto-matched' :
+                      game.selectedBoost === 'hint' ? '💡 Hint — Matching pair location revealed' : ''}
+                </div>
+            </div>
+        ` : ''}
+
         ${leaderboard.length > 0 ? `
             <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
                 <div style="font-size:0.95em;font-weight:800;color:#94A3B8;margin-bottom:12px">Top Scores (${diffLabel})</div>
@@ -4623,10 +4634,12 @@ window.showMemoryResults = function(game, won) {
             </div>
         ` : ''}
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <button onclick="playAgainMemory()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
-            <button onclick="backToTriviaFromMemory()" style="padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
+            <button onclick="showMemoryDifficultyModal()" style="padding:12px;background:#F59E0B;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Try Different Difficulty</button>
         </div>
+
+        <button onclick="backToTriviaFromMemory()" style="width:100%;padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
     `;
 
     modal.appendChild(card);
