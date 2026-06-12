@@ -1872,6 +1872,14 @@ function showProfileSettings() {
         const boardProfileName = document.getElementById('board-profile-name');
         if (boardProfileAvatar) boardProfileAvatar.textContent = state.trivia.onboarding.avatar || '🧠';
         if (boardProfileName) boardProfileName.textContent = state.trivia.onboarding.name || 'Profile';
+        // Refresh current panel to show updated profile
+        switch(currentTab) {
+            case 'trivia':   renderTriviaPanel();   break;
+            case 'chores':   renderChoresPanel();   break;
+            case 'homework': renderHomeworkPanel(); break;
+            case 'reading':  renderBoardReading();  break;
+            case 'gujarati': renderGujaratiPanel(); break;
+        }
     };
 
     card.innerHTML = `
@@ -2416,6 +2424,15 @@ function renderTriviaPanel() {
     const triedBefore = wrongCount > 0;
 
     panel.innerHTML = `
+        <!-- Profile Display -->
+        <div style="margin-bottom:14px;padding:12px;background:rgba(102,126,234,0.1);border-radius:12px;display:flex;align-items:center;gap:12px">
+            <div style="font-size:2em">${profile.avatar}</div>
+            <div style="flex:1">
+                <div style="font-weight:600;color:#1E293B">${profile.name || 'Pick a nickname'}</div>
+                <div style="font-size:0.85em;color:#64748B">Trivia Player</div>
+            </div>
+        </div>
+
         <div class="sec-hdr">
             <div>
                 <div class="sec-title">🧠 Daily Trivia</div>
