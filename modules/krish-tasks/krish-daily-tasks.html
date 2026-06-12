@@ -7,6 +7,7 @@
     <script src="trivia-questions.js"></script>
     <style>
         :root {
+            /* Colors */
             --primary: #6366F1;
             --primary-light: #818CF8;
             --secondary: #EC4899;
@@ -23,16 +24,69 @@
             --muted: #94A3B8;
             --light: #F1F5F9;
             --white: #FFFFFF;
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 20px;
+
+            /* Border Radius */
             --radius: 16px;
             --radius-sm: 10px;
+            --radius-chip: 20px;
+            --radius-rounded: 30px;
+
+            /* Typography */
+            --font-size-sm: 0.75em;
+            --font-size-base: 0.9em;
+            --font-size-md: 1em;
+            --font-size-lg: 1.3em;
+            --font-weight-normal: 600;
+            --font-weight-bold: 800;
+
+            /* Shadows */
             --shadow: 0 2px 12px rgba(0,0,0,0.08);
             --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+
+            /* Transitions */
             --t: all 0.2s ease;
             --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html { font-size: 16px; }
         body { font-family:var(--font); background:#0F172A; min-height:100vh; color:var(--dark); overflow-x:hidden; }
+
+        /* ── REUSABLE COMPONENTS ────────────────── */
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-chip);
+            cursor: pointer;
+            transition: var(--t);
+            white-space: nowrap;
+        }
+        .chip:hover { background: rgba(255,255,255,0.15); }
+
+        .chip--profile {
+            color: var(--white);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-normal);
+        }
+        .chip--profile .avatar { font-size: var(--font-size-lg); }
+
+        .chip--pts {
+            background: var(--accent);
+            color: var(--dark);
+            font-weight: var(--font-weight-bold);
+            font-size: 0.88em;
+            padding: 5px 13px;
+        }
+        .chip--pts:hover { opacity: 0.85; }
 
         /* ── VIEWS ─────────────────────────────── */
         .view { display:none; min-height:100vh; }
