@@ -1720,7 +1720,7 @@ function showOnboardingWizard() {
                 </label>
                 <p style="font-size:0.85em;color:#64748B;margin-top:8px;margin-left:30px">You can always turn this on or off later</p>
             </div>
-            <button onclick="finishOnboarding()" style="
+            <button id="lets-go-btn" style="
                 width:100%;padding:12px;background:linear-gradient(135deg,#10B981,#059669);
                 color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:opacity 0.2s
             " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Let's Go! 🚀</button>
@@ -1742,13 +1742,36 @@ function showOnboardingWizard() {
                 });
             }
         }, 10);
+    } else {
+        // Step 2: attach click listener to "Let's Go" button with disable after click
+        setTimeout(() => {
+            const letsGoBtn = document.getElementById('lets-go-btn');
+            if (letsGoBtn) {
+                letsGoBtn.addEventListener('click', () => {
+                    letsGoBtn.disabled = true;
+                    letsGoBtn.style.opacity = '0.5';
+                    letsGoBtn.style.cursor = 'not-allowed';
+                    finishOnboarding();
+                }, { once: true });
+            }
+        }, 10);
     }
 }
 
 window.selectOnboardingAvatar = function(emoji) {
+    // Save the current name before re-rendering
+    const nameInput = document.getElementById('onboarding-name');
+    if (nameInput) {
+        state.trivia.onboarding.name = nameInput.value.trim();
+    }
+
     // Update avatar in state
     state.trivia.onboarding.avatar = emoji;
     saveState();
+
+    // Remove old modal before creating new one
+    const oldModal = document.getElementById('onboarding-modal');
+    if (oldModal) oldModal.remove();
 
     // Re-render to show highlighted avatar
     // Name will be restored automatically from state.trivia.onboarding.name
@@ -1773,25 +1796,30 @@ window.completeOnboardingStep1 = function() {
     showOnboardingWizard();
 };
 
+let finishOnboardingInProgress = false;
+
 window.finishOnboarding = function() {
-    console.log('finishOnboarding called');
+    if (finishOnboardingInProgress) return;
+
+    finishOnboardingInProgress = true;
     try {
         const ttsToggle = document.getElementById('tts-toggle');
         state.trivia.onboarding.showTTS = ttsToggle ? ttsToggle.checked : true;
         state.trivia.onboarding.completed = true;
         state.trivia.onboarding.setupDate = todayStr();
         saveState();
-        console.log('State saved, completed =', state.trivia.onboarding.completed);
 
-        const modal = document.getElementById('onboarding-modal');
-        console.log('Modal found:', !!modal);
-        if (modal) modal.remove();
+        // Remove ALL onboarding modals (there might be multiple due to rerenders)
+        document.querySelectorAll('#onboarding-modal').forEach(modal => {
+            modal.style.display = 'none';
+            modal.remove();
+        });
 
-        console.log('About to render trivia panel');
-        // Small delay to ensure state is fully saved before rendering
-        setTimeout(() => renderTriviaPanel(), 10);
+        renderTriviaPanel();
     } catch (e) {
         console.error('Error finishing onboarding:', e);
+    } finally {
+        finishOnboardingInProgress = false;
     }
 };
 
