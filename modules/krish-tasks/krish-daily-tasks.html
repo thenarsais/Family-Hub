@@ -2390,12 +2390,19 @@ function renderTriviaPanel() {
 
     const profile = state.trivia.onboarding;
     panel.innerHTML = `
-        <div class="sec-hdr" style="cursor:pointer" onclick="showProfileSettings()">
-            <div style="display:flex;align-items:center;gap:12px;flex:1">
-                <div style="font-size:2.2em;line-height:1">${profile.avatar}</div>
-                <div>
-                    <div class="sec-title">${profile.name || 'Pick a nickname'}</div>
-                    <div class="sec-sub">Click to edit</div>
+        <!-- Purple Header Section (matching dashboard style) -->
+        <div style="background:linear-gradient(135deg,#667EEA,#764BA2);padding:16px;border-radius:12px;margin-bottom:14px;cursor:pointer" onclick="showProfileSettings()">
+            <div style="display:flex;align-items:center;gap:12px;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:12px;flex:1">
+                    <div style="font-size:2.5em;line-height:1">${profile.avatar}</div>
+                    <div style="color:white">
+                        <div style="font-size:1em;font-weight:800">${profile.name || 'Pick a nickname'}</div>
+                        <div style="font-size:0.85em;opacity:0.85">Click to edit</div>
+                    </div>
+                </div>
+                <div style="color:white;opacity:0.85;font-size:0.9em;text-align:right">
+                    <div style="font-weight:700">Edit Profile</div>
+                    <div style="font-size:0.8em">→</div>
                 </div>
             </div>
         </div>
