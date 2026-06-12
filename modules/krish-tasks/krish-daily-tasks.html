@@ -1859,6 +1859,12 @@ function showProfileSettings() {
 
     const profile = state.trivia.onboarding;
     const closeModal = () => {
+        // Save nickname if input exists
+        const nickInput = document.getElementById('profile-nickname-input');
+        if (nickInput) {
+            state.trivia.onboarding.name = nickInput.value.trim();
+            saveState();
+        }
         document.querySelectorAll('#profile-modal').forEach(m => m.remove());
         updateProfileDisplays(); // Refresh profile info in headers
     };
@@ -1884,10 +1890,18 @@ function showProfileSettings() {
 
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">${profile.name || 'Profile'}</h2>
+            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">Profile</h2>
             <button id="close-profile" style="
                 background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px
             ">✕</button>
+        </div>
+
+        <div style="margin-bottom:18px">
+            <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Nickname</label>
+            <input type="text" id="profile-nickname-input" placeholder="Your nickname..." value="${profile.name || ''}" style="
+                width:100%;padding:10px 12px;border:2px solid #E2E8F0;border-radius:8px;
+                font-size:1em;color:#1E293B
+            ">
         </div>
 
         <div style="text-align:center;margin-bottom:24px">
@@ -1935,8 +1949,8 @@ function showProfileSettings() {
 }
 
 window.changeAvatar = function(emoji) {
-    // First, save the current name from any input fields (in case it was just typed)
-    const nickInput = document.querySelector('input[type="text"]');
+    // First, save the current nickname from input (in case it was just typed)
+    const nickInput = document.getElementById('profile-nickname-input');
     if (nickInput && nickInput.value.trim()) {
         state.trivia.onboarding.name = nickInput.value.trim();
     }
