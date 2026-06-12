@@ -1170,6 +1170,41 @@
                 padding: 4px !important;
             }
         }
+
+        /* Word Scramble Game */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes wordFadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        #scr-word {
+            animation: wordFadeIn 0.3s ease-in;
+        }
+
+        #scr-input.correct {
+            animation: shake 0.3s ease-in-out;
+            background: #DCFCE7 !important;
+            border-color: #16A34A !important;
+        }
+
+        #scr-input.wrong {
+            animation: shake 0.4s ease-in-out;
+            background: #FEE2E2 !important;
+            border-color: #DC2626 !important;
+        }
+
+        @media (max-width: 480px) {
+            #scr-input {
+                font-size: 1em !important;
+                padding: 14px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -5370,6 +5405,95 @@ window.backToTriviaFromScramble = function() {
     window._scrambleGame = null;
 };
 
+// ── SEASONAL CONTENT & DAILY BONUS ─────────────────
+window.checkDailyBonus = function() {
+    if (!state.games) state.games = { unlocked: [], stats: {} };
+    if (!state.games.dailyBonus) {
+        state.games.dailyBonus = { lastClaimedDate: null, streak: 0, claimed: false };
+    }
+
+    const today = todayStr();
+    const lastClaimed = state.games.dailyBonus.lastClaimedDate;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.toISOString().split('T')[0];
+
+    // Check if already claimed today
+    if (state.games.dailyBonus.claimed && state.games.dailyBonus.lastClaimedDate === today) {
+        return false; // Already claimed
+    }
+
+    // Update streak
+    if (lastClaimed === yStr) {
+        state.games.dailyBonus.streak++;
+    } else if (lastClaimed !== today) {
+        state.games.dailyBonus.streak = 1;
+    }
+
+    state.games.dailyBonus.lastClaimedDate = today;
+    state.games.dailyBonus.claimed = true;
+    saveState();
+
+    return true; // Eligible for bonus
+};
+
+window.awardDailyBonus = function() {
+    // Award 10 bonus points on first game of day
+    if (checkDailyBonus()) {
+        const streak = state.games.dailyBonus.streak;
+        const bonusPoints = 10;
+        state.points.today += bonusPoints;
+        saveState();
+
+        // Show notification (optional - can be suppressed if too intrusive)
+        console.log(`🎁 Daily Bonus: +${bonusPoints} pts! Streak: ${streak} day${streak > 1 ? 's' : ''}`);
+        return bonusPoints;
+    }
+    return 0;
+};
+
+window.getSeasonalTheme = function() {
+    if (!state.games) state.games = { unlocked: [], stats: {} };
+    if (!state.games.seasonal) {
+        state.games.seasonal = { theme: 'default' };
+    }
+
+    const themes = {
+        spring: { primary: '#10B981', accent: '#BFDBFE', name: 'Spring 🌱' },
+        summer: { primary: '#FBBF24', accent: '#FEF3C7', name: 'Summer ☀️' },
+        fall: { primary: '#F97316', accent: '#FED7AA', name: 'Fall 🍂' },
+        winter: { primary: '#0EA5E9', accent: '#BAE6FD', name: 'Winter ❄️' },
+        default: { primary: '#0EA5E9', accent: '#BFDBFE', name: 'Default' }
+    };
+
+    // Auto-detect season from current month
+    const month = new Date().getMonth();
+    let currentSeason = 'default';
+    if (month >= 2 && month <= 4) currentSeason = 'spring';
+    else if (month >= 5 && month <= 7) currentSeason = 'summer';
+    else if (month >= 8 && month <= 10) currentSeason = 'fall';
+    else currentSeason = 'winter';
+
+    // Use stored theme preference if set
+    if (state.games.seasonal.theme && state.games.seasonal.theme !== 'auto') {
+        return themes[state.games.seasonal.theme] || themes.default;
+    }
+
+    return themes[currentSeason];
+};
+
+window.applySeasonalTheme = function(theme) {
+    if (!state.games) state.games = { unlocked: [], stats: {} };
+    if (!state.games.seasonal) state.games.seasonal = {};
+
+    state.games.seasonal.theme = theme;
+    state.games.seasonal.lastUpdated = todayStr();
+    saveState();
+
+    // For now, just store the preference (CSS not applied yet - Task 4.6 stub)
+    console.log(`🎨 Theme changed to: ${theme}`);
+};
+
 function buildDefaultState() {
     const today = todayStr();
     const weekStart = getMondayOfWeek(today);
@@ -5455,6 +5579,15 @@ function buildDefaultState() {
             goals: [
                 // { id, type: 'daily|weekly|category|points', target, current, setBy: 'krish|parent', createdDate, completed, completedDate }
             ],
+            seasonal: {
+                theme: 'default',
+                lastUpdated: null
+            },
+            dailyBonus: {
+                lastClaimedDate: null,
+                streak: 0,
+                claimed: false
+            },
         },
         reading: {
             dailyMinutes: 0,
