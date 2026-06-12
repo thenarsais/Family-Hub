@@ -2909,8 +2909,14 @@ function renderTriviaPanel() {
 
                     return gameList.map(game => {
                         const isUnlocked = games.unlocked.includes(game.id);
-                        const gameStats = games.stats[game.id] || { played: 0, bestScore: 0 };
+                        const gameStats = games.stats[game.id] || { played: 0, bestScore: 0, leaderboard: [] };
                         const progress = getGameUnlockProgress(game.id);
+
+                        // For Memory, get best score from leaderboard
+                        let displayBestScore = gameStats.bestScore;
+                        if (game.id === 'memory' && gameStats.leaderboard && gameStats.leaderboard.length > 0) {
+                            displayBestScore = Math.max(...gameStats.leaderboard.map(e => e.score));
+                        }
 
                         if (isUnlocked) {
                             return `
@@ -2920,8 +2926,8 @@ function renderTriviaPanel() {
                                         <span class="game-name">${game.name}</span>
                                     </div>
                                     <div class="game-stats">
-                                        ${gameStats.bestScore > 0 ? `<p>Best: ${gameStats.bestScore} pts</p>` : ''}
-                                        ${gameStats.played > 0 ? `<p>Played: ${gameStats.played}x</p>` : ''}
+                                        ${displayBestScore > 0 ? `<p>Best: ${displayBestScore} pts</p>` : ''}
+                                        ${game.id === 'memory' && gameStats.played > 0 ? `<p>Played: ${gameStats.played}x</p>` : gameStats.played > 0 ? `<p>Played: ${gameStats.played}x</p>` : ''}
                                     </div>
                                     <button class="btn btn-game" onclick="startGameFromCard('${game.id}')">Play</button>
                                 </div>
@@ -4487,7 +4493,75 @@ window.endMemoryGame = function(game, won) {
     game.stats.time_used = elapsed;
     recordGamePlay('memory', game.score, won);
 
+    // Update leaderboard
+    updateMemoryLeaderboard(game);
+
     showMemoryResults(game, won);
+};
+
+window.updateMemoryLeaderboard = function(game) {
+    if (!state.games.stats) state.games.stats = {};
+    if (!state.games.stats.memory) {
+        state.games.stats.memory = {
+            played: 0,
+            bestScore: 0,
+            leaderboard: []
+        };
+    }
+
+    const memoryStats = state.games.stats.memory;
+
+    // Initialize leaderboard for this difficulty if needed
+    if (!memoryStats.leaderboard) memoryStats.leaderboard = [];
+
+    // Add new score to leaderboard
+    const entry = {
+        score: game.score,
+        difficulty: game.difficulty,
+        date: todayStr(),
+        won: game.stats.pairs_matched === game.stats.total_pairs,
+        combo: game.combo
+    };
+
+    memoryStats.leaderboard.push(entry);
+
+    // Sort by score (descending) and filter top 5 per difficulty
+    const byDifficulty = {
+        easy: [],
+        medium: [],
+        hard: []
+    };
+
+    memoryStats.leaderboard.forEach(e => {
+        if (byDifficulty[e.difficulty]) {
+            byDifficulty[e.difficulty].push(e);
+        }
+    });
+
+    // Keep top 5 per difficulty
+    ['easy', 'medium', 'hard'].forEach(diff => {
+        byDifficulty[diff]
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5);
+    });
+
+    // Rebuild leaderboard (keep all, but reference by difficulty)
+    memoryStats.leaderboard = [];
+    ['easy', 'medium', 'hard'].forEach(diff => {
+        byDifficulty[diff].forEach(e => {
+            memoryStats.leaderboard.push(e);
+        });
+    });
+
+    // Update personal best
+    const personalBest = memoryStats.leaderboard
+        .filter(e => e.difficulty === game.difficulty)
+        .reduce((max, e) => Math.max(max, e.score), 0);
+
+    memoryStats.bestScore = personalBest;
+    memoryStats.played = (memoryStats.played || 0) + 1;
+
+    saveState();
 };
 
 window.showMemoryResults = function(game, won) {
@@ -4495,12 +4569,23 @@ window.showMemoryResults = function(game, won) {
     const timeUsed = `${Math.floor(game.stats.time_used / 60)}m ${game.stats.time_used % 60}s`;
     const diffLabel = { easy: '🟢 Easy', medium: '🟡 Medium', hard: '🔴 Hard' }[game.difficulty];
 
+    // Get leaderboard for this difficulty
+    const memoryStats = state.games.stats?.memory || {};
+    const leaderboard = (memoryStats.leaderboard || [])
+        .filter(e => e.difficulty === game.difficulty)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+    const isNewBest = game.score === (leaderboard[0]?.score || 0);
+    const personalBest = leaderboard[0]?.score || 0;
+
     modal.innerHTML = '';
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center';
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center;max-height:90vh;overflow-y:auto';
     card.innerHTML = `
         <div style="font-size:3em;margin-bottom:16px">${won ? '🎉' : '⏱️'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Game ${won ? 'Won!' : 'Over'}</h2>
+        ${isNewBest && game.score > 0 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800;margin-bottom:12px">🏆 New Personal Best!</div>` : ''}
         <div style="font-size:3.5em;font-weight:900;color:#10B981;margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
@@ -4517,7 +4602,26 @@ window.showMemoryResults = function(game, won) {
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:center">
             <div style="font-size:0.9em;color:#94A3B8;margin-bottom:8px">Difficulty: ${diffLabel}</div>
             ${game.combo > 1 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800">Max Combo: 🔥 ${game.combo}×</div>` : ''}
+            ${personalBest > 0 && !isNewBest ? `<div style="font-size:0.9em;color:#94A3B8;margin-top:8px">Your Best: ${personalBest} pts</div>` : ''}
         </div>
+
+        ${leaderboard.length > 0 ? `
+            <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
+                <div style="font-size:0.95em;font-weight:800;color:#94A3B8;margin-bottom:12px">Top Scores (${diffLabel})</div>
+                ${leaderboard.map((entry, i) => {
+                    const medals = ['🥇', '🥈', '🥉'];
+                    const daysAgo = Math.floor((Date.now() - new Date(entry.date).getTime()) / (1000 * 60 * 60 * 24));
+                    const dateStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
+                    const isCurrent = entry.score === game.score;
+                    return `
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155;${isCurrent ? 'background:#1E3A8A;padding:8px;border-radius:6px;border:none' : ''}">
+                            <span style="color:${isCurrent ? '#60A5FA' : '#D1FAE5'}">${medals[i]} ${entry.score} pts ${isCurrent ? '← You' : ''}</span>
+                            <span style="font-size:0.85em;color:#64748B">${dateStr}</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        ` : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <button onclick="playAgainMemory()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
