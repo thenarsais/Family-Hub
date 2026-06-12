@@ -2799,6 +2799,199 @@ window.showUnlockToast = function(gameId) {
     // TODO: Implement full toast notification with styling, auto-dismiss, "Play Now" button
 };
 
+// ═══════════════════════════════════════════════════
+//  PHASE 5: WORDLE VARIANT GAME ENGINE
+// ═══════════════════════════════════════════════════
+
+// Extract all 5-letter category names from TRIVIA_QUESTION_BANK
+function get5LetterCategories() {
+    const categories = new Set();
+    TRIVIA_QUESTION_BANK.forEach(q => {
+        const cat = q.category || '';
+        if (cat.length === 5) {
+            categories.add(cat.toUpperCase());
+        }
+    });
+    // Fallback categories if not enough in question bank
+    const fallback = ['BRAIN', 'EARTH', 'SPACE', 'OCEAN', 'PLANT', 'MUSIC', 'SPORT', 'MATH'];
+    fallback.forEach(cat => categories.add(cat));
+    return Array.from(categories);
+}
+
+// Initialize a new Wordle game
+window.initializeWordleGame = function() {
+    const categories = get5LetterCategories();
+    const answer = categories[Math.floor(Math.random() * categories.length)].toUpperCase();
+
+    return {
+        gameId: 'wordle',
+        answer: answer,
+        guesses: [],
+        gameState: 'playing', // playing | won | lost
+        attempts: 0,
+        maxAttempts: 6,
+        feedback: [] // Array of {guess, feedback: [letter, color]}
+    };
+};
+
+// Validate a guess against the answer
+// Returns feedback: ['🟩', '🟨', '⬜'] for each letter
+function getWordleFeedback(guess, answer) {
+    guess = guess.toUpperCase();
+    answer = answer.toUpperCase();
+
+    if (guess.length !== answer.length) return null;
+
+    const feedback = [];
+    const answerLetters = answer.split('');
+    const guessLetters = guess.split('');
+
+    // First pass: mark correct positions (green)
+    for (let i = 0; i < guessLetters.length; i++) {
+        if (guessLetters[i] === answerLetters[i]) {
+            feedback[i] = '🟩';
+            answerLetters[i] = null; // Mark as used
+        }
+    }
+
+    // Second pass: mark wrong positions (yellow) and non-existent (gray)
+    for (let i = 0; i < guessLetters.length; i++) {
+        if (feedback[i]) continue; // Already marked green
+
+        const letterIndex = answerLetters.indexOf(guessLetters[i]);
+        if (letterIndex !== -1) {
+            feedback[i] = '🟨';
+            answerLetters[letterIndex] = null; // Mark as used
+        } else {
+            feedback[i] = '⬜';
+        }
+    }
+
+    return feedback;
+}
+
+// Process a guess in the game
+window.wordleSubmitGuess = function(game, guess) {
+    if (game.gameState !== 'playing') return game; // Game already over
+
+    guess = guess.toUpperCase().trim();
+    if (guess.length !== game.answer.length) return game;
+
+    game.attempts += 1;
+    const feedback = getWordleFeedback(guess, game.answer);
+    game.guesses.push(guess);
+    game.feedback.push({ guess, feedback });
+
+    // Check win condition
+    if (guess === game.answer) {
+        game.gameState = 'won';
+        const score = game.attempts <= 3 ? 100 : game.attempts <= 6 ? 50 : 0;
+        game.score = score;
+    }
+    // Check lose condition
+    else if (game.attempts >= game.maxAttempts) {
+        game.gameState = 'lost';
+        game.score = 0;
+    }
+
+    return game;
+};
+
+// Calculate Wordle score
+window.wordleCalculateScore = function(attempts) {
+    if (attempts <= 3) return 100;
+    if (attempts <= 6) return 50;
+    return 0;
+};
+
+// Render Wordle game UI
+window.renderWordleGame = function(game) {
+    return `
+        <div style="max-width:400px;margin:20px auto;padding:20px;background:#F8FAFC;border-radius:16px">
+            <div style="text-align:center;margin-bottom:20px">
+                <div style="font-size:0.9em;color:#64748B">Guess the 5-letter category name</div>
+            </div>
+
+            <div style="text-align:center;margin-bottom:16px">
+                <div style="font-size:0.8em;color:#94A3B8;font-weight:600">Attempts: <span style="color:#1E293B;font-weight:800">${game.attempts}/${game.maxAttempts}</span></div>
+                <div style="height:6px;background:#E2E8F0;border-radius:3px;margin-top:8px">
+                    <div style="height:100%;background:#10B981;border-radius:3px;width:${(game.attempts / game.maxAttempts) * 100}%"></div>
+                </div>
+            </div>
+
+            ${game.feedback.map(f => `
+                <div style="margin-bottom:8px;padding:10px;background:white;border-radius:8px;font-family:monospace;font-size:1.2em;font-weight:800;letter-spacing:4px;text-align:center">
+                    ${f.feedback.join('')}
+                </div>
+            `).join('')}
+
+            ${game.gameState !== 'playing' ? `
+                <div style="margin-bottom:16px;padding:16px;background:${game.gameState === 'won' ? '#ECFDF5' : '#FEF2F2'};border-radius:12px;text-align:center;border:2px solid ${game.gameState === 'won' ? '#10B981' : '#EF4444'}">
+                    <div style="font-size:1.5em;margin-bottom:8px">${game.gameState === 'won' ? '🎉' : '😢'}</div>
+                    <div style="font-weight:700;color:${game.gameState === 'won' ? '#065F46' : '#7F1D1D'};margin-bottom:4px">${game.gameState === 'won' ? 'You Won!' : 'Game Over'}</div>
+                    <div style="font-size:0.9em;color:${game.gameState === 'won' ? '#047857' : '#991B1B'};margin-bottom:12px">Answer: <strong>${game.answer}</strong></div>
+                    <div style="font-size:1.1em;font-weight:800;color:#10B981">Points: ${game.score || 0}</div>
+                </div>
+            ` : `
+                <div style="display:flex;gap:8px;margin-bottom:16px">
+                    <input type="text" id="wordle-input" placeholder="Guess..." maxlength="5" style="flex:1;padding:12px;border:2px solid #E2E8F0;border-radius:8px;font-size:1em;text-transform:uppercase;font-weight:600;letter-spacing:2px">
+                    <button onclick="wordleSubmitBtn()" style="padding:12px 20px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Submit</button>
+                </div>
+            `}
+
+            <div style="font-size:0.8em;color:#94A3B8;text-align:center;margin-top:16px">🟩 Correct • 🟨 Wrong spot • ⬜ Not in word</div>
+        </div>
+    `;
+};
+
+window.wordleSubmitBtn = function() {
+    const input = document.getElementById('wordle-input');
+    if (!input || !window._wordleGame) return;
+
+    const guess = input.value.trim().toUpperCase();
+    if (guess.length !== 5) {
+        alert('Enter a 5-letter word');
+        return;
+    }
+
+    wordleSubmitGuess(window._wordleGame, guess);
+    input.value = '';
+
+    const panel = document.getElementById('wordle-panel-content');
+    if (panel) {
+        panel.innerHTML = renderWordleGame(window._wordleGame);
+
+        if (window._wordleGame.gameState !== 'playing') {
+            setTimeout(() => {
+                recordGamePlay('wordle', window._wordleGame.score, window._wordleGame.gameState === 'won');
+                if (window._wordleGame.score > 0) awardPoints(window._wordleGame.score);
+            }, 100);
+        } else {
+            setTimeout(() => document.getElementById('wordle-input').focus(), 50);
+        }
+    }
+};
+
+window.startWordleGame = function() {
+    window._wordleGame = initializeWordleGame();
+    const modal = document.createElement('div');
+    modal.id = 'wordle-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:white;border-radius:20px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
+    card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">🎯 Wordle</h2>
+            <button onclick="document.getElementById('wordle-modal').remove()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px">✕</button>
+        </div>
+        <div id="wordle-panel-content">${renderWordleGame(window._wordleGame)}</div>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('wordle-input')?.focus(), 100);
+};
+
 function buildDefaultState() {
     const today = todayStr();
     const weekStart = getMondayOfWeek(today);
