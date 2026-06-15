@@ -223,7 +223,7 @@
         .dash-header {
             background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent));
             padding: 20px 18px 18px;
-            color: white;
+            color: var(--theme-primary-text, white);
         }
         .dash-header-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
         .dash-greeting h1 { font-size:1.75em; font-weight:800; line-height:1.1; }
@@ -791,7 +791,7 @@
         .db-expand {
             background: var(--theme-secondary); border: none; border-radius:8px;
             padding: 5px 10px; font-size:0.72em; font-weight:700;
-            color: var(--theme-primary); cursor:pointer; transition:var(--t); white-space:nowrap;
+            color: var(--theme-secondary-text, #1E293B); cursor:pointer; transition:var(--t); white-space:nowrap;
         }
         .db-expand:hover  { opacity: 0.8; }
         .db-expand:active { transform:scale(0.95); }
@@ -6272,6 +6272,21 @@ window.getUpcomingHolidayTheme = function() {
 };
 
 // Apply theme based on upcoming holiday
+// Determine if a color is light or dark (for text contrast)
+window.getTextColorForBackground = function(hexColor) {
+    // Convert hex to RGB
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Calculate brightness using relative luminance formula
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+    // If brightness > 155, use dark text; otherwise use white
+    return brightness > 155 ? '#1E293B' : '#FFFFFF';
+};
+
 window.applyHolidayTheme = function() {
     const holiday = getUpcomingHolidayTheme();
 
@@ -6290,9 +6305,17 @@ window.applyHolidayTheme = function() {
     const colors = themeColors[holiday.theme] || themeColors.spring;
     const root = document.documentElement;
 
+    // Determine text colors based on background brightness
+    const primaryTextColor = getTextColorForBackground(colors.primary);
+    const accentTextColor = getTextColorForBackground(colors.accent);
+    const secondaryTextColor = getTextColorForBackground(colors.secondary);
+
     root.style.setProperty('--theme-primary', colors.primary);
     root.style.setProperty('--theme-accent', colors.accent);
     root.style.setProperty('--theme-secondary', colors.secondary);
+    root.style.setProperty('--theme-primary-text', primaryTextColor);
+    root.style.setProperty('--theme-accent-text', accentTextColor);
+    root.style.setProperty('--theme-secondary-text', secondaryTextColor);
 
     if (!state.games) state.games = { unlocked: [], stats: {} };
     if (!state.games.seasonal) state.games.seasonal = {};
