@@ -7757,6 +7757,29 @@ function buildDefaultState() {
         },
         settings: {
             // currentSeason auto-detected based on month unless user selects manually
+            dailyGoal: 50, // Customizable daily points goal
+        },
+        achievements: {
+            weekly: {
+                current: 0,
+                claimed: false,
+                lastClaimedDate: null,
+            },
+            monthly: {
+                current: 0,
+                claimed: false,
+                lastClaimedDate: null,
+            },
+            unlocked: {
+                // 'week_1': '2026-06-10', 'week_5': '2026-06-15', etc.
+            },
+        },
+        dailyBonusEnhanced: {
+            dailyStreak: 0,
+            weeklyStreak: 0,
+            monthlyStreak: 0,
+            lastClaimedDate: null,
+            bonusHistory: [], // [{ date: '2026-06-15', bonus: 10, multiplier: 1.0 }]
         },
     };
 }
@@ -7790,8 +7813,29 @@ function applyResets() {
     const weekStart = getMondayOfWeek(today);
     const month = today.slice(0, 7);
 
-    // Ensure settings object exists (for seasonal theme support)
-    if (!state.settings) state.settings = {};
+    // Ensure settings object exists (for seasonal theme support and goals)
+    if (!state.settings) state.settings = { dailyGoal: 50 };
+    if (!state.settings.dailyGoal) state.settings.dailyGoal = 50;
+
+    // Ensure achievements tracking exists
+    if (!state.achievements) {
+        state.achievements = {
+            weekly: { current: 0, claimed: false, lastClaimedDate: null },
+            monthly: { current: 0, claimed: false, lastClaimedDate: null },
+            unlocked: {},
+        };
+    }
+
+    // Ensure enhanced bonus tracking exists
+    if (!state.dailyBonusEnhanced) {
+        state.dailyBonusEnhanced = {
+            dailyStreak: 0,
+            weeklyStreak: 0,
+            monthlyStreak: 0,
+            lastClaimedDate: null,
+            bonusHistory: [],
+        };
+    }
 
     // Ensure trivia onboarding object exists (for migration from old state)
     if (!state.trivia) state.trivia = {};
@@ -8130,14 +8174,15 @@ function renderDashboard() {
 
     const all  = allChoresCount();
     const done = doneChoresCount();
+    const goal = state.settings.dailyGoal || 50;
     const hEl = document.getElementById('hdr-pts');
     if (hEl) hEl.textContent = state.points.today;
     const bEl = document.getElementById('daily-bar');
-    if (bEl) bEl.style.width = Math.min(100, (state.points.today / DAILY_GOAL_PTS) * 100) + '%';
+    if (bEl) bEl.style.width = Math.min(100, (state.points.today / goal) * 100) + '%';
     const blEl = document.getElementById('daily-bar-left');
     if (blEl) blEl.textContent = done + ' / ' + all.length + ' chores done';
     const brEl = document.getElementById('daily-bar-right');
-    if (brEl) brEl.textContent = 'Goal: ' + DAILY_GOAL_PTS + ' pts';
+    if (brEl) brEl.textContent = 'Goal: ' + goal + ' pts';
 
     renderDashChores();
     renderDashHomework();
@@ -9717,6 +9762,84 @@ function renderPointsPanel() {
     `;
 
     document.getElementById('panel-points').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+//  CUSTOMIZABLE GOALS
+// ═══════════════════════════════════════════════════
+function updateDailyGoal(newGoal) {
+    if (newGoal > 0 && newGoal <= 500) {
+        state.settings.dailyGoal = newGoal;
+        saveState();
+        renderDashboard();
+        showNotification(`Daily goal updated to ${newGoal} points!`, 'info');
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  ENHANCED DAILY BONUSES & ACHIEVEMENTS
+// ═══════════════════════════════════════════════════
+function calculateBonusMultiplier() {
+    const streak = state.dailyBonusEnhanced.dailyStreak || 0;
+    // Multiplier scales: 1.0 (no streak), 1.1 (day 3), 1.2 (day 7), 1.5 (day 14), 2.0 (day 30+)
+    if (streak >= 30) return 2.0;
+    if (streak >= 14) return 1.5;
+    if (streak >= 7) return 1.2;
+    if (streak >= 3) return 1.1;
+    return 1.0;
+}
+
+function updateAchievements() {
+    const today = todayStr();
+    const streaks = state.dailyBonusEnhanced;
+
+    // Weekly achievements (7 days, 5 days, 3 days played)
+    const weekStart = getMondayOfWeek(today);
+    const weekDaysSinceMon = Math.floor((new Date(today) - new Date(weekStart)) / (1000 * 60 * 60 * 24));
+    if (weekDaysSinceMon >= 6 && streaks.dailyStreak >= 7 && !state.achievements.weekly.claimed) {
+        state.achievements.weekly.current = 7;
+    }
+
+    // Monthly achievements (30 days, 20 days, 10 days played)
+    const daysInMonth = new Date(today.slice(0, 7) + '-01').getMonth();
+    if (daysInMonth >= 20 && streaks.monthlyStreak >= 20 && !state.achievements.monthly.claimed) {
+        state.achievements.monthly.current = Math.min(streaks.monthlyStreak, 30);
+    }
+}
+
+function awardWeeklyAchievement() {
+    if (state.achievements.weekly.current >= 7 && !state.achievements.weekly.claimed) {
+        const bonusPoints = 50;
+        state.points.today += bonusPoints;
+        state.points.week += bonusPoints;
+        state.points.total += bonusPoints;
+        state.achievements.weekly.claimed = true;
+        state.achievements.weekly.lastClaimedDate = todayStr();
+        saveState();
+        showNotification(`🏅 Weekly Achievement Unlocked! +${bonusPoints} bonus points!`, 'success');
+        return true;
+    }
+    return false;
+}
+
+function awardMonthlyAchievement() {
+    if (state.achievements.monthly.current >= 30 && !state.achievements.monthly.claimed) {
+        const bonusPoints = 150;
+        state.points.today += bonusPoints;
+        state.points.month += bonusPoints;
+        state.points.total += bonusPoints;
+        state.achievements.monthly.claimed = true;
+        state.achievements.monthly.lastClaimedDate = todayStr();
+        saveState();
+        showNotification(`🏆 Monthly Achievement Unlocked! +${bonusPoints} bonus points!`, 'success');
+        return true;
+    }
+    return false;
+}
+
+function showNotification(message, type = 'info') {
+    // Create simple notification (can enhance with toast UI later)
+    console.log(`[${type.toUpperCase()}] ${message}`);
 }
 
 // ═══════════════════════════════════════════════════
