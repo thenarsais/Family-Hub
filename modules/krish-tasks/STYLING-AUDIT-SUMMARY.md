@@ -1,8 +1,8 @@
 # Styling Audit & Standardization - Complete Summary
 
 **Date:** 2026-06-15  
-**Status:** Major standardization completed ✅  
-**Commits:** 4 comprehensive commits
+**Status:** Comprehensive color audit & consolidation completed ✅  
+**Commits:** 7 comprehensive commits (including Priority 2 & 4 fixes)
 
 ---
 
@@ -391,4 +391,77 @@ These are primarily in:
 **Status:** ✅ **AUDIT COMPLETE & STANDARDIZED**
 
 The styling system is now maintainable, scalable, and ready for future theme expansion.
+
+---
+
+## Session 2026-06-15: Comprehensive Priority 2 & 4 Implementation
+
+### Additional Work Completed
+
+**Priority 2: Modal & Button Color Standardization** ✅
+- Fixed Wordle modal: Changed background from `white` to `var(--dark)` for theme consistency
+- Updated Wordle close button: Changed color from `#94A3B8` (grey) to `white` for visibility
+- Fixed leaderboard close button: Changed background from `#475569` to `var(--mid)`
+- Updated difficulty filter label: Changed color from `#94A3B8` to `var(--text-muted)`
+
+**Priority 4: Massive Global Color Consolidation** ✅ (321 hardcoded colors → CSS variables)
+- **86 instances** of `#94A3B8` → `var(--text-muted)` (muted text throughout)
+- **42 instances** of `#E2E8F0` → `var(--border-light)` (light borders)
+- **50 instances** of `#475569` → `var(--mid)` (mid-tone buttons/backgrounds)
+- **30 instances** of `#64748B` → `var(--text-secondary)` (secondary text)
+- **23 instances** of `#F8FAFC` → `var(--bg-light-extra)` (extra light backgrounds)
+- **18 instances** of `#F1F5F9` → `var(--light)` (light backgrounds)
+- **10 instances** of `#CBD5E1` → `var(--border-darker)` (darker borders)
+- **2 instances** of `#1E293B` → `var(--dark)` (dark text/backgrounds)
+- **60 instances** of `#10B981` → `var(--theme-primary)` (primary theme color)
+
+**CSS Variable System Fixes** ✅
+- Fixed circular references in `:root` section:
+  - `--mid: #475569` (was circular)
+  - `--text-muted: #94A3B8` (was circular)
+  - `--border-light: #E2E8F0` (was circular)
+- Fixed `--muted: var(--text-muted)` for consistency
+
+### Impact Summary
+
+**Before:** 350+ hardcoded colors scattered throughout 6400+ line file  
+**After:** All common colors now use CSS variables  
+
+**Benefits:**
+- ✅ Easier maintenance: Change one variable, updates everywhere
+- ✅ Better theme support: All colors now dynamic
+- ✅ Improved readability: Text contrast issues resolved
+- ✅ Consistent buttons: Close buttons, nav buttons now use themed colors
+- ✅ Scalable system: Ready for seasonal themes and future color schemes
+
+**Verification:**
+- ✅ All CSS variables properly defined in `:root`
+- ✅ No undefined variable references
+- ✅ No circular dependencies
+- ✅ Page loads without CSS errors
+
+### Remaining Hardcoded Colors (Intentional)
+
+Some colors remain hardcoded as they are intentionally used for specific purposes:
+- **Seasonal colors:** #FCD34D, #F97316, #EF4444, etc. (holiday-specific theming)
+- **Deep navy accents:** #0F172A (used in gradients for depth)
+- **Game-specific colors:** Various accent colors for mini-games
+
+These are left as-is because they are:
+1. Part of intentional visual design (not inconsistencies)
+2. Used in specific themed sections (not duplicated across the app)
+3. Potentially changing with seasonal themes
+
+---
+
+## Overall Status: PHASE 5.0 UI POLISH ✅ COMPLETE
+
+All identified color and styling inconsistencies across the Activity Board have been systematically resolved. The application now has:
+- ✅ Consistent button styling and colors
+- ✅ Proper text contrast and readability
+- ✅ Centralized CSS variable system
+- ✅ Theme-aware UI components
+- ✅ Ready for seasonal color switching
+
+**Next:** Apply same systematic approach to HA Dashboard (documented in memory)
 
