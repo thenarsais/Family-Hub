@@ -49,6 +49,21 @@
             --theme-accent: #BFDBFE;
             --theme-secondary: #D1FAE5;
 
+            /* Light backgrounds for status colors */
+            --info-light: #F0F9FF;
+            --success-light: #ECFDF5;
+            --danger-light: #FEF2F2;
+            --warning-light: #FFFBEB;
+
+            /* Border colors for status states */
+            --indigo-border: #C7D2FE;
+            --success-border: #A7F3D0;
+            --danger-border: #FECACA;
+            --warning-border: #FCD34D;
+            --indigo-dark: #4338CA;
+            --success-dark: #065F46;
+            --danger-dark: #7F1D1D;
+
             /* Spacing */
             --space-xs: 4px;
             --space-sm: 8px;
@@ -269,6 +284,48 @@
             background: #000000;
             color: #FFFFFF;
         }
+
+        /* Trivia answer buttons */
+        .trivia-opt {
+            padding: 13px 14px;
+            background: white;
+            border: 2px solid var(--border-light);
+            border-radius: 12px;
+            color: var(--dark);
+            cursor: pointer;
+            font-size: 0.92em;
+            text-align: left;
+            line-height: 1.4;
+            transition: all 0.15s;
+            font-family: inherit;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .trivia-opt:not([data-locked]):hover {
+            background: var(--indigo-light);
+            border-color: var(--indigo);
+        }
+
+        .trivia-opt[data-correct="true"] {
+            background: #DCFCE7;
+            border-color: #16A34A;
+            color: #14532D;
+            font-weight: 700;
+        }
+
+        .trivia-opt[data-wrong="true"] {
+            background: #FEE2E2;
+            border-color: #DC2626;
+            color: #7F1D1D;
+            font-weight: 700;
+        }
+
+        .trivia-opt[data-locked="1"] {
+            cursor: default;
+            opacity: 0.45;
+        }
+
         body.high-contrast .view { background: #000000 !important; }
         body.high-contrast button, body.high-contrast input, body.high-contrast textarea {
             border-width: 2px !important;
@@ -278,6 +335,30 @@
             background: #000000 !important;
             color: #FFFFFF !important;
             font-weight: 700 !important;
+        }
+
+        /* Modal primary button */
+        .modal-btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--indigo);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1em;
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn-primary:hover {
+            background: var(--indigo-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .modal-btn-primary:active {
+            transform: translateY(0);
         }
 
         /* ── BADGE ANIMATIONS ────────────────────── */
@@ -1211,19 +1292,19 @@
             transition: all 0.2s ease;
         }
         .game-card.unlocked {
-            background: linear-gradient(135deg, var(--dark) 0%, #0F172A 100%);
+            background: linear-gradient(135deg, #334155 0%, #475569 100%);
             border-color: var(--theme-primary);
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
         }
         .game-card.unlocked:hover {
             border-color: var(--theme-accent);
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
             transform: translateY(-2px);
         }
         .game-card.locked {
-            background: linear-gradient(135deg, var(--dark) 0%, #0F172A 100%);
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
             border-color: var(--mid);
-            opacity: 0.7;
+            opacity: 1;
         }
         .game-header {
             display: flex;
@@ -1247,7 +1328,7 @@
         .game-stats {
             margin: 8px 0;
             font-size: 0.8em;
-            color: var(--border-light);
+            color: #D1D5DB;
             font-weight: 500;
         }
         .game-stats p {
@@ -2250,10 +2331,7 @@ function showOnboardingWizard() {
                     `).join('')}
                 </div>
             </div>
-            <button onclick="completeOnboardingStep1()" style="
-                width:100%;padding:12px;background:var(--dark);
-                color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:background 0.2s
-            " onmouseover="this.style.background='#0F172A'" onmouseout="this.style.background='var(--dark)'">Next →</button>
+            <button onclick="completeOnboardingStep1()" class="modal-btn-primary">Next →</button>
         `;
     } else {
         card.innerHTML = `
@@ -2451,11 +2529,11 @@ function showProfileSettings() {
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
                 ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
                     <button onclick="changeAvatar('${emoji}')" style="
-                        font-size:2em;padding:12px;border:2px solid ${profile.avatar === emoji ? '#818CF8' : 'var(--border-light)'};
+                        font-size:2em;padding:12px;border:2px solid ${profile.avatar === emoji ? 'var(--indigo)' : 'var(--border-light)'};
                         border-radius:12px;background:${profile.avatar === emoji ? 'var(--indigo-light)' : 'var(--bg-light-extra)'};
                         cursor:pointer;transition:all 0.2s
-                    " onmouseover="this.style.borderColor='#818CF8';this.style.background='var(--indigo-light)'"
-                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? '#818CF8' : 'var(--border-light)'}';this.style.background='${profile.avatar === emoji ? 'var(--indigo-light)' : 'var(--bg-light-extra)'}'"
+                    " onmouseover="this.style.borderColor='var(--indigo)';this.style.background='var(--indigo-light)'"
+                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? 'var(--indigo)' : 'var(--border-light)'}';this.style.background='${profile.avatar === emoji ? 'var(--indigo-light)' : 'var(--bg-light-extra)'}'"
                     >${emoji}</button>
                 `).join('')}
             </div>
@@ -2473,10 +2551,7 @@ function showProfileSettings() {
             " onmouseover="this.style.background='#B91C1C'" onmouseout="this.style.background='#DC2626'">🔄 Reset Onboarding (for testing)</button>
         </div>
 
-        <button id="done-profile-btn" style="
-            width:100%;padding:12px;background:var(--indigo);color:white;border:none;
-            border-radius:10px;cursor:pointer;font-weight:700;transition:background 0.2s
-        " onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='var(--indigo)'">Done</button>
+        <button id="done-profile-btn" class="modal-btn-primary">Done</button>
     `;
 
     modal.appendChild(card);
@@ -3028,13 +3103,6 @@ function renderTriviaPanel() {
     panel.innerHTML = `
         ${getProfileDisplay('Trivia Player')}
 
-        <div class="sec-hdr">
-            <div>
-                <div class="sec-title">🧠 Daily Trivia</div>
-                <div class="sec-sub">${total} answered · 💯 ${accuracy}%</div>
-            </div>
-        </div>
-
         <!-- Phase 4: Difficulty Mode Selector -->
         <div style="display:flex;gap:8px;margin-bottom:14px;justify-content:center">
             <button onclick="setDifficultyMode('rookie')" style="
@@ -3149,11 +3217,8 @@ function renderTriviaPanel() {
         <div id="trivia-options" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
             ${options.map((opt,i) => `<button class="trivia-opt"
                 data-answer="${opt.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}"
-                onclick="checkTriviaAnswer(this)"
-                style="padding:13px 14px;background:white;border:2px solid var(--border-light);border-radius:12px;color:var(--dark);cursor:pointer;font-size:0.92em;text-align:left;line-height:1.4;transition:all 0.15s;font-family:inherit;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
-                onmouseover="if(!this.dataset.locked){this.style.background='var(--indigo-light)';this.style.borderColor='var(--indigo)'}"
-                onmouseout="if(!this.dataset.locked){this.style.background='white';this.style.borderColor='var(--border-light)'}">
-                <span style="display:inline-block;background:var(--indigo-light);color:#4338CA;border-radius:6px;padding:1px 7px;margin-right:8px;font-size:0.8em;font-weight:800">${String.fromCharCode(65+i)}</span>${opt}
+                onclick="checkTriviaAnswer(this)">
+                <span style="display:inline-block;background:var(--indigo-light);color:var(--indigo-dark);border-radius:6px;padding:1px 7px;margin-right:8px;font-size:0.8em;font-weight:800">${String.fromCharCode(65+i)}</span>${opt}
             </button>`).join('')}
         </div>
 
@@ -7740,12 +7805,6 @@ function renderChoresPanel() {
     let html = `
         ${getProfileDisplay('Chores Master')}
 
-        <div class="sec-hdr">
-            <div>
-                <div class="sec-title">Today's Chores</div>
-                <div class="sec-sub">${done}/${all.length} done · ${pts}/${totalPts} pts earned</div>
-            </div>
-        </div>
         <div class="card-white" style="padding:12px 14px">
             <div style="display:flex;justify-content:space-between;margin-bottom:7px;font-size:0.82em;font-weight:700">
                 <span style="color:var(--mid)">Overall progress</span>
@@ -8071,13 +8130,6 @@ function renderKungFuPanel() {
     let html = `
         ${getProfileDisplay('🥋 Kung Fu Master')}
 
-        <div class="sec-hdr">
-            <div>
-                <div class="sec-title">🥋 Kung Fu Training</div>
-                <div class="sec-sub">This week: ${weekDone} sessions · keep it up!</div>
-            </div>
-        </div>
-
         <div class="kf-goals">
             <div class="kf-goal ${kf.todayPractice ? 'done' : ''}" onclick="toggleKFGoal('practice')">
                 <div class="kf-g-icon">🥋</div>
@@ -8242,13 +8294,6 @@ function renderBoardReading() {
     let html = `
         ${getProfileDisplay('Book Lover')}
 
-        <div class="sec-hdr">
-            <div>
-                <div class="sec-title">📚 Daily Reading</div>
-                <div class="sec-sub">${r.dailyMinutes}/20 min today · ${r.weeklyMinutes}/100 min this week</div>
-            </div>
-        </div>
-
         <div style="padding:16px">
             <!-- Progress bars -->
             <div style="margin-bottom:20px">
@@ -8397,13 +8442,6 @@ function renderGujaratiPanel() {
 
     let html = `
         ${getProfileDisplay('ગુજરાતી Learner')}
-
-        <div class="sec-hdr">
-            <div>
-                <div class="sec-title">🇮🇳 Gujarati Learning</div>
-                <div class="sec-sub">Phase ${g.phase} · Lesson ${g.lesson} · ${g.todayMinutes} min today</div>
-            </div>
-        </div>
 
         <div class="guj-stats">
             <div class="guj-stat">
