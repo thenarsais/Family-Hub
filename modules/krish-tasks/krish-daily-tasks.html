@@ -7,11 +7,12 @@
     <script src="trivia-questions.js"></script>
     <style>
         :root {
-            /* Colors */
-            --primary: #6366F1;
-            --primary-light: #818CF8;
+            /* Default Theme Colors (Spring) */
+            --primary: #10B981;
+            --primary-light: #34D399;
             --secondary: #EC4899;
-            --accent: #F59E0B;
+            --accent: #BFDBFE;
+            --accent-light: #D1FAE5;
             --success: #10B981;
             --danger: #EF4444;
             --warning: #F59E0B;
@@ -24,6 +25,11 @@
             --muted: #94A3B8;
             --light: #F1F5F9;
             --white: #FFFFFF;
+
+            /* Seasonal Theme Variables (updated dynamically) */
+            --theme-primary: #10B981;
+            --theme-accent: #BFDBFE;
+            --theme-secondary: #D1FAE5;
 
             /* Spacing */
             --space-xs: 4px;
@@ -1025,12 +1031,12 @@
         }
         .game-card.unlocked {
             background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-            border-color: #0EA5E9;
-            box-shadow: 0 0 12px rgba(14, 165, 233, 0.15);
+            border-color: var(--theme-primary);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
         }
         .game-card.unlocked:hover {
-            border-color: #06B6D4;
-            box-shadow: 0 0 16px rgba(6, 182, 212, 0.25);
+            border-color: var(--theme-accent);
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
             transform: translateY(-2px);
         }
         .game-card.locked {
@@ -1083,7 +1089,7 @@
         }
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #10B981, #06B6D4);
+            background: var(--theme-primary);
             transition: width 0.3s ease;
         }
         .progress-text {
@@ -1093,7 +1099,7 @@
         .btn-game {
             margin-top: 8px;
             padding: 8px 12px;
-            background: #0EA5E9;
+            background: var(--theme-primary);
             border: none;
             color: white;
             border-radius: 6px;
@@ -1103,7 +1109,8 @@
             transition: all 0.2s ease;
         }
         .btn-game:hover {
-            background: #06B6D4;
+            opacity: 0.85;
+            transform: scale(1.05);
         }
         .btn-unlock-required {
             margin-top: 8px;
@@ -2259,6 +2266,33 @@ function showProfileSettings() {
                     >${emoji}</button>
                 `).join('')}
             </div>
+        </div>
+
+        <div style="margin-bottom:24px">
+            <label style="display:block;color:#475569;font-weight:600;margin-bottom:12px">🎨 Seasonal Theme</label>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+                ${['spring', 'summer', 'fall', 'winter'].map(season => {
+                    const icons = { spring: '🌱', summer: '☀️', fall: '🍂', winter: '❄️' };
+                    const names = { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' };
+                    const currentTheme = state.games?.seasonal?.theme || 'spring';
+                    const isSelected = currentTheme === season;
+                    return \`
+                        <button onclick="applyTheme('\${season}')" style="
+                            padding:12px;border:2px solid \${isSelected ? '#10B981' : '#E2E8F0'};
+                            border-radius:10px;background:\${isSelected ? '#ECFDF5' : '#F8FAFC'};
+                            cursor:pointer;font-weight:\${isSelected ? '700' : '600'};
+                            transition:all 0.2s;text-align:center
+                        "
+                        onmouseover="this.style.borderColor='#10B981';this.style.background='#ECFDF5'"
+                        onmouseout="this.style.borderColor='\${isSelected ? '#10B981' : '#E2E8F0'}';this.style.background='\${isSelected ? '#ECFDF5' : '#F8FAFC'}'"
+                        >
+                            <div style="font-size:1.5em;margin-bottom:4px">\${icons[season]}</div>
+                            <div style="font-size:0.85em;color:#1E293B">\${names[season]}</div>
+                        </button>
+                    \`;
+                }).join('')}
+            </div>
+            <div style="font-size:0.8em;color:#94A3B8;margin-top:8px">Current: Spring 🌱</div>
         </div>
 
         <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:12px;margin-bottom:16px">
@@ -6165,8 +6199,53 @@ window.applySeasonalTheme = function(theme) {
     state.games.seasonal.lastUpdated = todayStr();
     saveState();
 
-    // For now, just store the preference (CSS not applied yet - Task 4.6 stub)
+    // Apply CSS variables
+    updateThemeColors(theme);
     console.log(`🎨 Theme changed to: ${theme}`);
+};
+
+// Apply theme CSS variables and update UI
+window.applyTheme = function(theme) {
+    applySeasonalTheme(theme);
+
+    // Update profile modal to show current theme
+    setTimeout(() => {
+        const themeLabel = document.querySelector('[style*="Seasonal Theme"]')?.parentElement?.querySelector('div:last-child');
+        if (themeLabel) {
+            const icons = { spring: '🌱', summer: '☀️', fall: '🍂', winter: '❄️' };
+            const names = { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' };
+            themeLabel.textContent = `Current: ${names[theme]} ${icons[theme]}`;
+        }
+    }, 50);
+};
+
+// Update CSS variables for the chosen theme
+window.updateThemeColors = function(theme) {
+    const themes = {
+        spring: { primary: '#10B981', accent: '#BFDBFE', secondary: '#D1FAE5' },
+        summer: { primary: '#FBBF24', accent: '#FEF3C7', secondary: '#FDE047' },
+        fall: { primary: '#F97316', accent: '#FED7AA', secondary: '#FDBA74' },
+        winter: { primary: '#0EA5E9', accent: '#BAE6FD', secondary: '#E0F2FE' }
+    };
+
+    const colors = themes[theme] || themes.spring;
+    const root = document.documentElement;
+
+    // Update CSS variables
+    root.style.setProperty('--theme-primary', colors.primary);
+    root.style.setProperty('--theme-accent', colors.accent);
+    root.style.setProperty('--theme-secondary', colors.secondary);
+
+    console.log(`Applied ${theme} theme colors`);
+};
+
+// Initialize theme on page load
+window.initializeTheme = function() {
+    if (!state.games) state.games = { unlocked: [], stats: {} };
+    if (!state.games.seasonal) state.games.seasonal = { theme: 'spring' };
+
+    const currentTheme = state.games.seasonal.theme || 'spring';
+    updateThemeColors(currentTheme);
 };
 
 function buildDefaultState() {
@@ -8272,6 +8351,7 @@ function renderPointsPanel() {
 // ═══════════════════════════════════════════════════
 function init() {
     loadState();
+    initializeTheme(); // Apply saved or default theme
     renderDashboard();
 
     // If Pomodoro was active from a previous session, restore interval
