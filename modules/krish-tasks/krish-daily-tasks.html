@@ -858,7 +858,7 @@
         /* ── GUJARATI ────────────────────────────── */
         .guj-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
         .guj-stat {
-            background:white; border-radius:var(--radius-sm);
+            background:var(--card-bg); border-radius:var(--radius-sm);
             padding:13px; text-align:center; box-shadow:var(--shadow);
         }
         .guj-s-icon { font-size:1.6em; margin-bottom:4px; }
@@ -867,20 +867,20 @@
 
         .guj-actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
         .guj-action {
-            background:white; border:3px solid var(--border-light);
+            background:var(--card-bg); border:3px solid var(--season-border);
             border-radius:var(--radius); padding:18px 10px;
             text-align:center; cursor:pointer;
             transition:var(--t); text-decoration:none;
             display:block;
         }
-        .guj-action:hover { border-color:var(--theme-primary); }
+        .guj-action:hover { border-color:var(--season-primary); }
         .guj-action:active { transform:scale(0.96); }
         .guj-a-icon { font-size:2.2em; margin-bottom:7px; }
         .guj-a-name { font-size:0.88em; font-weight:700; color:var(--dark); }
         .guj-a-sub  { font-size:0.9em; color: var(--text-secondary); margin-top:2px; }
 
         .guj-timer-section {
-            background:white; border-radius:var(--radius);
+            background:var(--card-bg); border-radius:var(--radius);
             padding:15px; box-shadow:var(--shadow); margin-bottom:12px;
         }
         .guj-timer-display { font-size:2em; font-weight:800; color:var(--theme-primary); text-align:center; margin:10px 0; }
