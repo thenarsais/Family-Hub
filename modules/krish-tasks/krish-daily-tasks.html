@@ -2276,20 +2276,10 @@ function showProfileSettings() {
                     const names = { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' };
                     const currentTheme = state.games?.seasonal?.theme || 'spring';
                     const isSelected = currentTheme === season;
-                    return \`
-                        <button onclick="applyTheme('\${season}')" style="
-                            padding:12px;border:2px solid \${isSelected ? '#10B981' : '#E2E8F0'};
-                            border-radius:10px;background:\${isSelected ? '#ECFDF5' : '#F8FAFC'};
-                            cursor:pointer;font-weight:\${isSelected ? '700' : '600'};
-                            transition:all 0.2s;text-align:center
-                        "
-                        onmouseover="this.style.borderColor='#10B981';this.style.background='#ECFDF5'"
-                        onmouseout="this.style.borderColor='\${isSelected ? '#10B981' : '#E2E8F0'}';this.style.background='\${isSelected ? '#ECFDF5' : '#F8FAFC'}'"
-                        >
-                            <div style="font-size:1.5em;margin-bottom:4px">\${icons[season]}</div>
-                            <div style="font-size:0.85em;color:#1E293B">\${names[season]}</div>
-                        </button>
-                    \`;
+                    const borderColor = isSelected ? '#10B981' : '#E2E8F0';
+                    const bgColor = isSelected ? '#ECFDF5' : '#F8FAFC';
+                    const fontWeight = isSelected ? '700' : '600';
+                    return '<button onclick="applyTheme(\'' + season + '\')" style="padding:12px;border:2px solid ' + borderColor + ';border-radius:10px;background:' + bgColor + ';cursor:pointer;font-weight:' + fontWeight + ';transition:all 0.2s;text-align:center" onmouseover="this.style.borderColor=\'#10B981\';this.style.background=\'#ECFDF5\'" onmouseout="this.style.borderColor=\'' + borderColor + '\';this.style.background=\'' + bgColor + '\'"><div style="font-size:1.5em;margin-bottom:4px">' + icons[season] + '</div><div style="font-size:0.85em;color:#1E293B">' + names[season] + '</div></button>';
                 }).join('')}
             </div>
             <div style="font-size:0.8em;color:#94A3B8;margin-top:8px">Current: Spring 🌱</div>
