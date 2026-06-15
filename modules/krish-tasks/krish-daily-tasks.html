@@ -399,8 +399,8 @@
             font-family:var(--font); background:white; outline:none;
         }
         .btn-add {
-            padding:11px 18px; background:var(--primary);
-            color:white; border:none; border-radius:10px;
+            padding:11px 18px; background: var(--theme-primary);
+            color: var(--theme-primary-text, white); border:none; border-radius:10px;
             font-size:0.95em; font-weight:700; cursor:pointer;
             transition:var(--t); white-space:nowrap;
         }
@@ -464,8 +464,8 @@
             transition:var(--t);
         }
         .pb:active { transform:scale(0.95); }
-        .pb-start { background:#F97316; color:white; }
-        .pb-pause { background:#F59E0B; color:white; }
+        .pb-start { background: var(--theme-primary); color: var(--theme-primary-text, white); }
+        .pb-pause { background: var(--theme-accent); color: var(--theme-primary); }
         .pb-reset { background:#334155; color:#94A3B8; }
 
         /* ── KUNG FU ─────────────────────────────── */
