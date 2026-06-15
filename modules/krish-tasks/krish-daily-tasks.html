@@ -22,6 +22,7 @@
             --teal: #14B8A6;
             --dark: #1E293B;
             --mid: #475569;
+            --text-secondary: #64748B;
             --muted: #94A3B8;
             --light: #F1F5F9;
             --white: #FFFFFF;
@@ -45,16 +46,43 @@
             --radius-rounded: 30px;
 
             /* Typography */
+            --font-size-xs: 0.65em;
             --font-size-sm: 0.75em;
             --font-size-base: 0.9em;
             --font-size-md: 1em;
             --font-size-lg: 1.3em;
+            --font-size-xl: 1.5em;
             --font-weight-normal: 600;
+            --font-weight-semi-bold: 700;
             --font-weight-bold: 800;
+
+            /* Buttons & Controls */
+            --btn-padding: 9px 15px;
+            --btn-padding-sm: 5px 11px;
+            --btn-padding-lg: 11px 18px;
+            --btn-font-size: 0.88em;
+            --btn-font-weight: 700;
+            --btn-border-radius: 8px;
+            --btn-transition: all 0.2s ease;
+
+            /* Cards & Sections */
+            --card-padding: 15px;
+            --card-border-radius: 12px;
+            --card-bg: #FFFFFF;
+            --card-bg-light: #F8FAFC;
+
+            /* Time-based Block Colors */
+            --time-morning-bg: linear-gradient(135deg, #FEF3C7, #FDE68A);
+            --time-morning-text: #78350F;
+            --time-afternoon-bg: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+            --time-afternoon-text: #1E40AF;
+            --time-evening-bg: linear-gradient(135deg, #EDE9FE, #DDD6FE);
+            --time-evening-text: #4C1D95;
 
             /* Shadows */
             --shadow: 0 2px 12px rgba(0,0,0,0.08);
             --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --shadow-lg: 0 4px 24px rgba(0,0,0,0.14);
 
             /* Transitions */
             --t: all 0.2s ease;
@@ -321,17 +349,17 @@
         /* Dashboard Grid */
         .dash-grid { padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .dash-card {
-            background: #F8FAFC;
-            border-radius:var(--radius);
-            padding:15px;
-            cursor:pointer;
-            transition:all 0.3s ease;
-            border:2px solid transparent;
-            position:relative;
-            overflow:hidden;
-            min-height:108px;
-            display:flex;
-            flex-direction:column;
+            background: var(--card-bg-light);
+            border-radius: var(--radius);
+            padding: var(--card-padding);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            min-height: 108px;
+            display: flex;
+            flex-direction: column;
         }
         .dash-card:active { transform:scale(0.96); }
         .dash-card:hover { border-color: var(--theme-primary); opacity: 0.95; }
@@ -353,10 +381,10 @@
         /* Full-width mood card */
         .dc-mood { grid-column:1/-1; flex-direction:row; align-items:center; gap:14px; min-height:auto; }
 
-        .card-tag { font-size:0.72em; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:3px; }
+        .card-tag { font-size:0.72em; font-weight:700; color: var(--text-secondary); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:3px; }
         .card-icon { font-size:1.8em; margin-bottom:4px; }
         .card-val { font-size:1.35em; font-weight:700; color:white; line-height:1.2; }
-        .card-sub { font-size:0.78em; color:#64748B; margin-top:2px; }
+        .card-sub { font-size:0.78em; color: var(--text-secondary); margin-top:2px; }
         .card-bar { margin-top:8px; background:#334155; border-radius:6px; height:5px; overflow:hidden; flex-shrink:0; }
         .card-bar-fill { height:100%; border-radius:6px; transition:width 0.4s ease; }
         .card-badge-top {
@@ -413,7 +441,7 @@
             padding:7px 11px; border:2px solid transparent;
             background:#F8FAFC; border-radius:10px;
             cursor:pointer; white-space:nowrap;
-            font-size:0.72em; font-weight:700; color:#64748B;
+            font-size:0.72em; font-weight:700; color: var(--text-secondary);
             min-width:58px; transition:var(--t);
         }
         .b-tab .ti { font-size:1.4em; }
@@ -434,9 +462,9 @@
             display:flex; align-items:center; gap:10px;
             padding:12px 15px; font-weight:700; font-size:0.9em;
         }
-        .chore-blk-hdr.morning  { background:linear-gradient(135deg,#FEF3C7,#FDE68A); color:#78350F; }
-        .chore-blk-hdr.afternoon{ background:linear-gradient(135deg,#DBEAFE,#BFDBFE); color:#1E40AF; }
-        .chore-blk-hdr.evening  { background:linear-gradient(135deg,#EDE9FE,#DDD6FE); color:#4C1D95; }
+        .chore-blk-hdr.morning { background: var(--time-morning-bg); color: var(--time-morning-text); }
+        .chore-blk-hdr.afternoon { background: var(--time-afternoon-bg); color: var(--time-afternoon-text); }
+        .chore-blk-hdr.evening { background: var(--time-evening-bg); color: var(--time-evening-text); }
         .blk-pts-badge { margin-left:auto; background:rgba(0,0,0,0.1); border-radius:20px; padding:2px 9px; font-size:0.82em; }
         .chore-item {
             display:flex; align-items:center; gap:12px;
@@ -473,18 +501,29 @@
             font-family:var(--font); background:white; outline:none;
         }
         .btn-add {
-            padding:11px 18px; background: var(--theme-primary);
-            color: var(--theme-primary-text, white); border:none; border-radius:10px;
-            font-size:0.95em; font-weight:700; cursor:pointer;
-            transition:var(--t); white-space:nowrap;
+            padding: var(--btn-padding-lg);
+            background: var(--theme-primary);
+            color: var(--theme-primary-text, white);
+            border: none;
+            border-radius: var(--btn-border-radius);
+            font-size: 0.9em;
+            font-weight: var(--btn-font-weight);
+            cursor: pointer;
+            transition: var(--btn-transition);
+            white-space: nowrap;
         }
-        .btn-add:active { transform:scale(0.97); }
+        .btn-add:active { transform: scale(0.97); }
 
         .hw-item {
-            background:white; border-radius:var(--radius);
-            padding:13px 15px; margin-bottom:9px;
-            box-shadow:var(--shadow); display:flex;
-            gap:11px; align-items:flex-start; cursor:pointer;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: var(--card-padding);
+            margin-bottom: var(--space-sm);
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 11px;
+            align-items: flex-start;
+            cursor: pointer;
         }
         .hw-cb {
             width:26px; height:26px; border-radius:8px;
@@ -501,7 +540,7 @@
         }
         .hw-title { font-size:0.97em; font-weight:600; color:var(--dark); }
         .hw-item.done .hw-title { text-decoration:line-through; color:#94A3B8; }
-        .hw-due { font-size:0.78em; color:#64748B; margin-top:3px; }
+        .hw-due { font-size:0.78em; color: var(--text-secondary); margin-top:3px; }
         .hw-due.urgent { color:var(--danger); font-weight:700; }
         .hw-due.warning { color:var(--orange); font-weight:700; }
         .pomo-launch-btn {
@@ -533,14 +572,18 @@
         .pomo-mode-lbl { font-size:0.72em; color:#94A3B8; margin-top:-4px; margin-bottom:14px; }
         .pomo-btns { display:flex; gap:8px; justify-content:center; }
         .pb {
-            padding:9px 18px; border:none; border-radius:10px;
-            font-size:0.93em; font-weight:700; cursor:pointer;
-            transition:var(--t);
+            padding: var(--btn-padding);
+            border: none;
+            border-radius: var(--btn-border-radius);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            cursor: pointer;
+            transition: var(--btn-transition);
         }
-        .pb:active { transform:scale(0.95); }
+        .pb:active { transform: scale(0.95); }
         .pb-start { background: var(--theme-primary); color: var(--theme-primary-text, white); }
         .pb-pause { background: var(--theme-accent); color: var(--theme-primary); }
-        .pb-reset { background:#334155; color:#94A3B8; }
+        .pb-reset { background: var(--mid); color: var(--muted); }
 
         /* ── KUNG FU ─────────────────────────────── */
         .kf-goals { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
@@ -554,7 +597,7 @@
         .kf-goal:active { transform:scale(0.96); }
         .kf-g-icon { font-size:1.8em; margin-bottom:6px; }
         .kf-g-name { font-size:0.82em; font-weight:700; color:var(--dark); }
-        .kf-g-sub  { font-size:0.7em; color:#64748B; margin-top:2px; }
+        .kf-g-sub  { font-size:0.7em; color: var(--text-secondary); margin-top:2px; }
         .kf-goal.done .kf-g-name { color:var(--success); }
 
         /* Flash cards */
@@ -588,26 +631,38 @@
         .fc-flip { background:var(--primary); color:white; }
         .fc-prev { background:#E2E8F0; color:var(--dark); }
         .fc-next { background: var(--theme-primary); color:white; }
-        .fc-counter { font-size:0.82em; color:#64748B; min-width:60px; text-align:center; font-weight:700; }
+        .fc-counter { font-size:0.82em; color: var(--text-secondary); min-width:60px; text-align:center; font-weight:700; }
 
         /* Practice Log */
         .practice-form { background:white; border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
-        .dur-btns { display:flex; gap:7px; flex-wrap:wrap; }
+        .dur-btns { display: flex; gap: 7px; flex-wrap: wrap; }
         .dur-btn {
-            padding:9px 15px; background:#F1F5F9;
-            border:2px solid #E2E8F0; border-radius:9px;
-            font-size:0.88em; font-weight:700; cursor:pointer;
-            color:var(--dark); transition:var(--t);
+            padding: var(--btn-padding);
+            background: var(--light);
+            border: 2px solid #E2E8F0;
+            border-radius: var(--btn-border-radius);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            cursor: pointer;
+            color: var(--dark);
+            transition: var(--btn-transition);
         }
-        .dur-btn.selected { background:var(--primary); border-color:var(--primary); color:white; }
-        .dur-btn:active { transform:scale(0.96); }
+        .dur-btn.selected { background: var(--theme-primary); border-color: var(--theme-primary); color: white; }
+        .dur-btn:active { transform: scale(0.96); }
         .log-btn {
-            margin-top:10px; width:100%; padding:11px;
-            background:var(--success); color:white;
-            border:none; border-radius:10px; font-size:1em;
-            font-weight:700; cursor:pointer; transition:var(--t);
+            margin-top: 10px;
+            width: 100%;
+            padding: var(--btn-padding-lg);
+            background: var(--theme-primary);
+            color: white;
+            border: none;
+            border-radius: var(--btn-border-radius);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            cursor: pointer;
+            transition: var(--btn-transition);
         }
-        .log-btn:active { transform:scale(0.98); }
+        .log-btn:active { transform: scale(0.98); }
         .practice-log-list { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
         .log-entry {
             display:flex; align-items:center; gap:10px;
@@ -624,7 +679,7 @@
         }
         .guj-s-icon { font-size:1.6em; margin-bottom:4px; }
         .guj-s-val  { font-size:1.3em; font-weight:800; color:var(--primary); }
-        .guj-s-lbl  { font-size:0.72em; color:#64748B; font-weight:600; }
+        .guj-s-lbl  { font-size:0.72em; color: var(--text-secondary); font-weight:600; }
 
         .guj-actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
         .guj-action {
@@ -638,7 +693,7 @@
         .guj-action:active { transform:scale(0.96); }
         .guj-a-icon { font-size:2.2em; margin-bottom:7px; }
         .guj-a-name { font-size:0.88em; font-weight:700; color:var(--dark); }
-        .guj-a-sub  { font-size:0.7em; color:#64748B; margin-top:2px; }
+        .guj-a-sub  { font-size:0.7em; color: var(--text-secondary); margin-top:2px; }
 
         .guj-timer-section {
             background:white; border-radius:var(--radius);
@@ -670,11 +725,11 @@
             min-width:44px; flex-shrink:0;
         }
         .ev-day   { font-size:1.1em; font-weight:800; color:var(--dark); }
-        .ev-month { font-size:0.62em; color:#64748B; text-transform:uppercase; font-weight:700; }
+        .ev-month { font-size:0.62em; color: var(--text-secondary); text-transform:uppercase; font-weight:700; }
         .ev-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
         .ev-info  { flex:1; min-width:0; }
         .ev-title { font-size:0.97em; font-weight:700; color:var(--dark); }
-        .ev-time  { font-size:0.78em; color:#64748B; margin-top:2px; }
+        .ev-time  { font-size:0.78em; color: var(--text-secondary); margin-top:2px; }
         .ev-today-badge {
             background:var(--primary); color:white;
             font-size:0.68em; font-weight:800;
@@ -688,7 +743,7 @@
         .habit-ico { font-size:1.9em; }
         .habit-info { flex:1; }
         .habit-name { font-size:1.05em; font-weight:700; color:var(--dark); }
-        .habit-goal-lbl { font-size:0.78em; color:#64748B; }
+        .habit-goal-lbl { font-size:0.78em; color: var(--text-secondary); }
         .streak-chip {
             background:linear-gradient(135deg,#FEF3C7,#FDE68A);
             border-radius:20px; padding:5px 11px;
@@ -741,11 +796,11 @@
         .mood-opt:active { transform:scale(0.94); }
         .mood-opt.selected { border-color:var(--primary); background:#EEF2FF; transform:scale(1.04); }
         .mood-em { font-size:2em; margin-bottom:3px; }
-        .mood-lbl { font-size:0.68em; font-weight:700; color:#64748B; text-align:center; line-height:1.2; }
+        .mood-lbl { font-size:0.68em; font-weight:700; color: var(--text-secondary); text-align:center; line-height:1.2; }
         .mood-opt.selected .mood-lbl { color:var(--primary); }
 
         .mood-history { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
-        .mood-h-title { font-size:0.82em; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:11px; }
+        .mood-h-title { font-size:0.82em; font-weight:700; color: var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:11px; }
         .mood-h-row { display:flex; gap:6px; }
         .mood-h-item { flex:1; text-align:center; }
         .mood-h-em { font-size:1.4em; }
@@ -773,7 +828,7 @@
             padding:13px; text-align:center; box-shadow:var(--shadow);
         }
         .pts-stat-val { font-size:1.4em; font-weight:800; color:var(--dark); }
-        .pts-stat-lbl { font-size:0.72em; color:#64748B; font-weight:600; margin-top:2px; }
+        .pts-stat-lbl { font-size:0.72em; color: var(--text-secondary); font-weight:600; margin-top:2px; }
 
         .next-tier-card { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
         .nt-label { display:flex; justify-content:space-between; font-size:0.85em; font-weight:700; margin-bottom:8px; }
@@ -844,10 +899,10 @@
 
         /* ── DB CARD BASE ──────────────────────────── */
         .db-card {
-            background: white;
-            border-radius: 18px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
             overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.14);
+            box-shadow: var(--shadow-md);
             position: relative;
             transition: all 0.3s ease;
         }
@@ -862,7 +917,7 @@
         }
         .db-card-ico { font-size:1.25em; flex-shrink:0; }
         .db-ct { font-size:0.97em; font-weight:800; color:#1E293B; flex:1; white-space:nowrap; }
-        .db-cs { font-size:0.75em; font-weight:600; color:#64748B; white-space:nowrap; }
+        .db-cs { font-size:0.75em; font-weight:600; color: var(--text-secondary); white-space:nowrap; }
 
         .db-expand {
             background: var(--theme-secondary); border: none; border-radius:8px;
@@ -883,9 +938,9 @@
             font-size:0.72em; font-weight:800;
             text-transform:uppercase; letter-spacing:0.5px;
         }
-        .db-blk-hdr.morning   { background:#FEF9C3; color:#713F12; }
-        .db-blk-hdr.afternoon { background:#DBEAFE; color:#1E3A8A; }
-        .db-blk-hdr.evening   { background:#EDE9FE; color:#3B0764; }
+        .db-blk-hdr.morning { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: var(--time-morning-text); }
+        .db-blk-hdr.afternoon { background: linear-gradient(135deg, #DBEAFE, #BFDBFE); color: var(--time-afternoon-text); }
+        .db-blk-hdr.evening { background: linear-gradient(135deg, #EDE9FE, #DDD6FE); color: var(--time-evening-text); }
         .db-blk-pts { margin-left:auto; opacity:0.8; }
 
         .db-chore-row {
@@ -926,7 +981,7 @@
         .db-hw-subj { display:inline-block; padding:1px 7px; border-radius:20px; font-size:0.68em; font-weight:700; margin-bottom:2px; }
         .db-hw-title { font-size:0.87em; font-weight:700; color:#1E293B; }
         .db-hw-row.done .db-hw-title { text-decoration:line-through; color:#94A3B8; }
-        .db-hw-due  { font-size:0.7em; color:#64748B; margin-top:2px; }
+        .db-hw-due  { font-size:0.7em; color: var(--text-secondary); margin-top:2px; }
         .db-hw-due.urgent  { color:#EF4444; font-weight:700; }
         .db-hw-due.warning { color:#F97316; font-weight:700; }
         .db-pomo-launch {
@@ -950,10 +1005,10 @@
         .db-pomo-mode  { font-size:0.65em; color:#94A3B8; margin-top:1px; }
         .db-pomo-time  { font-size:1.55em; font-weight:800; color:#F97316; font-variant-numeric:tabular-nums; flex-shrink:0; }
         .db-pomo-ctrl  { display:flex; gap:5px; flex-shrink:0; }
-        .db-pmb { padding:5px 11px; border:none; border-radius:8px; font-weight:700; font-size:0.8em; cursor:pointer; transition:var(--t); }
-        .db-pmb:active { transform:scale(0.94); }
-        .db-pmb-p { background:#F59E0B; color:white; }
-        .db-pmb-r { background:#374151; color:#9CA3AF; }
+        .db-pmb { padding: var(--btn-padding-sm); border: none; border-radius: var(--btn-border-radius); font-weight: var(--btn-font-weight); font-size: var(--font-size-xs); cursor: pointer; transition: var(--btn-transition); }
+        .db-pmb:active { transform: scale(0.94); }
+        .db-pmb-p { background: var(--warning); color: white; }
+        .db-pmb-r { background: var(--mid); color: var(--muted); }
 
         /* ── HABITS ────────────────────────────────── */
         .db-habit-block { padding:16px 14px; border-bottom:1px solid #F8FAFC; }
@@ -961,7 +1016,7 @@
         .db-h-ico  { font-size:1.45em; flex-shrink:0; }
         .db-h-meta { flex:1; min-width:0; }
         .db-h-name { font-size:0.9em; font-weight:700; color:#1E293B; }
-        .db-h-sub  { font-size:0.68em; color:#64748B; }
+        .db-h-sub  { font-size:0.68em; color: var(--text-secondary); }
         .db-h-streak { font-size:0.7em; font-weight:700; background:#FEF3C7; color:#78350F; padding:2px 8px; border-radius:20px; flex-shrink:0; }
         .db-h-today-btn {
             padding:5px 11px; border-radius:8px;
@@ -986,7 +1041,7 @@
         .db-hd.future { opacity:0.28; pointer-events:none; }
 
         .db-h-counter { display:flex; align-items:center; gap:7px; }
-        .db-h-cntr-lbl { flex:1; font-size:0.75em; color:#64748B; font-weight:600; }
+        .db-h-cntr-lbl { flex:1; font-size:0.75em; color: var(--text-secondary); font-weight:600; }
         .db-cntr-btn {
             width:30px; height:30px; border:2px solid #E2E8F0; background:white;
             border-radius:7px; font-size:1.1em; cursor:pointer; font-weight:700;
@@ -1006,7 +1061,7 @@
         .db-mood-btn:active { transform:scale(0.93); }
         .db-mood-btn.selected { border-color:#6366F1; background:#EEF2FF; transform:scale(1.05); }
         .db-me { font-size:1.45em; }
-        .db-ml { font-size:0.6em; font-weight:700; color:#64748B; text-align:center; line-height:1.2; }
+        .db-ml { font-size:0.6em; font-weight:700; color: var(--text-secondary); text-align:center; line-height:1.2; }
         .db-mood-btn.selected .db-ml { color:#4F46E5; }
         .db-mood-hist { display:flex; padding:5px 13px 11px; gap:5px; }
         .db-mh-item { flex:1; text-align:center; }
@@ -1017,10 +1072,10 @@
         /* ── GUJARATI ──────────────────────────────── */
         .db-guj-info { display:flex; align-items:center; gap:10px; padding:10px 14px 7px; }
         .db-guj-phase { font-size:1.1em; font-weight:800; color: var(--theme-primary); }
-        .db-guj-subtext { font-size:0.75em; color:#64748B; margin-top:2px; }
+        .db-guj-subtext { font-size:0.75em; color: var(--text-secondary); margin-top:2px; }
         .db-guj-pbar { margin:0 14px 4px; background:#F1F5F9; border-radius:6px; height:5px; overflow:hidden; }
         .db-guj-pfill { height:100%; background: var(--theme-primary); border-radius:6px; transition:width 0.4s; }
-        .db-guj-plbl { text-align:center; font-size:0.68em; color:#64748B; margin-bottom:9px; }
+        .db-guj-plbl { text-align:center; font-size:0.68em; color: var(--text-secondary); margin-bottom:9px; }
         .db-guj-acts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; padding:0 12px 12px; }
         .db-guj-btn {
             background:#F8FAFC; border:2px solid #E2E8F0; border-radius:10px;
@@ -1037,14 +1092,14 @@
         .db-pts-tier   { display:flex; align-items:center; gap:9px; margin-bottom:9px; }
         .db-pts-t-ico  { font-size:1.9em; }
         .db-pts-t-name { font-size:0.95em; font-weight:800; color:#1E293B; }
-        .db-pts-t-sub  { font-size:0.72em; color:#64748B; }
+        .db-pts-t-sub  { font-size:0.72em; color: var(--text-secondary); }
         .db-pts-row    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-bottom:9px; }
         .db-pts-stat   { text-align:center; background:#F8FAFC; border-radius:9px; padding:7px 4px; }
         .db-pts-val    { font-size:1em; font-weight:800; color:#1E293B; }
-        .db-pts-lbl    { font-size:0.62em; color:#64748B; font-weight:600; }
+        .db-pts-lbl    { font-size:0.62em; color: var(--text-secondary); font-weight:600; }
         .db-pts-bar    { background:#E2E8F0; border-radius:8px; height:6px; overflow:hidden; }
         .db-pts-bfill  { height:100%; background:linear-gradient(90deg,#6366F1,#8B5CF6); border-radius:8px; transition:width 0.5s; }
-        .db-pts-next-lbl { display:flex; justify-content:space-between; font-size:0.7em; font-weight:700; color:#64748B; margin-bottom:4px; }
+        .db-pts-next-lbl { display:flex; justify-content:space-between; font-size:0.7em; font-weight:700; color: var(--text-secondary); margin-bottom:4px; }
         .db-pts-card   { cursor:pointer; }
         .db-pts-card:hover { box-shadow:0 4px 24px rgba(99,102,241,0.22); }
 
@@ -1053,7 +1108,7 @@
         .db-ev-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
         .db-ev-info { flex:1; min-width:0; }
         .db-ev-title { font-size:0.85em; font-weight:700; color:#1E293B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .db-ev-when  { font-size:0.68em; color:#64748B; }
+        .db-ev-when  { font-size:0.68em; color: var(--text-secondary); }
         .db-today-tag { background:#6366F1; color:white; font-size:0.6em; font-weight:800; padding:1px 6px; border-radius:10px; flex-shrink:0; }
 
         /* ── KUNG FU (dashboard) ───────────────────── */
@@ -1066,7 +1121,7 @@
         .db-kf-goal:active { transform:scale(0.95); }
         .db-kf-ico { font-size:1.4em; margin-bottom:3px; }
         .db-kf-lbl { font-size:0.72em; font-weight:700; color:#1E293B; }
-        .db-kf-sub { font-size:0.62em; color:#64748B; margin-top:1px; }
+        .db-kf-sub { font-size:0.62em; color: var(--text-secondary); margin-top:1px; }
         .db-kf-goal.done .db-kf-lbl { color:#059669; }
         .db-kf-goal.done .db-kf-ico::after { content:' ✓'; font-size:0.6em; }
 
@@ -1085,7 +1140,7 @@
         .db-fc-meaning { font-size:0.84em; line-height:1.4; color:#6EE7B7; }
 
         .db-kf-log-row { display:flex; align-items:center; justify-content:space-between; padding:7px 13px 11px; }
-        .db-kf-week    { font-size:0.75em; color:#64748B; font-weight:600; }
+        .db-kf-week    { font-size:0.75em; color: var(--text-secondary); font-weight:600; }
 
         /* Games Panel */
         .games-grid {
@@ -2119,7 +2174,7 @@ function showOnboardingWizard() {
             <div style="text-align:center;margin-bottom:24px">
                 <div style="font-size:3em;margin-bottom:12px">🎯</div>
                 <h2 style="color:#1E293B;font-size:1.5em;margin-bottom:8px">Welcome to Trivia!</h2>
-                <p style="color:#64748B;font-size:0.95em">Let's set up your profile.</p>
+                <p style="color: var(--text-secondary);font-size:0.95em">Let's set up your profile.</p>
             </div>
             <div style="margin-bottom:18px">
                 <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Pick a nickname</label>
@@ -2152,14 +2207,14 @@ function showOnboardingWizard() {
             <div style="text-align:center;margin-bottom:24px">
                 <div style="font-size:3em;margin-bottom:12px">${state.trivia.onboarding.avatar}</div>
                 <h2 style="color:#1E293B;font-size:1.5em;margin-bottom:8px">Hey ${state.trivia.onboarding.name}!</h2>
-                <p style="color:#64748B;font-size:0.95em">One more thing...</p>
+                <p style="color: var(--text-secondary);font-size:0.95em">One more thing...</p>
             </div>
             <div style="margin-bottom:24px;padding:16px;background:#F0F9FF;border-radius:12px;border-left:3px solid #3B82F6">
                 <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-weight:600;color:#1E293B">
                     <input type="checkbox" id="tts-toggle" checked style="width:18px;height:18px;cursor:pointer">
                     🔊 Should I read each question to you?
                 </label>
-                <p style="font-size:0.85em;color:#64748B;margin-top:8px;margin-left:30px">You can always turn this on or off later</p>
+                <p style="font-size:0.85em;color: var(--text-secondary);margin-top:8px;margin-left:30px">You can always turn this on or off later</p>
             </div>
             <button id="lets-go-btn" style="
                 width:100%;padding:12px;background:linear-gradient(135deg,#10B981,#059669);
@@ -2337,7 +2392,7 @@ function showProfileSettings() {
 
         <div style="text-align:center;margin-bottom:24px">
             <div style="font-size:3em;margin-bottom:12px">${profile.avatar}</div>
-            <div style="color:#64748B;font-size:0.9em;margin-bottom:16px">Change avatar:</div>
+            <div style="color: var(--text-secondary);font-size:0.9em;margin-bottom:16px">Change avatar:</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
                 ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
                     <button onclick="changeAvatar('${emoji}')" style="
@@ -2580,7 +2635,7 @@ function showBadgesModal() {
     `;
 
     if (categories.length === 0) {
-        html += `<div style="text-align:center;color:#64748B;padding:40px;font-size:0.95em">Answer trivia questions to unlock badges!</div>`;
+        html += `<div style="text-align:center;color: var(--text-secondary);padding:40px;font-size:0.95em">Answer trivia questions to unlock badges!</div>`;
     } else {
         categories.forEach(cat => {
             const catBadges = badges[cat];
@@ -2871,7 +2926,7 @@ function getProfileDisplay(label = 'Player') {
             <div style="font-size:2em">${profile.avatar}</div>
             <div style="flex:1">
                 <div style="font-weight:600;color:#1E293B">${profile.name || 'Pick a nickname'}</div>
-                <div style="font-size:0.85em;color:#64748B">${label}</div>
+                <div style="font-size:0.85em;color: var(--text-secondary)">${label}</div>
             </div>
         </div>
     `;
@@ -2892,7 +2947,7 @@ function renderTriviaPanel() {
     }
 
     if (!triviaCurrentQuestion) {
-        panel.innerHTML = '<div style="padding:40px;text-align:center;color:#64748B"><div style="font-size:2em;margin-bottom:12px">⏳</div><div>Loading trivia...</div></div>';
+        panel.innerHTML = '<div style="padding:40px;text-align:center;color: var(--text-secondary)"><div style="font-size:2em;margin-bottom:12px">⏳</div><div>Loading trivia...</div></div>';
         initTriviaSystem().then(() => renderTriviaPanel());
         return;
     }
@@ -3501,7 +3556,7 @@ window.renderWordleGame = function(game) {
     return `
         <div style="max-width:400px;margin:20px auto;padding:20px;background:#F8FAFC;border-radius:16px">
             <div style="text-align:center;margin-bottom:20px">
-                <div style="font-size:0.9em;color:#64748B">Guess the 5-letter category name</div>
+                <div style="font-size:0.9em;color: var(--text-secondary)">Guess the 5-letter category name</div>
             </div>
 
             <div style="text-align:center;margin-bottom:16px">
@@ -4139,7 +4194,7 @@ window.showMemoryDifficultyModal = function() {
                         <div style="font-size:0.9em;color:#94A3B8">
                             ${diff.tiles} tiles • ${diff.pairs} pairs • ${diff.time}
                         </div>
-                        <div style="font-size:0.8em;color:#64748B;margin-top:6px">Grid: ${diff.cols}×${diff.rows}</div>
+                        <div style="font-size:0.8em;color: var(--text-secondary);margin-top:6px">Grid: ${diff.cols}×${diff.rows}</div>
                     </div>
                     <div style="font-size:2.5em;opacity:0.3">?</div>
                 </button>
@@ -4791,7 +4846,7 @@ window.showMemoryResults = function(game, won) {
                     return `
                         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155;${isCurrent ? 'background:#1E3A8A;padding:8px;border-radius:6px;border:none' : ''}">
                             <span style="color:${isCurrent ? '#60A5FA' : '#D1FAE5'}">${medals[i]} ${entry.score} pts ${isCurrent ? '← You' : ''}</span>
-                            <span style="font-size:0.85em;color:#64748B">${dateStr}</span>
+                            <span style="font-size:0.85em;color: var(--text-secondary)">${dateStr}</span>
                         </div>
                     `;
                 }).join('')}
@@ -4870,7 +4925,7 @@ window.showScrambleDifficultyModal = function() {
                         <div style="font-size:0.9em;color:#94A3B8">
                             ${diff.wordLen} • ${diff.words} • ${diff.time}
                         </div>
-                        <div style="font-size:0.8em;color:#64748B;margin-top:6px">Multiplier: ${diff.id === 'easy' ? '1×' : diff.id === 'medium' ? '1.5×' : '2×'}</div>
+                        <div style="font-size:0.8em;color: var(--text-secondary);margin-top:6px">Multiplier: ${diff.id === 'easy' ? '1×' : diff.id === 'medium' ? '1.5×' : '2×'}</div>
                     </div>
                     <div style="font-size:2.5em;opacity:0.3">?</div>
                 </button>
@@ -5191,7 +5246,7 @@ window.renderScrambleGame = function(game) {
             <div style="font-size:0.9em;color:#94A3B8;margin-bottom:12px">Unscramble the word:</div>
             <div id="scr-word" style="font-size:2.5em;font-weight:800;color:#94A3B8;letter-spacing:8px;margin-bottom:16px;font-family:monospace">${word.scrambled}</div>
 
-            <div style="margin-bottom:12px;font-size:0.85em;color:#64748B">
+            <div style="margin-bottom:12px;font-size:0.85em;color: var(--text-secondary)">
                 ${word.original.length} letters — Word ${progress}/5
             </div>
 
@@ -5613,7 +5668,7 @@ window.showChallengeDifficultyModal = function() {
                     <div>
                         <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
                         <div style="font-size:0.9em;color:#94A3B8">${diff.desc}</div>
-                        <div style="font-size:0.8em;color:#64748B;margin-top:6px">⏱ ${diff.time}</div>
+                        <div style="font-size:0.8em;color: var(--text-secondary);margin-top:6px">⏱ ${diff.time}</div>
                     </div>
                     <div style="font-size:2.5em;opacity:0.3">→</div>
                 </button>
@@ -5866,12 +5921,12 @@ window.playNextChallengeGame = function() {
 
     panel.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <div style="font-size:0.9em;color:#64748B;font-weight:600">Game ${gameNum}/3: ${gameType.toUpperCase()}</div>
+            <div style="font-size:0.9em;color: var(--text-secondary);font-weight:600">Game ${gameNum}/3: ${gameType.toUpperCase()}</div>
             <div style="font-size:1.1em;font-weight:800">${lifeDisplay}</div>
         </div>
         <div style="background:#F1F5F9;padding:12px;border-radius:8px;margin-bottom:16px">
             <div style="display:flex;justify-content:space-between">
-                <div style="color:#64748B;font-size:0.85em">Running Score</div>
+                <div style="color: var(--text-secondary);font-size:0.85em">Running Score</div>
                 <div style="color:#10B981;font-weight:800;font-size:1.3em">${challenge.score}</div>
             </div>
         </div>
@@ -6041,7 +6096,7 @@ window.submitChallengeMiniGameGuess = function(gameType) {
         const scoreEl = panel.querySelector('div:last-child');
         if (scoreEl) {
             scoreEl.innerHTML = `
-                <div style="font-size:0.9em;color:#64748B;font-weight:600">Game ${gameNum}/3: ${gameType.toUpperCase()}</div>
+                <div style="font-size:0.9em;color: var(--text-secondary);font-weight:600">Game ${gameNum}/3: ${gameType.toUpperCase()}</div>
                 <div style="font-size:1.1em;font-weight:800;margin-top:8px">${lifeDisplay}</div>
             `;
         }
@@ -6121,7 +6176,7 @@ window.showChallengeResults = function(challenge) {
         <div style="text-align:center;margin-bottom:24px">
             <div style="font-size:3em;margin-bottom:12px">${challenge.gameState === 'won' ? '🎉' : '💪'}</div>
             <div style="font-size:2em;font-weight:800;color:#10B981;margin-bottom:8px">${challenge.score}</div>
-            <div style="color:#64748B;font-size:0.9em">Points Earned</div>
+            <div style="color: var(--text-secondary);font-size:0.9em">Points Earned</div>
         </div>
 
         <div style="background:#064E3B;padding:16px;border-radius:12px;margin-bottom:24px">
@@ -7327,7 +7382,7 @@ function renderDashTrivia() {
     if (!el) return;
     const q = triviaCurrentQuestion;
     if (!q) {
-        el.innerHTML = '<div style="padding:10px 14px;color:#64748B;font-size:0.85em">Loading...</div>';
+        el.innerHTML = '<div style="padding:10px 14px;color: var(--text-secondary);font-size:0.85em">Loading...</div>';
         return;
     }
 
@@ -7361,7 +7416,7 @@ function renderDashTrivia() {
             })()}
 
             <!-- Question preview -->
-            <div style="font-size:0.78em;font-weight:600;color:#64748B;margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
+            <div style="font-size:0.78em;font-weight:600;color: var(--text-secondary);margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
             <div style="font-size:0.9em;color:#1E293B;margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,85)}${q.question.length>85?'...':''}</div>
 
             <!-- Phase 4: Goals Preview -->
@@ -7968,7 +8023,7 @@ function renderBoardReading() {
                 <div style="background:#334155;border-radius:8px;height:8px;overflow:hidden">
                     <div style="background:linear-gradient(90deg,#10B981,#6EE7B7);height:100%;width:${Math.min(100, (r.dailyMinutes/20)*100)}%;transition:width 0.3s"></div>
                 </div>
-                <div style="font-size:0.75em;color:#64748B;margin-top:4px">${r.dailyMinutes} of 20 minutes</div>
+                <div style="font-size:0.75em;color: var(--text-secondary);margin-top:4px">${r.dailyMinutes} of 20 minutes</div>
             </div>
 
             <div style="margin-bottom:20px">
@@ -7976,7 +8031,7 @@ function renderBoardReading() {
                 <div style="background:#334155;border-radius:8px;height:8px;overflow:hidden">
                     <div style="background:linear-gradient(90deg,#6366F1,#A78BFA);height:100%;width:${Math.min(100, (r.weeklyMinutes/100)*100)}%;transition:width 0.3s"></div>
                 </div>
-                <div style="font-size:0.75em;color:#64748B;margin-top:4px">${r.weeklyMinutes} of 100 minutes</div>
+                <div style="font-size:0.75em;color: var(--text-secondary);margin-top:4px">${r.weeklyMinutes} of 100 minutes</div>
             </div>
 
             ${isGoalMet ? `
