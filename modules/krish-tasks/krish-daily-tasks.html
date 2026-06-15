@@ -8011,49 +8011,7 @@ window.getSeasonalTheme = function() {
     return themes[currentSeason];
 };
 
-window.applySeasonalTheme = function(theme) {
-    if (!state.games) state.games = { unlocked: [], stats: {} };
-    if (!state.games.seasonal) state.games.seasonal = {};
-
-    state.games.seasonal.theme = theme;
-    state.games.seasonal.lastUpdated = todayStr();
-    saveState();
-
-    // Apply CSS variables
-    updateThemeColors(theme);
-    console.log(`🎨 Theme changed to: ${theme}`);
-};
-
-// Apply theme CSS variables and update UI
-window.applyTheme = function(theme) {
-    applySeasonalTheme(theme);
-    console.log('Theme applied:', theme);
-
-    // Refresh profile modal to show updated selection
-    setTimeout(() => {
-        showProfileSettings();
-    }, 100);
-};
-
-// Update CSS variables for the chosen theme
-window.updateThemeColors = function(theme) {
-    const themes = {
-        spring: { primary: 'var(--theme-primary)', accent: '#BFDBFE', secondary: '#D1FAE5' },
-        summer: { primary: '#FBBF24', accent: '#FEF3C7', secondary: '#FDE047' },
-        fall: { primary: '#F97316', accent: '#FED7AA', secondary: '#FDBA74' },
-        winter: { primary: '#0EA5E9', accent: '#BAE6FD', secondary: '#E0F2FE' }
-    };
-
-    const colors = themes[theme] || themes.spring;
-    const root = document.documentElement;
-
-    // Update CSS variables
-    root.style.setProperty('--theme-primary', colors.primary);
-    root.style.setProperty('--theme-accent', colors.accent);
-    root.style.setProperty('--theme-secondary', colors.secondary);
-
-    console.log(`Applied ${theme} theme colors`);
-};
+// (Removed duplicate/broken applySeasonalTheme - using correct version defined at line 1987)
 
 // Holiday database with dates and theme mappings
 window.HOLIDAY_DATABASE = {
