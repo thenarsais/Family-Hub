@@ -7760,7 +7760,7 @@ function buildDefaultState() {
             combo_freeze: 0,
         },
         settings: {
-            currentSeason: 'spring', // spring | summer | fall | winter
+            // currentSeason auto-detected based on month unless user selects manually
         },
     };
 }
@@ -7795,8 +7795,7 @@ function applyResets() {
     const month = today.slice(0, 7);
 
     // Ensure settings object exists (for seasonal theme support)
-    if (!state.settings) state.settings = { currentSeason: 'spring' };
-    if (!state.settings.currentSeason) state.settings.currentSeason = 'spring';
+    if (!state.settings) state.settings = {};
 
     // Ensure trivia onboarding object exists (for migration from old state)
     if (!state.trivia) state.trivia = {};
