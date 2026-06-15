@@ -13,7 +13,7 @@
             --secondary: #EC4899;
             --accent: #BFDBFE;
             --accent-light: #D1FAE5;
-            --success: #10B981;
+            --success: var(--theme-primary);
             --danger: #EF4444;
             --warning: #F59E0B;
             --info: #3B82F6;
@@ -499,7 +499,7 @@
             align-items:center; justify-content:center; padding:20px;
         }
         .fc-front { background:linear-gradient(135deg,#1E293B,#334155); color:white; }
-        .fc-back  { background:linear-gradient(135deg,#059669,#10B981); color:white; transform:rotateY(180deg); }
+        .fc-back  { background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent)); color:white; transform:rotateY(180deg); }
         .fc-hint  { font-size:0.78em; opacity:0.7; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
         .fc-term  { font-size:1.9em; font-weight:800; }
         .fc-meaning { font-size:0.9em; text-align:center; line-height:1.4; }
@@ -512,7 +512,7 @@
         .fc-btn:active { transform:scale(0.95); }
         .fc-flip { background:var(--primary); color:white; }
         .fc-prev { background:#E2E8F0; color:var(--dark); }
-        .fc-next { background:var(--success); color:white; }
+        .fc-next { background: var(--theme-primary); color:white; }
         .fc-counter { font-size:0.82em; color:#64748B; min-width:60px; text-align:center; font-weight:700; }
 
         /* Practice Log */
@@ -789,16 +789,16 @@
         .db-cs { font-size:0.75em; font-weight:600; color:#64748B; white-space:nowrap; }
 
         .db-expand {
-            background: #EEF2FF; border: none; border-radius:8px;
+            background: var(--theme-secondary); border: none; border-radius:8px;
             padding: 5px 10px; font-size:0.72em; font-weight:700;
-            color: #4F46E5; cursor:pointer; transition:var(--t); white-space:nowrap;
+            color: var(--theme-primary); cursor:pointer; transition:var(--t); white-space:nowrap;
         }
-        .db-expand:hover  { background:#E0E7FF; }
+        .db-expand:hover  { opacity: 0.8; }
         .db-expand:active { transform:scale(0.95); }
 
         /* thin progress strip under header */
         .db-pbar-wrap { background:#F1F5F9; height:4px; }
-        .db-pbar-fill { height:100%; background:linear-gradient(90deg,#6366F1,#10B981); transition:width 0.5s ease; }
+        .db-pbar-fill { height:100%; background: var(--theme-primary); transition:width 0.5s ease; }
 
         /* ── CHORES ────────────────────────────────── */
         .db-blk-hdr {
@@ -827,7 +827,7 @@
             display:flex; align-items:center; justify-content:center;
             font-size:0.8em; flex-shrink:0; transition:var(--t);
         }
-        .db-chore-row.done .db-cb { background:#10B981; border-color:#10B981; color:white; }
+        .db-chore-row.done .db-cb { background: var(--theme-primary); border-color: var(--theme-primary); color:white; }
         .db-ci { font-size:1.15em; }
         .db-cl { flex:1; font-size:0.9em; font-weight:600; color:#1E293B; }
         .db-cp { font-size:0.7em; font-weight:700; color:#D97706; background:#FEF3C7; padding:2px 7px; border-radius:20px; flex-shrink:0; }
@@ -845,7 +845,7 @@
             display:flex; align-items:center; justify-content:center;
             font-size:0.78em; transition:var(--t);
         }
-        .db-hw-row.done .db-hw-cb { background:#10B981; border-color:#10B981; color:white; }
+        .db-hw-row.done .db-hw-cb { background: var(--theme-primary); border-color: var(--theme-primary); color:white; }
         .db-hw-info { flex:1; min-width:0; }
         .db-hw-subj { display:inline-block; padding:1px 7px; border-radius:20px; font-size:0.68em; font-weight:700; margin-bottom:2px; }
         .db-hw-title { font-size:0.87em; font-weight:700; color:#1E293B; }
