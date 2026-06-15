@@ -247,7 +247,7 @@
         /* Dashboard Grid */
         .dash-grid { padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .dash-card {
-            background: var(--theme-secondary, #F1F5F9);
+            background: #F8FAFC;
             border-radius:var(--radius);
             padding:15px;
             cursor:pointer;
@@ -770,12 +770,12 @@
 
         /* ── DB CARD BASE ──────────────────────────── */
         .db-card {
-            background: var(--theme-secondary, white);
+            background: white;
             border-radius: 18px;
             overflow: hidden;
             box-shadow: 0 4px 24px rgba(0,0,0,0.14);
             position: relative;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         .db-card-hdr {
@@ -942,10 +942,10 @@
 
         /* ── GUJARATI ──────────────────────────────── */
         .db-guj-info { display:flex; align-items:center; gap:10px; padding:10px 14px 7px; }
-        .db-guj-phase { font-size:1.1em; font-weight:800; color:#6366F1; }
+        .db-guj-phase { font-size:1.1em; font-weight:800; color: var(--theme-primary); }
         .db-guj-subtext { font-size:0.75em; color:#64748B; margin-top:2px; }
         .db-guj-pbar { margin:0 14px 4px; background:#F1F5F9; border-radius:6px; height:5px; overflow:hidden; }
-        .db-guj-pfill { height:100%; background:linear-gradient(90deg,#6366F1,#8B5CF6); border-radius:6px; transition:width 0.4s; }
+        .db-guj-pfill { height:100%; background: var(--theme-primary); border-radius:6px; transition:width 0.4s; }
         .db-guj-plbl { text-align:center; font-size:0.68em; color:#64748B; margin-bottom:9px; }
         .db-guj-acts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; padding:0 12px 12px; }
         .db-guj-btn {
@@ -3088,7 +3088,7 @@ function showTriviaResult(isCorrect, q) {
             <div style="font-size:0.92em;line-height:1.55;color:#312E81">${showEnhanced ? q.enhancedFunFact : q.funFact}</div>
         </div>
         ${q.learningLink ? `<a href="${q.learningLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:#4338CA;font-size:0.85em;font-weight:600;text-decoration:none;margin-bottom:16px;padding:6px 12px;background:#EEF2FF;border-radius:8px;border:1px solid #C7D2FE" onmouseover="this.style.background='#E0E7FF'" onmouseout="this.style.background='#EEF2FF'">📚 Learn more →</a>` : ''}
-        <button onclick="loadNextTriviaQuestion()" style="width:100%;padding:13px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:white;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:1em" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+        <button onclick="loadNextTriviaQuestion()" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--theme-primary),var(--theme-accent));color:var(--theme-primary-text, white);border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:1em" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
             Next Question →
         </button>`;
     resultEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
