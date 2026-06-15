@@ -42,10 +42,14 @@
             --space-xl: 20px;
 
             /* Border Radius */
-            --radius: 16px;
-            --radius-sm: 10px;
+            --radius-xs: 6px;
+            --radius-sm: 8px;
+            --radius: 10px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
             --radius-chip: 20px;
             --radius-rounded: 30px;
+            --radius-circle: 50%;
 
             /* Typography */
             --font-size-xs: 0.65em;
@@ -64,7 +68,7 @@
             --btn-padding-lg: 11px 18px;
             --btn-font-size: 0.88em;
             --btn-font-weight: 700;
-            --btn-border-radius: 8px;
+            --btn-border-radius: var(--radius-sm);
             --btn-transition: all 0.2s ease;
 
             /* Cards & Sections */
@@ -311,7 +315,7 @@
         .pts-badge:active { transform:scale(0.97); }
         .pts-badge .num { font-size:1.6em; font-weight:800; line-height:1; display:block; }
         .pts-badge .lbl { font-size:0.7em; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px; }
-        .dash-bar-wrap { background:rgba(255,255,255,0.22); border-radius:10px; height:8px; overflow:hidden; margin-bottom:6px; }
+        .dash-bar-wrap { background: rgba(255,255,255,0.22); border-radius: var(--radius); height: 8px; overflow: hidden; margin-bottom: 6px; }
         .dash-bar-fill { height:100%; background:var(--accent); border-radius:10px; transition:width 0.6s ease; }
         .dash-bar-labels { display:flex; justify-content:space-between; font-size:0.78em; opacity:0.88; }
 
@@ -387,8 +391,8 @@
         .card-icon { font-size:1.8em; margin-bottom:4px; }
         .card-val { font-size:1.35em; font-weight:700; color:white; line-height:1.2; }
         .card-sub { font-size:0.78em; color: var(--text-secondary); margin-top:2px; }
-        .card-bar { margin-top:8px; background:var(--mid); border-radius:6px; height:5px; overflow:hidden; flex-shrink:0; }
-        .card-bar-fill { height:100%; border-radius:6px; transition:width 0.4s ease; }
+        .card-bar { margin-top: 8px; background: var(--mid); border-radius: var(--radius-xs); height: 5px; overflow: hidden; flex-shrink: 0; }
+        .card-bar-fill { height: 100%; border-radius: var(--radius-xs); transition: width 0.4s ease; }
         .card-badge-top {
             position:absolute; top:10px; right:10px;
             background:var(--accent); color:var(--dark);
@@ -538,8 +542,11 @@
             cursor: pointer;
         }
         .hw-cb {
-            width:26px; height:26px; border-radius:8px;
-            border:3px solid #CBD5E1; display:flex;
+            width: 26px;
+            height: 26px;
+            border-radius: var(--radius-sm);
+            border: 3px solid #CBD5E1;
+            display: flex;
             align-items:center; justify-content:center;
             flex-shrink:0; transition:var(--t); margin-top:3px;
         }
