@@ -1345,20 +1345,20 @@
             transition: all 0.2s ease;
         }
         .game-card.unlocked {
-            background: linear-gradient(135deg, #1a3a2d 0%, #0f2620 100%);
-            border-color: var(--theme-primary);
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--season-primary) 30%, #000000), color-mix(in srgb, var(--season-primary) 10%, #000000));
+            border-color: var(--season-primary);
+            box-shadow: 0 0 16px color-mix(in srgb, var(--season-primary) 25%, transparent);
             color: white;
         }
         .game-card.unlocked:hover {
-            border-color: var(--theme-accent);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+            border-color: var(--season-accent);
+            box-shadow: 0 0 20px color-mix(in srgb, var(--season-primary) 35%, transparent);
             transform: translateY(-2px);
-            background: linear-gradient(135deg, #224a39 0%, #163028 100%);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--season-primary) 40%, #000000), color-mix(in srgb, var(--season-primary) 15%, #000000));
         }
         .game-card.locked {
-            background: linear-gradient(135deg, #0f2620 0%, #061815 100%);
-            border-color: var(--mid);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--season-primary) 15%, #000000), color-mix(in srgb, var(--season-primary) 5%, #000000));
+            border-color: var(--season-border);
             opacity: 1;
             color: rgba(255, 255, 255, 0.6);
         }
@@ -1379,12 +1379,12 @@
         .game-name {
             font-size: 1.2em;
             font-weight: 700;
-            color: #FFFFFF;
+            color: white;
         }
         .game-stats {
             margin: 8px 0;
             font-size: 1em;
-            color: #E0E7FF;
+            color: color-mix(in srgb, white 80%, var(--season-primary) 20%);
             font-weight: 500;
         }
         .game-stats p {
@@ -1395,7 +1395,7 @@
         }
         .unlock-requirement {
             font-size: 0.95em;
-            color: #A7F3D0;
+            color: var(--season-accent);
             margin-bottom: 6px;
             font-weight: 500;
         }
