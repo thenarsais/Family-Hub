@@ -6446,21 +6446,256 @@ window.checkMemoryMatchChallenge = function(game) {
 };
 
 // Load Scramble mini-game into Challenge Mode
+// Load Scramble mini-game into Challenge Mode
 window.loadChallengeScrambleGame = function(container) {
     const miniGame = initializeScrambleGame('medium');
     window._challengeMiniGame = miniGame;
 
-    container.innerHTML = renderScrambleGame(miniGame);
-    setTimeout(() => {
-        const input = document.getElementById('scramble-input');
-        if (input) input.focus();
-    }, 50);
+    // Start timer immediately
+    startScrambleTimerChallenge(miniGame, container);
 
-    // Override submit button
-    const submitBtn = container.querySelector('button');
-    if (submitBtn) {
-        submitBtn.onclick = () => submitChallengeMiniGameGuess('scramble');
+    // Render initial game state
+    renderScrambleGameChallenge(miniGame, container);
+};
+
+// Render Scramble game in Challenge Mode (without modal wrapper)
+window.renderScrambleGameChallenge = function(game, container) {
+    if (!game) return;
+
+    const word = game.words[game.currentWordIndex];
+    const progress = game.currentWordIndex + 1;
+    const diffLabel = { easy: '🟢 Easy (1×)', medium: '🟡 Medium (1.5×)', hard: '🔴 Hard (2×)' }[game.difficulty];
+
+    const attemptEmojis = ['○', '○', '○'];
+    for (let i = 0; i < word.attempts; i++) {
+        attemptEmojis[i] = '❌';
     }
+
+    container.innerHTML = `
+        <div style="text-align:center;margin-bottom:16px">
+            <div style="font-size:1.2em;font-weight:800;color:var(--dark);margin-bottom:8px">🎲 Word Scramble</div>
+            <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:12px">${diffLabel}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div style="background:var(--stats-success-bg);padding:12px;border-radius:10px">
+                    <div style="font-size:0.85em;color:#D1FAE5">Score</div>
+                    <div id="scr-score-challenge" style="font-size:1.5em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
+                </div>
+                <div style="background:var(--stats-progress-bg);padding:12px;border-radius:10px">
+                    <div style="font-size:0.85em;color:#DBEAFE">Correct</div>
+                    <div style="font-size:1.3em;font-weight:800;color:var(--stats-progress-value)">${game.stats.words_correct}/5</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:16px;text-align:center">
+            <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:10px">Unscramble the word:</div>
+            <div id="scr-word-challenge" style="font-size:2.2em;font-weight:800;color:var(--text-muted);letter-spacing:6px;margin-bottom:12px;font-family:monospace">${word.scrambled}</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);margin-bottom:10px">
+                ${word.original.length} letters — Word ${progress}/5
+            </div>
+            <div style="text-align:center">
+                ${attemptEmojis.map(e => `<span style="font-size:1.3em;margin:0 3px">${e}</span>`).join('')}
+            </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+            <input id="scr-input-challenge"
+                type="text"
+                placeholder="Type the word here..."
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+                style="
+                    width:100%;
+                    padding:12px;
+                    background:white;
+                    border:2px solid var(--border-darker);
+                    border-radius:10px;
+                    color:var(--dark);
+                    font-size:1.1em;
+                    font-weight:600;
+                    box-sizing:border-box;
+                    transition:all 0.2s;
+                "
+                onfocus="this.style.borderColor='#0EA5E9'; this.style.background='#F0F9FF'"
+                onblur="this.style.borderColor='var(--border-darker)'; this.style.background='white'"
+            />
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button id="scr-submit-challenge" onclick="submitScrambleAnswerChallenge()" style="
+                padding:12px;
+                background:var(--theme-primary);
+                border:none;
+                color:white;
+                border-radius:10px;
+                cursor:pointer;
+                font-weight:700;
+                font-size:0.95em;
+                transition:all 0.2s;
+            "
+            onmouseover="this.style.background='#0EA5E9'"
+            onmouseout="this.style.background='var(--theme-primary)'">
+                Submit
+            </button>
+            <button onclick="skipScrambleWordChallenge()" style="
+                padding:12px;
+                background:var(--mid);
+                border:none;
+                color:white;
+                border-radius:10px;
+                cursor:pointer;
+                font-weight:700;
+                font-size:0.95em;
+                transition:all 0.2s;
+            "
+            onmouseover="this.style.background='#64748B'"
+            onmouseout="this.style.background='var(--mid)'">
+                Skip
+            </button>
+        </div>
+    `;
+
+    // Focus input and set up Enter key
+    setTimeout(() => {
+        const input = document.getElementById('scr-input-challenge');
+        if (input) {
+            input.focus();
+            input.onkeypress = (e) => {
+                if (e.key === 'Enter') submitScrambleAnswerChallenge();
+            };
+        }
+    }, 50);
+};
+
+// Submit answer in Challenge Mode Scramble
+window.submitScrambleAnswerChallenge = function() {
+    const challenge = window._challengeGame;
+    const miniGame = window._challengeMiniGame;
+    if (!challenge || !miniGame) return;
+
+    const input = document.getElementById('scr-input-challenge');
+    if (!input || miniGame.gameState !== 'playing') return;
+
+    const guess = input.value.trim().toLowerCase();
+    const currentWord = miniGame.words[miniGame.currentWordIndex];
+    if (!currentWord) return;
+
+    const isCorrectAnswer = guess === currentWord.original.toLowerCase();
+    let pointsAwarded = 0;
+
+    if (isCorrectAnswer) {
+        currentWord.correct = true;
+        currentWord.timeTaken = Math.max(0, Math.floor((20000 - (Date.now() - miniGame.wordStartTime)) / 1000));
+        const timeBonus = currentWord.timeTaken / 20;
+        const diffMultiplier = miniGame.difficulty === 'easy' ? 1 : miniGame.difficulty === 'medium' ? 1.5 : 2;
+        pointsAwarded = Math.floor(10 * timeBonus * diffMultiplier);
+        miniGame.score += pointsAwarded;
+        miniGame.wordsCorrect++;
+        miniGame.stats.words_correct++;
+
+        // Update display
+        const scoreEl = document.getElementById('scr-score-challenge');
+        if (scoreEl) scoreEl.textContent = miniGame.score;
+
+        advanceScrambleWord(miniGame);
+        input.value = '';
+
+        // Check if game finished
+        if (miniGame.wordsCorrect === 5) {
+            miniGame.gameState = 'won';
+            setTimeout(() => {
+                challenge.gameScores[challenge.games[challenge.currentGameIndex]] = miniGame.score;
+                challenge.gameWins[challenge.games[challenge.currentGameIndex]] = true;
+                challenge.currentGameIndex++;
+                challenge.stats.gamesPlayed++;
+                challenge.stats.gamesWon++;
+                playNextChallengeGame();
+            }, 500);
+        } else {
+            // Render next word
+            renderScrambleGameChallenge(miniGame, document.getElementById('mini-game-content'));
+        }
+    } else {
+        currentWord.attempts++;
+        if (currentWord.attempts >= 3) {
+            advanceScrambleWord(miniGame);
+            if (miniGame.currentWordIndex >= 5) {
+                miniGame.gameState = 'lost';
+                challenge.gameScores[challenge.games[challenge.currentGameIndex]] = miniGame.score;
+                challenge.gameWins[challenge.games[challenge.currentGameIndex]] = false;
+                challenge.currentGameIndex++;
+                challenge.stats.gamesPlayed++;
+                challenge.lives--;
+                setTimeout(() => playNextChallengeGame(), 500);
+            } else {
+                renderScrambleGameChallenge(miniGame, document.getElementById('mini-game-content'));
+            }
+        } else {
+            // Show attempts remaining
+            renderScrambleGameChallenge(miniGame, document.getElementById('mini-game-content'));
+        }
+        input.value = '';
+        input.focus();
+    }
+};
+
+// Skip a word in Challenge Mode Scramble
+window.skipScrambleWordChallenge = function() {
+    const miniGame = window._challengeMiniGame;
+    if (!miniGame) return;
+
+    advanceScrambleWord(miniGame);
+
+    if (miniGame.currentWordIndex >= 5) {
+        const challenge = window._challengeGame;
+        miniGame.gameState = 'lost';
+        challenge.gameScores[challenge.games[challenge.currentGameIndex]] = miniGame.score;
+        challenge.gameWins[challenge.games[challenge.currentGameIndex]] = false;
+        challenge.currentGameIndex++;
+        challenge.stats.gamesPlayed++;
+        challenge.lives--;
+        setTimeout(() => playNextChallengeGame(), 500);
+    } else {
+        renderScrambleGameChallenge(miniGame, document.getElementById('mini-game-content'));
+    }
+};
+
+// Start timer for Scramble in Challenge Mode
+window.startScrambleTimerChallenge = function(miniGame, container) {
+    if (!miniGame) return;
+
+    miniGame.timerStartTime = Date.now();
+    window._scrambleTimer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - miniGame.timerStartTime) / 1000);
+        const timeRemaining = Math.max(0, 20 - elapsed); // 20 second per word
+
+        if (timeRemaining <= 0) {
+            clearInterval(window._scrambleTimer);
+            window._scrambleTimer = null;
+
+            const challenge = window._challengeGame;
+            const currentWord = miniGame.words[miniGame.currentWordIndex];
+            if (currentWord) {
+                currentWord.attempts = 3; // Mark as failed
+            }
+
+            advanceScrambleWord(miniGame);
+
+            if (miniGame.currentWordIndex >= 5) {
+                miniGame.gameState = 'lost';
+                challenge.gameScores[challenge.games[challenge.currentGameIndex]] = miniGame.score;
+                challenge.gameWins[challenge.games[challenge.currentGameIndex]] = false;
+                challenge.currentGameIndex++;
+                challenge.stats.gamesPlayed++;
+                challenge.lives--;
+                setTimeout(() => playNextChallengeGame(), 500);
+            } else {
+                renderScrambleGameChallenge(miniGame, document.getElementById('mini-game-content'));
+                startScrambleTimerChallenge(miniGame, container);
+            }
+        }
+    }, 100);
 };
 
 // Submit a guess/answer in the mini-game
