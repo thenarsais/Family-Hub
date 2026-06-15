@@ -6357,6 +6357,9 @@ window.submitWordleAnswerChallenge = function() {
             challenge.stats.gamesPlayed++;
             if (miniGame.gameState === 'won') {
                 challenge.stats.gamesWon++;
+            } else {
+                // Lost - decrement lives
+                challenge.lives--;
             }
             playNextChallengeGame();
         }, 1000);
