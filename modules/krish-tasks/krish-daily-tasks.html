@@ -6307,6 +6307,135 @@ window.updateChallengeLeaderboard = function(challenge) {
     saveState();
 };
 
+// ── LEADERBOARD VIEWER WITH FILTERS ──────────────────────
+window.showLeaderboardViewer = function(gameId = 'memory') {
+    const stats = state.games?.stats?.[gameId] || {};
+    const leaderboard = stats.leaderboard || [];
+
+    if (leaderboard.length === 0) {
+        alert('No leaderboard data yet. Play some games first!');
+        return;
+    }
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'leaderboard-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:700px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:85vh;overflow-y:auto';
+
+    // Title
+    const gameNames = { memory: 'Memory Tiles', scramble: 'Word Scramble', challenge: 'Challenge Mode' };
+    const gameName = gameNames[gameId] || 'Game';
+
+    // Get filters from state if they exist, otherwise default
+    if (!window._leaderboardFilters) {
+        window._leaderboardFilters = {
+            gameId: gameId,
+            difficulty: 'all',
+            dateRange: 'all'
+        };
+    }
+    const filters = window._leaderboardFilters;
+
+    // Filter leaderboard
+    let filtered = leaderboard.slice();
+
+    if (filters.difficulty !== 'all') {
+        filtered = filtered.filter(e => e.difficulty === filters.difficulty);
+    }
+
+    if (filters.dateRange !== 'all') {
+        const today = new Date();
+        const cutoffDate = new Date(today);
+        if (filters.dateRange === '7days') {
+            cutoffDate.setDate(cutoffDate.getDate() - 7);
+        } else if (filters.dateRange === 'month') {
+            cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+        }
+        filtered = filtered.filter(e => new Date(e.date) >= cutoffDate);
+    }
+
+    // Sort by score descending
+    filtered.sort((a, b) => b.score - a.score);
+
+    // Calculate personal best
+    const personalBest = filtered.length > 0 ? filtered[0].score : 0;
+    const bestRank = filtered.length > 0 ? 1 : 0;
+
+    card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+            <h2 style="font-size:1.8em;font-weight:800;margin:0">🏆 ${gameName} Leaderboard</h2>
+            <button onclick="document.getElementById('leaderboard-modal').remove()" style="background:#475569;border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">Close</button>
+        </div>
+
+        ${personalBest > 0 ? `
+            <div style="background:linear-gradient(135deg,var(--theme-primary),var(--theme-accent));padding:16px;border-radius:12px;margin-bottom:20px;text-align:center">
+                <div style="font-size:0.9em;opacity:0.9;margin-bottom:4px">Your Best Score</div>
+                <div style="font-size:2.2em;font-weight:900">🥇 ${personalBest} pts</div>
+                <div style="font-size:0.85em;opacity:0.85;margin-top:4px">Rank #${bestRank}</div>
+            </div>
+        ` : ''}
+
+        <!-- Filters -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+            <div>
+                <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px;font-weight:600">Difficulty</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button onclick="window._leaderboardFilters.difficulty='all';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'all' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">All</button>
+                    <button onclick="window._leaderboardFilters.difficulty='easy';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'easy' ? '#10B981' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟢 Easy</button>
+                    <button onclick="window._leaderboardFilters.difficulty='medium';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'medium' ? '#F59E0B' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟡 Med</button>
+                    <button onclick="window._leaderboardFilters.difficulty='hard';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'hard' ? '#EF4444' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🔴 Hard</button>
+                </div>
+            </div>
+            <div>
+                <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px;font-weight:600">Date Range</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button onclick="window._leaderboardFilters.dateRange='all';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.dateRange === 'all' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">All</button>
+                    <button onclick="window._leaderboardFilters.dateRange='7days';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.dateRange === '7days' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">7 days</button>
+                    <button onclick="window._leaderboardFilters.dateRange='month';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.dateRange === 'month' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">Month</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard List -->
+        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:20px">
+            ${filtered.length > 0 ? `
+                ${filtered.map((entry, i) => {
+                    const medals = ['🥇', '🥈', '🥉'];
+                    const diffIcon = { easy: '🟢', medium: '🟡', hard: '🔴' }[entry.difficulty] || '⭐';
+                    const daysAgo = Math.floor((Date.now() - new Date(entry.date).getTime()) / (1000 * 60 * 60 * 24));
+                    const dateStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo}d ago`;
+                    const medal = i < 3 ? medals[i] : '🎖️';
+                    return `
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #334155;${i === 0 ? 'background:#1E3A8A;padding:12px;border-radius:8px;border:none;margin-bottom:8px' : ''}">
+                            <div style="display:flex;align-items:center;gap:12px;flex:1">
+                                <span style="font-size:1.4em;min-width:30px;text-align:center">${medal}</span>
+                                <div>
+                                    <div style="font-weight:700;color:${i === 0 ? '#60A5FA' : '#E0E7FF'}">#${i + 1} — ${entry.score} pts</div>
+                                    <div style="font-size:0.8em;color:#94A3B8">${diffIcon} ${entry.difficulty.charAt(0).toUpperCase() + entry.difficulty.slice(1)}</div>
+                                </div>
+                            </div>
+                            <div style="text-align:right;font-size:0.85em;color:#94A3B8">${dateStr}</div>
+                        </div>
+                    `;
+                }).join('')}
+            ` : `
+                <div style="text-align:center;padding:20px;color:#94A3B8">No scores found for these filters</div>
+            `}
+        </div>
+
+        <div style="font-size:0.85em;color:#94A3B8;text-align:center;padding-top:12px;border-top:1px solid #334155">
+            Total Scores: ${leaderboard.length}
+        </div>
+    `;
+
+    card.appendChild(document.createElement('div'));
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+};
+
 // Play Challenge Mode again
 window.playAgainChallenge = function() {
     quitChallengeGame();
