@@ -6425,8 +6425,8 @@ window.loadChallengeMemoryGame = function(container) {
 
     // Render Memory game grid (without modal wrapper, since it's embedded in Challenge panel)
     const { cols, rows } = miniGame.settings;
-    const tileSize = 140; // Extra large tiles for better text fitting in Challenge Mode
-    const gap = 12;
+    const tileSize = 100; // Optimized for Challenge Mode panel (fits without scrolling)
+    const gap = 8;
 
     let html = `
         <div style="text-align:center;margin-bottom:16px">
@@ -6460,19 +6460,19 @@ window.loadChallengeMemoryGame = function(container) {
                         width:${tileSize}px;
                         height:${tileSize}px;
                         background:${tile.matched ? '#DCFCE7' : tile.flipped ? '#FFFFFF' : 'var(--mid)'};
-                        border:3px solid ${tile.matched ? 'var(--theme-primary)' : tile.flipped ? 'var(--border-darker)' : 'var(--text-secondary)'};
-                        border-radius:10px;
+                        border:2px solid ${tile.matched ? 'var(--theme-primary)' : tile.flipped ? 'var(--border-darker)' : 'var(--text-secondary)'};
+                        border-radius:8px;
                         color:${tile.matched ? 'var(--text-muted)' : tile.flipped ? 'var(--dark)' : 'var(--dark)'};
                         cursor:${tile.matched ? 'default' : 'pointer'};
                         font-weight:700;
-                        font-size:0.8em;
-                        padding:14px;
+                        font-size:0.78em;
+                        padding:10px;
                         text-align:center;
                         display:flex;
                         align-items:center;
                         justify-content:center;
                         transition:all 0.2s ease;
-                        line-height:1.3;
+                        line-height:1.25;
                         word-break:break-word;
                         overflow:hidden;
                         box-shadow:${tile.matched ? '0 2px 8px rgba(16, 185, 129, 0.2)' : 'none'};
