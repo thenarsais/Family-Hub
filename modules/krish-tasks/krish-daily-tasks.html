@@ -6196,22 +6196,175 @@ window.playNextChallengeGame = function() {
 };
 
 // Load Wordle mini-game into Challenge Mode
+// Get letter status for Wordle keyboard visual
+window.getWordleLetterStatus = function(game) {
+    const status = {};
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    alphabet.forEach(letter => {
+        status[letter] = null; // null = unused, 'green' = correct, 'yellow' = wrong spot, 'gray' = not in word
+    });
+
+    if (game.feedback && game.feedback.length > 0) {
+        game.feedback.forEach(({ guess, feedback }) => {
+            const guessLetters = guess.split('');
+            guessLetters.forEach((letter, idx) => {
+                const emoji = feedback[idx];
+
+                if (emoji === '🟩') {
+                    status[letter] = 'green';
+                } else if (emoji === '🟨' && status[letter] !== 'green') {
+                    status[letter] = 'yellow';
+                } else if (emoji === '⬜' && !status[letter]) {
+                    status[letter] = 'gray';
+                }
+            });
+        });
+    }
+
+    return status;
+};
+
+// Render Wordle keyboard visual
+window.renderWordleKeyboard = function(game) {
+    const status = getWordleLetterStatus(game);
+    const rows = [
+        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+        ['Z', 'X', 'C', 'V', 'B', 'N', 'M']
+    ];
+
+    const getKeyColor = (letter) => {
+        const s = status[letter];
+        if (s === 'green') return { bg: '#10B981', text: 'white' };
+        if (s === 'yellow') return { bg: '#F59E0B', text: 'white' };
+        if (s === 'gray') return { bg: '#9CA3AF', text: 'white' };
+        return { bg: '#E5E7EB', text: '#374151' };
+    };
+
+    return `
+        <div style="background:white;padding:10px;border-radius:8px;margin-top:10px">
+            ${rows.map(row => `
+                <div style="display:flex;gap:3px;justify-content:center;margin-bottom:4px">
+                    ${row.map(letter => {
+                        const color = getKeyColor(letter);
+                        return `<button
+                            style="
+                                width:30px;
+                                height:30px;
+                                background:${color.bg};
+                                color:${color.text};
+                                border:none;
+                                border-radius:4px;
+                                font-weight:700;
+                                font-size:0.75em;
+                                cursor:default;
+                                display:flex;
+                                align-items:center;
+                                justify-content:center;
+                                opacity:${status[letter] ? '1' : '0.6'};
+                            "
+                            disabled
+                        >${letter}</button>`;
+                    }).join('')}
+                </div>
+            `).join('')}
+        </div>
+    `;
+};
+
+// Render Wordle game in Challenge Mode with keyboard
+window.renderWordleGameChallenge = function(game, container) {
+    if (!game) return;
+
+    const html = `
+        <div style="text-align:center;margin-bottom:14px">
+            <div style="font-size:1.1em;font-weight:800;color:var(--dark);margin-bottom:6px">🎯 Wordle</div>
+            <div style="font-size:0.9em;color:var(--text-secondary)">Guess the 5-letter category</div>
+        </div>
+
+        <div style="text-align:center;margin-bottom:12px">
+            <div style="font-size:0.8em;color:var(--text-muted);font-weight:600;margin-bottom:6px">Attempts: <span style="color:var(--dark);font-weight:800">${game.attempts}/${game.maxAttempts}</span></div>
+            <div style="height:5px;background:var(--border-light);border-radius:3px">
+                <div style="height:100%;background:var(--theme-primary);border-radius:3px;width:${(game.attempts / game.maxAttempts) * 100}%"></div>
+            </div>
+        </div>
+
+        ${game.feedback.map(f => `
+            <div style="margin-bottom:6px;padding:10px;background:white;border-radius:8px;font-family:monospace;font-size:1.2em;font-weight:800;letter-spacing:3px;text-align:center">
+                ${f.feedback.join('')}
+            </div>
+        `).join('')}
+
+        ${game.gameState !== 'playing' ? `
+            <div style="margin-bottom:12px;padding:12px;background:${game.gameState === 'won' ? '#ECFDF5' : '#FEF2F2'};border-radius:12px;border:2px solid ${game.gameState === 'won' ? 'var(--theme-primary)' : '#EF4444'}">
+                <div style="font-size:1.2em;margin-bottom:6px">${game.gameState === 'won' ? '🎉' : '💪'}</div>
+                <div style="font-weight:700;color:${game.gameState === 'won' ? '#065F46' : '#7F1D1D'};margin-bottom:4px">${game.gameState === 'won' ? 'You Won!' : 'Game Over'}</div>
+                <div style="font-size:0.9em;color:${game.gameState === 'won' ? '#047857' : '#991B1B'};margin-bottom:10px">Answer: <strong>${game.answer}</strong></div>
+                <div style="font-size:1em;font-weight:800;color:var(--theme-primary)">Points: ${game.score || 0}</div>
+            </div>
+        ` : `
+            <div style="display:flex;gap:6px;margin-bottom:10px">
+                <input type="text" id="wordle-input-challenge" placeholder="Guess..." maxlength="5" style="flex:1;padding:11px;border:2px solid var(--border-light);border-radius:8px;font-size:1.05em;text-transform:uppercase;font-weight:700;letter-spacing:2px;color:var(--dark)" onfocus="this.style.borderColor='#0EA5E9'; this.style.background='#F0F9FF'" onblur="this.style.borderColor='var(--border-light)'; this.style.background='white'" onkeypress="if(event.key==='Enter') submitWordleAnswerChallenge()">
+                <button onclick="submitWordleAnswerChallenge()" style="padding:11px 18px;background:var(--theme-primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.95em;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='#0EA5E9'" onmouseout="this.style.background='var(--theme-primary)'">Submit</button>
+            </div>
+            ${renderWordleKeyboard(game)}
+            <div style="font-size:0.75em;color:var(--text-muted);text-align:center;margin-top:10px">🟩 Correct • 🟨 Wrong spot • ⬜ Not in word</div>
+        `}
+    `;
+
+    container.innerHTML = html;
+
+    setTimeout(() => {
+        const input = document.getElementById('wordle-input-challenge');
+        if (input) input.focus();
+    }, 50);
+};
+
+// Submit Wordle answer in Challenge Mode
+window.submitWordleAnswerChallenge = function() {
+    const challenge = window._challengeGame;
+    const miniGame = window._challengeMiniGame;
+    if (!challenge || !miniGame) return;
+
+    const input = document.getElementById('wordle-input-challenge');
+    if (!input || miniGame.gameState !== 'playing') return;
+
+    const guess = input.value.trim().toUpperCase();
+    if (guess.length !== 5) {
+        return;
+    }
+
+    wordleSubmitGuess(miniGame, guess);
+    input.value = '';
+
+    // Re-render with updated keyboard
+    const container = document.getElementById('mini-game-content');
+    if (container) {
+        renderWordleGameChallenge(miniGame, container);
+    }
+
+    // Check if game is complete
+    if (miniGame.gameState !== 'playing') {
+        setTimeout(() => {
+            challenge.gameScores[challenge.games[challenge.currentGameIndex]] = miniGame.score;
+            challenge.gameWins[challenge.games[challenge.currentGameIndex]] = miniGame.gameState === 'won';
+            challenge.currentGameIndex++;
+            challenge.stats.gamesPlayed++;
+            if (miniGame.gameState === 'won') {
+                challenge.stats.gamesWon++;
+            }
+            playNextChallengeGame();
+        }, 1000);
+    }
+};
+
+// Load Wordle mini-game into Challenge Mode
 window.loadChallengeWordleGame = function(container) {
     const miniGame = initializeWordleGame();
     window._challengeMiniGame = miniGame;
 
-    container.innerHTML = renderWordleGame(miniGame);
-    setTimeout(() => {
-        const input = document.getElementById('wordle-input');
-        if (input) input.focus();
-    }, 50);
-
-    // Override submit button
-    const originalRender = renderWordleGame;
-    const submitBtn = container.querySelector('button[onclick="wordleSubmitBtn()"]');
-    if (submitBtn) {
-        submitBtn.onclick = () => submitChallengeMiniGameGuess('wordle');
-    }
+    renderWordleGameChallenge(miniGame, container);
 };
 
 // Start Memory game timer for Challenge Mode
