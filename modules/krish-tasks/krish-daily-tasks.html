@@ -26,7 +26,7 @@
             --mid: #475569;
             --text-secondary: #64748B;
             --text-muted: #94A3B8;
-            --muted: #94A3B8;
+            --muted: var(--text-muted);
             --light: #F1F5F9;
             --white: #FFFFFF;
 
@@ -41,7 +41,7 @@
 
             /* Button States */
             --btn-disabled-bg: #64748B;
-            --btn-disabled-text: #94A3B8;
+            --btn-disabled-text: var(--text-muted);
             --btn-hover-dark: #64748B;
 
             /* Seasonal Theme Variables (updated dynamically) */
@@ -455,7 +455,7 @@
             padding:10px 12px 8px;
             background:white;
             overflow-x:auto; scrollbar-width:none;
-            border-bottom:2px solid #E2E8F0;
+            border-bottom:2px solid var(--border-light);
             position:sticky; top:54px; z-index:15;
         }
         .board-tabs::-webkit-scrollbar { display:none; }
@@ -505,7 +505,7 @@
         .chore-item.done .chore-cb { background:var(--success); border-color:var(--success); color:white; }
         .chore-ico { font-size:1.3em; }
         .chore-lbl { flex:1; font-size:0.97em; font-weight:600; color:var(--dark); }
-        .chore-item.done .chore-lbl { text-decoration:line-through; color:#94A3B8; }
+        .chore-item.done .chore-lbl { text-decoration:line-through; color:var(--text-muted); }
         .chore-pts { font-size:0.82em; font-weight:700; color:var(--accent); background:#FFFBEB; padding:3px 9px; border-radius:20px; }
 
         /* ── HOMEWORK ────────────────────────────── */
@@ -515,7 +515,7 @@
             flex: 1;
             min-width: 120px;
             padding: var(--btn-padding-lg);
-            border: 2px solid #E2E8F0;
+            border: 2px solid var(--border-light);
             border-radius: var(--btn-border-radius);
             font-size: 0.9em;
             font-family: var(--font);
@@ -526,7 +526,7 @@
         .f-input:focus { border-color: var(--theme-primary); }
         .f-select {
             padding: var(--btn-padding-lg);
-            border: 2px solid #E2E8F0;
+            border: 2px solid var(--border-light);
             border-radius: var(--btn-border-radius);
             font-size: 0.9em;
             font-family: var(--font);
@@ -575,7 +575,7 @@
             margin-bottom:3px;
         }
         .hw-title { font-size:0.97em; font-weight:600; color:var(--dark); }
-        .hw-item.done .hw-title { text-decoration:line-through; color:#94A3B8; }
+        .hw-item.done .hw-title { text-decoration:line-through; color:var(--text-muted); }
         .hw-due { font-size:0.78em; color: var(--text-secondary); margin-top:3px; }
         .hw-due.urgent { color:var(--danger); font-weight:700; }
         .hw-due.warning { color:var(--orange); font-weight:700; }
@@ -593,7 +593,7 @@
             border-radius:var(--radius); padding:22px;
             text-align:center; margin-bottom:14px; color:white;
         }
-        .pomo-for { font-size:0.8em; color:#94A3B8; margin-bottom:3px; font-weight:700; }
+        .pomo-for { font-size:0.8em; color:var(--text-muted); margin-bottom:3px; font-weight:700; }
         .pomo-subj-lbl { font-size:1em; font-weight:700; color:white; margin-bottom:18px; }
         .pomo-ring { position:relative; width:130px; height:130px; margin:0 auto 14px; }
         .pomo-ring svg { transform:rotate(-90deg); width:130px; height:130px; }
@@ -605,7 +605,7 @@
             transform:translate(-50%,-50%);
             font-size:1.9em; font-weight:800;
         }
-        .pomo-mode-lbl { font-size:0.72em; color:#94A3B8; margin-top:-4px; margin-bottom:14px; }
+        .pomo-mode-lbl { font-size:0.72em; color:var(--text-muted); margin-top:-4px; margin-bottom:14px; }
         .pomo-btns { display:flex; gap:8px; justify-content:center; }
         .pb {
             padding: var(--btn-padding);
@@ -665,7 +665,7 @@
         }
         .fc-btn:active { transform:scale(0.95); }
         .fc-flip { background:var(--primary); color:white; }
-        .fc-prev { background:#E2E8F0; color:var(--dark); }
+        .fc-prev { background:var(--border-light); color:var(--dark); }
         .fc-next { background: var(--theme-primary); color:white; }
         .fc-counter { font-size:0.82em; color: var(--text-secondary); min-width:60px; text-align:center; font-weight:700; }
 
@@ -675,7 +675,7 @@
         .dur-btn {
             padding: var(--btn-padding);
             background: var(--light);
-            border: 2px solid #E2E8F0;
+            border: 2px solid var(--border-light);
             border-radius: var(--btn-border-radius);
             font-size: var(--btn-font-size);
             font-weight: var(--btn-font-weight);
@@ -719,7 +719,7 @@
 
         .guj-actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
         .guj-action {
-            background:white; border:3px solid #E2E8F0;
+            background:white; border:3px solid var(--border-light);
             border-radius:var(--radius); padding:18px 10px;
             text-align:center; cursor:pointer;
             transition:var(--t); text-decoration:none;
@@ -745,7 +745,7 @@
         .guj-tbtn:active { transform:scale(0.97); }
         .gtb-start { background:var(--primary); color:white; }
         .gtb-stop  { background:var(--danger); color:white; }
-        .gtb-reset { background:#E2E8F0; color:var(--dark); }
+        .gtb-reset { background:var(--border-light); color:var(--dark); }
 
         /* ── CALENDAR ────────────────────────────── */
         .cal-add-form { background:white; border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
@@ -791,8 +791,8 @@
             display:flex; flex-direction:column;
             align-items:center; justify-content:center;
             font-size:0.68em; font-weight:700;
-            border:2px solid #E2E8F0;
-            background:#F8FAFC; color:#94A3B8;
+            border:2px solid var(--border-light);
+            background:#F8FAFC; color:var(--text-muted);
             cursor:pointer; transition:var(--t);
         }
         .hday.done  { background:var(--success); border-color:var(--success); color:white; }
@@ -810,7 +810,7 @@
         .cntr-lbl { flex:1; font-size:0.88em; font-weight:600; color:var(--mid); }
         .cntr-val { font-size:1.25em; font-weight:800; color:var(--dark); min-width:34px; text-align:center; }
         .cntr-btn {
-            width:34px; height:34px; border:2px solid #E2E8F0;
+            width:34px; height:34px; border:2px solid var(--border-light);
             background:white; border-radius:8px;
             font-size:1.2em; cursor:pointer;
             display:flex; align-items:center; justify-content:center;
@@ -823,7 +823,7 @@
         .mood-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; margin-bottom:18px; }
         .mood-opt {
             aspect-ratio:1; border-radius:var(--radius);
-            border:3px solid #E2E8F0;
+            border:3px solid var(--border-light);
             display:flex; flex-direction:column;
             align-items:center; justify-content:center;
             cursor:pointer; transition:var(--t);
@@ -840,7 +840,7 @@
         .mood-h-row { display:flex; gap:6px; }
         .mood-h-item { flex:1; text-align:center; }
         .mood-h-em { font-size:1.4em; }
-        .mood-h-day { font-size:0.66em; color:#94A3B8; font-weight:700; }
+        .mood-h-day { font-size:0.66em; color:var(--text-muted); font-weight:700; }
 
         /* ── POINTS PANEL ────────────────────────── */
         .pts-tier-card {
@@ -868,7 +868,7 @@
 
         .next-tier-card { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
         .nt-label { display:flex; justify-content:space-between; font-size:0.85em; font-weight:700; margin-bottom:8px; }
-        .pbar { background:#E2E8F0; border-radius:10px; height:10px; overflow:hidden; }
+        .pbar { background:var(--border-light); border-radius:10px; height:10px; overflow:hidden; }
         .pbar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--indigo),var(--purple)); transition:width 0.5s ease; }
 
         .pts-how-to { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); margin-top:12px; }
@@ -879,7 +879,7 @@
         /* ── UTILITY ─────────────────────────────── */
         .card-white { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); margin-bottom:12px; }
         .lbl { font-size:0.82em; font-weight:700; color:var(--mid); display:block; margin-bottom:6px; }
-        .empty-state { text-align:center; padding:36px 20px; color:#94A3B8; }
+        .empty-state { text-align:center; padding:36px 20px; color:var(--text-muted); }
         .empty-ico { font-size:2.8em; margin-bottom:7px; }
         .empty-txt { font-size:0.95em; font-weight:600; }
         .chip { display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.75em; font-weight:700; }
@@ -887,7 +887,7 @@
         .chip-y { background:#FEF9C3; color:#854D0E; }
         .chip-r { background:#FEE2E2; color:#991B1B; }
         .chip-b { background:#DBEAFE; color:#1E40AF; }
-        .divider { border:none; border-top:1px solid #E2E8F0; margin:12px 0; }
+        .divider { border:none; border-top:1px solid var(--border-light); margin:12px 0; }
         .row-between { display:flex; justify-content:space-between; align-items:center; }
 
         /* ── ANIMATIONS ──────────────────────────── */
@@ -987,7 +987,7 @@
             transition:background 0.12s;
         }
         .db-chore-row:active { background:#F8FAFC; }
-        .db-chore-row.done .db-cl { text-decoration:line-through; color:#94A3B8; }
+        .db-chore-row.done .db-cl { text-decoration:line-through; color:var(--text-muted); }
         .db-cb {
             width:24px; height:24px; border-radius:50%;
             border:2.5px solid #CBD5E1;
@@ -1016,7 +1016,7 @@
         .db-hw-info { flex:1; min-width:0; }
         .db-hw-subj { display:inline-block; padding:1px 7px; border-radius:20px; font-size:0.68em; font-weight:700; margin-bottom:2px; }
         .db-hw-title { font-size:0.87em; font-weight:700; color:var(--dark); }
-        .db-hw-row.done .db-hw-title { text-decoration:line-through; color:#94A3B8; }
+        .db-hw-row.done .db-hw-title { text-decoration:line-through; color:var(--text-muted); }
         .db-hw-due  { font-size:0.7em; color: var(--text-secondary); margin-top:2px; }
         .db-hw-due.urgent  { color:#EF4444; font-weight:700; }
         .db-hw-due.warning { color:#F97316; font-weight:700; }
@@ -1036,9 +1036,9 @@
         }
         .db-pomo-mini.hidden-pomo { display:none; }
         .db-pomo-info  { flex:1; min-width:0; }
-        .db-pomo-label { font-size:0.65em; color:#94A3B8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+        .db-pomo-label { font-size:0.65em; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
         .db-pomo-subj  { font-size:0.82em; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .db-pomo-mode  { font-size:0.65em; color:#94A3B8; margin-top:1px; }
+        .db-pomo-mode  { font-size:0.65em; color:var(--text-muted); margin-top:1px; }
         .db-pomo-time  { font-size:1.55em; font-weight:800; color:#F97316; font-variant-numeric:tabular-nums; flex-shrink:0; }
         .db-pomo-ctrl  { display:flex; gap:5px; flex-shrink:0; }
         .db-pmb { padding: var(--btn-padding-sm); border: none; border-radius: var(--btn-border-radius); font-weight: var(--btn-font-weight); font-size: var(--font-size-xs); cursor: pointer; transition: var(--btn-transition); }
@@ -1056,8 +1056,8 @@
         .db-h-streak { font-size:0.7em; font-weight:700; background:#FEF3C7; color:#78350F; padding:2px 8px; border-radius:20px; flex-shrink:0; }
         .db-h-today-btn {
             padding:5px 11px; border-radius:8px;
-            border:2px solid #E2E8F0; background:white;
-            font-size:0.75em; font-weight:700; color:#475569;
+            border:2px solid var(--border-light); background:white;
+            font-size:0.75em; font-weight:700; color:var(--mid);
             cursor:pointer; transition:var(--t); flex-shrink:0;
         }
         .db-h-today-btn.done { background:#DCFCE7; border-color:#10B981; color:#166534; }
@@ -1066,9 +1066,9 @@
         .db-week-row { display:flex; gap:4px; margin-bottom:6px; }
         .db-hd {
             flex:1; height:28px; border-radius:6px;
-            border:2px solid #E2E8F0; background:#F8FAFC;
+            border:2px solid var(--border-light); background:#F8FAFC;
             display:flex; align-items:center; justify-content:center;
-            font-size:0.67em; font-weight:700; color:#94A3B8;
+            font-size:0.67em; font-weight:700; color:var(--text-muted);
             cursor:pointer; transition:var(--t);
         }
         .db-hd.done   { background:#10B981; border-color:#10B981; color:white; }
@@ -1079,7 +1079,7 @@
         .db-h-counter { display:flex; align-items:center; gap:7px; }
         .db-h-cntr-lbl { flex:1; font-size:0.75em; color: var(--text-secondary); font-weight:600; }
         .db-cntr-btn {
-            width:30px; height:30px; border:2px solid #E2E8F0; background:white;
+            width:30px; height:30px; border:2px solid var(--border-light); background:white;
             border-radius:7px; font-size:1.1em; cursor:pointer; font-weight:700;
             display:flex; align-items:center; justify-content:center; transition:var(--t);
         }
@@ -1089,7 +1089,7 @@
         /* ── MOOD ──────────────────────────────────── */
         .db-mood-row { display:flex; gap:5px; padding:11px 13px 7px; }
         .db-mood-btn {
-            flex:1; border:3px solid #E2E8F0; background:white;
+            flex:1; border:3px solid var(--border-light); background:white;
             border-radius:12px; padding:8px 3px;
             display:flex; flex-direction:column; align-items:center; gap:3px;
             cursor:pointer; transition:var(--t);
@@ -1102,8 +1102,8 @@
         .db-mood-hist { display:flex; padding:5px 13px 11px; gap:5px; }
         .db-mh-item { flex:1; text-align:center; }
         .db-mh-em  { font-size:1.15em; }
-        .db-mh-day { font-size:0.58em; color:#94A3B8; font-weight:700; }
-        .db-mood-set { padding:0 13px 10px; font-size:0.75em; color:#94A3B8; text-align:center; }
+        .db-mh-day { font-size:0.58em; color:var(--text-muted); font-weight:700; }
+        .db-mood-set { padding:0 13px 10px; font-size:0.75em; color:var(--text-muted); text-align:center; }
 
         /* ── GUJARATI ──────────────────────────────── */
         .db-guj-info { display:flex; align-items:center; gap:10px; padding:10px 14px 7px; }
@@ -1114,7 +1114,7 @@
         .db-guj-plbl { text-align:center; font-size:0.68em; color: var(--text-secondary); margin-bottom:9px; }
         .db-guj-acts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; padding:0 12px 12px; }
         .db-guj-btn {
-            background:#F8FAFC; border:2px solid #E2E8F0; border-radius:10px;
+            background:#F8FAFC; border:2px solid var(--border-light); border-radius:10px;
             padding:9px 5px; text-align:center; cursor:pointer;
             text-decoration:none; display:block; transition:var(--t);
         }
@@ -1133,7 +1133,7 @@
         .db-pts-stat   { text-align:center; background:#F8FAFC; border-radius:9px; padding:7px 4px; }
         .db-pts-val    { font-size:1em; font-weight:800; color:var(--dark); }
         .db-pts-lbl    { font-size:0.62em; color: var(--text-secondary); font-weight:600; }
-        .db-pts-bar    { background:#E2E8F0; border-radius:8px; height:6px; overflow:hidden; }
+        .db-pts-bar    { background:var(--border-light); border-radius:8px; height:6px; overflow:hidden; }
         .db-pts-bfill  { height:100%; background:linear-gradient(90deg,var(--indigo),var(--purple)); border-radius:8px; transition:width 0.5s; }
         .db-pts-next-lbl { display:flex; justify-content:space-between; font-size:0.7em; font-weight:700; color: var(--text-secondary); margin-bottom:4px; }
         .db-pts-card   { cursor:pointer; }
@@ -1150,7 +1150,7 @@
         /* ── KUNG FU (dashboard) ───────────────────── */
         .db-kf-goals { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; padding:11px 13px 8px; }
         .db-kf-goal {
-            background:#F8FAFC; border:2.5px solid #E2E8F0; border-radius:12px;
+            background:#F8FAFC; border:2.5px solid var(--border-light); border-radius:12px;
             padding:10px 6px; text-align:center; cursor:pointer; transition:var(--t);
         }
         .db-kf-goal.done { background:#ECFDF5; border-color:#10B981; }
@@ -1170,9 +1170,9 @@
             transition:var(--t); user-select:none;
         }
         .db-mini-fc:active { transform:scale(0.98); }
-        .db-fc-badge { font-size:0.6em; color:#94A3B8; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px; }
+        .db-fc-badge { font-size:0.6em; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px; }
         .db-fc-term    { font-size:1.1em; font-weight:800; }
-        .db-fc-hint    { font-size:0.66em; color:#94A3B8; margin-top:3px; }
+        .db-fc-hint    { font-size:0.66em; color:var(--text-muted); margin-top:3px; }
         .db-fc-meaning { font-size:0.84em; line-height:1.4; color:#6EE7B7; }
 
         .db-kf-log-row { display:flex; align-items:center; justify-content:space-between; padding:7px 13px 11px; }
@@ -1208,7 +1208,7 @@
         }
         .game-card.locked {
             background: linear-gradient(135deg, var(--dark) 0%, #0F172A 100%);
-            border-color: #475569;
+            border-color: var(--mid);
             opacity: 0.7;
         }
         .game-header {
@@ -1233,7 +1233,7 @@
         .game-stats {
             margin: 8px 0;
             font-size: 0.8em;
-            color: #E2E8F0;
+            color: var(--border-light);
             font-weight: 500;
         }
         .game-stats p {
@@ -1244,7 +1244,7 @@
         }
         .unlock-requirement {
             font-size: 0.75em;
-            color: #E2E8F0;
+            color: var(--border-light);
             margin-bottom: 6px;
             font-weight: 500;
         }
@@ -1263,7 +1263,7 @@
         }
         .progress-text {
             font-size: 0.7em;
-            color: #E2E8F0;
+            color: var(--border-light);
             font-weight: 500;
         }
         .btn-game {
@@ -1286,8 +1286,8 @@
             margin-top: 8px;
             padding: 8px 12px;
             background: rgba(71, 85, 105, 0.5);
-            border: 2px dashed #94A3B8;
-            color: #E2E8F0;
+            border: 2px dashed var(--text-muted);
+            color: var(--border-light);
             border-radius: 6px;
             font-size: 0.85em;
             font-weight: 700;
@@ -1645,7 +1645,7 @@ const SUBJECT_COLORS = {
     Reading: { bg:'#FCE7F3', color:'#831843' },
     History: { bg:'#FFEDD5', color:'#9A3412' },
     Art:     { bg:'#FEF9C3', color:'#78350F' },
-    Other:   { bg:'#F1F5F9', color:'#475569' },
+    Other:   { bg:'#F1F5F9', color:'var(--mid)' },
 };
 
 const EVENT_COLORS = {
@@ -1658,7 +1658,7 @@ const TIER_LEVELS = [
     { name:'Champion', icon:'🏆', min:500,  color:'#F59E0B' },
     { name:'Achiever', icon:'⭐', min:250,  color:'var(--indigo)' },
     { name:'Explorer', icon:'🔍', min:100,  color:'#10B981' },
-    { name:'Beginner', icon:'🌱', min:0,    color:'#94A3B8' },
+    { name:'Beginner', icon:'🌱', min:0,    color:'var(--text-muted)' },
 ];
 
 const KF_FLASHCARDS = [
@@ -2216,22 +2216,22 @@ function showOnboardingWizard() {
                 <p style="color: var(--text-secondary);font-size:0.95em">Let's set up your profile.</p>
             </div>
             <div style="margin-bottom:18px">
-                <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Pick a nickname</label>
+                <label style="display:block;color:var(--mid);font-weight:600;margin-bottom:8px">Pick a nickname</label>
                 <input type="text" id="onboarding-name" placeholder="e.g. Quiz Master, Brain..." value="${state.trivia.onboarding.name || ''}" style="
-                    width:100%;padding:10px 12px;border:2px solid #E2E8F0;border-radius:8px;
+                    width:100%;padding:10px 12px;border:2px solid var(--border-light);border-radius:8px;
                     font-size:1em;color:var(--dark)
                 " autofocus>
             </div>
             <div style="margin-bottom:24px">
-                <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Pick your avatar:</label>
+                <label style="display:block;color:var(--mid);font-weight:600;margin-bottom:8px">Pick your avatar:</label>
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
                     ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
                         <button onclick="selectOnboardingAvatar('${emoji}')" style="
-                            font-size:2em;padding:12px;border:3px solid ${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : '#E2E8F0'};
+                            font-size:2em;padding:12px;border:3px solid ${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : 'var(--border-light)'};
                             border-radius:12px;background:${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'};cursor:pointer;
                             transition:all 0.2s;font-weight:${state.trivia.onboarding.avatar === emoji ? '700' : '400'}
                         " onmouseover="this.style.borderColor='#4F46E5';this.style.background='var(--indigo-light)'"
-                        onmouseout="this.style.borderColor='${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : '#E2E8F0'}';this.style.background='${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'}'"
+                        onmouseout="this.style.borderColor='${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : 'var(--border-light)'}';this.style.background='${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'}'"
                         >${emoji}</button>
                     `).join('')}
                 </div>
@@ -2417,14 +2417,14 @@ function showProfileSettings() {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
             <h2 style="color:var(--dark);font-size:1.5em;font-weight:800;margin:0">Profile</h2>
             <button id="close-profile" style="
-                background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px
+                background:none;border:none;font-size:1.5em;cursor:pointer;color:var(--text-muted);padding:0;width:30px;height:30px
             ">✕</button>
         </div>
 
         <div style="margin-bottom:18px">
-            <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Nickname</label>
+            <label style="display:block;color:var(--mid);font-weight:600;margin-bottom:8px">Nickname</label>
             <input type="text" id="profile-nickname-input" placeholder="Your nickname..." value="${profile.name || ''}" style="
-                width:100%;padding:10px 12px;border:2px solid #E2E8F0;border-radius:8px;
+                width:100%;padding:10px 12px;border:2px solid var(--border-light);border-radius:8px;
                 font-size:1em;color:var(--dark)
             ">
         </div>
@@ -2435,11 +2435,11 @@ function showProfileSettings() {
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
                 ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
                     <button onclick="changeAvatar('${emoji}')" style="
-                        font-size:2em;padding:12px;border:2px solid ${profile.avatar === emoji ? '#818CF8' : '#E2E8F0'};
+                        font-size:2em;padding:12px;border:2px solid ${profile.avatar === emoji ? '#818CF8' : 'var(--border-light)'};
                         border-radius:12px;background:${profile.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'};
                         cursor:pointer;transition:all 0.2s
                     " onmouseover="this.style.borderColor='#818CF8';this.style.background='var(--indigo-light)'"
-                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? '#818CF8' : '#E2E8F0'}';this.style.background='${profile.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'}'"
+                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? '#818CF8' : 'var(--border-light)'}';this.style.background='${profile.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'}'"
                     >${emoji}</button>
                 `).join('')}
             </div>
@@ -2668,7 +2668,7 @@ function showBadgesModal() {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h2 style="color:var(--dark);font-size:1.6em;font-weight:800">🏆 My Badges</h2>
             <button id="close-badges-btn" style="
-                background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px
+                background:none;border:none;font-size:1.5em;cursor:pointer;color:var(--text-muted);padding:0;width:30px;height:30px
             ">✕</button>
         </div>
     `;
@@ -2679,7 +2679,7 @@ function showBadgesModal() {
         categories.forEach(cat => {
             const catBadges = badges[cat];
             html += `
-                <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #E2E8F0">
+                <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border-light)">
                     <div style="font-weight:700;color:var(--dark);margin-bottom:10px;font-size:0.95em">${cat}</div>
                     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
             `;
@@ -2690,10 +2690,10 @@ function showBadgesModal() {
                     <div style="
                         text-align:center;padding:10px;border-radius:10px;
                         background:${unlocked ? info.color + '20' : '#F1F5F9'};
-                        border:2px solid ${unlocked ? info.color : '#E2E8F0'}
+                        border:2px solid ${unlocked ? info.color : 'var(--border-light)'}
                     " title="${info.requirement}">
                         <div style="font-size:1.8em;margin-bottom:4px;opacity:${unlocked ? 1 : 0.4}">${info.emoji}</div>
-                        <div style="font-size:0.7em;color:#475569;font-weight:600">${info.label}</div>
+                        <div style="font-size:0.7em;color:var(--mid);font-weight:600">${info.label}</div>
                     </div>
                 `;
             });
@@ -2891,7 +2891,7 @@ function trivDiffTooltip(d) { return { easy:'Rookie — Clear, foundational ques
 
 function renderGoalsPreview() {
     const goals = getActiveGoals();
-    if (goals.length === 0) return `<div style="font-size:0.85em;color:#94A3B8;padding:10px">Set a goal to get started! 🎯</div>`;
+    if (goals.length === 0) return `<div style="font-size:0.85em;color:var(--text-muted);padding:10px">Set a goal to get started! 🎯</div>`;
 
     return goals.slice(0, 2).map(goal => {
         const pct = getGoalProgress(goal);
@@ -2900,10 +2900,10 @@ function renderGoalsPreview() {
         return `
             <div style="margin-bottom:8px">
                 <div style="display:flex;justify-content:space-between;font-size:0.8em;font-weight:600;margin-bottom:4px">
-                    <span style="color:#475569">${goalLabel} ${goal.type}</span>
+                    <span style="color:var(--mid)">${goalLabel} ${goal.type}</span>
                     <span style="color:var(--indigo)">${goal.current}/${goalDesc}</span>
                 </div>
-                <div style="background:#E2E8F0;border-radius:6px;height:6px;overflow:hidden">
+                <div style="background:var(--border-light);border-radius:6px;height:6px;overflow:hidden">
                     <div style="background:linear-gradient(90deg,var(--indigo),#818CF8);height:100%;width:${pct}%;transition:width 0.3s"></div>
                 </div>
             </div>
@@ -3022,20 +3022,20 @@ function renderTriviaPanel() {
         <!-- Phase 4: Difficulty Mode Selector -->
         <div style="display:flex;gap:8px;margin-bottom:14px;justify-content:center">
             <button onclick="setDifficultyMode('rookie')" style="
-                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'rookie' ? '#10B981' : '#E2E8F0'};
+                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'rookie' ? '#10B981' : 'var(--border-light)'};
                 background:${state.trivia.difficulty.currentMode === 'rookie' ? '#ECFDF5' : 'white'};
                 color:${state.trivia.difficulty.currentMode === 'rookie' ? '#065F46' : '#64748B'};
                 cursor:pointer;font-weight:700;font-size:0.85em;transition:all 0.2s
             ">🎓 Rookie</button>
             <button onclick="setDifficultyMode('pro')" ${!state.trivia.difficulty.proUnlocked ? 'disabled' : ''} style="
-                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'pro' ? '#F59E0B' : '#E2E8F0'};
+                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'pro' ? '#F59E0B' : 'var(--border-light)'};
                 background:${state.trivia.difficulty.currentMode === 'pro' ? '#FFFBEB' : 'white'};
                 color:${state.trivia.difficulty.currentMode === 'pro' ? '#78350F' : '#64748B'};
                 cursor:${state.trivia.difficulty.proUnlocked ? 'pointer' : 'not-allowed'};font-weight:700;font-size:0.85em;
                 opacity:${state.trivia.difficulty.proUnlocked ? '1' : '0.5'};transition:all 0.2s
             ">⭐ Pro ${!state.trivia.difficulty.proUnlocked ? '(80%)' : ''}</button>
             <button onclick="setDifficultyMode('legend')" ${!state.trivia.difficulty.legendUnlocked ? 'disabled' : ''} style="
-                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'legend' ? '#EF4444' : '#E2E8F0'};
+                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'legend' ? '#EF4444' : 'var(--border-light)'};
                 background:${state.trivia.difficulty.currentMode === 'legend' ? '#FEF2F2' : 'white'};
                 color:${state.trivia.difficulty.currentMode === 'legend' ? '#7F1D1D' : '#64748B'};
                 cursor:${state.trivia.difficulty.legendUnlocked ? 'pointer' : 'not-allowed'};font-weight:700;font-size:0.85em;
@@ -3054,7 +3054,7 @@ function renderTriviaPanel() {
                     { icon: '💡', name: 'Hint', key: 'hint' }
                 ];
                 return boostItems.map(item => `
-                    <div style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:white;border:1px solid #CBD5E1;border-radius:8px;font-size:0.8em;color:#475569">
+                    <div style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:white;border:1px solid #CBD5E1;border-radius:8px;font-size:0.8em;color:var(--mid)">
                         <span style="font-size:1em">${item.icon}</span>
                         <span style="font-weight:600">${boosts[item.key] || 0}</span>
                     </div>
@@ -3134,9 +3134,9 @@ function renderTriviaPanel() {
             ${options.map((opt,i) => `<button class="trivia-opt"
                 data-answer="${opt.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}"
                 onclick="checkTriviaAnswer(this)"
-                style="padding:13px 14px;background:white;border:2px solid #E2E8F0;border-radius:12px;color:var(--dark);cursor:pointer;font-size:0.92em;text-align:left;line-height:1.4;transition:all 0.15s;font-family:inherit;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
+                style="padding:13px 14px;background:white;border:2px solid var(--border-light);border-radius:12px;color:var(--dark);cursor:pointer;font-size:0.92em;text-align:left;line-height:1.4;transition:all 0.15s;font-family:inherit;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
                 onmouseover="if(!this.dataset.locked){this.style.background='var(--indigo-light)';this.style.borderColor='var(--indigo)'}"
-                onmouseout="if(!this.dataset.locked){this.style.background='white';this.style.borderColor='#E2E8F0'}">
+                onmouseout="if(!this.dataset.locked){this.style.background='white';this.style.borderColor='var(--border-light)'}">
                 <span style="display:inline-block;background:var(--indigo-light);color:#4338CA;border-radius:6px;padding:1px 7px;margin-right:8px;font-size:0.8em;font-weight:800">${String.fromCharCode(65+i)}</span>${opt}
             </button>`).join('')}
         </div>
@@ -3149,8 +3149,8 @@ function renderTriviaPanel() {
         <div id="trivia-result" style="display:none"></div>
 
         <!-- Games Section -->
-        <div style="margin-top:24px;padding-top:20px;border-top:1px solid #E2E8F0">
-            <div style="font-size:0.9em;font-weight:700;color:#475569;margin-bottom:12px">🎮 Mini-Games</div>
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border-light)">
+            <div style="font-size:0.9em;font-weight:700;color:var(--mid);margin-bottom:12px">🎮 Mini-Games</div>
             <div class="games-grid">
                 ${(() => {
                     const games = state.games || { unlocked: [], stats: {} };
@@ -3599,8 +3599,8 @@ window.renderWordleGame = function(game) {
             </div>
 
             <div style="text-align:center;margin-bottom:16px">
-                <div style="font-size:0.8em;color:#94A3B8;font-weight:600">Attempts: <span style="color:var(--dark);font-weight:800">${game.attempts}/${game.maxAttempts}</span></div>
-                <div style="height:6px;background:#E2E8F0;border-radius:3px;margin-top:8px">
+                <div style="font-size:0.8em;color:var(--text-muted);font-weight:600">Attempts: <span style="color:var(--dark);font-weight:800">${game.attempts}/${game.maxAttempts}</span></div>
+                <div style="height:6px;background:var(--border-light);border-radius:3px;margin-top:8px">
                     <div style="height:100%;background:#10B981;border-radius:3px;width:${(game.attempts / game.maxAttempts) * 100}%"></div>
                 </div>
             </div>
@@ -3620,12 +3620,12 @@ window.renderWordleGame = function(game) {
                 </div>
             ` : `
                 <div style="display:flex;gap:8px;margin-bottom:16px">
-                    <input type="text" id="wordle-input" placeholder="Guess..." maxlength="5" style="flex:1;padding:12px;border:2px solid #E2E8F0;border-radius:8px;font-size:1em;text-transform:uppercase;font-weight:600;letter-spacing:2px">
+                    <input type="text" id="wordle-input" placeholder="Guess..." maxlength="5" style="flex:1;padding:12px;border:2px solid var(--border-light);border-radius:8px;font-size:1em;text-transform:uppercase;font-weight:600;letter-spacing:2px">
                     <button onclick="wordleSubmitBtn()" style="padding:12px 20px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:8px;cursor:pointer;font-weight:700">Submit</button>
                 </div>
             `}
 
-            <div style="font-size:0.8em;color:#94A3B8;text-align:center;margin-top:16px">🟩 Correct • 🟨 Wrong spot • ⬜ Not in word</div>
+            <div style="font-size:0.8em;color:var(--text-muted);text-align:center;margin-top:16px">🟩 Correct • 🟨 Wrong spot • ⬜ Not in word</div>
         </div>
     `;
 };
@@ -3763,7 +3763,7 @@ window.showQuickFireBoostModal = function() {
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">⚡ Quick-Fire</h2>
-        <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your score?</p>
+        <p style="color:var(--text-muted);margin:0 0 24px 0">Use a power-up to boost your score?</p>
 
         <div id="boost-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
             ${boostOptions.map(boost => `
@@ -3773,9 +3773,9 @@ window.showQuickFireBoostModal = function() {
                     style="
                         padding:16px;
                         background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
-                        border:2px solid #475569;
+                        border:2px solid var(--mid);
                         border-radius:12px;
-                        color:${boost.count > 0 ? 'white' : '#94A3B8'};
+                        color:${boost.count > 0 ? 'white' : 'var(--text-muted)'};
                         cursor:${boost.count > 0 ? 'pointer' : 'not-allowed'};
                         text-align:left;
                         font-weight:600;
@@ -3791,7 +3791,7 @@ window.showQuickFireBoostModal = function() {
                             <span style="font-size:1.5em">${boost.icon}</span>
                             <div>
                                 <div style="font-weight:800">${boost.name}</div>
-                                <div style="font-size:0.85em;color:${boost.count > 0 ? '#94A3B8' : '#64748B'}">Count: ${boost.count}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : '#64748B'}">Count: ${boost.count}</div>
                             </div>
                         </div>
                         ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
@@ -3804,7 +3804,7 @@ window.showQuickFireBoostModal = function() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <button onclick="startQuickFireWithoutBoost()" style="
                 padding:14px;
-                background:#475569;
+                background:var(--mid);
                 border:none;
                 color:white;
                 border-radius:10px;
@@ -3814,14 +3814,14 @@ window.showQuickFireBoostModal = function() {
                 transition:all 0.2s;
             "
             onmouseover="this.style.background='#64748B'"
-            onmouseout="this.style.background='#475569'">
+            onmouseout="this.style.background='var(--mid)'">
                 Play without boost
             </button>
             <button id="play-with-boost" onclick="startQuickFireWithBoost()" style="
                 padding:14px;
                 background:#64748B;
                 border:none;
-                color:#94A3B8;
+                color:var(--text-muted);
                 border-radius:10px;
                 cursor:not-allowed;
                 font-weight:700;
@@ -3841,7 +3841,7 @@ window.showQuickFireBoostModal = function() {
 window.selectBoost = function(boostId) {
     // Clear previous selection
     document.querySelectorAll('.boost-option').forEach(btn => {
-        btn.style.borderColor = '#475569';
+        btn.style.borderColor = 'var(--mid)';
         btn.style.background = '#0F172A';
     });
 
@@ -3933,7 +3933,7 @@ window.renderQuickFireGame = function(game) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <h2 style="font-size:1.5em;font-weight:800;margin:0">⚡ Quick-Fire</h2>
-                <div style="font-size:0.9em;color:#94A3B8">${progress}/10</div>
+                <div style="font-size:0.9em;color:var(--text-muted)">${progress}/10</div>
                 ${boostIndicator}
             </div>
             <div style="text-align:right">
@@ -3943,16 +3943,16 @@ window.renderQuickFireGame = function(game) {
         </div>
 
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:16px">
-            <div style="font-size:0.9em;color:#94A3B8;margin-bottom:8px">Question ${progress}/10</div>
+            <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:8px">Question ${progress}/10</div>
             <div style="font-size:1.1em;font-weight:600;color:white;margin-bottom:16px;line-height:1.5">${q.question}</div>
             ${hiddenAnswerIndex >= 0 ? '<div style="font-size:0.8em;color:#FCD34D;margin-bottom:8px">💡 1 incorrect answer hidden</div>' : ''}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 ${options.map((opt, i) => `
-                    ${i === hiddenAnswerIndex ? '<div style="padding:12px;background:var(--mid);border:2px solid #475569;border-radius:10px;color:#94A3B8;font-weight:600;font-size:0.9em;text-align:center">❌ Hidden</div>' : `
+                    ${i === hiddenAnswerIndex ? '<div style="padding:12px;background:var(--mid);border:2px solid var(--mid);border-radius:10px;color:var(--text-muted);font-weight:600;font-size:0.9em;text-align:center">❌ Hidden</div>' : `
                         <button class="qf-answer"
                             data-answer="${opt.replace(/"/g,'&quot;')}"
                             onclick="quickFireAnswerClick(this)"
-                            style="padding:12px;background:white;border:2px solid #E2E8F0;border-radius:10px;color:var(--dark);cursor:pointer;font-weight:600;font-size:0.9em;transition:all 0.2s;text-align:left">
+                            style="padding:12px;background:white;border:2px solid var(--border-light);border-radius:10px;color:var(--dark);cursor:pointer;font-weight:600;font-size:0.9em;transition:all 0.2s;text-align:left">
                             <span style="display:inline-block;background:var(--indigo-light);color:#4338CA;border-radius:6px;padding:2px 8px;margin-right:8px;font-weight:800;font-size:0.85em">${String.fromCharCode(65+i)}</span>${opt}
                         </button>
                     `}
@@ -3971,7 +3971,7 @@ window.renderQuickFireGame = function(game) {
             </div>
         </div>
 
-        <button onclick="quitQuickFireGame()" style="width:100%;margin-top:16px;padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.9em">Quit Game</button>
+        <button onclick="quitQuickFireGame()" style="width:100%;margin-top:16px;padding:12px;background:var(--mid);border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.9em">Quit Game</button>
     `;
 
     modal.innerHTML = '';
@@ -4156,7 +4156,7 @@ window.showQuickFireResults = function(game, accuracy) {
         </div>
 
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
-            <div style="font-size:0.9em;color:#94A3B8;margin-bottom:12px">Correct: ${game.stats.correctCount}/10</div>
+            <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px">Correct: ${game.stats.correctCount}/10</div>
             <div style="height:4px;background:var(--mid);border-radius:2px">
                 <div style="height:100%;background:#10B981;border-radius:2px;width:${(game.stats.correctCount/10)*100}%"></div>
             </div>
@@ -4205,7 +4205,7 @@ window.showMemoryDifficultyModal = function() {
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.8em;font-weight:800;margin:0 0 8px 0">🧠 Memory Tiles</h2>
-        <p style="color:#94A3B8;margin:0 0 28px 0">Select a difficulty level</p>
+        <p style="color:var(--text-muted);margin:0 0 28px 0">Select a difficulty level</p>
 
         <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:24px">
             ${difficulties.map(diff => `
@@ -4215,7 +4215,7 @@ window.showMemoryDifficultyModal = function() {
                     style="
                         padding:20px;
                         background:#0F172A;
-                        border:2px solid #475569;
+                        border:2px solid var(--mid);
                         border-radius:12px;
                         color:white;
                         cursor:pointer;
@@ -4226,11 +4226,11 @@ window.showMemoryDifficultyModal = function() {
                         align-items:center;
                     "
                     onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
-                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='#475569'"
+                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
                         <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
-                        <div style="font-size:0.9em;color:#94A3B8">
+                        <div style="font-size:0.9em;color:var(--text-muted)">
                             ${diff.tiles} tiles • ${diff.pairs} pairs • ${diff.time}
                         </div>
                         <div style="font-size:0.8em;color: var(--text-secondary);margin-top:6px">Grid: ${diff.cols}×${diff.rows}</div>
@@ -4243,7 +4243,7 @@ window.showMemoryDifficultyModal = function() {
         <button onclick="closeMemoryDifficultyModal()" style="
             width:100%;
             padding:12px;
-            background:#475569;
+            background:var(--mid);
             border:none;
             color:white;
             border-radius:10px;
@@ -4252,7 +4252,7 @@ window.showMemoryDifficultyModal = function() {
             font-size:0.95em;
         "
         onmouseover="this.style.background='#64748B'"
-        onmouseout="this.style.background='#475569'">
+        onmouseout="this.style.background='var(--mid)'">
             Cancel
         </button>
     `;
@@ -4287,7 +4287,7 @@ window.showMemoryBoostModal = function(difficulty) {
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">🧠 Memory Tiles</h2>
-        <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your score?</p>
+        <p style="color:var(--text-muted);margin:0 0 24px 0">Use a power-up to boost your score?</p>
 
         <div id="memory-boost-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
             ${boostOptions.map(boost => `
@@ -4297,9 +4297,9 @@ window.showMemoryBoostModal = function(difficulty) {
                     style="
                         padding:16px;
                         background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
-                        border:2px solid #475569;
+                        border:2px solid var(--mid);
                         border-radius:12px;
-                        color:${boost.count > 0 ? 'white' : '#94A3B8'};
+                        color:${boost.count > 0 ? 'white' : 'var(--text-muted)'};
                         cursor:${boost.count > 0 ? 'pointer' : 'not-allowed'};
                         text-align:left;
                         font-weight:600;
@@ -4315,7 +4315,7 @@ window.showMemoryBoostModal = function(difficulty) {
                             <span style="font-size:1.5em">${boost.icon}</span>
                             <div>
                                 <div style="font-weight:800">${boost.name}</div>
-                                <div style="font-size:0.85em;color:${boost.count > 0 ? '#94A3B8' : '#64748B'}">Count: ${boost.count}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : '#64748B'}">Count: ${boost.count}</div>
                             </div>
                         </div>
                         ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
@@ -4328,7 +4328,7 @@ window.showMemoryBoostModal = function(difficulty) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <button onclick="startMemoryWithoutBoost('${difficulty}')" style="
                 padding:14px;
-                background:#475569;
+                background:var(--mid);
                 border:none;
                 color:white;
                 border-radius:10px;
@@ -4338,14 +4338,14 @@ window.showMemoryBoostModal = function(difficulty) {
                 transition:all 0.2s;
             "
             onmouseover="this.style.background='#64748B'"
-            onmouseout="this.style.background='#475569'">
+            onmouseout="this.style.background='var(--mid)'">
                 Play without boost
             </button>
             <button id="play-memory-with-boost" onclick="startMemoryWithBoost('${difficulty}')" style="
                 padding:14px;
                 background:#64748B;
                 border:none;
-                color:#94A3B8;
+                color:var(--text-muted);
                 border-radius:10px;
                 cursor:not-allowed;
                 font-weight:700;
@@ -4365,7 +4365,7 @@ window.showMemoryBoostModal = function(difficulty) {
 window.selectMemoryBoost = function(boostId, difficulty) {
     // Clear previous selection
     document.querySelectorAll('.memory-boost-option').forEach(btn => {
-        btn.style.borderColor = '#475569';
+        btn.style.borderColor = 'var(--mid)';
         btn.style.background = '#0F172A';
     });
 
@@ -4510,7 +4510,7 @@ window.renderMemoryGame = function(game) {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <div>
                 <h2 style="font-size:1.5em;font-weight:800;margin:0">🧠 Memory Tiles</h2>
-                <div style="font-size:0.85em;color:#94A3B8">${diffLabel}</div>
+                <div style="font-size:0.85em;color:var(--text-muted)">${diffLabel}</div>
             </div>
             <div style="text-align:right">
                 <div id="mem-timer" style="font-size:1.8em;font-weight:800;color:#10B981">${game.settings.time}s</div>
@@ -4549,10 +4549,10 @@ window.renderMemoryGame = function(game) {
                     style="
                         width:${tileSize}px;
                         height:${tileSize}px;
-                        background:${tile.matched ? '#DCFCE7' : tile.flipped ? '#FFFFFF' : '#475569'};
+                        background:${tile.matched ? '#DCFCE7' : tile.flipped ? '#FFFFFF' : 'var(--mid)'};
                         border:2px solid ${tile.matched ? '#10B981' : tile.flipped ? '#CBD5E1' : '#64748B'};
                         border-radius:8px;
-                        color:${tile.matched ? '#94A3B8' : tile.flipped ? 'var(--dark)' : '#94A3B8'};
+                        color:${tile.matched ? 'var(--text-muted)' : tile.flipped ? 'var(--dark)' : 'var(--text-muted)'};
                         cursor:${tile.matched ? 'default' : 'pointer'};
                         font-weight:600;
                         font-size:${tileSize > 60 ? '0.85em' : '0.75em'};
@@ -4574,11 +4574,11 @@ window.renderMemoryGame = function(game) {
             `).join('')}
         </div>
 
-        <div style="text-align:center;margin-top:16px;font-size:0.9em;color:#94A3B8">
+        <div style="text-align:center;margin-top:16px;font-size:0.9em;color:var(--text-muted)">
             Attempts: <span style="font-weight:800;color:white">${game.attempts}/${Math.ceil((game.settings.pairs * 2) / 2)}</span>
         </div>
 
-        <button onclick="quitMemoryGame()" style="width:100%;margin-top:16px;padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.9em">Quit Game</button>
+        <button onclick="quitMemoryGame()" style="width:100%;margin-top:16px;padding:12px;background:var(--mid);border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.9em">Quit Game</button>
     `;
 
     card.innerHTML = headerHTML;
@@ -4666,12 +4666,12 @@ window.checkMemoryMatch = function(game) {
                 btn1.classList.add('matched');
                 btn2.classList.add('matched');
                 btn1.style.background = '#DCFCE7';
-                btn1.style.color = '#94A3B8';
+                btn1.style.color = 'var(--text-muted)';
                 btn1.style.borderColor = '#10B981';
                 btn1.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
                 btn1.disabled = true;
                 btn2.style.background = '#DCFCE7';
-                btn2.style.color = '#94A3B8';
+                btn2.style.color = 'var(--text-muted)';
                 btn2.style.borderColor = '#10B981';
                 btn2.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
                 btn2.disabled = true;
@@ -4714,12 +4714,12 @@ window.checkMemoryMatch = function(game) {
                 btn1.style.background = '#FEE2E2';
                 btn2.style.background = '#FEE2E2';
                 setTimeout(() => {
-                    btn1.style.background = '#475569';
+                    btn1.style.background = 'var(--mid)';
                     btn1.textContent = '?';
-                    btn1.style.color = '#94A3B8';
-                    btn2.style.background = '#475569';
+                    btn1.style.color = 'var(--text-muted)';
+                    btn2.style.background = 'var(--mid)';
                     btn2.textContent = '?';
-                    btn2.style.color = '#94A3B8';
+                    btn2.style.color = 'var(--text-muted)';
                 }, 200);
             }
 
@@ -4867,9 +4867,9 @@ window.showMemoryResults = function(game, won) {
         </div>
 
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:center">
-            <div style="font-size:0.9em;color:#94A3B8;margin-bottom:8px">Difficulty: ${diffLabel}</div>
+            <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:8px">Difficulty: ${diffLabel}</div>
             ${game.combo > 1 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800">Max Combo: 🔥 ${game.combo}×</div>` : ''}
-            ${personalBest > 0 && !isNewBest ? `<div style="font-size:0.9em;color:#94A3B8;margin-top:8px">Your Best: ${personalBest} pts</div>` : ''}
+            ${personalBest > 0 && !isNewBest ? `<div style="font-size:0.9em;color:var(--text-muted);margin-top:8px">Your Best: ${personalBest} pts</div>` : ''}
         </div>
 
         ${game.selectedBoost ? `
@@ -4885,7 +4885,7 @@ window.showMemoryResults = function(game, won) {
 
         ${leaderboard.length > 0 ? `
             <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
-                <div style="font-size:0.95em;font-weight:800;color:#94A3B8;margin-bottom:12px">Top Scores (${diffLabel})</div>
+                <div style="font-size:0.95em;font-weight:800;color:var(--text-muted);margin-bottom:12px">Top Scores (${diffLabel})</div>
                 ${leaderboard.map((entry, i) => {
                     const medals = ['🥇', '🥈', '🥉'];
                     const daysAgo = Math.floor((Date.now() - new Date(entry.date).getTime()) / (1000 * 60 * 60 * 24));
@@ -4947,7 +4947,7 @@ window.showScrambleDifficultyModal = function() {
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.8em;font-weight:800;margin:0 0 8px 0">🎲 Word Scramble</h2>
-        <p style="color:#94A3B8;margin:0 0 28px 0">Select a difficulty level</p>
+        <p style="color:var(--text-muted);margin:0 0 28px 0">Select a difficulty level</p>
 
         <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:24px">
             ${difficulties.map(diff => `
@@ -4957,7 +4957,7 @@ window.showScrambleDifficultyModal = function() {
                     style="
                         padding:20px;
                         background:#0F172A;
-                        border:2px solid #475569;
+                        border:2px solid var(--mid);
                         border-radius:12px;
                         color:white;
                         cursor:pointer;
@@ -4968,11 +4968,11 @@ window.showScrambleDifficultyModal = function() {
                         align-items:center;
                     "
                     onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
-                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='#475569'"
+                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
                         <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
-                        <div style="font-size:0.9em;color:#94A3B8">
+                        <div style="font-size:0.9em;color:var(--text-muted)">
                             ${diff.wordLen} • ${diff.words} • ${diff.time}
                         </div>
                         <div style="font-size:0.8em;color: var(--text-secondary);margin-top:6px">Multiplier: ${diff.id === 'easy' ? '1×' : diff.id === 'medium' ? '1.5×' : '2×'}</div>
@@ -4985,7 +4985,7 @@ window.showScrambleDifficultyModal = function() {
         <button onclick="closeScrambleDifficultyModal()" style="
             width:100%;
             padding:12px;
-            background:#475569;
+            background:var(--mid);
             border:none;
             color:white;
             border-radius:10px;
@@ -4994,7 +4994,7 @@ window.showScrambleDifficultyModal = function() {
             font-size:0.95em;
         "
         onmouseover="this.style.background='#64748B'"
-        onmouseout="this.style.background='#475569'">
+        onmouseout="this.style.background='var(--mid)'">
             Cancel
         </button>
     `;
@@ -5029,7 +5029,7 @@ window.showScrambleBoostModal = function(difficulty) {
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">🎲 Word Scramble</h2>
-        <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your score?</p>
+        <p style="color:var(--text-muted);margin:0 0 24px 0">Use a power-up to boost your score?</p>
 
         <div id="scramble-boost-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
             ${boostOptions.map(boost => `
@@ -5039,9 +5039,9 @@ window.showScrambleBoostModal = function(difficulty) {
                     style="
                         padding:16px;
                         background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
-                        border:2px solid #475569;
+                        border:2px solid var(--mid);
                         border-radius:12px;
-                        color:${boost.count > 0 ? 'white' : '#94A3B8'};
+                        color:${boost.count > 0 ? 'white' : 'var(--text-muted)'};
                         cursor:${boost.count > 0 ? 'pointer' : 'not-allowed'};
                         text-align:left;
                         font-weight:600;
@@ -5057,7 +5057,7 @@ window.showScrambleBoostModal = function(difficulty) {
                             <span style="font-size:1.5em">${boost.icon}</span>
                             <div>
                                 <div style="font-weight:800">${boost.name}</div>
-                                <div style="font-size:0.85em;color:${boost.count > 0 ? '#94A3B8' : '#64748B'}">Count: ${boost.count}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : '#64748B'}">Count: ${boost.count}</div>
                             </div>
                         </div>
                         ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
@@ -5070,7 +5070,7 @@ window.showScrambleBoostModal = function(difficulty) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <button onclick="startScrambleWithoutBoost('${difficulty}')" style="
                 padding:14px;
-                background:#475569;
+                background:var(--mid);
                 border:none;
                 color:white;
                 border-radius:10px;
@@ -5080,14 +5080,14 @@ window.showScrambleBoostModal = function(difficulty) {
                 transition:all 0.2s;
             "
             onmouseover="this.style.background='#64748B'"
-            onmouseout="this.style.background='#475569'">
+            onmouseout="this.style.background='var(--mid)'">
                 Play without boost
             </button>
             <button id="play-scramble-with-boost" onclick="startScrambleWithBoost('${difficulty}')" style="
                 padding:14px;
                 background:#64748B;
                 border:none;
-                color:#94A3B8;
+                color:var(--text-muted);
                 border-radius:10px;
                 cursor:not-allowed;
                 font-weight:700;
@@ -5107,7 +5107,7 @@ window.showScrambleBoostModal = function(difficulty) {
 window.selectScrambleBoost = function(boostId, difficulty) {
     // Clear previous selection
     document.querySelectorAll('.scramble-boost-option').forEach(btn => {
-        btn.style.borderColor = '#475569';
+        btn.style.borderColor = 'var(--mid)';
         btn.style.background = '#0F172A';
     });
 
@@ -5273,11 +5273,11 @@ window.renderScrambleGame = function(game) {
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <div>
                 <h2 style="font-size:1.5em;font-weight:800;margin:0">🎲 Word Scramble</h2>
-                <div style="font-size:0.85em;color:#94A3B8">${diffLabel}</div>
+                <div style="font-size:0.85em;color:var(--text-muted)">${diffLabel}</div>
             </div>
             <div style="text-align:right">
                 <div id="scr-timer" style="font-size:1.8em;font-weight:800;color:#10B981">${game.settings.time}s</div>
-                <div style="font-size:0.9em;color:#94A3B8">Word ${progress}/5</div>
+                <div style="font-size:0.9em;color:var(--text-muted)">Word ${progress}/5</div>
             </div>
         </div>
 
@@ -5293,8 +5293,8 @@ window.renderScrambleGame = function(game) {
         </div>
 
         <div style="background:#0F172A;padding:20px;border-radius:12px;margin-bottom:16px;text-align:center">
-            <div style="font-size:0.9em;color:#94A3B8;margin-bottom:12px">Unscramble the word:</div>
-            <div id="scr-word" style="font-size:2.5em;font-weight:800;color:#94A3B8;letter-spacing:8px;margin-bottom:16px;font-family:monospace">${word.scrambled}</div>
+            <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px">Unscramble the word:</div>
+            <div id="scr-word" style="font-size:2.5em;font-weight:800;color:var(--text-muted);letter-spacing:8px;margin-bottom:16px;font-family:monospace">${word.scrambled}</div>
 
             <div style="margin-bottom:12px;font-size:0.85em;color: var(--text-secondary)">
                 ${word.original.length} letters — Word ${progress}/5
@@ -5343,7 +5343,7 @@ window.renderScrambleGame = function(game) {
             ">Submit</button>
             <button onclick="skipScrambleWord()" style="
                 padding:12px;
-                background:#475569;
+                background:var(--mid);
                 border:none;
                 color:white;
                 border-radius:10px;
@@ -5562,7 +5562,7 @@ window.showScrambleResults = function(game, won) {
         </div>
 
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px">
-            <div style="font-size:0.9em;color:#94A3B8">Difficulty: ${diffLabel}</div>
+            <div style="font-size:0.9em;color:var(--text-muted)">Difficulty: ${diffLabel}</div>
         </div>
 
         ${game.selectedBoost ? `
@@ -5578,7 +5578,7 @@ window.showScrambleResults = function(game, won) {
 
         ${leaderboard.length > 0 ? `
             <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
-                <div style="font-size:0.95em;font-weight:800;color:#94A3B8;margin-bottom:12px">Top Scores (${diffLabel})</div>
+                <div style="font-size:0.95em;font-weight:800;color:var(--text-muted);margin-bottom:12px">Top Scores (${diffLabel})</div>
                 ${leaderboard.map((entry, i) => {
                     const medals = ['🥇', '🥈', '🥉'];
                     const daysAgo = Math.floor((Date.now() - new Date(entry.date).getTime()) / (1000 * 60 * 60 * 24));
@@ -5730,7 +5730,7 @@ window.showChallengeDifficultyModal = function() {
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.8em;font-weight:800;margin:0 0 8px 0">🏆 Challenge Mode</h2>
-        <p style="color:#94A3B8;margin:0 0 28px 0">Select difficulty • 3 random games • cumulative scoring</p>
+        <p style="color:var(--text-muted);margin:0 0 28px 0">Select difficulty • 3 random games • cumulative scoring</p>
 
         <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:24px">
             ${difficulties.map(diff => `
@@ -5740,7 +5740,7 @@ window.showChallengeDifficultyModal = function() {
                     style="
                         padding:20px;
                         background:#0F172A;
-                        border:2px solid #475569;
+                        border:2px solid var(--mid);
                         border-radius:12px;
                         color:white;
                         cursor:pointer;
@@ -5751,11 +5751,11 @@ window.showChallengeDifficultyModal = function() {
                         align-items:center;
                     "
                     onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
-                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='#475569'"
+                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
                         <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
-                        <div style="font-size:0.9em;color:#94A3B8">${diff.desc}</div>
+                        <div style="font-size:0.9em;color:var(--text-muted)">${diff.desc}</div>
                         <div style="font-size:0.8em;color: var(--text-secondary);margin-top:6px">⏱ ${diff.time}</div>
                     </div>
                     <div style="font-size:2.5em;opacity:0.3">→</div>
@@ -5766,7 +5766,7 @@ window.showChallengeDifficultyModal = function() {
         <button onclick="closeChallengeDifficultyModal()" style="
             width:100%;
             padding:12px;
-            background:#475569;
+            background:var(--mid);
             border:none;
             color:white;
             border-radius:10px;
@@ -5775,7 +5775,7 @@ window.showChallengeDifficultyModal = function() {
             font-size:0.95em;
         "
         onmouseover="this.style.background='#64748B'"
-        onmouseout="this.style.background='#475569'">
+        onmouseout="this.style.background='var(--mid)'">
             Cancel
         </button>
     `;
@@ -5813,7 +5813,7 @@ window.showChallengeBoostModal = function(difficulty) {
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">🏆 Challenge Mode</h2>
-        <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your chances?</p>
+        <p style="color:var(--text-muted);margin:0 0 24px 0">Use a power-up to boost your chances?</p>
 
         <div id="challenge-boost-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
             ${boostOptions.map(boost => `
@@ -5823,9 +5823,9 @@ window.showChallengeBoostModal = function(difficulty) {
                     style="
                         padding:16px;
                         background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
-                        border:2px solid #475569;
+                        border:2px solid var(--mid);
                         border-radius:12px;
-                        color:${boost.count > 0 ? 'white' : '#94A3B8'};
+                        color:${boost.count > 0 ? 'white' : 'var(--text-muted)'};
                         cursor:${boost.count > 0 ? 'pointer' : 'not-allowed'};
                         text-align:left;
                         font-weight:600;
@@ -5841,7 +5841,7 @@ window.showChallengeBoostModal = function(difficulty) {
                             <span style="font-size:1.5em">${boost.icon}</span>
                             <div>
                                 <div style="font-weight:800">${boost.name}</div>
-                                <div style="font-size:0.85em;color:${boost.count > 0 ? '#94A3B8' : '#64748B'}">Count: ${boost.count}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : '#64748B'}">Count: ${boost.count}</div>
                             </div>
                         </div>
                         ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
@@ -5854,7 +5854,7 @@ window.showChallengeBoostModal = function(difficulty) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
             <button onclick="startChallengeWithoutBoost('${difficulty}')" style="
                 padding:14px;
-                background:#475569;
+                background:var(--mid);
                 border:none;
                 color:white;
                 border-radius:10px;
@@ -5864,14 +5864,14 @@ window.showChallengeBoostModal = function(difficulty) {
                 transition:all 0.2s;
             "
             onmouseover="this.style.background='#64748B'"
-            onmouseout="this.style.background='#475569'">
+            onmouseout="this.style.background='var(--mid)'">
                 Play without boost
             </button>
             <button id="play-challenge-with-boost" onclick="startChallengeWithBoost('${difficulty}')" style="
                 padding:14px;
                 background:#64748B;
                 border:none;
-                color:#94A3B8;
+                color:var(--text-muted);
                 border-radius:10px;
                 cursor:not-allowed;
                 font-weight:700;
@@ -5894,7 +5894,7 @@ window.showChallengeBoostModal = function(difficulty) {
             font-size:0.95em;
             transition:all 0.2s;
         "
-        onmouseover="this.style.background='#475569'"
+        onmouseover="this.style.background='var(--mid)'"
         onmouseout="this.style.background='var(--mid)'">
             Cancel
         </button>
@@ -5906,7 +5906,7 @@ window.showChallengeBoostModal = function(difficulty) {
 
 window.selectChallengeBoost = function(boostId, difficulty) {
     document.querySelectorAll('.challenge-boost-option').forEach(btn => {
-        btn.style.borderColor = '#475569';
+        btn.style.borderColor = 'var(--mid)';
         btn.style.background = '#0F172A';
     });
 
@@ -5969,7 +5969,7 @@ window.startChallengeGameSequence = function() {
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h2 style="color:var(--dark);font-size:1.5em;font-weight:800;margin:0">🏆 Challenge Mode</h2>
-            <button onclick="quitChallengeGame()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px">✕</button>
+            <button onclick="quitChallengeGame()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:var(--text-muted);padding:0;width:30px;height:30px">✕</button>
         </div>
         <div id="challenge-panel-content" style="min-height:400px"></div>
     `;
@@ -6271,18 +6271,18 @@ window.showChallengeResults = function(challenge) {
             <div style="color:#D1FAE5;font-size:0.9em;margin-bottom:8px">CHALLENGE STATS</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div>
-                    <div style="color:#94A3B8;font-size:0.85em">Games Won</div>
+                    <div style="color:var(--text-muted);font-size:0.85em">Games Won</div>
                     <div style="font-size:1.5em;font-weight:800;color:#10B981">${challenge.stats.gamesWon}/3</div>
                 </div>
                 <div>
-                    <div style="color:#94A3B8;font-size:0.85em">Lives Left</div>
+                    <div style="color:var(--text-muted);font-size:0.85em">Lives Left</div>
                     <div style="font-size:1.5em;font-weight:800;color:#F97316">${Math.max(0, challenge.lives)}</div>
                 </div>
             </div>
         </div>
 
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px">
-            <div style="color:#94A3B8;font-size:0.9em;font-weight:600;margin-bottom:12px">MINI-GAME RESULTS</div>
+            <div style="color:var(--text-muted);font-size:0.9em;font-weight:600;margin-bottom:12px">MINI-GAME RESULTS</div>
             ${gamesPlayedList}
         </div>
 
@@ -6292,7 +6292,7 @@ window.showChallengeResults = function(challenge) {
             <button onclick="playAgainChallenge()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">
                 Play Again
             </button>
-            <button onclick="backToTriviaFromChallenge()" style="padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">
+            <button onclick="backToTriviaFromChallenge()" style="padding:12px;background:var(--mid);border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">
                 Back to Trivia
             </button>
         </div>
@@ -6412,7 +6412,7 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
                 </div>
             </div>
             <div>
-                <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px;font-weight:600">Date Range</div>
+                <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px;font-weight:600">Date Range</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button onclick="window._leaderboardFilters.dateRange='all';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.dateRange === 'all' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">All</button>
                     <button onclick="window._leaderboardFilters.dateRange='7days';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.dateRange === '7days' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">7 days</button>
@@ -6436,19 +6436,19 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
                                 <span style="font-size:1.4em;min-width:30px;text-align:center">${medal}</span>
                                 <div>
                                     <div style="font-weight:700;color:${i === 0 ? '#60A5FA' : '#E0E7FF'}">#${i + 1} — ${entry.score} pts</div>
-                                    <div style="font-size:0.8em;color:#94A3B8">${diffIcon} ${entry.difficulty.charAt(0).toUpperCase() + entry.difficulty.slice(1)}</div>
+                                    <div style="font-size:0.8em;color:var(--text-muted)">${diffIcon} ${entry.difficulty.charAt(0).toUpperCase() + entry.difficulty.slice(1)}</div>
                                 </div>
                             </div>
-                            <div style="text-align:right;font-size:0.85em;color:#94A3B8">${dateStr}</div>
+                            <div style="text-align:right;font-size:0.85em;color:var(--text-muted)">${dateStr}</div>
                         </div>
                     `;
                 }).join('')}
             ` : `
-                <div style="text-align:center;padding:20px;color:#94A3B8">No scores found for these filters</div>
+                <div style="text-align:center;padding:20px;color:var(--text-muted)">No scores found for these filters</div>
             `}
         </div>
 
-        <div style="font-size:0.85em;color:#94A3B8;text-align:center;padding-top:12px;border-top:1px solid #334155">
+        <div style="font-size:0.85em;color:var(--text-muted);text-align:center;padding-top:12px;border-top:1px solid #334155">
             Total Scores: ${leaderboard.length}
         </div>
     `;
@@ -7318,7 +7318,7 @@ function renderDashHomework() {
 
     let html = '';
     if (pending.length === 0 && complete.length === 0) {
-        html = `<div style="padding:16px;text-align:center;color:#94A3B8;font-size:0.85em">No assignments yet</div>`;
+        html = `<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:0.85em">No assignments yet</div>`;
     }
     pending.forEach(hw => {
         const due    = getDueStatus(hw.dueDate);
@@ -7504,7 +7504,7 @@ function renderDashCalendar() {
 
     let html = '';
     if (events.length === 0) {
-        html = `<div style="padding:14px;text-align:center;color:#94A3B8;font-size:0.82em">No upcoming events</div>`;
+        html = `<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:0.82em">No upcoming events</div>`;
     } else {
         events.forEach(ev => {
             const isToday = ev.date === today;
@@ -7627,7 +7627,7 @@ function renderDashTrivia() {
                 return badgeEmojis.length > 0 ? `
                     <div style="margin-bottom:10px;display:flex;gap:4px;flex-wrap:wrap">
                         ${badgeEmojis.slice(0, 6).map(e => `<span style="font-size:1.2em">${e}</span>`).join('')}
-                        ${badgeEmojis.length > 6 ? `<span style="font-size:0.75em;color:#94A3B8;align-self:center">+${badgeEmojis.length - 6}</span>` : ''}
+                        ${badgeEmojis.length > 6 ? `<span style="font-size:0.75em;color:var(--text-muted);align-self:center">+${badgeEmojis.length - 6}</span>` : ''}
                     </div>
                 ` : '';
             })()}
@@ -7659,7 +7659,7 @@ function renderDashReading() {
     let html = `
         <div style="padding:12px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                <span style="font-size:0.8em;color:#94A3B8">Today: ${r.dailyMinutes||0}/20 min</span>
+                <span style="font-size:0.8em;color:var(--text-muted)">Today: ${r.dailyMinutes||0}/20 min</span>
                 <span style="font-size:0.8em;color:#818CF8;font-weight:600">Week: ${r.weeklyMinutes||0}/100</span>
             </div>
             <div style="background:var(--mid);border-radius:8px;height:6px;overflow:hidden;margin-bottom:10px">
@@ -8155,7 +8155,7 @@ function _legacyTriviaPanel_unused() {
             <div style="padding:14px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
                     <span style="font-size:0.8em;color:#818CF8;font-weight:600;text-transform:uppercase">${q.category}</span>
-                    <span style="font-size:0.8em;color:#94A3B8">${t.totalAnswered || 0} answered • ${q.difficulty || 'medium'}</span>
+                    <span style="font-size:0.8em;color:var(--text-muted)">${t.totalAnswered || 0} answered • ${q.difficulty || 'medium'}</span>
                 </div>
 
                 <div style="background:rgba(99,102,241,0.1);border-radius:12px;padding:20px;margin-bottom:16px">
@@ -8181,7 +8181,7 @@ function _legacyTriviaPanel_unused() {
                 ` : `
                     <div id="trivia-form">
                         <input type="text" id="trivia-answer" placeholder="Your answer (case-insensitive)..."
-                            style="width:100%;padding:12px;border:2px solid #475569;background:var(--dark);color:white;border-radius:8px;font-size:1em;margin-bottom:10px;font-family:inherit"
+                            style="width:100%;padding:12px;border:2px solid var(--mid);background:var(--dark);color:white;border-radius:8px;font-size:1em;margin-bottom:10px;font-family:inherit"
                             onkeypress="if(event.key==='Enter') checkTriviaAnswer()">
 
                         <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -8236,7 +8236,7 @@ function renderBoardReading() {
         <div style="padding:16px">
             <!-- Progress bars -->
             <div style="margin-bottom:20px">
-                <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px">Today's Progress</div>
+                <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px">Today's Progress</div>
                 <div style="background:var(--mid);border-radius:8px;height:8px;overflow:hidden">
                     <div style="background:linear-gradient(90deg,#10B981,#6EE7B7);height:100%;width:${Math.min(100, (r.dailyMinutes/20)*100)}%;transition:width 0.3s"></div>
                 </div>
@@ -8244,7 +8244,7 @@ function renderBoardReading() {
             </div>
 
             <div style="margin-bottom:20px">
-                <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px">This Week</div>
+                <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px">This Week</div>
                 <div style="background:var(--mid);border-radius:8px;height:8px;overflow:hidden">
                     <div style="background:linear-gradient(90deg,var(--indigo),#A78BFA);height:100%;width:${Math.min(100, (r.weeklyMinutes/100)*100)}%;transition:width 0.3s"></div>
                 </div>
@@ -8268,18 +8268,18 @@ function renderBoardReading() {
             <!-- Custom input -->
             <div style="display:flex;gap:8px;margin-bottom:20px">
                 <input type="number" id="reading-custom-input" placeholder="Minutes" min="1" max="120"
-                    style="flex:1;padding:10px;border:2px solid #475569;background:var(--dark);color:white;border-radius:8px;font-size:1em;font-family:inherit">
+                    style="flex:1;padding:10px;border:2px solid var(--mid);background:var(--dark);color:white;border-radius:8px;font-size:1em;font-family:inherit">
                 <button onclick="addReadingCustom()" style="padding:10px 16px;background:var(--purple);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">Add</button>
             </div>
 
             <!-- History -->
             ${r.history && r.history.length > 0 ? `
                 <div style="margin-top:20px">
-                    <div style="font-size:0.85em;color:#94A3B8;margin-bottom:8px;font-weight:600">Week History</div>
+                    <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:8px;font-weight:600">Week History</div>
                     <div style="display:flex;flex-direction:column;gap:6px">
                         ${r.history.slice(-4).reverse().map(h =>
                             `<div style="display:flex;justify-content:space-between;padding:8px;background:var(--dark);border-radius:6px;font-size:0.9em">
-                                <span style="color:#94A3B8">Week of ${h.week}</span>
+                                <span style="color:var(--text-muted)">Week of ${h.week}</span>
                                 <span style="color:#10B981;font-weight:600">${h.minutes} min</span>
                             </div>`
                         ).join('')}
