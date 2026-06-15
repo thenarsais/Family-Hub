@@ -1212,13 +1212,14 @@
         }
         .game-name {
             font-size: 0.95em;
-            font-weight: 600;
-            color: #E2E8F0;
+            font-weight: 700;
+            color: #FFFFFF;
         }
         .game-stats {
             margin: 8px 0;
             font-size: 0.8em;
-            color: #94A3B8;
+            color: #E2E8F0;
+            font-weight: 500;
         }
         .game-stats p {
             margin: 2px 0;
@@ -1228,13 +1229,14 @@
         }
         .unlock-requirement {
             font-size: 0.75em;
-            color: #CBD5E1;
+            color: #E2E8F0;
             margin-bottom: 6px;
+            font-weight: 500;
         }
         .progress-bar {
             width: 100%;
             height: 6px;
-            background: var(--mid);
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 3px;
             overflow: hidden;
             margin-bottom: 4px;
@@ -1246,17 +1248,18 @@
         }
         .progress-text {
             font-size: 0.7em;
-            color: #94A3B8;
+            color: #E2E8F0;
+            font-weight: 500;
         }
         .btn-game {
             margin-top: 8px;
             padding: 8px 12px;
             background: var(--theme-primary);
             border: none;
-            color: white;
+            color: var(--theme-primary-text, white);
             border-radius: 6px;
             font-size: 0.85em;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
         }
@@ -1267,12 +1270,12 @@
         .btn-unlock-required {
             margin-top: 8px;
             padding: 8px 12px;
-            background: #475569;
-            border: none;
-            color: #94A3B8;
+            background: rgba(71, 85, 105, 0.5);
+            border: 2px dashed #94A3B8;
+            color: #E2E8F0;
             border-radius: 6px;
             font-size: 0.85em;
-            font-weight: 600;
+            font-weight: 700;
             cursor: not-allowed;
         }
         @media (max-width: 480px) {
