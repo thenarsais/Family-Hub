@@ -64,6 +64,24 @@
             --success-dark: #065F46;
             --danger-dark: #7F1D1D;
 
+            /* Game Results - Stats Cards */
+            --stats-success-bg: var(--stats-success-bg);
+            --stats-success-text: #D1FAE5;
+            --stats-progress-bg: var(--stats-progress-bg);
+            --stats-progress-text: #DBEAFE;
+            --stats-progress-value: var(--stats-progress-value);
+
+            /* Game Notifications & Alerts */
+            --boost-bg: #7C2D12;
+            --boost-accent: #FCD34D;
+            --boost-text: #FED7AA;
+
+            /* Modal Backgrounds */
+            --modal-bg: var(--modal-bg);
+
+            /* Leaderboard Button */
+            --leaderboard-btn: var(--leaderboard-btn);
+
             /* Spacing */
             --space-xs: 4px;
             --space-sm: 8px;
@@ -128,7 +146,7 @@
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html { font-size: 18px; }
-        body { font-family:var(--font); background:#0F172A; min-height:100vh; color:var(--dark); overflow-x:hidden; }
+        body { font-family:var(--font); background:var(--modal-bg); min-height:100vh; color:var(--dark); overflow-x:hidden; }
 
         /* Large monitors (27"+ displays) */
         @media (min-width: 1920px) {
@@ -245,7 +263,7 @@
             left: 50%;
             transform: translateX(-50%) translateY(0);
             width: 320px;
-            background: linear-gradient(135deg, #7C3AED 0%, #EC4899 100%);
+            background: linear-gradient(135deg, var(--leaderboard-btn) 0%, #EC4899 100%);
             border-left: 4px solid #FFD700;
             border-radius: 12px;
             padding: 16px;
@@ -707,7 +725,7 @@
 
         /* Pomodoro widget */
         .pomo-widget {
-            background:linear-gradient(135deg,var(--dark),#0F172A);
+            background:linear-gradient(135deg,var(--dark),var(--modal-bg));
             border-radius:var(--radius); padding:22px;
             text-align:center; margin-bottom:14px; color:white;
         }
@@ -3877,7 +3895,7 @@ window.showQuickFireBoostModal = function() {
                     onclick="selectBoost('${boost.id}')"
                     style="
                         padding:16px;
-                        background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
+                        background:${boost.count > 0 ? 'var(--modal-bg)' : 'var(--mid)'};
                         border:2px solid var(--mid);
                         border-radius:12px;
                         color:${boost.count > 0 ? 'white' : 'var(--text-muted)'};
@@ -3889,7 +3907,7 @@ window.showQuickFireBoostModal = function() {
                     "
                     ${boost.count === 0 ? 'disabled' : ''}
                     onmouseover="if(${boost.count > 0}) this.style.background='var(--dark)'"
-                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : 'var(--mid)'}'"
+                    onmouseout="this.style.background='${boost.count > 0 ? 'var(--modal-bg)' : 'var(--mid)'}'"
                 >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:12px">
@@ -3947,14 +3965,14 @@ window.selectBoost = function(boostId) {
     // Clear previous selection
     document.querySelectorAll('.boost-option').forEach(btn => {
         btn.style.borderColor = 'var(--mid)';
-        btn.style.background = '#0F172A';
+        btn.style.background = 'var(--modal-bg)';
     });
 
     // Highlight selected
     const selected = document.querySelector(`[data-boost="${boostId}"]`);
     if (selected) {
         selected.style.borderColor = '#0EA5E9';
-        selected.style.background = '#0F172A';
+        selected.style.background = 'var(--modal-bg)';
     }
 
     // Enable "Play with boost" button
@@ -4026,7 +4044,7 @@ window.renderQuickFireGame = function(game) {
         }
     }
 
-    const boostIndicator = game.selectedBoost ? `<div style="font-size:0.8em;color:#FCD34D;font-weight:800;padding:4px 8px;background:#7C2D12;border-radius:6px">${
+    const boostIndicator = game.selectedBoost ? `<div style="font-size:0.8em;color:var(--boost-accent);font-weight:800;padding:4px 8px;background:var(--boost-bg);border-radius:6px">${
         game.selectedBoost === 'double_points' ? '2️⃣ 2× Active' :
         game.selectedBoost === 'skip' && !game.boostUsed ? '⏭️ Skip Ready' :
         game.selectedBoost === 'hint' && !game.boostUsed ? '💡 Hint Ready' : ''
@@ -4047,7 +4065,7 @@ window.renderQuickFireGame = function(game) {
             </div>
         </div>
 
-        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:16px">
+        <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:16px">
             <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:8px">Question ${progress}/10</div>
             <div style="font-size:1.1em;font-weight:600;color:white;margin-bottom:16px;line-height:1.5">${q.question}</div>
             ${hiddenAnswerIndex >= 0 ? '<div style="font-size:0.8em;color:#FCD34D;margin-bottom:8px">💡 1 incorrect answer hidden</div>' : ''}
@@ -4066,13 +4084,13 @@ window.renderQuickFireGame = function(game) {
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
-            <div style="background:#064E3B;padding:12px;border-radius:10px;text-align:center">
+            <div style="background:var(--stats-success-bg);padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#D1FAE5">Score</div>
                 <div style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
             </div>
-            <div style="background:#1E3A8A;padding:12px;border-radius:10px;text-align:center">
+            <div style="background:var(--stats-progress-bg);padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#DBEAFE">Progress</div>
-                <div style="font-size:1.4em;font-weight:800;color:#60A5FA">${game.stats.correctCount}/${progress}</div>
+                <div style="font-size:1.4em;font-weight:800;color:var(--stats-progress-value)">${game.stats.correctCount}/${progress}</div>
             </div>
         </div>
 
@@ -4231,7 +4249,7 @@ window.showQuickFireResults = function(game, accuracy) {
     const modal = document.getElementById('quickfire-modal');
 
     const boostSummary = game.selectedBoost ? `
-        <div style="background:#7C2D12;border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
+        <div style="background:var(--boost-bg);border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
             <div style="font-size:0.9em;color:#FCD34D;font-weight:800">💫 Boost Used</div>
             <div style="font-size:1em;color:#FED7AA;margin-top:4px">
                 ${game.selectedBoost === 'double_points' ? '2️⃣ Double Points — Score was 2×' :
@@ -4250,17 +4268,17 @@ window.showQuickFireResults = function(game, accuracy) {
         <div style="font-size:3.5em;font-weight:900;color:var(--theme-primary);margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-            <div style="background:#064E3B;padding:16px;border-radius:12px">
+            <div style="background:var(--stats-success-bg);padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#D1FAE5">Accuracy</div>
                 <div style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${(accuracy * 100).toFixed(0)}%</div>
             </div>
-            <div style="background:#1E3A8A;padding:16px;border-radius:12px">
+            <div style="background:var(--stats-progress-bg);padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#DBEAFE">Max Combo</div>
-                <div style="font-size:1.8em;font-weight:800;color:#60A5FA">🔥 ${maxCombo}×</div>
+                <div style="font-size:1.8em;font-weight:800;color:var(--stats-progress-value)">🔥 ${maxCombo}×</div>
             </div>
         </div>
 
-        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
+        <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
             <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px">Correct: ${game.stats.correctCount}/10</div>
             <div style="height:4px;background:var(--mid);border-radius:2px">
                 <div style="height:100%;background:var(--theme-primary);border-radius:2px;width:${(game.stats.correctCount/10)*100}%"></div>
@@ -4319,7 +4337,7 @@ window.showMemoryDifficultyModal = function() {
                     onclick="selectMemoryDifficulty('${diff.id}')"
                     style="
                         padding:20px;
-                        background:#0F172A;
+                        background:var(--modal-bg);
                         border:2px solid var(--mid);
                         border-radius:12px;
                         color:white;
@@ -4331,7 +4349,7 @@ window.showMemoryDifficultyModal = function() {
                         align-items:center;
                     "
                     onmouseover="this.style.background='var(--dark)'; this.style.borderColor='var(--text-secondary)'"
-                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
+                    onmouseout="this.style.background='var(--modal-bg)'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
                         <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
@@ -4401,7 +4419,7 @@ window.showMemoryBoostModal = function(difficulty) {
                     onclick="selectMemoryBoost('${boost.id}', '${difficulty}')"
                     style="
                         padding:16px;
-                        background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
+                        background:${boost.count > 0 ? 'var(--modal-bg)' : 'var(--mid)'};
                         border:2px solid var(--mid);
                         border-radius:12px;
                         color:${boost.count > 0 ? 'white' : 'var(--text-muted)'};
@@ -4413,7 +4431,7 @@ window.showMemoryBoostModal = function(difficulty) {
                     "
                     ${boost.count === 0 ? 'disabled' : ''}
                     onmouseover="if(${boost.count > 0}) this.style.background='var(--dark)'"
-                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : 'var(--mid)'}'"
+                    onmouseout="this.style.background='${boost.count > 0 ? 'var(--modal-bg)' : 'var(--mid)'}'"
                 >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:12px">
@@ -4471,14 +4489,14 @@ window.selectMemoryBoost = function(boostId, difficulty) {
     // Clear previous selection
     document.querySelectorAll('.memory-boost-option').forEach(btn => {
         btn.style.borderColor = 'var(--mid)';
-        btn.style.background = '#0F172A';
+        btn.style.background = 'var(--modal-bg)';
     });
 
     // Highlight selected
     const selected = document.querySelector(`[data-boost="${boostId}"]`);
     if (selected) {
         selected.style.borderColor = '#0EA5E9';
-        selected.style.background = '#0F172A';
+        selected.style.background = 'var(--modal-bg)';
     }
 
     // Enable "Play with boost" button
@@ -4624,13 +4642,13 @@ window.renderMemoryGame = function(game) {
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-            <div style="background:#064E3B;padding:12px;border-radius:10px;text-align:center">
+            <div style="background:var(--stats-success-bg);padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#D1FAE5">Score</div>
                 <div id="mem-score" style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
             </div>
-            <div style="background:#1E3A8A;padding:12px;border-radius:10px;text-align:center">
+            <div style="background:var(--stats-progress-bg);padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#DBEAFE">Progress</div>
-                <div style="font-size:1.4em;font-weight:800;color:#60A5FA">${game.matchesFound}/${game.totalMatches}</div>
+                <div style="font-size:1.4em;font-weight:800;color:var(--stats-progress-value)">${game.matchesFound}/${game.totalMatches}</div>
             </div>
         </div>
 
@@ -4961,24 +4979,24 @@ window.showMemoryResults = function(game, won) {
         <div style="font-size:3.5em;font-weight:900;color:var(--theme-primary);margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-            <div style="background:#064E3B;padding:16px;border-radius:12px">
+            <div style="background:var(--stats-success-bg);padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#D1FAE5">Pairs Matched</div>
                 <div style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.matchesFound}/${game.totalMatches}</div>
             </div>
-            <div style="background:#1E3A8A;padding:16px;border-radius:12px">
+            <div style="background:var(--stats-progress-bg);padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#DBEAFE">Time Used</div>
-                <div style="font-size:1.4em;font-weight:800;color:#60A5FA">${timeUsed}</div>
+                <div style="font-size:1.4em;font-weight:800;color:var(--stats-progress-value)">${timeUsed}</div>
             </div>
         </div>
 
-        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:center">
+        <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:24px;text-align:center">
             <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:8px">Difficulty: ${diffLabel}</div>
             ${game.combo > 1 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800">Max Combo: 🔥 ${game.combo}×</div>` : ''}
             ${personalBest > 0 && !isNewBest ? `<div style="font-size:0.9em;color:var(--text-muted);margin-top:8px">Your Best: ${personalBest} pts</div>` : ''}
         </div>
 
         ${game.selectedBoost ? `
-            <div style="background:#7C2D12;border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
+            <div style="background:var(--boost-bg);border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
                 <div style="font-size:0.9em;color:#FCD34D;font-weight:800">💫 Boost Used</div>
                 <div style="font-size:1em;color:#FED7AA;margin-top:4px">
                     ${game.selectedBoost === 'double_points' ? '2️⃣ Double Points — Score was 2×' :
@@ -4989,7 +5007,7 @@ window.showMemoryResults = function(game, won) {
         ` : ''}
 
         ${leaderboard.length > 0 ? `
-            <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
+            <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
                 <div style="font-size:0.95em;font-weight:800;color:var(--text-muted);margin-bottom:12px">Top Scores (${diffLabel})</div>
                 ${leaderboard.map((entry, i) => {
                     const medals = ['🥇', '🥈', '🥉'];
@@ -4997,8 +5015,8 @@ window.showMemoryResults = function(game, won) {
                     const dateStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
                     const isCurrent = entry.score === game.score;
                     return `
-                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mid);${isCurrent ? 'background:#1E3A8A;padding:8px;border-radius:6px;border:none' : ''}">
-                            <span style="color:${isCurrent ? '#60A5FA' : '#D1FAE5'}">${medals[i]} ${entry.score} pts ${isCurrent ? '← You' : ''}</span>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mid);${isCurrent ? 'background:var(--stats-progress-bg);padding:8px;border-radius:6px;border:none' : ''}">
+                            <span style="color:${isCurrent ? 'var(--stats-progress-value)' : '#D1FAE5'}">${medals[i]} ${entry.score} pts ${isCurrent ? '← You' : ''}</span>
                             <span style="font-size:0.85em;color: var(--text-secondary)">${dateStr}</span>
                         </div>
                     `;
@@ -5007,11 +5025,11 @@ window.showMemoryResults = function(game, won) {
         ` : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <button onclick="playAgainMemory()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
+            <button onclick="playAgainMemory()" style="padding:12px;background:var(--theme-primary);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
             <button onclick="showMemoryDifficultyModal()" style="padding:12px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Try Different</button>
         </div>
 
-        <button onclick="showLeaderboardViewer('memory')" style="width:100%;padding:12px;background:#7C3AED;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em;margin-bottom:8px">🏆 View Leaderboard</button>
+        <button onclick="showLeaderboardViewer('memory')" style="width:100%;padding:12px;background:var(--leaderboard-btn);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em;margin-bottom:8px">🏆 View Leaderboard</button>
 
         <button onclick="backToTriviaFromMemory()" style="width:100%;padding:12px;background:var(--mid);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
     `;
@@ -5061,7 +5079,7 @@ window.showScrambleDifficultyModal = function() {
                     onclick="selectScrambleDifficulty('${diff.id}')"
                     style="
                         padding:20px;
-                        background:#0F172A;
+                        background:var(--modal-bg);
                         border:2px solid var(--mid);
                         border-radius:12px;
                         color:white;
@@ -5073,7 +5091,7 @@ window.showScrambleDifficultyModal = function() {
                         align-items:center;
                     "
                     onmouseover="this.style.background='var(--dark)'; this.style.borderColor='var(--text-secondary)'"
-                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
+                    onmouseout="this.style.background='var(--modal-bg)'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
                         <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
@@ -5143,7 +5161,7 @@ window.showScrambleBoostModal = function(difficulty) {
                     onclick="selectScrambleBoost('${boost.id}', '${difficulty}')"
                     style="
                         padding:16px;
-                        background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
+                        background:${boost.count > 0 ? 'var(--modal-bg)' : 'var(--mid)'};
                         border:2px solid var(--mid);
                         border-radius:12px;
                         color:${boost.count > 0 ? 'white' : 'var(--text-muted)'};
@@ -5155,7 +5173,7 @@ window.showScrambleBoostModal = function(difficulty) {
                     "
                     ${boost.count === 0 ? 'disabled' : ''}
                     onmouseover="if(${boost.count > 0}) this.style.background='var(--dark)'"
-                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : 'var(--mid)'}'"
+                    onmouseout="this.style.background='${boost.count > 0 ? 'var(--modal-bg)' : 'var(--mid)'}'"
                 >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:12px">
@@ -5213,14 +5231,14 @@ window.selectScrambleBoost = function(boostId, difficulty) {
     // Clear previous selection
     document.querySelectorAll('.scramble-boost-option').forEach(btn => {
         btn.style.borderColor = 'var(--mid)';
-        btn.style.background = '#0F172A';
+        btn.style.background = 'var(--modal-bg)';
     });
 
     // Highlight selected
     const selected = document.querySelector(`[data-boost="${boostId}"]`);
     if (selected) {
         selected.style.borderColor = '#0EA5E9';
-        selected.style.background = '#0F172A';
+        selected.style.background = 'var(--modal-bg)';
     }
 
     // Enable "Play with boost" button
@@ -5387,17 +5405,17 @@ window.renderScrambleGame = function(game) {
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-            <div style="background:#064E3B;padding:12px;border-radius:10px;text-align:center">
+            <div style="background:var(--stats-success-bg);padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#D1FAE5">Score</div>
                 <div id="scr-score" style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
             </div>
-            <div style="background:#1E3A8A;padding:12px;border-radius:10px;text-align:center">
+            <div style="background:var(--stats-progress-bg);padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#DBEAFE">Correct</div>
-                <div style="font-size:1.4em;font-weight:800;color:#60A5FA">${game.stats.words_correct}/5</div>
+                <div style="font-size:1.4em;font-weight:800;color:var(--stats-progress-value)">${game.stats.words_correct}/5</div>
             </div>
         </div>
 
-        <div style="background:#0F172A;padding:20px;border-radius:12px;margin-bottom:16px;text-align:center">
+        <div style="background:var(--modal-bg);padding:20px;border-radius:12px;margin-bottom:16px;text-align:center">
             <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px">Unscramble the word:</div>
             <div id="scr-word" style="font-size:2.5em;font-weight:800;color:var(--text-muted);letter-spacing:8px;margin-bottom:16px;font-family:monospace">${word.scrambled}</div>
 
@@ -5438,7 +5456,7 @@ window.renderScrambleGame = function(game) {
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
             <button id="scr-submit" onclick="submitScrambleAnswer()" style="
                 padding:12px;
-                background:#0EA5E9;
+                background:var(--theme-primary);
                 border:none;
                 color:white;
                 border-radius:10px;
@@ -5656,22 +5674,22 @@ window.showScrambleResults = function(game, won) {
         <div style="font-size:3.5em;font-weight:900;color:var(--theme-primary);margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
-            <div style="background:#064E3B;padding:16px;border-radius:12px">
+            <div style="background:var(--stats-success-bg);padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#D1FAE5">Words Correct</div>
                 <div style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.stats.words_correct}/5</div>
             </div>
-            <div style="background:#1E3A8A;padding:16px;border-radius:12px">
+            <div style="background:var(--stats-progress-bg);padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#DBEAFE">Time Used</div>
-                <div style="font-size:1.4em;font-weight:800;color:#60A5FA">${timeUsed}</div>
+                <div style="font-size:1.4em;font-weight:800;color:var(--stats-progress-value)">${timeUsed}</div>
             </div>
         </div>
 
-        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px">
+        <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:24px">
             <div style="font-size:0.9em;color:var(--text-muted)">Difficulty: ${diffLabel}</div>
         </div>
 
         ${game.selectedBoost ? `
-            <div style="background:#7C2D12;border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
+            <div style="background:var(--boost-bg);border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
                 <div style="font-size:0.9em;color:#FCD34D;font-weight:800">💫 Boost Used</div>
                 <div style="font-size:1em;color:#FED7AA;margin-top:4px">
                     ${game.selectedBoost === 'double_points' ? '2️⃣ Double Points — Score was 2×' :
@@ -5682,7 +5700,7 @@ window.showScrambleResults = function(game, won) {
         ` : ''}
 
         ${leaderboard.length > 0 ? `
-            <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
+            <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
                 <div style="font-size:0.95em;font-weight:800;color:var(--text-muted);margin-bottom:12px">Top Scores (${diffLabel})</div>
                 ${leaderboard.map((entry, i) => {
                     const medals = ['🥇', '🥈', '🥉'];
@@ -5690,8 +5708,8 @@ window.showScrambleResults = function(game, won) {
                     const dateStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
                     const isCurrent = entry.score === game.score;
                     return `
-                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mid);${isCurrent ? 'background:#1E3A8A;padding:8px;border-radius:6px;border:none' : ''}">
-                            <span style="color:${isCurrent ? '#60A5FA' : '#D1FAE5'}">${medals[i]} ${entry.score} pts ${isCurrent ? '← You' : ''}</span>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mid);${isCurrent ? 'background:var(--stats-progress-bg);padding:8px;border-radius:6px;border:none' : ''}">
+                            <span style="color:${isCurrent ? 'var(--stats-progress-value)' : '#D1FAE5'}">${medals[i]} ${entry.score} pts ${isCurrent ? '← You' : ''}</span>
                             <span style="font-size:0.85em;color: var(--text-secondary)">${dateStr}</span>
                         </div>
                     `;
@@ -5700,11 +5718,11 @@ window.showScrambleResults = function(game, won) {
         ` : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <button onclick="playAgainScramble()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
+            <button onclick="playAgainScramble()" style="padding:12px;background:var(--theme-primary);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
             <button onclick="showScrambleDifficultyModal()" style="padding:12px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Try Different</button>
         </div>
 
-        <button onclick="showLeaderboardViewer('scramble')" style="width:100%;padding:12px;background:#7C3AED;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em;margin-bottom:8px">🏆 View Leaderboard</button>
+        <button onclick="showLeaderboardViewer('scramble')" style="width:100%;padding:12px;background:var(--leaderboard-btn);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em;margin-bottom:8px">🏆 View Leaderboard</button>
 
         <button onclick="backToTriviaFromScramble()" style="width:100%;padding:12px;background:var(--mid);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
     `;
@@ -5844,7 +5862,7 @@ window.showChallengeDifficultyModal = function() {
                     onclick="selectChallengeDifficulty('${diff.id}')"
                     style="
                         padding:20px;
-                        background:#0F172A;
+                        background:var(--modal-bg);
                         border:2px solid var(--mid);
                         border-radius:12px;
                         color:white;
@@ -5856,7 +5874,7 @@ window.showChallengeDifficultyModal = function() {
                         align-items:center;
                     "
                     onmouseover="this.style.background='var(--dark)'; this.style.borderColor='var(--text-secondary)'"
-                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
+                    onmouseout="this.style.background='var(--modal-bg)'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
                         <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
@@ -5927,7 +5945,7 @@ window.showChallengeBoostModal = function(difficulty) {
                     onclick="selectChallengeBoost('${boost.id}', '${difficulty}')"
                     style="
                         padding:16px;
-                        background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
+                        background:${boost.count > 0 ? 'var(--modal-bg)' : 'var(--mid)'};
                         border:2px solid var(--mid);
                         border-radius:12px;
                         color:${boost.count > 0 ? 'white' : 'var(--text-muted)'};
@@ -5939,7 +5957,7 @@ window.showChallengeBoostModal = function(difficulty) {
                     "
                     ${boost.count === 0 ? 'disabled' : ''}
                     onmouseover="if(${boost.count > 0}) this.style.background='var(--dark)'"
-                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : 'var(--mid)'}'"
+                    onmouseout="this.style.background='${boost.count > 0 ? 'var(--modal-bg)' : 'var(--mid)'}'"
                 >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:12px">
@@ -6012,13 +6030,13 @@ window.showChallengeBoostModal = function(difficulty) {
 window.selectChallengeBoost = function(boostId, difficulty) {
     document.querySelectorAll('.challenge-boost-option').forEach(btn => {
         btn.style.borderColor = 'var(--mid)';
-        btn.style.background = '#0F172A';
+        btn.style.background = 'var(--modal-bg)';
     });
 
     const selected = document.querySelector(`[data-boost="${boostId}"]`);
     if (selected) {
         selected.style.borderColor = '#0EA5E9';
-        selected.style.background = '#0F172A';
+        selected.style.background = 'var(--modal-bg)';
     }
 
     const playBtn = document.getElementById('play-challenge-with-boost');
@@ -6344,14 +6362,14 @@ window.showChallengeResults = function(challenge) {
         const won = challenge.gameWins[game];
         const score = challenge.gameScores[game] || 0;
         const icon = won ? '✅' : '❌';
-        return `<div style="display:flex;justify-content:space-between;padding:12px;background:#0F172A;border-radius:8px;margin-bottom:8px;color:white">
+        return `<div style="display:flex;justify-content:space-between;padding:12px;background:var(--modal-bg);border-radius:8px;margin-bottom:8px;color:white">
             <div>${icon} ${game.toUpperCase()}</div>
             <div style="font-weight:800;color:var(--theme-primary)">${score} pts</div>
         </div>`;
     }).join('');
 
     const boostSummary = challenge.selectedBoost ? `
-        <div style="background:#7C2D12;border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
+        <div style="background:var(--boost-bg);border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
             <div style="font-size:0.9em;color:#FCD34D;font-weight:800">💫 Boost Used</div>
             <div style="font-size:1em;color:#FED7AA;margin-top:4px">
                 ${challenge.selectedBoost === 'double_points' ? '2️⃣ Double Points — Score was 2×' :
@@ -6372,7 +6390,7 @@ window.showChallengeResults = function(challenge) {
             <div style="color: var(--text-secondary);font-size:0.9em">Points Earned</div>
         </div>
 
-        <div style="background:#064E3B;padding:16px;border-radius:12px;margin-bottom:24px">
+        <div style="background:var(--stats-success-bg);padding:16px;border-radius:12px;margin-bottom:24px">
             <div style="color:#D1FAE5;font-size:0.9em;margin-bottom:8px">CHALLENGE STATS</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div>
@@ -6386,7 +6404,7 @@ window.showChallengeResults = function(challenge) {
             </div>
         </div>
 
-        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px">
+        <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:24px">
             <div style="color:var(--text-muted);font-size:0.9em;font-weight:600;margin-bottom:12px">MINI-GAME RESULTS</div>
             ${gamesPlayedList}
         </div>
@@ -6394,7 +6412,7 @@ window.showChallengeResults = function(challenge) {
         ${boostSummary}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <button onclick="playAgainChallenge()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">
+            <button onclick="playAgainChallenge()" style="padding:12px;background:var(--theme-primary);border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">
                 Play Again
             </button>
             <button onclick="backToTriviaFromChallenge()" style="padding:12px;background:var(--mid);border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">
@@ -6527,7 +6545,7 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
         </div>
 
         <!-- Leaderboard List -->
-        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:20px">
+        <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:20px">
             ${filtered.length > 0 ? `
                 ${filtered.map((entry, i) => {
                     const medals = ['🥇', '🥈', '🥉'];
@@ -6536,11 +6554,11 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
                     const dateStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo}d ago`;
                     const medal = i < 3 ? medals[i] : '🎖️';
                     return `
-                        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #334155;${i === 0 ? 'background:#1E3A8A;padding:12px;border-radius:8px;border:none;margin-bottom:8px' : ''}">
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #334155;${i === 0 ? 'background:var(--stats-progress-bg);padding:12px;border-radius:8px;border:none;margin-bottom:8px' : ''}">
                             <div style="display:flex;align-items:center;gap:12px;flex:1">
                                 <span style="font-size:1.4em;min-width:30px;text-align:center">${medal}</span>
                                 <div>
-                                    <div style="font-weight:700;color:${i === 0 ? '#60A5FA' : '#E0E7FF'}">#${i + 1} — ${entry.score} pts</div>
+                                    <div style="font-weight:700;color:${i === 0 ? 'var(--stats-progress-value)' : '#E0E7FF'}">#${i + 1} — ${entry.score} pts</div>
                                     <div style="font-size:0.8em;color:var(--text-muted)">${diffIcon} ${entry.difficulty.charAt(0).toUpperCase() + entry.difficulty.slice(1)}</div>
                                 </div>
                             </div>
@@ -8273,7 +8291,7 @@ function _legacyTriviaPanel_unused() {
                             <button onclick="checkTriviaAnswer()" style="flex:1;padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:0.2s" onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='var(--indigo)'">
                                 Check Answer
                             </button>
-                            <button onclick="toggleTriviaHint()" style="flex:0.3;padding:12px;background:var(--purple);color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;transition:0.2s" onmouseover="this.style.background='#7C3AED'" onmouseout="this.style.background='var(--purple)'">
+                            <button onclick="toggleTriviaHint()" style="flex:0.3;padding:12px;background:var(--purple);color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;transition:0.2s" onmouseover="this.style.background='var(--leaderboard-btn)'" onmouseout="this.style.background='var(--purple)'">
                                 💡
                             </button>
                         </div>
