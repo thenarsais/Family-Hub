@@ -3761,7 +3761,11 @@ window.wordleSubmitBtn = function() {
 
     const guess = input.value.trim().toUpperCase();
     if (guess.length !== 5) {
-        alert('Enter a 5-letter word');
+        // Silent validation - just highlight the input
+        input.style.borderColor = '#EF4444';
+        setTimeout(() => {
+            input.style.borderColor = 'var(--border-light)';
+        }, 500);
         return;
     }
 
@@ -6866,7 +6870,6 @@ window.submitChallengeMiniGameGuess = function(gameType) {
 
         const guess = input.value.trim().toUpperCase();
         if (guess.length !== 5) {
-            alert('Enter a 5-letter word');
             return;
         }
 
