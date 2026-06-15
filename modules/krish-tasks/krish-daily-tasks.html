@@ -6197,16 +6197,12 @@ window.applySeasonalTheme = function(theme) {
 // Apply theme CSS variables and update UI
 window.applyTheme = function(theme) {
     applySeasonalTheme(theme);
+    console.log('Theme applied:', theme);
 
-    // Update profile modal to show current theme
+    // Refresh profile modal to show updated selection
     setTimeout(() => {
-        const themeLabel = document.querySelector('[style*="Seasonal Theme"]')?.parentElement?.querySelector('div:last-child');
-        if (themeLabel) {
-            const icons = { spring: '🌱', summer: '☀️', fall: '🍂', winter: '❄️' };
-            const names = { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' };
-            themeLabel.textContent = `Current: ${names[theme]} ${icons[theme]}`;
-        }
-    }, 50);
+        showProfileSettings();
+    }, 100);
 };
 
 // Update CSS variables for the chosen theme
