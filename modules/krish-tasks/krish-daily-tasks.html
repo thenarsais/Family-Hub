@@ -5838,209 +5838,13 @@ window.backToTriviaFromScramble = function() {
 };
 
 // ═══════════════════════════════════════════════════
-//  HANGMAN GAME
-// ═══════════════════════════════════════════════════
-
-window.initializeHangmanGame = function(difficulty) {
-    const questionBank = TRIVIA_QUESTION_BANK;
-    const randomQ = questionBank[Math.floor(Math.random() * questionBank.length)];
-    const answer = randomQ.correct.toUpperCase();
-
-    return {
-        gameId: 'hangman',
-        difficulty: difficulty,
-        gameState: 'playing',
-        answer: answer,
-        guessedLetters: [],
-        correctLetters: [],
-        wrongGuesses: 0,
-        maxWrong: 6,
-        score: 0,
-        timerStartTime: Date.now(),
-        stats: { correct: 0, wrong: 0 }
-    };
-};
-
-window.renderHangmanGameChallenge = function(game, container) {
-    if (!game) return;
-
-    const answer = game.answer;
-    const guessed = game.guessedLetters;
-    const correct = game.correctLetters;
-    const wrong = game.wrongGuesses;
-    const maxWrong = game.maxWrong;
-
-    // Build display: show correct letters, hide others
-    const displayWord = answer.split('').map(letter => {
-        return correct.includes(letter) ? letter : '_';
-    }).join(' ');
-
-    // Get remaining letters to guess
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const availableLetters = alphabet.filter(l => !guessed.includes(l));
-
-    // Draw hangman stages (simplified ASCII)
-    const hangmanStages = [
-        '◯\n|\n',
-        '◯\n||\n',
-        '◯\n||\n/',
-        '◯\n||\n/ \\',
-        '◯\n||\n/ \\ ',
-        '◯\n||\n/ \\',
-        '✕'
-    ];
-
-    const html = `
-        <div style="text-align:center;margin-bottom:14px">
-            <div style="font-size:1.1em;font-weight:800;color:var(--dark);margin-bottom:6px">🎯 Hangman</div>
-            <div style="font-size:0.9em;color:var(--text-secondary)">Guess the word or phrase</div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-            <div style="background:linear-gradient(135deg,#ECFDF5,#D1FAE5);padding:12px;border-radius:10px;border:1px solid var(--theme-primary)">
-                <div style="font-size:0.8em;color:#065F46;font-weight:600">Score</div>
-                <div style="font-size:1.5em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
-            </div>
-            <div style="background:linear-gradient(135deg,#FEF2F2,#FECACA);padding:12px;border-radius:10px;border:1px solid #EF4444">
-                <div style="font-size:0.8em;color:#7F1D1D;font-weight:600">Wrong</div>
-                <div style="font-size:1.5em;font-weight:800;color:#EF4444">${wrong}/${maxWrong}</div>
-            </div>
-        </div>
-
-        <div style="background:white;padding:16px;border-radius:10px;border:2px solid var(--border-light);margin-bottom:12px;text-align:center">
-            <div style="font-size:0.85em;color:var(--text-secondary);font-weight:600;margin-bottom:12px">THE WORD</div>
-            <div style="font-size:2.2em;font-weight:700;color:var(--dark);letter-spacing:4px;margin-bottom:12px;font-family:monospace">${displayWord}</div>
-            <div style="font-size:0.85em;color:var(--text-muted)">${answer.length} letters</div>
-        </div>
-
-        ${game.wrongGuesses > 0 ? `
-            <div style="margin-bottom:12px;padding:10px;background:#FEF2F2;border-radius:8px;border:1px solid #FECACA">
-                <div style="font-size:0.8em;color:#7F1D1D;font-weight:600;margin-bottom:6px">Wrong guesses:</div>
-                <div style="display:flex;flex-wrap:wrap;gap:6px">
-                    ${game.guessedLetters.filter(l => !correct.includes(l)).map(l => `<span style="background:#EF4444;color:white;padding:6px 10px;border-radius:6px;font-size:0.9em;font-weight:700">${l}</span>`).join('')}
-                </div>
-            </div>
-        ` : ''}
-
-        <div style="margin-bottom:12px">
-            <div style="font-size:0.85em;color:var(--text-secondary);font-weight:600;margin-bottom:8px">GUESS A LETTER</div>
-            <input id="hangman-input-challenge" type="text" placeholder="A-Z" maxlength="1" style="
-                width:100%;
-                padding:12px;
-                background:white;
-                border:2px solid var(--border-light);
-                border-radius:8px;
-                color:var(--dark);
-                font-size:1.2em;
-                font-weight:700;
-                text-transform:uppercase;
-                text-align:center;
-                letter-spacing:2px;
-                box-sizing:border-box;
-                transition:all 0.2s;
-            "
-            onfocus="this.style.borderColor='var(--theme-primary)'; this.style.background='#ECFDF5'"
-            onblur="this.style.borderColor='var(--border-light)'; this.style.background='white'"
-            onkeypress="if(event.key==='Enter') submitHangmanLetterChallenge()" />
-        </div>
-
-        <button onclick="submitHangmanLetterChallenge()" style="
-            width:100%;
-            padding:12px;
-            background:var(--theme-primary);
-            border:none;
-            color:white;
-            border-radius:8px;
-            cursor:pointer;
-            font-weight:700;
-            font-size:0.95em;
-            transition:all 0.2s;
-        "
-        onmouseover="this.style.background='#059669'"
-        onmouseout="this.style.background='var(--theme-primary)'">
-            Submit Letter
-        </button>
-    `;
-
-    container.innerHTML = html;
-    setTimeout(() => {
-        const input = document.getElementById('hangman-input-challenge');
-        if (input) input.focus();
-    }, 50);
-};
-
-window.submitHangmanLetterChallenge = function() {
-    const challenge = window._challengeGame;
-    const miniGame = window._challengeMiniGame;
-    if (!challenge || !miniGame) return;
-
-    const input = document.getElementById('hangman-input-challenge');
-    if (!input || miniGame.gameState !== 'playing') return;
-
-    const letter = input.value.trim().toUpperCase();
-    if (letter.length !== 1 || !/[A-Z]/.test(letter)) return;
-    if (miniGame.guessedLetters.includes(letter)) return;
-
-    miniGame.guessedLetters.push(letter);
-    input.value = '';
-
-    const isCorrect = miniGame.answer.includes(letter);
-    if (isCorrect) {
-        miniGame.correctLetters.push(letter);
-        miniGame.stats.correct++;
-        miniGame.score += 10;
-    } else {
-        miniGame.wrongGuesses++;
-        miniGame.stats.wrong++;
-    }
-
-    // Check win condition
-    const won = miniGame.answer.split('').every(l => miniGame.correctLetters.includes(l));
-    if (won) {
-        miniGame.gameState = 'won';
-        miniGame.score += 50; // Bonus for winning
-        setTimeout(() => {
-            challenge.gameScores[challenge.games[challenge.currentGameIndex]] = miniGame.score;
-            challenge.gameWins[challenge.games[challenge.currentGameIndex]] = true;
-            challenge.currentGameIndex++;
-            challenge.stats.gamesPlayed++;
-            challenge.stats.gamesWon++;
-            playNextChallengeGame();
-        }, 800);
-    }
-    // Check lose condition
-    else if (miniGame.wrongGuesses >= miniGame.maxWrong) {
-        miniGame.gameState = 'lost';
-        setTimeout(() => {
-            challenge.gameScores[challenge.games[challenge.currentGameIndex]] = miniGame.score;
-            challenge.gameWins[challenge.games[challenge.currentGameIndex]] = false;
-            challenge.currentGameIndex++;
-            challenge.stats.gamesPlayed++;
-            challenge.lives--;
-            playNextChallengeGame();
-        }, 800);
-    } else {
-        // Continue game - re-render
-        const container = document.getElementById('mini-game-content');
-        if (container) renderHangmanGameChallenge(miniGame, container);
-    }
-};
-
-// Load Hangman into Challenge Mode
-window.loadChallengeHangmanGame = function(container) {
-    const miniGame = initializeHangmanGame('medium');
-    window._challengeMiniGame = miniGame;
-    renderHangmanGameChallenge(miniGame, container);
-};
-
-// ═══════════════════════════════════════════════════
 //  CHALLENGE MODE: COMPOSITE GAME (3 RANDOM GAMES)
 // ═══════════════════════════════════════════════════
 
 // Initialize Challenge Mode (3 random mini-games, cumulative scoring)
 window.initializeChallengeGame = function(difficulty) {
     // Select 3 random games (each appears once)
-    const gameTypes = ['wordle', 'hangman', 'scramble']; // Hangman replaces Memory
+    const gameTypes = ['wordle', 'memory', 'scramble']; // Quick-Fire excluded to avoid repetition
     const selectedGames = gameTypes.sort(() => Math.random() - 0.5).slice(0, 3);
 
     return {
@@ -6385,8 +6189,8 @@ window.playNextChallengeGame = function() {
             case 'wordle':
                 loadChallengeWordleGame(contentDiv);
                 break;
-            case 'hangman':
-                loadChallengeHangmanGame(contentDiv);
+            case 'memory':
+                loadChallengeMemoryGame(contentDiv);
                 break;
             case 'scramble':
                 loadChallengeScrambleGame(contentDiv);
