@@ -4884,11 +4884,13 @@ window.showMemoryResults = function(game, won) {
         ` : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <button onclick="playAgainMemory()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
-            <button onclick="showMemoryDifficultyModal()" style="padding:12px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Try Different Difficulty</button>
+            <button onclick="playAgainMemory()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
+            <button onclick="showMemoryDifficultyModal()" style="padding:12px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Try Different</button>
         </div>
 
-        <button onclick="backToTriviaFromMemory()" style="width:100%;padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
+        <button onclick="showLeaderboardViewer('memory')" style="width:100%;padding:12px;background:#7C3AED;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em;margin-bottom:8px">🏆 View Leaderboard</button>
+
+        <button onclick="backToTriviaFromMemory()" style="width:100%;padding:12px;background:#475569;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
     `;
 
     modal.appendChild(card);
@@ -5575,11 +5577,13 @@ window.showScrambleResults = function(game, won) {
         ` : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-            <button onclick="playAgainScramble()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
-            <button onclick="showScrambleDifficultyModal()" style="padding:12px;background:#F59E0B;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Try Different Difficulty</button>
+            <button onclick="playAgainScramble()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
+            <button onclick="showScrambleDifficultyModal()" style="padding:12px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Try Different</button>
         </div>
 
-        <button onclick="backToTriviaFromScramble()" style="width:100%;padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
+        <button onclick="showLeaderboardViewer('scramble')" style="width:100%;padding:12px;background:#7C3AED;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em;margin-bottom:8px">🏆 View Leaderboard</button>
+
+        <button onclick="backToTriviaFromScramble()" style="width:100%;padding:12px;background:#475569;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
     `;
 
     modal.appendChild(card);
