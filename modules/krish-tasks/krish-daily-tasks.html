@@ -51,6 +51,7 @@
             --season-accent: #BFDBFE;
             --season-secondary: #D1FAE5;
             --season-bg-light: #ECFDF5;
+            --season-bg-body: #F0FDFB;
             --season-text: #065F46;
             --season-border: #A7F3D0;
 
@@ -156,7 +157,7 @@
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html { font-size: 18px; }
-        body { font-family:var(--font); background:var(--modal-bg); min-height:100vh; color:var(--dark); overflow-x:hidden; }
+        body { font-family:var(--font); background:var(--season-bg-body); min-height:100vh; color:var(--dark); overflow-x:hidden; }
 
         /* Large monitors (27"+ displays) */
         @media (min-width: 1920px) {
@@ -473,9 +474,9 @@
         .pts-badge:active { transform:scale(0.97); }
         .pts-badge .num { font-size:1.6em; font-weight:800; line-height:1; display:block; }
         .pts-badge .lbl { font-size:0.9em; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px; }
-        .dash-bar-wrap { background: rgba(255,255,255,0.22); border-radius: var(--radius); height: 8px; overflow: hidden; margin-bottom: 6px; }
+        .dash-bar-wrap { background: var(--season-border); border-radius: var(--radius); height: 8px; overflow: hidden; margin-bottom: 6px; }
         .dash-bar-fill { height: 100%; background: var(--theme-primary); border-radius: var(--radius-xs); transition: width 0.6s ease; }
-        .dash-bar-labels { display:flex; justify-content:space-between; font-size:0.88em; opacity:1; color:white; font-weight:600; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .dash-bar-labels { display:flex; justify-content:space-between; font-size:0.88em; opacity:1; color: var(--season-text); font-weight:600; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 
         /* Daily Streak Display */
         .dash-streak-row {
@@ -483,15 +484,16 @@
             gap: 12px;
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: 1px solid var(--season-border);
         }
         .dash-streak-item {
             flex: 1;
-            background: rgba(0, 0, 0, 0.25);
+            background: var(--season-bg-light);
             border-radius: 10px;
             padding: 14px 12px;
             text-align: center;
             font-size: 0.95em;
+            border: 1px solid var(--season-border);
         }
         .dash-streak-icon {
             font-size: 2em;
@@ -503,12 +505,12 @@
             opacity: 1;
             margin-bottom: 4px;
             font-weight: 700;
-            color: white;
+            color: var(--season-text);
         }
         .dash-streak-num {
             font-size: 1.6em;
             font-weight: 800;
-            color: white;
+            color: var(--season-primary);
         }
 
         /* Dashboard Grid */
@@ -1873,6 +1875,7 @@ window.SEASONAL_THEMES = {
         accent: '#BFDBFE',
         secondary: '#D1FAE5',
         bgLight: '#ECFDF5',
+        bgBody: '#F0FDFB',
         text: '#065F46',
         border: '#A7F3D0'
     },
@@ -1881,6 +1884,7 @@ window.SEASONAL_THEMES = {
         accent: '#FEF3C7',
         secondary: '#FDE047',
         bgLight: '#FFFBEB',
+        bgBody: '#FFFEF2',
         text: '#78350F',
         border: '#FCD34D'
     },
@@ -1889,6 +1893,7 @@ window.SEASONAL_THEMES = {
         accent: '#FED7AA',
         secondary: '#FDBA74',
         bgLight: '#FFEDD5',
+        bgBody: '#FFFBF7',
         text: '#7C2D12',
         border: '#FDBA74'
     },
@@ -1897,6 +1902,7 @@ window.SEASONAL_THEMES = {
         accent: '#BAE6FD',
         secondary: '#E0F2FE',
         bgLight: '#F0F9FF',
+        bgBody: '#F8FCFF',
         text: '#0C4A6E',
         border: '#BAE6FD'
     }
@@ -1916,6 +1922,7 @@ window.applySeasonalTheme = function(season = 'spring') {
     root.style.setProperty('--season-accent', theme.accent);
     root.style.setProperty('--season-secondary', theme.secondary);
     root.style.setProperty('--season-bg-light', theme.bgLight);
+    root.style.setProperty('--season-bg-body', theme.bgBody);
     root.style.setProperty('--season-text', theme.text);
     root.style.setProperty('--season-border', theme.border);
 
