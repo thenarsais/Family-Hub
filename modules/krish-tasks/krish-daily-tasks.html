@@ -3283,19 +3283,17 @@ function renderTriviaPanel() {
                         { id: 'wordle', name: 'Category Wordle', emoji: '🎯', threshold: 5, metric: 'correct' },
                         { id: 'quickfire', name: 'Quick-Fire', emoji: '⚡', threshold: 10, metric: 'correct + 70% accuracy' },
                         { id: 'memory', name: 'Memory Tiles', emoji: '🧠', threshold: 50, metric: 'correct' },
-                        { id: 'scramble', name: 'Word Scramble', emoji: '🔤', threshold: 100, metric: 'correct' },
-                        { id: 'challenge', name: 'Challenge Mode', emoji: '🏆', threshold: 0, metric: 'always available' }
+                        { id: 'scramble', name: 'Word Scramble', emoji: '🔤', threshold: 100, metric: 'correct' }
                     ];
 
                     return gameList.map(game => {
-                        // Challenge Mode is always available
-                        const isUnlocked = game.id === 'challenge' || games.unlocked.includes(game.id);
+                        const isUnlocked = games.unlocked.includes(game.id);
                         const gameStats = games.stats[game.id] || { played: 0, bestScore: 0, leaderboard: [] };
                         const progress = getGameUnlockProgress(game.id);
 
-                        // For Memory & Challenge, get best score from leaderboard
+                        // For Memory & Scramble, get best score from leaderboard
                         let displayBestScore = gameStats.bestScore;
-                        if ((game.id === 'memory' || game.id === 'challenge' || game.id === 'scramble') && gameStats.leaderboard && gameStats.leaderboard.length > 0) {
+                        if ((game.id === 'memory' || game.id === 'scramble') && gameStats.leaderboard && gameStats.leaderboard.length > 0) {
                             displayBestScore = Math.max(...gameStats.leaderboard.map(e => e.score));
                         }
 
@@ -3820,9 +3818,6 @@ window.startGameFromCard = function(gameId) {
             break;
         case 'scramble':
             startScrambleGame();
-            break;
-        case 'challenge':
-            startChallengeGame();
             break;
     }
 };
