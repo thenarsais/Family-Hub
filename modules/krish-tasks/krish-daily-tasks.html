@@ -3372,9 +3372,9 @@ function getProfileDisplay(label = 'Player') {
 }
 
 // Light-mode diff colors for trivia panel (activity board is var(--light))
-function trivDiffBg(d)   { return { easy:'#ECFDF5', medium:'#FFFBEB', hard:'#FEF2F2' }[d] || 'var(--indigo-light)'; }
+function trivDiffBg(d)   { return { easy:'var(--season-bg-light)', medium:'#FFFBEB', hard:'#FEF2F2' }[d] || 'var(--indigo-light)'; }
 function trivDiffText(d) { return { easy:'#065F46', medium:'#78350F', hard:'#7F1D1D' }[d] || '#312E81'; }
-function trivDiffBorder(d){ return { easy:'#6EE7B7', medium:'#FCD34D', hard:'#FCA5A5' }[d] || '#C7D2FE'; }
+function trivDiffBorder(d){ return { easy:'var(--season-border)', medium:'#FCD34D', hard:'#FCA5A5' }[d] || '#C7D2FE'; }
 
 function renderTriviaPanel() {
     const panel = document.getElementById('panel-trivia');
@@ -3416,7 +3416,7 @@ function renderTriviaPanel() {
         <div style="display:flex;gap:8px;margin-bottom:14px;justify-content:center">
             <button onclick="setDifficultyMode('rookie')" style="
                 padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'rookie' ? 'var(--theme-primary)' : 'var(--border-light)'};
-                background:${state.trivia.difficulty.currentMode === 'rookie' ? '#ECFDF5' : 'white'};
+                background:${state.trivia.difficulty.currentMode === 'rookie' ? 'var(--season-bg-light)' : 'white'};
                 color:${state.trivia.difficulty.currentMode === 'rookie' ? '#065F46' : 'var(--text-secondary)'};
                 cursor:pointer;font-weight:700;font-size:0.85em;transition:all 0.2s
             ">🎓 Rookie</button>
@@ -3480,9 +3480,9 @@ function renderTriviaPanel() {
             const claimed = state.games?.dailyBonus?.claimed && state.games.dailyBonus.lastClaimedDate === today;
             const streak = state.games?.dailyBonus?.streak || 0;
             let statusText = claimed ? '✓ Bonus Claimed Today!' : '🎁 Ready for Bonus!';
-            let bgColor = claimed ? '#ECFDF5' : '#FEF3C7';
+            let bgColor = claimed ? 'var(--season-bg-light)' : '#FEF3C7';
             let textColor = claimed ? '#065F46' : '#78350F';
-            let borderColor = claimed ? '#A7F3D0' : '#FCD34D';
+            let borderColor = claimed ? 'var(--season-border)' : '#FCD34D';
 
             return `
                 <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:10px;padding:12px;margin-bottom:14px;text-align:center">
@@ -3671,7 +3671,7 @@ function showTriviaResult(isCorrect, q) {
     if (!resultEl) return;
     resultEl.style.display = 'block';
     resultEl.innerHTML = `
-        <div style="background:${isCorrect?'#ECFDF5':'#FEF2F2'};border-left:3px solid ${isCorrect?'var(--theme-primary)':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
+        <div style="background:${isCorrect?'var(--season-bg-light)':'#FEF2F2'};border-left:3px solid ${isCorrect?'var(--theme-primary)':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
             <div style="font-weight:700;font-size:1.05em;color:${isCorrect?'#065F46':'#7F1D1D'}">${isCorrect ? '✅ Correct! Great job!' : `❌ The answer was: <strong style="color:var(--dark)">${q.correct}</strong>`}</div>
             ${isCorrect && triviaLastPointsEarned > 0 ? `<div style="margin-top:8px;font-size:0.9em;color:${isCorrect?'#059669':'#DC2626'};font-weight:600">+ ${triviaLastPointsEarned} 🪙 Points</div>` : ''}
         </div>
@@ -4006,7 +4006,7 @@ window.renderWordleGame = function(game) {
             `).join('')}
 
             ${game.gameState !== 'playing' ? `
-                <div style="margin-bottom:16px;padding:16px;background:${game.gameState === 'won' ? '#ECFDF5' : '#FEF2F2'};border-radius:12px;text-align:center;border:2px solid ${game.gameState === 'won' ? 'var(--theme-primary)' : '#EF4444'}">
+                <div style="margin-bottom:16px;padding:16px;background:${game.gameState === 'won' ? 'var(--season-bg-light)' : '#FEF2F2'};border-radius:12px;text-align:center;border:2px solid ${game.gameState === 'won' ? 'var(--theme-primary)' : '#EF4444'}">
                     <div style="font-size:1.5em;margin-bottom:8px">${game.gameState === 'won' ? '🎉' : '😢'}</div>
                     <div style="font-weight:700;color:${game.gameState === 'won' ? '#065F46' : '#7F1D1D'};margin-bottom:4px">${game.gameState === 'won' ? 'You Won!' : 'Game Over'}</div>
                     <div style="font-size:0.9em;color:${game.gameState === 'won' ? '#047857' : '#991B1B'};margin-bottom:12px">Answer: <strong>${game.answer}</strong></div>
@@ -6521,7 +6521,7 @@ window.renderWordleGameChallenge = function(game, container) {
         `).join('')}
 
         ${game.gameState !== 'playing' ? `
-            <div style="margin-bottom:12px;padding:12px;background:${game.gameState === 'won' ? '#ECFDF5' : '#FEF2F2'};border-radius:12px;border:2px solid ${game.gameState === 'won' ? 'var(--theme-primary)' : '#EF4444'}">
+            <div style="margin-bottom:12px;padding:12px;background:${game.gameState === 'won' ? 'var(--season-bg-light)' : '#FEF2F2'};border-radius:12px;border:2px solid ${game.gameState === 'won' ? 'var(--theme-primary)' : '#EF4444'}">
                 <div style="font-size:1.2em;margin-bottom:6px">${game.gameState === 'won' ? '🎉' : '💪'}</div>
                 <div style="font-weight:700;color:${game.gameState === 'won' ? '#065F46' : '#7F1D1D'};margin-bottom:4px">${game.gameState === 'won' ? 'You Won!' : 'Game Over'}</div>
                 <div style="font-size:0.9em;color:${game.gameState === 'won' ? '#047857' : '#991B1B'};margin-bottom:10px">Answer: <strong>${game.answer}</strong></div>
@@ -6910,7 +6910,7 @@ window.renderScrambleGameChallenge = function(game, container) {
                     box-sizing:border-box;
                     transition:all 0.2s;
                 "
-                onfocus="this.style.borderColor='var(--theme-primary)'; this.style.background='#ECFDF5'"
+                onfocus="this.style.borderColor='var(--season-primary)'; this.style.background='var(--season-bg-light)'"
                 onblur="this.style.borderColor='var(--border-light)'; this.style.background='white'"
             />
         </div>
