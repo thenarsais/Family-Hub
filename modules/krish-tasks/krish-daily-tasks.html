@@ -318,7 +318,7 @@
         .pts-badge .num { font-size:1.6em; font-weight:800; line-height:1; display:block; }
         .pts-badge .lbl { font-size:0.7em; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px; }
         .dash-bar-wrap { background: rgba(255,255,255,0.22); border-radius: var(--radius); height: 8px; overflow: hidden; margin-bottom: 6px; }
-        .dash-bar-fill { height:100%; background:var(--accent); border-radius:10px; transition:width 0.6s ease; }
+        .dash-bar-fill { height: 100%; background: var(--theme-primary); border-radius: var(--radius-xs); transition: width 0.6s ease; }
         .dash-bar-labels { display:flex; justify-content:space-between; font-size:0.78em; opacity:0.88; }
 
         /* Daily Streak Display */
@@ -6500,7 +6500,7 @@ window.getTextColorForBackground = function(hexColor) {
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
     // If brightness > 155, use dark text; otherwise use white
-    return brightness > 155 ? 'var(--dark)' : '#FFFFFF';
+    return brightness > 155 ? '#1E293B' : '#FFFFFF';
 };
 
 window.applyHolidayTheme = function() {
