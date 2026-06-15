@@ -96,7 +96,7 @@
             --btn-padding: 9px 15px;
             --btn-padding-sm: 5px 11px;
             --btn-padding-lg: 11px 18px;
-            --btn-font-size: 0.88em;
+            --btn-font-size: 1.05em;
             --btn-font-weight: 700;
             --btn-border-radius: var(--radius-sm);
             --btn-transition: all 0.2s ease;
@@ -127,8 +127,13 @@
             --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        html { font-size: 16px; }
+        html { font-size: 18px; }
         body { font-family:var(--font); background:#0F172A; min-height:100vh; color:var(--dark); overflow-x:hidden; }
+
+        /* Large monitors (27"+ displays) */
+        @media (min-width: 1920px) {
+            html { font-size: 20px; }
+        }
 
         /* ── REUSABLE COMPONENTS ────────────────── */
         .chip {
@@ -439,7 +444,7 @@
         }
         .pts-badge:active { transform:scale(0.97); }
         .pts-badge .num { font-size:1.6em; font-weight:800; line-height:1; display:block; }
-        .pts-badge .lbl { font-size:0.7em; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px; }
+        .pts-badge .lbl { font-size:0.9em; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px; }
         .dash-bar-wrap { background: rgba(255,255,255,0.22); border-radius: var(--radius); height: 8px; overflow: hidden; margin-bottom: 6px; }
         .dash-bar-fill { height: 100%; background: var(--theme-primary); border-radius: var(--radius-xs); transition: width 0.6s ease; }
         .dash-bar-labels { display:flex; justify-content:space-between; font-size:0.88em; opacity:1; color:white; font-weight:600; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
@@ -516,7 +521,7 @@
         .card-tag { font-size:0.72em; font-weight:700; color: var(--text-secondary); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:3px; }
         .card-icon { font-size:1.8em; margin-bottom:4px; }
         .card-val { font-size:1.35em; font-weight:700; color:white; line-height:1.2; }
-        .card-sub { font-size:0.78em; color: var(--text-secondary); margin-top:2px; }
+        .card-sub { font-size:1em; color: var(--text-secondary); margin-top:2px; }
         .card-bar { margin-top: 8px; background: var(--mid); border-radius: var(--radius-xs); height: 5px; overflow: hidden; flex-shrink: 0; }
         .card-bar-fill { height: 100%; border-radius: var(--radius-xs); transition: width 0.4s ease; }
         .card-badge-top {
@@ -689,13 +694,13 @@
         }
         .hw-title { font-size:0.97em; font-weight:600; color:var(--dark); }
         .hw-item.done .hw-title { text-decoration:line-through; color:var(--text-muted); }
-        .hw-due { font-size:0.78em; color: var(--text-secondary); margin-top:3px; }
+        .hw-due { font-size:1em; color: var(--text-secondary); margin-top:3px; }
         .hw-due.urgent { color:var(--danger); font-weight:700; }
         .hw-due.warning { color:var(--orange); font-weight:700; }
         .pomo-launch-btn {
             background:#FFF7ED; border:2px solid #FED7AA;
             border-radius:9px; padding:7px 11px;
-            cursor:pointer; font-size:0.78em; font-weight:700;
+            cursor:pointer; font-size:1em; font-weight:700;
             color:#C2410C; transition:var(--t); flex-shrink:0;
         }
         .pomo-launch-btn:active { transform:scale(0.95); }
@@ -746,12 +751,12 @@
         .kf-goal:active { transform:scale(0.96); }
         .kf-g-icon { font-size:1.8em; margin-bottom:6px; }
         .kf-g-name { font-size:0.82em; font-weight:700; color:var(--dark); }
-        .kf-g-sub  { font-size:0.7em; color: var(--text-secondary); margin-top:2px; }
+        .kf-g-sub  { font-size:0.9em; color: var(--text-secondary); margin-top:2px; }
         .kf-goal.done .kf-g-name { color:var(--success); }
 
         /* Flash cards */
         .fc-section { background:white; border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:var(--shadow); }
-        .fc-section-title { font-size:0.9em; font-weight:700; color:var(--mid); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px; }
+        .fc-section-title { font-size:1.05em; font-weight:700; color:var(--mid); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px; }
         .fc-wrap { perspective:800px; height:160px; margin-bottom:10px; }
         .fc-card {
             width:100%; height:100%;
@@ -767,20 +772,20 @@
         }
         .fc-front { background:linear-gradient(135deg, rgba(16,185,129,0.3), rgba(16,185,129,0.15)); color:var(--dark); border: 2px solid var(--theme-primary); }
         .fc-back  { background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent)); color:white; transform:rotateY(180deg); }
-        .fc-hint  { font-size:0.78em; opacity:0.7; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
-        .fc-term  { font-size:1.9em; font-weight:800; }
-        .fc-meaning { font-size:0.9em; text-align:center; line-height:1.4; }
+        .fc-hint  { font-size:1em; opacity:1; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+        .fc-term  { font-size:2.1em; font-weight:800; }
+        .fc-meaning { font-size:1.15em; text-align:center; line-height:1.4; }
         .fc-nav { display:flex; align-items:center; gap:8px; justify-content:center; }
         .fc-btn {
             padding:9px 16px; border:none; border-radius:9px;
-            font-weight:700; font-size:0.88em; cursor:pointer;
+            font-weight:700; font-size:1.1em; cursor:pointer;
             transition:var(--t);
         }
         .fc-btn:active { transform:scale(0.95); }
         .fc-flip { background:var(--theme-primary); color:white; }
         .fc-prev { background:var(--border-light); color:var(--dark); }
         .fc-next { background: var(--theme-primary); color:white; }
-        .fc-counter { font-size:0.82em; color: var(--text-secondary); min-width:60px; text-align:center; font-weight:700; }
+        .fc-counter { font-size:1.05em; color: var(--text-secondary); min-width:60px; text-align:center; font-weight:700; }
 
         /* Practice Log */
         .practice-form { background:white; border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
@@ -842,7 +847,7 @@
         .guj-action:active { transform:scale(0.96); }
         .guj-a-icon { font-size:2.2em; margin-bottom:7px; }
         .guj-a-name { font-size:0.88em; font-weight:700; color:var(--dark); }
-        .guj-a-sub  { font-size:0.7em; color: var(--text-secondary); margin-top:2px; }
+        .guj-a-sub  { font-size:0.9em; color: var(--text-secondary); margin-top:2px; }
 
         .guj-timer-section {
             background:white; border-radius:var(--radius);
@@ -878,7 +883,7 @@
         .ev-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
         .ev-info  { flex:1; min-width:0; }
         .ev-title { font-size:0.97em; font-weight:700; color:var(--dark); }
-        .ev-time  { font-size:0.78em; color: var(--text-secondary); margin-top:2px; }
+        .ev-time  { font-size:1em; color: var(--text-secondary); margin-top:2px; }
         .ev-today-badge {
             background:var(--theme-primary); color:white;
             font-size:0.68em; font-weight:800;
@@ -892,7 +897,7 @@
         .habit-ico { font-size:1.9em; }
         .habit-info { flex:1; }
         .habit-name { font-size:1.05em; font-weight:700; color:var(--dark); }
-        .habit-goal-lbl { font-size:0.78em; color: var(--text-secondary); }
+        .habit-goal-lbl { font-size:1em; color: var(--text-secondary); }
         .streak-chip {
             background:linear-gradient(135deg,#FEF3C7,#FDE68A);
             border-radius:20px; padding:5px 11px;
@@ -995,7 +1000,7 @@
         .empty-state { text-align:center; padding:36px 20px; color:var(--text-muted); }
         .empty-ico { font-size:2.8em; margin-bottom:7px; }
         .empty-txt { font-size:0.95em; font-weight:600; }
-        .chip { display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.75em; font-weight:700; }
+        .chip { display:inline-block; padding:2px 9px; border-radius:20px; font-size:0.95em; font-weight:700; }
         .chip-g { background:#DCFCE7; color:#166534; }
         .chip-y { background:#FEF9C3; color:#854D0E; }
         .chip-r { background:#FEE2E2; color:#991B1B; }
@@ -1066,7 +1071,7 @@
         }
         .db-card-ico { font-size:1.25em; flex-shrink:0; }
         .db-ct { font-size:0.97em; font-weight:800; color:var(--dark); flex:1; white-space:nowrap; }
-        .db-cs { font-size:0.75em; font-weight:600; color: var(--text-secondary); white-space:nowrap; }
+        .db-cs { font-size:0.95em; font-weight:600; color: var(--text-secondary); white-space:nowrap; }
 
         .db-expand {
             background: var(--theme-secondary); border: none; border-radius:8px;
@@ -1110,7 +1115,7 @@
         .db-chore-row.done .db-cb { background: var(--theme-primary); border-color: var(--theme-primary); color:white; }
         .db-ci { font-size:1.15em; }
         .db-cl { flex:1; font-size:0.9em; font-weight:600; color:var(--dark); }
-        .db-cp { font-size:0.7em; font-weight:700; color:#D97706; background:#FEF3C7; padding:2px 7px; border-radius:20px; flex-shrink:0; }
+        .db-cp { font-size:0.9em; font-weight:700; color:#D97706; background:#FEF3C7; padding:2px 7px; border-radius:20px; flex-shrink:0; }
 
         /* ── HOMEWORK ──────────────────────────────── */
         .db-hw-row {
@@ -1123,14 +1128,14 @@
             width:22px; height:22px; border-radius:6px;
             border:2.5px solid var(--border-darker); flex-shrink:0; margin-top:3px;
             display:flex; align-items:center; justify-content:center;
-            font-size:0.78em; transition:var(--t);
+            font-size:1em; transition:var(--t);
         }
         .db-hw-row.done .db-hw-cb { background: var(--theme-primary); border-color: var(--theme-primary); color:white; }
         .db-hw-info { flex:1; min-width:0; }
         .db-hw-subj { display:inline-block; padding:1px 7px; border-radius:20px; font-size:0.68em; font-weight:700; margin-bottom:2px; }
         .db-hw-title { font-size:0.87em; font-weight:700; color:var(--dark); }
         .db-hw-row.done .db-hw-title { text-decoration:line-through; color:var(--text-muted); }
-        .db-hw-due  { font-size:0.7em; color: var(--text-secondary); margin-top:2px; }
+        .db-hw-due  { font-size:0.9em; color: var(--text-secondary); margin-top:2px; }
         .db-hw-due.urgent  { color:#EF4444; font-weight:700; }
         .db-hw-due.warning { color:#F97316; font-weight:700; }
         .db-pomo-launch {
@@ -1166,11 +1171,11 @@
         .db-h-meta { flex:1; min-width:0; }
         .db-h-name { font-size:0.9em; font-weight:700; color:var(--dark); }
         .db-h-sub  { font-size:0.68em; color: var(--text-secondary); }
-        .db-h-streak { font-size:0.7em; font-weight:700; background:#FEF3C7; color:#78350F; padding:2px 8px; border-radius:20px; flex-shrink:0; }
+        .db-h-streak { font-size:0.9em; font-weight:700; background:#FEF3C7; color:#78350F; padding:2px 8px; border-radius:20px; flex-shrink:0; }
         .db-h-today-btn {
             padding:5px 11px; border-radius:8px;
             border:2px solid var(--border-light); background:white;
-            font-size:0.75em; font-weight:700; color:var(--mid);
+            font-size:0.95em; font-weight:700; color:var(--mid);
             cursor:pointer; transition:var(--t); flex-shrink:0;
         }
         .db-h-today-btn.done { background:#DCFCE7; border-color:var(--theme-primary); color:#166534; }
@@ -1190,7 +1195,7 @@
         .db-hd.future { opacity:0.28; pointer-events:none; }
 
         .db-h-counter { display:flex; align-items:center; gap:7px; }
-        .db-h-cntr-lbl { flex:1; font-size:0.75em; color: var(--text-secondary); font-weight:600; }
+        .db-h-cntr-lbl { flex:1; font-size:0.95em; color: var(--text-secondary); font-weight:600; }
         .db-cntr-btn {
             width:30px; height:30px; border:2px solid var(--border-light); background:white;
             border-radius:7px; font-size:1.1em; cursor:pointer; font-weight:700;
@@ -1216,12 +1221,12 @@
         .db-mh-item { flex:1; text-align:center; }
         .db-mh-em  { font-size:1.15em; }
         .db-mh-day { font-size:0.58em; color:var(--text-muted); font-weight:700; }
-        .db-mood-set { padding:0 13px 10px; font-size:0.75em; color:var(--text-muted); text-align:center; }
+        .db-mood-set { padding:0 13px 10px; font-size:0.95em; color:var(--text-muted); text-align:center; }
 
         /* ── GUJARATI ──────────────────────────────── */
         .db-guj-info { display:flex; align-items:center; gap:10px; padding:10px 14px 7px; }
         .db-guj-phase { font-size:1.1em; font-weight:800; color: var(--theme-primary); }
-        .db-guj-subtext { font-size:0.75em; color: var(--text-secondary); margin-top:2px; }
+        .db-guj-subtext { font-size:0.95em; color: var(--text-secondary); margin-top:2px; }
         .db-guj-pbar { margin:0 14px 4px; background:var(--light); border-radius:6px; height:5px; overflow:hidden; }
         .db-guj-pfill { height:100%; background: var(--theme-primary); border-radius:6px; transition:width 0.4s; }
         .db-guj-plbl { text-align:center; font-size:0.68em; color: var(--text-secondary); margin-bottom:9px; }
@@ -1248,7 +1253,7 @@
         .db-pts-lbl    { font-size:0.62em; color: var(--text-secondary); font-weight:600; }
         .db-pts-bar    { background:var(--border-light); border-radius:8px; height:6px; overflow:hidden; }
         .db-pts-bfill  { height:100%; background:linear-gradient(90deg,var(--theme-primary),#6EE7B7); border-radius:8px; transition:width 0.5s; }
-        .db-pts-next-lbl { display:flex; justify-content:space-between; font-size:0.7em; font-weight:700; color: var(--text-secondary); margin-bottom:4px; }
+        .db-pts-next-lbl { display:flex; justify-content:space-between; font-size:0.9em; font-weight:700; color: var(--text-secondary); margin-bottom:4px; }
         .db-pts-card   { cursor:pointer; }
         .db-pts-card:hover { box-shadow:0 4px 24px rgba(99,102,241,0.22); }
 
@@ -1289,7 +1294,7 @@
         .db-fc-meaning { font-size:0.84em; line-height:1.4; color:#6EE7B7; }
 
         .db-kf-log-row { display:flex; align-items:center; justify-content:space-between; padding:7px 13px 11px; }
-        .db-kf-week    { font-size:0.75em; color: var(--text-secondary); font-weight:600; }
+        .db-kf-week    { font-size:0.95em; color: var(--text-secondary); font-weight:600; }
 
         /* Games Panel */
         .games-grid {
@@ -1340,13 +1345,13 @@
             font-size: 1.2em;
         }
         .game-name {
-            font-size: 0.95em;
+            font-size: 1.2em;
             font-weight: 700;
             color: #FFFFFF;
         }
         .game-stats {
             margin: 8px 0;
-            font-size: 0.8em;
+            font-size: 1em;
             color: #D1D5DB;
             font-weight: 500;
         }
@@ -2803,7 +2808,7 @@ function showBadgesModal() {
                         border:2px solid ${unlocked ? info.color : 'var(--border-light)'}
                     " title="${info.requirement}">
                         <div style="font-size:1.8em;margin-bottom:4px;opacity:${unlocked ? 1 : 0.4}">${info.emoji}</div>
-                        <div style="font-size:0.7em;color:var(--mid);font-weight:600">${info.label}</div>
+                        <div style="font-size:0.9em;color:var(--mid);font-weight:600">${info.label}</div>
                     </div>
                 `;
             });
@@ -3169,17 +3174,17 @@ function renderTriviaPanel() {
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;padding:0 0">
             <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:10px;text-align:center">
                 <div style="font-size:1.3em;font-weight:800;color:#DC2626">🔥</div>
-                <div style="font-size:0.75em;color:#7F1D1D;font-weight:700;margin-top:2px">${dailyStreak}</div>
+                <div style="font-size:0.95em;color:#7F1D1D;font-weight:700;margin-top:2px">${dailyStreak}</div>
                 <div style="font-size:0.65em;color:#991B1B;margin-top:1px">Day${dailyStreak !== 1 ? 's' : ''}</div>
             </div>
             <div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:10px;text-align:center">
                 <div style="font-size:1.3em;font-weight:800;color:#059669">📚</div>
-                <div style="font-size:0.75em;color:#065F46;font-weight:700;margin-top:2px">${categoryStreak}</div>
+                <div style="font-size:0.95em;color:#065F46;font-weight:700;margin-top:2px">${categoryStreak}</div>
                 <div style="font-size:0.65em;color:#047857;margin-top:1px">Category</div>
             </div>
             <div style="background:var(--indigo-light);border:1px solid #C7D2FE;border-radius:10px;padding:10px;text-align:center">
                 <div style="font-size:1.3em;font-weight:800;color:#4338CA">⚡</div>
-                <div style="font-size:0.75em;color:#312E81;font-weight:700;margin-top:2px">${accuracyStreak}</div>
+                <div style="font-size:0.95em;color:#312E81;font-weight:700;margin-top:2px">${accuracyStreak}</div>
                 <div style="font-size:0.65em;color:#4C1D95;margin-top:1px">Correct</div>
             </div>
         </div>
@@ -3207,8 +3212,8 @@ function renderTriviaPanel() {
 
         <!-- Phase 2: Export Buttons -->
         <div style="display:flex;gap:6px;margin-bottom:12px;justify-content:flex-end">
-            <button onclick="exportTriviaDataJSON()" style="background:var(--indigo-light);border:1px solid #C7D2FE;color:#4338CA;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.75em;font-weight:600">📥 JSON</button>
-            <button onclick="exportTriviaDataCSV()" style="background:#F5F3FF;border:1px solid #DDD6FE;color:#5B21B6;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.75em;font-weight:600">📥 CSV</button>
+            <button onclick="exportTriviaDataJSON()" style="background:var(--indigo-light);border:1px solid #C7D2FE;color:#4338CA;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.95em;font-weight:600">📥 JSON</button>
+            <button onclick="exportTriviaDataCSV()" style="background:#F5F3FF;border:1px solid #DDD6FE;color:#5B21B6;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.95em;font-weight:600">📥 CSV</button>
         </div>
 
         ${triedBefore ? `<div style="background:#FFFBEB;border-left:3px solid #F59E0B;padding:10px 14px;margin:0 0 12px;font-size:0.88em;color:#78350F;font-weight:600">💪 You found this tricky before — give it another shot!</div>` : ''}
@@ -3242,8 +3247,8 @@ function renderTriviaPanel() {
         </div>
 
         <div style="margin-bottom:14px">
-            <button onclick="toggleTriviaHint()" style="background:var(--theme-secondary);border:1px solid var(--theme-primary);color:var(--theme-primary);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.88em;font-weight:600">💡 Show Hint</button>
-            <div id="trivia-hint" style="display:none;margin-top:10px;background:var(--theme-secondary);border-left:3px solid var(--theme-primary);padding:12px;border-radius:0 10px 10px 0;color:var(--theme-primary);font-size:0.92em">${q.hint}</div>
+            <button onclick="toggleTriviaHint()" style="background:var(--theme-primary);border:1px solid var(--theme-primary);color:white;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:1.05em;font-weight:600">💡 Show Hint</button>
+            <div id="trivia-hint" style="display:none;margin-top:10px;background:var(--theme-secondary);border-left:3px solid var(--theme-primary);padding:12px;border-radius:0 10px 10px 0;color:var(--dark);font-size:1.1em">${q.hint}</div>
         </div>
 
         <div id="trivia-result" style="display:none"></div>
@@ -3388,7 +3393,7 @@ function showTriviaResult(isCorrect, q) {
             ${isCorrect && triviaLastPointsEarned > 0 ? `<div style="margin-top:8px;font-size:0.9em;color:${isCorrect?'#059669':'#DC2626'};font-weight:600">+ ${triviaLastPointsEarned} 🪙 Points</div>` : ''}
         </div>
         <div style="background:var(--indigo-light);border:1px solid #C7D2FE;padding:14px;border-radius:12px;margin-bottom:14px">
-            <div style="font-size:0.78em;color:#4338CA;font-weight:800;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${showEnhanced ? '🔍 Deep Dive' : '💡 Fun Fact'}</div>
+            <div style="font-size:1em;color:#4338CA;font-weight:800;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${showEnhanced ? '🔍 Deep Dive' : '💡 Fun Fact'}</div>
             <div style="font-size:0.92em;line-height:1.55;color:#312E81">${showEnhanced ? q.enhancedFunFact : q.funFact}</div>
         </div>
         ${q.learningLink ? `<a href="${q.learningLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:#4338CA;font-size:0.85em;font-weight:600;text-decoration:none;margin-bottom:16px;padding:6px 12px;background:var(--indigo-light);border-radius:8px;border:1px solid #C7D2FE" onmouseover="this.style.background='#E0E7FF'" onmouseout="this.style.background='var(--indigo-light)'">📚 Learn more →</a>` : ''}
@@ -7727,18 +7732,18 @@ function renderDashTrivia() {
                 return badgeEmojis.length > 0 ? `
                     <div style="margin-bottom:10px;display:flex;gap:4px;flex-wrap:wrap">
                         ${badgeEmojis.slice(0, 6).map(e => `<span style="font-size:1.2em">${e}</span>`).join('')}
-                        ${badgeEmojis.length > 6 ? `<span style="font-size:0.75em;color:var(--text-muted);align-self:center">+${badgeEmojis.length - 6}</span>` : ''}
+                        ${badgeEmojis.length > 6 ? `<span style="font-size:0.95em;color:var(--text-muted);align-self:center">+${badgeEmojis.length - 6}</span>` : ''}
                     </div>
                 ` : '';
             })()}
 
             <!-- Question preview -->
-            <div style="font-size:0.78em;font-weight:600;color: var(--text-secondary);margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
+            <div style="font-size:1em;font-weight:600;color: var(--text-secondary);margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
             <div style="font-size:0.9em;color:var(--dark);margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,85)}${q.question.length>85?'...':''}</div>
 
             <!-- Phase 4: Goals Preview -->
             <div style="background:#F0F9FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px;margin-bottom:10px">
-                <div style="font-size:0.75em;font-weight:700;color:#1E40AF;margin-bottom:8px">🎯 Goals</div>
+                <div style="font-size:0.95em;font-weight:700;color:#1E40AF;margin-bottom:8px">🎯 Goals</div>
                 ${renderGoalsPreview()}
             </div>
 
@@ -7804,7 +7809,7 @@ function renderDashPoints() {
                 <span>${next.min - pts.month} to ${next.name} ${next.icon}</span>
             </div>
             <div class="db-pts-bar"><div class="db-pts-bfill" style="width:${pct.toFixed(0)}%"></div></div>`
-            : `<div style="text-align:center;font-size:0.78em;color:var(--indigo);font-weight:700;margin-top:6px">Max tier! 🦁</div>`}
+            : `<div style="text-align:center;font-size:1em;color:var(--indigo);font-weight:700;margin-top:6px">Max tier! 🦁</div>`}
     </div>`;
 
     const el = document.getElementById('db-pts-content');
@@ -8313,7 +8318,7 @@ function renderBoardReading() {
                 <div style="background:var(--mid);border-radius:8px;height:8px;overflow:hidden">
                     <div style="background:linear-gradient(90deg,var(--theme-primary),#6EE7B7);height:100%;width:${Math.min(100, (r.dailyMinutes/20)*100)}%;transition:width 0.3s"></div>
                 </div>
-                <div style="font-size:0.75em;color: var(--text-secondary);margin-top:4px">${r.dailyMinutes} of 20 minutes</div>
+                <div style="font-size:0.95em;color: var(--text-secondary);margin-top:4px">${r.dailyMinutes} of 20 minutes</div>
             </div>
 
             <div style="margin-bottom:20px">
@@ -8321,7 +8326,7 @@ function renderBoardReading() {
                 <div style="background:var(--mid);border-radius:8px;height:8px;overflow:hidden">
                     <div style="background:linear-gradient(90deg,var(--theme-primary),var(--theme-accent));height:100%;width:${Math.min(100, (r.weeklyMinutes/100)*100)}%;transition:width 0.3s"></div>
                 </div>
-                <div style="font-size:0.75em;color: var(--text-secondary);margin-top:4px">${r.weeklyMinutes} of 100 minutes</div>
+                <div style="font-size:0.95em;color: var(--text-secondary);margin-top:4px">${r.weeklyMinutes} of 100 minutes</div>
             </div>
 
             ${isGoalMet ? `
@@ -8480,7 +8485,7 @@ function renderGujaratiPanel() {
             <div class="pbar" style="margin-bottom:12px">
                 <div class="pbar-fill" style="background:linear-gradient(90deg,var(--indigo),var(--purple));width:${pct}%"></div>
             </div>
-            <div style="font-size:0.78em;color:var(--mid);text-align:center;margin-bottom:10px">Daily goal: 10 minutes</div>
+            <div style="font-size:1em;color:var(--mid);text-align:center;margin-bottom:10px">Daily goal: 10 minutes</div>
             <div class="guj-timer-btns">
                 <button class="guj-tbtn ${g.timerRunning ? 'gtb-stop' : 'gtb-start'}"
                     onclick="${g.timerRunning ? 'stopGujaratiTimer()' : 'startGujaratiTimer()'}">
