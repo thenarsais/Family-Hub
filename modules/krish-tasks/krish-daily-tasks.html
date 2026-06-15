@@ -3673,7 +3673,7 @@ function showTriviaResult(isCorrect, q) {
     resultEl.innerHTML = `
         <div style="background:${isCorrect?'var(--season-bg-light)':'#FEF2F2'};border-left:3px solid ${isCorrect?'var(--theme-primary)':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
             <div style="font-weight:700;font-size:1.05em;color:${isCorrect?'#065F46':'#7F1D1D'}">${isCorrect ? '✅ Correct! Great job!' : `❌ The answer was: <strong style="color:var(--dark)">${q.correct}</strong>`}</div>
-            ${isCorrect && triviaLastPointsEarned > 0 ? `<div style="margin-top:8px;font-size:0.9em;color:${isCorrect?'#059669':'#DC2626'};font-weight:600">+ ${triviaLastPointsEarned} 🪙 Points</div>` : ''}
+            ${isCorrect && triviaLastPointsEarned > 0 ? `<div style="margin-top:8px;font-size:0.9em;color:${isCorrect?'var(--season-primary)':'#DC2626'};font-weight:600">+ ${triviaLastPointsEarned} 🪙 Points</div>` : ''}
         </div>
         <div style="background:var(--indigo-light);border:1px solid #C7D2FE;padding:14px;border-radius:12px;margin-bottom:14px">
             <div style="font-size:1em;color:#4338CA;font-weight:800;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${showEnhanced ? '🔍 Deep Dive' : '💡 Fun Fact'}</div>
@@ -4009,7 +4009,7 @@ window.renderWordleGame = function(game) {
                 <div style="margin-bottom:16px;padding:16px;background:${game.gameState === 'won' ? 'var(--season-bg-light)' : '#FEF2F2'};border-radius:12px;text-align:center;border:2px solid ${game.gameState === 'won' ? 'var(--theme-primary)' : '#EF4444'}">
                     <div style="font-size:1.5em;margin-bottom:8px">${game.gameState === 'won' ? '🎉' : '😢'}</div>
                     <div style="font-weight:700;color:${game.gameState === 'won' ? '#065F46' : '#7F1D1D'};margin-bottom:4px">${game.gameState === 'won' ? 'You Won!' : 'Game Over'}</div>
-                    <div style="font-size:0.9em;color:${game.gameState === 'won' ? '#047857' : '#991B1B'};margin-bottom:12px">Answer: <strong>${game.answer}</strong></div>
+                    <div style="font-size:0.9em;color:${game.gameState === 'won' ? 'var(--season-primary)' : '#991B1B'};margin-bottom:12px">Answer: <strong>${game.answer}</strong></div>
                     <div style="font-size:1.1em;font-weight:800;color:var(--theme-primary)">Points: ${game.score || 0}</div>
                 </div>
             ` : `
@@ -6455,7 +6455,7 @@ window.renderWordleKeyboard = function(game) {
 
     const getKeyColor = (letter) => {
         const s = status[letter];
-        if (s === 'green') return { bg: '#10B981', text: 'white' };
+        if (s === 'green') return { bg: 'var(--season-primary)', text: 'white' };
         if (s === 'yellow') return { bg: '#F59E0B', text: 'white' };
         if (s === 'gray') return { bg: '#9CA3AF', text: 'white' };
         return { bg: '#E5E7EB', text: '#374151' };
@@ -6524,7 +6524,7 @@ window.renderWordleGameChallenge = function(game, container) {
             <div style="margin-bottom:12px;padding:12px;background:${game.gameState === 'won' ? 'var(--season-bg-light)' : '#FEF2F2'};border-radius:12px;border:2px solid ${game.gameState === 'won' ? 'var(--theme-primary)' : '#EF4444'}">
                 <div style="font-size:1.2em;margin-bottom:6px">${game.gameState === 'won' ? '🎉' : '💪'}</div>
                 <div style="font-weight:700;color:${game.gameState === 'won' ? '#065F46' : '#7F1D1D'};margin-bottom:4px">${game.gameState === 'won' ? 'You Won!' : 'Game Over'}</div>
-                <div style="font-size:0.9em;color:${game.gameState === 'won' ? '#047857' : '#991B1B'};margin-bottom:10px">Answer: <strong>${game.answer}</strong></div>
+                <div style="font-size:0.9em;color:${game.gameState === 'won' ? 'var(--season-primary)' : '#991B1B'};margin-bottom:10px">Answer: <strong>${game.answer}</strong></div>
                 <div style="font-size:1em;font-weight:800;color:var(--theme-primary)">Points: ${game.score || 0}</div>
             </div>
         ` : `
@@ -6927,7 +6927,7 @@ window.renderScrambleGameChallenge = function(game, container) {
                 font-size:0.95em;
                 transition:all 0.2s;
             "
-            onmouseover="this.style.background='#059669'"
+            onmouseover="this.style.background='var(--season-primary)'"
             onmouseout="this.style.background='var(--theme-primary)'">
                 Submit
             </button>
@@ -7564,7 +7564,7 @@ window.showPerformanceDashboard = function() {
                     </div>
                     <div>
                         <div style="color:var(--text-muted);font-size:0.8em;margin-bottom:4px">Win Rate</div>
-                        <div style="font-size:1.5em;font-weight:800;color:${winRate >= 50 ? '#10B981' : '#F59E0B'}">${winRate}%</div>
+                        <div style="font-size:1.5em;font-weight:800;color:${winRate >= 50 ? 'var(--season-primary)' : '#F59E0B'}">${winRate}%</div>
                     </div>
                     <div style="grid-column:1/-1">
                         <div style="color:var(--text-muted);font-size:0.8em;margin-bottom:4px">Personal Best</div>
@@ -9105,7 +9105,7 @@ function renderDashTrivia() {
         return;
     }
 
-    const diffColors = { easy:'#059669', medium:'#B45309', hard:'#DC2626' };
+    const diffColors = { easy:'var(--season-primary)', medium:'#B45309', hard:'#DC2626' };
     const dc = diffColors[q.difficulty] || 'var(--indigo)';
 
     el.innerHTML = `
@@ -9114,7 +9114,7 @@ function renderDashTrivia() {
             <div style="display:flex;gap:8px;margin-bottom:10px;font-size:0.85em;font-weight:600;flex-wrap:wrap">
                 <span style="color:#DC2626">🔥 ${dailyStreak} day${dailyStreak !== 1 ? 's' : ''}</span>
                 <span style="color:var(--indigo)">💯 ${accuracy}%</span>
-                <span style="color:#059669">🪙 ${state.points.today || 0} pts</span>
+                <span style="color:var(--season-primary)">🪙 ${state.points.today || 0} pts</span>
             </div>
 
             <!-- Badges row -->
