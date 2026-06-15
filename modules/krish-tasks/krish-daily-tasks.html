@@ -159,6 +159,47 @@
         html { font-size: 18px; }
         body { font-family:var(--font); background:var(--season-bg-body); min-height:100vh; color:var(--dark); overflow-x:hidden; }
 
+        /* ═══ ANIMATIONS ═══ */
+        @keyframes slideInUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideOutDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(20px); opacity: 0; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .toast-enter { animation: slideInUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .toast-exit { animation: slideOutDown 0.3s ease-out forwards; }
+        .btn-press { animation: pulse 0.6s ease; }
+        .card-enter { animation: fadeIn 0.4s ease; }
+
+        /* Smooth interactive element transitions */
+        button, input, select, textarea, [role="button"] {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        button:hover, [role="button"]:hover {
+            transform: translateY(-1px);
+        }
+        button:active, [role="button"]:active {
+            transform: scale(0.98);
+        }
+
         /* Large monitors (27"+ displays) */
         @media (min-width: 1920px) {
             html { font-size: 20px; }
@@ -280,11 +321,14 @@
             padding: 16px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             z-index: 10000;
-            animation: slideUp 0.3s ease-out;
             color: white;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .daily-bonus-toast.dismiss {
-            animation: slideDown 0.3s ease-in forwards;
+        .daily-bonus-toast.toast-enter {
+            animation: slideInUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .daily-bonus-toast.toast-exit {
+            animation: slideOutDown 0.3s ease-out forwards;
         }
         .daily-bonus-icon {
             font-size: 2em;
@@ -4933,18 +4977,7 @@ window.renderMemoryGame = function(game) {
                 clearInterval(window._memoryTimer);
                 window._memoryTimer = null;
                 game.gameState = 'lost';
-                if (window._challengeGame) {
-                    // In Challenge Mode - move to next game
-                    window._challengeGame.gameScores[window._challengeGame.games[window._challengeGame.currentGameIndex]] = game.score;
-                    window._challengeGame.gameWins[window._challengeGame.games[window._challengeGame.currentGameIndex]] = false;
-                    window._challengeGame.currentGameIndex++;
-                    window._challengeGame.stats.gamesPlayed++;
-                    window._challengeGame.lives--;
-                    setTimeout(() => playNextChallengeGame(), 500);
-                } else {
-                    // Normal Memory game - show results
-                    endMemoryGame(game, false);
-                }
+                endMemoryGame(game, false);
             }
         }, 100);
     }
@@ -5039,18 +5072,7 @@ window.checkMemoryMatch = function(game) {
                 window._memoryTimer = null;
                 game.gameState = 'won';
                 setTimeout(() => {
-                    if (window._challengeGame) {
-                        // In Challenge Mode - move to next game
-                        window._challengeGame.gameScores[window._challengeGame.games[window._challengeGame.currentGameIndex]] = game.score;
-                        window._challengeGame.gameWins[window._challengeGame.games[window._challengeGame.currentGameIndex]] = true;
-                        window._challengeGame.currentGameIndex++;
-                        window._challengeGame.stats.gamesPlayed++;
-                        window._challengeGame.stats.gamesWon++;
-                        playNextChallengeGame();
-                    } else {
-                        // Normal Memory game - show results
-                        endMemoryGame(game, true);
-                    }
+                    endMemoryGame(game, true);
                 }, 500);
             }
         } else {
@@ -6034,36 +6056,7 @@ window.backToTriviaFromScramble = function() {
     window._scrambleGame = null;
 };
 
-// ═══════════════════════════════════════════════════
-//  CHALLENGE MODE: COMPOSITE GAME (3 RANDOM GAMES)
-// ═══════════════════════════════════════════════════
-
-// Initialize Challenge Mode (3 random mini-games, cumulative scoring)
-window.initializeChallengeGame = function(difficulty) {
-    // Select 3 random games (each appears once)
-    const gameTypes = ['wordle', 'memory', 'scramble']; // Quick-Fire excluded to avoid repetition
-    const selectedGames = gameTypes.sort(() => Math.random() - 0.5).slice(0, 3);
-
-    return {
-        gameId: 'challenge',
-        difficulty: difficulty, // medium (balanced)
-        gameState: 'playing', // playing | won | lost
-        score: 0,
-        lives: 3,
-        currentGameIndex: 0,
-        games: selectedGames,
-        gameScores: {}, // { [gameType]: score }
-        gameWins: {}, // { [gameType]: boolean }
-        timerStartTime: Date.now(),
-        selectedBoost: null,
-        boostUsed: false,
-        stats: {
-            gamesPlayed: 0,
-            gamesWon: 0,
-            totalTime: 0
-        }
-    };
-};
+// Challenge Mode has been removed - functionality archived for future revival if needed
 
 // Start Challenge Mode (show difficulty selection)
 window.startChallengeGame = function() {
@@ -7536,14 +7529,18 @@ window.awardDailyBonus = function() {
 window.showDailyBonusToast = function(bonusPoints, streak, multiplier = 1.0, hasAchievement = false) {
     // Create daily bonus toast notification with multiplier and achievement info
     const existingToast = document.getElementById('daily-bonus-toast');
-    if (existingToast) existingToast.remove();
+    if (existingToast) {
+        existingToast.classList.add('toast-exit');
+        setTimeout(() => existingToast.remove(), 300);
+    }
 
     const toast = document.createElement('div');
     toast.id = 'daily-bonus-toast';
-    toast.className = 'daily-bonus-toast';
+    toast.className = 'daily-bonus-toast toast-enter';
 
     const multiplierText = multiplier > 1.0 ? ` (${multiplier.toFixed(1)}x multiplier!)` : '';
-    const achievementText = hasAchievement ? '<div style="margin-top:8px;color:#FFD700;font-weight:700">🏅 Achievement Unlocked!</div>' : '';
+    const achievementEmoji = hasAchievement && multiplier >= 1.5 ? '🏆' : hasAchievement ? '🏅' : '';
+    const achievementText = hasAchievement ? `<div style="margin-top:8px;color:#FFD700;font-weight:700">${achievementEmoji} Achievement Unlocked!</div>` : '';
 
     toast.innerHTML = `
         <div class="daily-bonus-icon">🎁</div>
@@ -7556,10 +7553,11 @@ window.showDailyBonusToast = function(bonusPoints, streak, multiplier = 1.0, has
     document.body.appendChild(toast);
 
     // Auto-dismiss after 4 seconds (longer if achievement)
-    const dismissTime = hasAchievement ? 4500 : 3000;
+    const dismissTime = hasAchievement ? 5000 : 3500;
     setTimeout(() => {
         if (toast && toast.parentNode) {
-            toast.classList.add('dismiss');
+            toast.classList.remove('toast-enter');
+            toast.classList.add('toast-exit');
             setTimeout(() => {
                 if (toast.parentNode) toast.remove();
             }, 300);
