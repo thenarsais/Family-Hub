@@ -2939,17 +2939,19 @@ function renderTriviaPanel() {
                         { id: 'wordle', name: 'Category Wordle', emoji: '🎯', threshold: 5, metric: 'correct' },
                         { id: 'quickfire', name: 'Quick-Fire', emoji: '⚡', threshold: 10, metric: 'correct + 70% accuracy' },
                         { id: 'memory', name: 'Memory Tiles', emoji: '🧠', threshold: 50, metric: 'correct' },
-                        { id: 'scramble', name: 'Word Scramble', emoji: '🔤', threshold: 100, metric: 'correct' }
+                        { id: 'scramble', name: 'Word Scramble', emoji: '🔤', threshold: 100, metric: 'correct' },
+                        { id: 'challenge', name: 'Challenge Mode', emoji: '🏆', threshold: 0, metric: 'always available' }
                     ];
 
                     return gameList.map(game => {
-                        const isUnlocked = games.unlocked.includes(game.id);
+                        // Challenge Mode is always available
+                        const isUnlocked = game.id === 'challenge' || games.unlocked.includes(game.id);
                         const gameStats = games.stats[game.id] || { played: 0, bestScore: 0, leaderboard: [] };
                         const progress = getGameUnlockProgress(game.id);
 
-                        // For Memory, get best score from leaderboard
+                        // For Memory & Challenge, get best score from leaderboard
                         let displayBestScore = gameStats.bestScore;
-                        if (game.id === 'memory' && gameStats.leaderboard && gameStats.leaderboard.length > 0) {
+                        if ((game.id === 'memory' || game.id === 'challenge' || game.id === 'scramble') && gameStats.leaderboard && gameStats.leaderboard.length > 0) {
                             displayBestScore = Math.max(...gameStats.leaderboard.map(e => e.score));
                         }
 
@@ -3470,6 +3472,9 @@ window.startGameFromCard = function(gameId) {
             break;
         case 'scramble':
             startScrambleGame();
+            break;
+        case 'challenge':
+            startChallengeGame();
             break;
     }
 };
@@ -5403,6 +5408,660 @@ window.backToTriviaFromScramble = function() {
     const modal = document.getElementById('scramble-modal');
     if (modal) modal.remove();
     window._scrambleGame = null;
+};
+
+// ═══════════════════════════════════════════════════
+//  CHALLENGE MODE: COMPOSITE GAME (3 RANDOM GAMES)
+// ═══════════════════════════════════════════════════
+
+// Initialize Challenge Mode (3 random mini-games, cumulative scoring)
+window.initializeChallengeGame = function(difficulty) {
+    // Select 3 random games (each appears once)
+    const gameTypes = ['wordle', 'memory', 'scramble']; // Quick-Fire excluded to avoid repetition
+    const selectedGames = gameTypes.sort(() => Math.random() - 0.5).slice(0, 3);
+
+    return {
+        gameId: 'challenge',
+        difficulty: difficulty, // medium (balanced)
+        gameState: 'playing', // playing | won | lost
+        score: 0,
+        lives: 3,
+        currentGameIndex: 0,
+        games: selectedGames,
+        gameScores: {}, // { [gameType]: score }
+        gameWins: {}, // { [gameType]: boolean }
+        timerStartTime: Date.now(),
+        selectedBoost: null,
+        boostUsed: false,
+        stats: {
+            gamesPlayed: 0,
+            gamesWon: 0,
+            totalTime: 0
+        }
+    };
+};
+
+// Start Challenge Mode (show difficulty selection)
+window.startChallengeGame = function() {
+    showChallengeDifficultyModal();
+};
+
+// Show difficulty selection modal
+window.showChallengeDifficultyModal = function() {
+    const difficulties = [
+        { id: 'easy', name: 'Easy', icon: '🟢', desc: '3 games • Relaxed pacing', time: '~3 min' },
+        { id: 'medium', name: 'Medium', icon: '🟡', desc: '3 games • Standard difficulty', time: '~5 min' },
+        { id: 'hard', name: 'Hard', icon: '🔴', desc: '3 games • Challenging', time: '~7 min' }
+    ];
+
+    const modal = document.createElement('div');
+    modal.id = 'challenge-difficulty-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.innerHTML = `
+        <h2 style="font-size:1.8em;font-weight:800;margin:0 0 8px 0">🏆 Challenge Mode</h2>
+        <p style="color:#94A3B8;margin:0 0 28px 0">Select difficulty • 3 random games • cumulative scoring</p>
+
+        <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:24px">
+            ${difficulties.map(diff => `
+                <button class="challenge-difficulty-btn"
+                    data-difficulty="${diff.id}"
+                    onclick="selectChallengeDifficulty('${diff.id}')"
+                    style="
+                        padding:20px;
+                        background:#0F172A;
+                        border:2px solid #475569;
+                        border-radius:12px;
+                        color:white;
+                        cursor:pointer;
+                        text-align:left;
+                        transition:all 0.2s;
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                    "
+                    onmouseover="this.style.background='#1E293B'; this.style.borderColor='#64748B'"
+                    onmouseout="this.style.background='#0F172A'; this.style.borderColor='#475569'"
+                >
+                    <div>
+                        <div style="font-size:1.3em;font-weight:800;margin-bottom:6px">${diff.icon} ${diff.name}</div>
+                        <div style="font-size:0.9em;color:#94A3B8">${diff.desc}</div>
+                        <div style="font-size:0.8em;color:#64748B;margin-top:6px">⏱ ${diff.time}</div>
+                    </div>
+                    <div style="font-size:2.5em;opacity:0.3">→</div>
+                </button>
+            `).join('')}
+        </div>
+
+        <button onclick="closeChallengeDifficultyModal()" style="
+            width:100%;
+            padding:12px;
+            background:#475569;
+            border:none;
+            color:white;
+            border-radius:10px;
+            cursor:pointer;
+            font-weight:600;
+            font-size:0.95em;
+        "
+        onmouseover="this.style.background='#64748B'"
+        onmouseout="this.style.background='#475569'">
+            Cancel
+        </button>
+    `;
+
+    document.body.appendChild(modal);
+    modal.appendChild(card);
+};
+
+window.selectChallengeDifficulty = function(difficulty) {
+    const modal = document.getElementById('challenge-difficulty-modal');
+    if (modal) modal.remove();
+    showChallengeBoostModal(difficulty);
+};
+
+window.closeChallengeDifficultyModal = function() {
+    const modal = document.getElementById('challenge-difficulty-modal');
+    if (modal) modal.remove();
+};
+
+// Show boost selection modal for Challenge Mode
+window.showChallengeBoostModal = function(difficulty) {
+    const boosts = state.boosts || { double_points: 0, skip: 0, extra_time: 0, hint: 0, combo_freeze: 0 };
+
+    const boostOptions = [
+        { id: 'hint', name: 'Hint', icon: '💡', count: boosts.hint, effect: '1 hint usable in any game' },
+        { id: 'double_points', name: 'Double Points', icon: '2️⃣', count: boosts.double_points, effect: '2× all scores' },
+        { id: 'skip', name: 'Skip Game', icon: '⏭️', count: boosts.skip, effect: 'Skip 1 mini-game' },
+    ];
+
+    const modal = document.createElement('div');
+    modal.id = 'challenge-boost-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.innerHTML = `
+        <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">🏆 Challenge Mode</h2>
+        <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your chances?</p>
+
+        <div id="challenge-boost-options" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
+            ${boostOptions.map(boost => `
+                <button class="challenge-boost-option"
+                    data-boost="${boost.id}"
+                    onclick="selectChallengeBoost('${boost.id}', '${difficulty}')"
+                    style="
+                        padding:16px;
+                        background:${boost.count > 0 ? '#0F172A' : '#334155'};
+                        border:2px solid #475569;
+                        border-radius:12px;
+                        color:${boost.count > 0 ? 'white' : '#94A3B8'};
+                        cursor:${boost.count > 0 ? 'pointer' : 'not-allowed'};
+                        text-align:left;
+                        font-weight:600;
+                        transition:all 0.2s;
+                        opacity:${boost.count > 0 ? '1' : '0.6'};
+                    "
+                    ${boost.count === 0 ? 'disabled' : ''}
+                    onmouseover="if(${boost.count > 0}) this.style.background='#1E293B'"
+                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : '#334155'}'"
+                >
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <div style="display:flex;align-items:center;gap:12px">
+                            <span style="font-size:1.5em">${boost.icon}</span>
+                            <div>
+                                <div style="font-weight:800">${boost.name}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? '#94A3B8' : '#64748B'}">Count: ${boost.count}</div>
+                            </div>
+                        </div>
+                        ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
+                    </div>
+                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : '#64748B'}">${boost.effect}</div>
+                </button>
+            `).join('')}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <button onclick="startChallengeWithoutBoost('${difficulty}')" style="
+                padding:14px;
+                background:#475569;
+                border:none;
+                color:white;
+                border-radius:10px;
+                cursor:pointer;
+                font-weight:700;
+                font-size:0.95em;
+                transition:all 0.2s;
+            "
+            onmouseover="this.style.background='#64748B'"
+            onmouseout="this.style.background='#475569'">
+                Play without boost
+            </button>
+            <button id="play-challenge-with-boost" onclick="startChallengeWithBoost('${difficulty}')" style="
+                padding:14px;
+                background:#64748B;
+                border:none;
+                color:#94A3B8;
+                border-radius:10px;
+                cursor:not-allowed;
+                font-weight:700;
+                font-size:0.95em;
+                transition:all 0.2s;
+                opacity:0.6;
+            " disabled>
+                Play with boost
+            </button>
+        </div>
+    `;
+
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+};
+
+window.selectChallengeBoost = function(boostId, difficulty) {
+    document.querySelectorAll('.challenge-boost-option').forEach(btn => {
+        btn.style.borderColor = '#475569';
+        btn.style.background = '#0F172A';
+    });
+
+    const selected = document.querySelector(`[data-boost="${boostId}"]`);
+    if (selected) {
+        selected.style.borderColor = '#0EA5E9';
+        selected.style.background = '#0F172A';
+    }
+
+    const playBtn = document.getElementById('play-challenge-with-boost');
+    playBtn.style.background = '#0EA5E9';
+    playBtn.style.color = 'white';
+    playBtn.style.cursor = 'pointer';
+    playBtn.style.opacity = '1';
+    playBtn.disabled = false;
+    playBtn.innerHTML = `Play with ${boostId}`;
+    playBtn.onclick = () => startChallengeWithBoost(difficulty, boostId);
+
+    window._selectedChallengeBoost = boostId;
+};
+
+window.startChallengeWithoutBoost = function(difficulty) {
+    const modal = document.getElementById('challenge-boost-modal');
+    if (modal) modal.remove();
+
+    window._challengeGame = initializeChallengeGame(difficulty);
+    startChallengeGameSequence();
+};
+
+window.startChallengeWithBoost = function(difficulty, boostId) {
+    boostId = boostId || window._selectedChallengeBoost;
+    if (!boostId) return;
+
+    const modal = document.getElementById('challenge-boost-modal');
+    if (modal) modal.remove();
+
+    // Deduct boost from inventory
+    if (state.boosts[boostId] > 0) {
+        state.boosts[boostId]--;
+        saveState();
+    }
+
+    window._challengeGame = initializeChallengeGame(difficulty);
+    window._challengeGame.selectedBoost = boostId;
+    startChallengeGameSequence();
+};
+
+// Start playing the challenge sequence (3 games in order)
+window.startChallengeGameSequence = function() {
+    const challenge = window._challengeGame;
+    if (!challenge) return;
+
+    // Create challenge modal container
+    const modal = document.createElement('div');
+    modal.id = 'challenge-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:white;border-radius:20px;padding:20px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto';
+    card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">🏆 Challenge Mode</h2>
+            <button onclick="quitChallengeGame()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px">✕</button>
+        </div>
+        <div id="challenge-panel-content" style="min-height:400px"></div>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+
+    // Play first game
+    playNextChallengeGame();
+};
+
+// Play the next game in the sequence
+window.playNextChallengeGame = function() {
+    const challenge = window._challengeGame;
+    if (!challenge) return;
+
+    if (challenge.currentGameIndex >= challenge.games.length) {
+        // All games complete - show results
+        endChallengeGame(challenge);
+        return;
+    }
+
+    if (challenge.lives <= 0) {
+        // Out of lives - game over
+        challenge.gameState = 'lost';
+        endChallengeGame(challenge);
+        return;
+    }
+
+    const gameType = challenge.games[challenge.currentGameIndex];
+    const panel = document.getElementById('challenge-panel-content');
+    if (!panel) return;
+
+    // Display header with progress
+    const gamesRemaining = challenge.games.length - challenge.currentGameIndex;
+    const gameNum = challenge.currentGameIndex + 1;
+    const lifeDisplay = '❤️'.repeat(challenge.lives) + '❌'.repeat(3 - challenge.lives);
+
+    panel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="font-size:0.9em;color:#64748B;font-weight:600">Game ${gameNum}/3: ${gameType.toUpperCase()}</div>
+            <div style="font-size:1.1em;font-weight:800">${lifeDisplay}</div>
+        </div>
+        <div style="background:#F1F5F9;padding:12px;border-radius:8px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between">
+                <div style="color:#64748B;font-size:0.85em">Running Score</div>
+                <div style="color:#10B981;font-weight:800;font-size:1.3em">${challenge.score}</div>
+            </div>
+        </div>
+        <div id="mini-game-content" style="background:#F8FAFC;padding:16px;border-radius:12px">Loading game...</div>
+    `;
+
+    // Load the appropriate mini-game based on gameType
+    setTimeout(() => {
+        const contentDiv = document.getElementById('mini-game-content');
+        if (!contentDiv) return;
+
+        switch(gameType) {
+            case 'wordle':
+                loadChallengeWordleGame(contentDiv);
+                break;
+            case 'memory':
+                loadChallengeMemoryGame(contentDiv);
+                break;
+            case 'scramble':
+                loadChallengeScrambleGame(contentDiv);
+                break;
+        }
+    }, 100);
+};
+
+// Load Wordle mini-game into Challenge Mode
+window.loadChallengeWordleGame = function(container) {
+    const miniGame = initializeWordleGame();
+    window._challengeMiniGame = miniGame;
+
+    container.innerHTML = renderWordleGame(miniGame);
+    setTimeout(() => {
+        const input = document.getElementById('wordle-input');
+        if (input) input.focus();
+    }, 50);
+
+    // Override submit button
+    const originalRender = renderWordleGame;
+    const submitBtn = container.querySelector('button[onclick="wordleSubmitBtn()"]');
+    if (submitBtn) {
+        submitBtn.onclick = () => submitChallengeMiniGameGuess('wordle');
+    }
+};
+
+// Load Memory mini-game into Challenge Mode
+window.loadChallengeMemoryGame = function(container) {
+    const miniGame = initializeMemoryGame('medium');
+    window._challengeMiniGame = miniGame;
+
+    container.innerHTML = renderMemoryGame(miniGame);
+    // Memory game will auto-start with the timer
+    startMemoryTimer(miniGame, container);
+};
+
+// Load Scramble mini-game into Challenge Mode
+window.loadChallengeScrambleGame = function(container) {
+    const miniGame = initializeScrambleGame('medium');
+    window._challengeMiniGame = miniGame;
+
+    container.innerHTML = renderScrambleGame(miniGame);
+    setTimeout(() => {
+        const input = document.getElementById('scramble-input');
+        if (input) input.focus();
+    }, 50);
+
+    // Override submit button
+    const submitBtn = container.querySelector('button');
+    if (submitBtn) {
+        submitBtn.onclick = () => submitChallengeMiniGameGuess('scramble');
+    }
+};
+
+// Submit a guess/answer in the mini-game
+window.submitChallengeMiniGameGuess = function(gameType) {
+    const challenge = window._challengeGame;
+    const miniGame = window._challengeMiniGame;
+    if (!challenge || !miniGame) return;
+
+    let isCorrect = false;
+    let pointsAwarded = 0;
+
+    if (gameType === 'wordle') {
+        const input = document.getElementById('wordle-input');
+        if (!input || miniGame.gameState !== 'playing') return;
+
+        const guess = input.value.trim().toUpperCase();
+        if (guess.length !== 5) {
+            alert('Enter a 5-letter word');
+            return;
+        }
+
+        wordleSubmitGuess(miniGame, guess);
+        input.value = '';
+
+        isCorrect = miniGame.gameState === 'won';
+        pointsAwarded = miniGame.score || 0;
+    } else if (gameType === 'scramble') {
+        const input = document.getElementById('scramble-input');
+        if (!input || miniGame.gameState !== 'playing') return;
+
+        const guess = input.value.trim().toLowerCase();
+        const currentWord = miniGame.words[miniGame.currentWordIndex];
+        if (!currentWord) return;
+
+        const isCorrectAnswer = guess === currentWord.original.toLowerCase();
+        if (isCorrectAnswer) {
+            miniGame.words[miniGame.currentWordIndex].correct = true;
+            miniGame.words[miniGame.currentWordIndex].timeTaken = Math.max(0, Math.floor((20000 - (Date.now() - miniGame.wordStartTime)) / 1000));
+            const timeBonus = miniGame.words[miniGame.currentWordIndex].timeTaken / 20;
+            const diffMultiplier = miniGame.difficulty === 'easy' ? 1 : miniGame.difficulty === 'medium' ? 1.5 : 2;
+            pointsAwarded = Math.floor(10 * timeBonus * diffMultiplier);
+            miniGame.score += pointsAwarded;
+            miniGame.wordsCorrect++;
+
+            isCorrect = true;
+            advanceScrambleWord(miniGame);
+        } else {
+            miniGame.words[miniGame.currentWordIndex].attempts++;
+            if (miniGame.words[miniGame.currentWordIndex].attempts >= 3) {
+                advanceScrambleWord(miniGame);
+            }
+        }
+
+        input.value = '';
+    }
+
+    // Update challenge score
+    if (isCorrect) {
+        challenge.score += pointsAwarded;
+        // Bonus for clean win (no mistakes)
+        if (miniGame.gameState !== 'lost' && !miniGame.stats?.mistakes) {
+            challenge.score += 100;
+        }
+    } else {
+        challenge.lives--;
+    }
+
+    // Update display
+    const panel = document.getElementById('challenge-panel-content');
+    if (panel) {
+        const gameType = challenge.games[challenge.currentGameIndex];
+        const gamesRemaining = challenge.games.length - challenge.currentGameIndex;
+        const gameNum = challenge.currentGameIndex + 1;
+        const lifeDisplay = '❤️'.repeat(Math.max(0, challenge.lives)) + '❌'.repeat(Math.max(0, 3 - challenge.lives));
+
+        const contentDiv = document.getElementById('mini-game-content');
+        if (contentDiv) {
+            if (gameType === 'wordle') {
+                contentDiv.innerHTML = renderWordleGame(miniGame);
+                if (miniGame.gameState === 'playing') {
+                    const input = document.getElementById('wordle-input');
+                    if (input) {
+                        input.focus();
+                        input.onclick = () => submitChallengeMiniGameGuess('wordle');
+                    }
+                }
+            } else if (gameType === 'scramble') {
+                contentDiv.innerHTML = renderScrambleGame(miniGame);
+                if (miniGame.gameState === 'playing') {
+                    const input = document.getElementById('scramble-input');
+                    if (input) input.focus();
+                }
+            }
+        }
+
+        // Update score and lives display
+        const scoreEl = panel.querySelector('div:last-child');
+        if (scoreEl) {
+            scoreEl.innerHTML = `
+                <div style="font-size:0.9em;color:#64748B;font-weight:600">Game ${gameNum}/3: ${gameType.toUpperCase()}</div>
+                <div style="font-size:1.1em;font-weight:800;margin-top:8px">${lifeDisplay}</div>
+            `;
+        }
+    }
+
+    // Check if mini-game is complete
+    if (miniGame.gameState !== 'playing') {
+        setTimeout(() => {
+            challenge.gameScores[challenge.games[challenge.currentGameIndex]] = miniGame.score;
+            challenge.gameWins[challenge.games[challenge.currentGameIndex]] = miniGame.gameState === 'won';
+            challenge.currentGameIndex++;
+            challenge.stats.gamesPlayed++;
+            if (miniGame.gameState === 'won') {
+                challenge.stats.gamesWon++;
+            }
+
+            playNextChallengeGame();
+        }, 1000);
+    }
+};
+
+// End Challenge Mode and show results
+window.endChallengeGame = function(challenge) {
+    if (!challenge) challenge = window._challengeGame;
+    if (!challenge) return;
+
+    // Bonus points
+    challenge.score += (challenge.lives * 50); // 50 pts per remaining life
+
+    // Final state
+    challenge.gameState = challenge.lives > 0 && challenge.currentGameIndex >= challenge.games.length ? 'won' : 'lost';
+    challenge.stats.totalTime = Math.floor((Date.now() - challenge.timerStartTime) / 1000);
+
+    // Record gameplay
+    recordGamePlay('challenge', challenge.score, challenge.gameState === 'won');
+    awardPoints(challenge.score);
+    updateChallengeLeaderboard(challenge);
+
+    // Show results
+    showChallengeResults(challenge);
+};
+
+// Display Challenge Mode results
+window.showChallengeResults = function(challenge) {
+    const modal = document.getElementById('challenge-modal');
+    if (!modal) return;
+
+    const card = modal.querySelector('div[style*="background:white"]');
+    if (!card) return;
+
+    const gamesPlayedList = challenge.games.map((game, idx) => {
+        const won = challenge.gameWins[game];
+        const score = challenge.gameScores[game] || 0;
+        const icon = won ? '✅' : '❌';
+        return `<div style="display:flex;justify-content:space-between;padding:12px;background:#0F172A;border-radius:8px;margin-bottom:8px;color:white">
+            <div>${icon} ${game.toUpperCase()}</div>
+            <div style="font-weight:800;color:#10B981">${score} pts</div>
+        </div>`;
+    }).join('');
+
+    const boostSummary = challenge.selectedBoost ? `
+        <div style="background:#7C2D12;border-left:4px solid #FCD34D;padding:12px;border-radius:8px;margin-bottom:24px;text-align:left">
+            <div style="font-size:0.9em;color:#FCD34D;font-weight:800">💫 Boost Used</div>
+            <div style="font-size:1em;color:#FED7AA;margin-top:4px">
+                ${challenge.selectedBoost === 'double_points' ? '2️⃣ Double Points — Score was 2×' :
+                  challenge.selectedBoost === 'skip' ? '⏭️ Skip — Skipped 1 mini-game' :
+                  challenge.selectedBoost === 'hint' ? '💡 Hint — 1 hint available' : ''}
+            </div>
+        </div>
+    ` : '';
+
+    card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">🏆 Challenge Complete</h2>
+        </div>
+
+        <div style="text-align:center;margin-bottom:24px">
+            <div style="font-size:3em;margin-bottom:12px">${challenge.gameState === 'won' ? '🎉' : '💪'}</div>
+            <div style="font-size:2em;font-weight:800;color:#10B981;margin-bottom:8px">${challenge.score}</div>
+            <div style="color:#64748B;font-size:0.9em">Points Earned</div>
+        </div>
+
+        <div style="background:#064E3B;padding:16px;border-radius:12px;margin-bottom:24px">
+            <div style="color:#D1FAE5;font-size:0.9em;margin-bottom:8px">CHALLENGE STATS</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                    <div style="color:#94A3B8;font-size:0.85em">Games Won</div>
+                    <div style="font-size:1.5em;font-weight:800;color:#10B981">${challenge.stats.gamesWon}/3</div>
+                </div>
+                <div>
+                    <div style="color:#94A3B8;font-size:0.85em">Lives Left</div>
+                    <div style="font-size:1.5em;font-weight:800;color:#F97316">${Math.max(0, challenge.lives)}</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px">
+            <div style="color:#94A3B8;font-size:0.9em;font-weight:600;margin-bottom:12px">MINI-GAME RESULTS</div>
+            ${gamesPlayedList}
+        </div>
+
+        ${boostSummary}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button onclick="playAgainChallenge()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">
+                Play Again
+            </button>
+            <button onclick="backToTriviaFromChallenge()" style="padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">
+                Back to Trivia
+            </button>
+        </div>
+    `;
+};
+
+// Update Challenge Mode leaderboard
+window.updateChallengeLeaderboard = function(challenge) {
+    if (!state.games.stats) state.games.stats = {};
+    if (!state.games.stats.challenge) {
+        state.games.stats.challenge = {
+            played: 0,
+            bestScore: 0,
+            leaderboard: []
+        };
+    }
+
+    const challengeStats = state.games.stats.challenge;
+
+    const entry = {
+        score: challenge.score,
+        difficulty: challenge.difficulty,
+        date: todayStr(),
+        won: challenge.gameState === 'won',
+        gamesWon: challenge.stats.gamesWon,
+        lives: challenge.lives
+    };
+
+    challengeStats.leaderboard.push(entry);
+    challengeStats.leaderboard.sort((a, b) => b.score - a.score).slice(0, 10); // Keep top 10
+    challengeStats.bestScore = Math.max(challengeStats.bestScore || 0, challenge.score);
+    challengeStats.played = (challengeStats.played || 0) + 1;
+
+    saveState();
+};
+
+// Play Challenge Mode again
+window.playAgainChallenge = function() {
+    quitChallengeGame();
+    startChallengeGame();
+};
+
+// Quit Challenge Mode
+window.quitChallengeGame = function() {
+    const modal = document.getElementById('challenge-modal');
+    if (modal) modal.remove();
+    window._challengeGame = null;
+    window._challengeMiniGame = null;
+};
+
+// Return to Trivia from Challenge Mode
+window.backToTriviaFromChallenge = function() {
+    quitChallengeGame();
 };
 
 // ── SEASONAL CONTENT & DAILY BONUS ─────────────────
