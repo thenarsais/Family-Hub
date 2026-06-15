@@ -1333,20 +1333,22 @@
             transition: all 0.2s ease;
         }
         .game-card.unlocked {
-            background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%);
+            background: linear-gradient(135deg, #1a3a2d 0%, #0f2620 100%);
             border-color: var(--theme-primary);
             box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+            color: white;
         }
         .game-card.unlocked:hover {
             border-color: var(--theme-accent);
             box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
             transform: translateY(-2px);
-            background: linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.12) 100%);
+            background: linear-gradient(135deg, #224a39 0%, #163028 100%);
         }
         .game-card.locked {
-            background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.04) 100%);
+            background: linear-gradient(135deg, #0f2620 0%, #061815 100%);
             border-color: var(--mid);
             opacity: 1;
+            color: rgba(255, 255, 255, 0.6);
         }
         .game-header {
             display: flex;
@@ -1370,7 +1372,7 @@
         .game-stats {
             margin: 8px 0;
             font-size: 1em;
-            color: #D1D5DB;
+            color: #E0E7FF;
             font-weight: 500;
         }
         .game-stats p {
@@ -1380,8 +1382,8 @@
             margin: 8px 0;
         }
         .unlock-requirement {
-            font-size: 0.75em;
-            color: var(--border-light);
+            font-size: 0.95em;
+            color: #A7F3D0;
             margin-bottom: 6px;
             font-weight: 500;
         }
