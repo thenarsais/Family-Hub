@@ -8,12 +8,12 @@
     <style>
         :root {
             /* Default Theme Colors (Spring) */
-            --primary: var(--theme-primary);
+            --primary: #10B981;
             --primary-light: #34D399;
             --secondary: #EC4899;
             --accent: #BFDBFE;
             --accent-light: #D1FAE5;
-            --success: var(--theme-primary);
+            --success: #10B981;
             --danger: #EF4444;
             --warning: #F59E0B;
             --info: #3B82F6;
@@ -22,30 +22,30 @@
             --indigo-light: #EEF2FF;
             --orange: #F97316;
             --teal: #14B8A6;
-            --dark: var(--dark);
+            --dark: #1E293B;
             --mid: #475569;
-            --text-secondary: var(--text-secondary);
+            --text-secondary: #64748B;
             --text-muted: #94A3B8;
-            --muted: var(--text-muted);
-            --light: var(--light);
+            --muted: #94A3B8;
+            --light: #F1F5F9;
             --white: #FFFFFF;
 
             /* Border & UI Colors */
             --border-light: #E2E8F0;
-            --border-darker: var(--border-darker);
-            --bg-light-extra: var(--bg-light-extra);
+            --border-darker: #CBD5E1;
+            --bg-light-extra: #F8FAFC;
 
             /* Overlay Colors */
             --bg-overlay-dark: rgba(0, 0, 0, 0.6);
             --bg-overlay-darker: rgba(0, 0, 0, 0.7);
 
             /* Button States */
-            --btn-disabled-bg: var(--text-secondary);
-            --btn-disabled-text: var(--text-muted);
-            --btn-hover-dark: var(--text-secondary);
+            --btn-disabled-bg: #64748B;
+            --btn-disabled-text: #94A3B8;
+            --btn-hover-dark: #64748B;
 
             /* Seasonal Theme Variables (updated dynamically) */
-            --theme-primary: var(--theme-primary);
+            --theme-primary: #10B981;
             --theme-accent: #BFDBFE;
             --theme-secondary: #D1FAE5;
 
@@ -315,11 +315,24 @@
         .dash-header {
             background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent));
             padding: 20px 18px 18px;
-            color: var(--theme-primary-text, white);
+            color: white;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
-        .dash-header-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+        .dash-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+        .dash-header-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; position: relative; z-index: 1; }
         .dash-greeting h1 { font-size:1.75em; font-weight:800; line-height:1.1; }
-        .dash-greeting .date-sub { font-size:0.88em; opacity:0.85; margin-top:3px; }
+        .dash-greeting .date-sub { font-size:0.88em; opacity:0.90; margin-top:3px; }
         .pts-badge {
             background:rgba(255,255,255,0.18);
             border:2px solid rgba(255,255,255,0.35);
@@ -346,27 +359,28 @@
         }
         .dash-streak-item {
             flex: 1;
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            padding: 10px;
+            padding: 12px 10px;
             text-align: center;
             font-size: 0.95em;
         }
         .dash-streak-icon {
-            font-size: 1.6em;
+            font-size: 1.8em;
             margin-bottom: 6px;
             display: block;
         }
         .dash-streak-label {
-            font-size: 0.75em;
-            opacity: 0.8;
-            margin-bottom: 3px;
+            font-size: 0.85em;
+            opacity: 1;
+            margin-bottom: 4px;
             font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
         }
         .dash-streak-num {
-            font-size: 1.5em;
+            font-size: 1.6em;
             font-weight: 800;
-            color: rgba(255, 255, 255, 0.95);
+            color: white;
         }
 
         /* Dashboard Grid */
@@ -2257,7 +2271,7 @@ function showOnboardingWizard() {
             </div>
             <button id="lets-go-btn" style="
                 width:100%;padding:12px;background:linear-gradient(135deg,var(--theme-primary),#059669);
-                color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:opacity 0.2s
+                color:#000;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:opacity 0.2s;text-shadow:0 1px 2px rgba(255,255,255,0.5)
             " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Let's Go! 🚀</button>
         `;
     }
@@ -2395,9 +2409,11 @@ function showProfileSettings() {
     };
 
     window.updateProfileDisplays = function() {
-        // Update dashboard profile button
-        const profileBtn = document.getElementById('profile-btn');
-        if (profileBtn) profileBtn.textContent = state.trivia.onboarding.avatar || '🧠';
+        // Update dashboard profile avatar and name
+        const dashAvatar = document.getElementById('dash-profile-avatar');
+        const dashName = document.getElementById('dash-profile-name');
+        if (dashAvatar) dashAvatar.textContent = state.trivia.onboarding.avatar || '🧠';
+        if (dashName) dashName.textContent = state.trivia.onboarding.name || 'Profile';
         // Update board header profile chip
         const boardProfileAvatar = document.getElementById('board-profile-avatar');
         const boardProfileName = document.getElementById('board-profile-name');
@@ -8246,30 +8262,30 @@ function renderBoardReading() {
             <div style="margin-bottom:20px">
                 <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px">This Week</div>
                 <div style="background:var(--mid);border-radius:8px;height:8px;overflow:hidden">
-                    <div style="background:linear-gradient(90deg,var(--indigo),#A78BFA);height:100%;width:${Math.min(100, (r.weeklyMinutes/100)*100)}%;transition:width 0.3s"></div>
+                    <div style="background:linear-gradient(90deg,var(--theme-primary),var(--theme-accent));height:100%;width:${Math.min(100, (r.weeklyMinutes/100)*100)}%;transition:width 0.3s"></div>
                 </div>
                 <div style="font-size:0.75em;color: var(--text-secondary);margin-top:4px">${r.weeklyMinutes} of 100 minutes</div>
             </div>
 
             ${isGoalMet ? `
                 <div style="background:var(--theme-primary)22;border-left:4px solid var(--theme-primary);border-radius:8px;padding:12px;margin-bottom:20px">
-                    <div style="color:#6EE7B7;font-weight:600">✓ Daily goal reached!</div>
+                    <div style="color:var(--theme-primary);font-weight:600">✓ Daily goal reached!</div>
                 </div>
             ` : ''}
 
             <!-- Quick add buttons -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
-                <button onclick="addReadingMinutes(5)" style="padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+5 min</button>
-                <button onclick="addReadingMinutes(10)" style="padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+10 min</button>
-                <button onclick="addReadingMinutes(15)" style="padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+15 min</button>
-                <button onclick="addReadingMinutes(20)" style="padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+20 min</button>
+                <button onclick="addReadingMinutes(5)" style="padding:12px;background:var(--theme-primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+5 min</button>
+                <button onclick="addReadingMinutes(10)" style="padding:12px;background:var(--theme-primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+10 min</button>
+                <button onclick="addReadingMinutes(15)" style="padding:12px;background:var(--theme-primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+15 min</button>
+                <button onclick="addReadingMinutes(20)" style="padding:12px;background:var(--theme-primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+20 min</button>
             </div>
 
             <!-- Custom input -->
             <div style="display:flex;gap:8px;margin-bottom:20px">
                 <input type="number" id="reading-custom-input" placeholder="Minutes" min="1" max="120"
-                    style="flex:1;padding:10px;border:2px solid var(--mid);background:var(--dark);color:white;border-radius:8px;font-size:1em;font-family:inherit">
-                <button onclick="addReadingCustom()" style="padding:10px 16px;background:var(--purple);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">Add</button>
+                    style="flex:1;padding:10px;border:2px solid var(--theme-primary);background:var(--dark);color:white;border-radius:8px;font-size:1em;font-family:inherit">
+                <button onclick="addReadingCustom()" style="padding:10px 16px;background:var(--theme-primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">Add</button>
             </div>
 
             <!-- History -->
