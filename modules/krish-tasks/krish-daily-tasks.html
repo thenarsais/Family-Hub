@@ -1933,20 +1933,16 @@ window.applySeasonalTheme = function(season = 'spring') {
     }
 };
 
-// Auto-detect season based on date or load from settings
+// Auto-detect season based on current month
 window.initializeSeasonalTheme = function() {
-    if (state && state.settings && state.settings.currentSeason) {
-        applySeasonalTheme(state.settings.currentSeason);
-    } else {
-        // Auto-detect based on month
-        const month = new Date().getMonth();
-        let season = 'spring';
-        if (month >= 2 && month <= 4) season = 'spring';
-        else if (month >= 5 && month <= 7) season = 'summer';
-        else if (month >= 8 && month <= 10) season = 'fall';
-        else season = 'winter';
-        applySeasonalTheme(season);
-    }
+    // Always auto-detect based on month
+    const month = new Date().getMonth();
+    let season = 'spring';
+    if (month >= 2 && month <= 4) season = 'spring';
+    else if (month >= 5 && month <= 7) season = 'summer';
+    else if (month >= 8 && month <= 10) season = 'fall';
+    else season = 'winter';
+    applySeasonalTheme(season);
 };
 
 // ── TRIVIA ENGINE (Phase 1) ──────────────────────
