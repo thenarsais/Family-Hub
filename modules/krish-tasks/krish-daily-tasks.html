@@ -896,9 +896,9 @@
         .gtb-reset { background:var(--border-light); color:var(--dark); }
 
         /* ── CALENDAR ────────────────────────────── */
-        .cal-add-form { background:white; border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
+        .cal-add-form { background:var(--card-bg); border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
         .event-item {
-            background:white; border-radius:var(--radius);
+            background:var(--card-bg); border-radius:var(--radius);
             padding:13px 15px; margin-bottom:9px;
             box-shadow:var(--shadow); display:flex;
             align-items:center; gap:13px;
@@ -915,23 +915,23 @@
         .ev-title { font-size:0.97em; font-weight:700; color:var(--dark); }
         .ev-time  { font-size:1em; color: var(--text-secondary); margin-top:2px; }
         .ev-today-badge {
-            background:var(--theme-primary); color:white;
+            background:var(--season-primary); color:white;
             font-size:0.68em; font-weight:800;
             padding:2px 8px; border-radius:20px;
             white-space:nowrap;
         }
 
         /* ── HABITS ──────────────────────────────── */
-        .habit-card { background:white; border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
+        .habit-card { background:var(--card-bg); border-radius:var(--radius); padding:15px; margin-bottom:12px; box-shadow:var(--shadow); }
         .habit-hdr { display:flex; align-items:center; gap:11px; margin-bottom:13px; }
         .habit-ico { font-size:1.9em; }
         .habit-info { flex:1; }
         .habit-name { font-size:1.05em; font-weight:700; color:var(--dark); }
         .habit-goal-lbl { font-size:1em; color: var(--text-secondary); }
         .streak-chip {
-            background:linear-gradient(135deg,#FEF3C7,#FDE68A);
+            background:var(--season-bg-light);
             border-radius:20px; padding:5px 11px;
-            font-size:0.82em; font-weight:800; color:#78350F;
+            font-size:0.82em; font-weight:800; color:var(--season-primary);
         }
         .habit-week { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:11px; }
         .hday {
@@ -944,7 +944,7 @@
             cursor:pointer; transition:var(--t);
         }
         .hday.done  { background:var(--success); border-color:var(--success); color:white; }
-        .hday.today { border-color:var(--theme-primary); color:var(--theme-primary); }
+        .hday.today { border-color:var(--season-primary); color:var(--season-primary); }
         .hday.today.done { border-color:var(--success); color:white; }
         .hday.future { opacity:0.35; pointer-events:none; }
         .hday-lbl { line-height:1; }
@@ -958,8 +958,8 @@
         .cntr-lbl { flex:1; font-size:0.88em; font-weight:600; color:var(--mid); }
         .cntr-val { font-size:1.25em; font-weight:800; color:var(--dark); min-width:34px; text-align:center; }
         .cntr-btn {
-            width:34px; height:34px; border:2px solid var(--border-light);
-            background:white; border-radius:8px;
+            width:34px; height:34px; border:2px solid var(--season-border);
+            background:var(--card-bg); border-radius:8px;
             font-size:1.2em; cursor:pointer;
             display:flex; align-items:center; justify-content:center;
             font-weight:700; transition:var(--t);
@@ -971,19 +971,19 @@
         .mood-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; margin-bottom:18px; }
         .mood-opt {
             aspect-ratio:1; border-radius:var(--radius);
-            border:3px solid var(--border-light);
+            border:3px solid var(--season-border);
             display:flex; flex-direction:column;
             align-items:center; justify-content:center;
             cursor:pointer; transition:var(--t);
-            background:white; padding:4px;
+            background:var(--card-bg); padding:4px;
         }
         .mood-opt:active { transform:scale(0.94); }
-        .mood-opt.selected { border-color:var(--theme-primary); background:var(--indigo-light); transform:scale(1.04); }
+        .mood-opt.selected { border-color:var(--season-primary); background:var(--season-bg-light); transform:scale(1.04); }
         .mood-em { font-size:2em; margin-bottom:3px; }
         .mood-lbl { font-size:0.68em; font-weight:700; color: var(--text-secondary); text-align:center; line-height:1.2; }
-        .mood-opt.selected .mood-lbl { color:var(--theme-primary); }
+        .mood-opt.selected .mood-lbl { color:var(--season-primary); }
 
-        .mood-history { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
+        .mood-history { background:var(--card-bg); border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
         .mood-h-title { font-size:0.82em; font-weight:700; color: var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:11px; }
         .mood-h-row { display:flex; gap:6px; }
         .mood-h-item { flex:1; text-align:center; }
@@ -1008,18 +1008,18 @@
 
         .pts-stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px; margin-bottom:14px; }
         .pts-stat {
-            background:white; border-radius:var(--radius-sm);
+            background:var(--card-bg); border-radius:var(--radius-sm);
             padding:13px; text-align:center; box-shadow:var(--shadow);
         }
         .pts-stat-val { font-size:1.4em; font-weight:800; color:var(--dark); }
         .pts-stat-lbl { font-size:0.72em; color: var(--text-secondary); font-weight:600; margin-top:2px; }
 
-        .next-tier-card { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
+        .next-tier-card { background:var(--card-bg); border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
         .nt-label { display:flex; justify-content:space-between; font-size:0.85em; font-weight:700; margin-bottom:8px; }
         .pbar { background:var(--border-light); border-radius:10px; height:10px; overflow:hidden; }
-        .pbar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--theme-primary),#6EE7B7); transition:width 0.5s ease; }
+        .pbar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--season-primary),var(--season-accent)); transition:width 0.5s ease; }
 
-        .pts-how-to { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); margin-top:12px; }
+        .pts-how-to { background:var(--card-bg); border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); margin-top:12px; }
         .how-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--light); font-size:0.88em; }
         .how-row:last-child { border-bottom:none; }
         .how-pts { font-weight:700; color:var(--accent); }
