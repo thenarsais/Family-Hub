@@ -361,6 +361,20 @@
             transform: translateY(0);
         }
 
+        /* Text utility classes */
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .label-text {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
         /* ── BADGE ANIMATIONS ────────────────────── */
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -572,7 +586,7 @@
         /* Section headers */
         .sec-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
         .sec-title { font-size:1.2em; font-weight:800; color:var(--dark); }
-        .sec-sub { font-size:0.82em; color:var(--mid); margin-top:2px; }
+        .sec-sub { font-size:0.82em; color:var(--text-secondary); margin-top:2px; }
 
         /* ── CHORES ──────────────────────────────── */
         .chore-block { background:white; border-radius:var(--radius); overflow:hidden; margin-bottom:12px; box-shadow:var(--shadow); }
