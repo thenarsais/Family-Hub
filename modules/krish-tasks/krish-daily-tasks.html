@@ -4731,7 +4731,19 @@ window.renderMemoryGame = function(game) {
             if (timeRemaining <= 0) {
                 clearInterval(window._memoryTimer);
                 window._memoryTimer = null;
-                endMemoryGame(game, false);
+                game.gameState = 'lost';
+                if (window._challengeGame) {
+                    // In Challenge Mode - move to next game
+                    window._challengeGame.gameScores[window._challengeGame.games[window._challengeGame.currentGameIndex]] = game.score;
+                    window._challengeGame.gameWins[window._challengeGame.games[window._challengeGame.currentGameIndex]] = false;
+                    window._challengeGame.currentGameIndex++;
+                    window._challengeGame.stats.gamesPlayed++;
+                    window._challengeGame.lives--;
+                    setTimeout(() => playNextChallengeGame(), 500);
+                } else {
+                    // Normal Memory game - show results
+                    endMemoryGame(game, false);
+                }
             }
         }, 100);
     }
@@ -4824,7 +4836,21 @@ window.checkMemoryMatch = function(game) {
             if (game.matchesFound === game.totalMatches) {
                 clearInterval(window._memoryTimer);
                 window._memoryTimer = null;
-                setTimeout(() => endMemoryGame(game, true), 500);
+                game.gameState = 'won';
+                setTimeout(() => {
+                    if (window._challengeGame) {
+                        // In Challenge Mode - move to next game
+                        window._challengeGame.gameScores[window._challengeGame.games[window._challengeGame.currentGameIndex]] = game.score;
+                        window._challengeGame.gameWins[window._challengeGame.games[window._challengeGame.currentGameIndex]] = true;
+                        window._challengeGame.currentGameIndex++;
+                        window._challengeGame.stats.gamesPlayed++;
+                        window._challengeGame.stats.gamesWon++;
+                        playNextChallengeGame();
+                    } else {
+                        // Normal Memory game - show results
+                        endMemoryGame(game, true);
+                    }
+                }, 500);
             }
         } else {
             // No match - flip back
@@ -4871,15 +4897,19 @@ window.endMemoryGame = function(game, won) {
     clearInterval(window._memoryTimer);
     window._memoryTimer = null;
 
+    // Set game state for Challenge Mode detection
+    game.gameState = won ? 'won' : 'lost';
+
     // Save stats
     const elapsed = Math.floor((Date.now() - game.timerStartTime) / 1000);
     game.stats.time_used = elapsed;
-    recordGamePlay('memory', game.score, won);
 
-    // Update leaderboard
-    updateMemoryLeaderboard(game);
-
-    showMemoryResults(game, won);
+    // Only record gameplay and update leaderboard if not in Challenge Mode
+    if (!window._challengeGame) {
+        recordGamePlay('memory', game.score, won);
+        updateMemoryLeaderboard(game);
+        showMemoryResults(game, won);
+    }
 };
 
 window.updateMemoryLeaderboard = function(game) {
@@ -6184,14 +6214,235 @@ window.loadChallengeWordleGame = function(container) {
     }
 };
 
+// Start Memory game timer for Challenge Mode
+window.startMemoryTimer = function(miniGame, container) {
+    if (!miniGame || !container) return;
+
+    // Memory game timer is already started by renderMemoryGame
+    // This function ensures the timer is running and updates container
+    if (!window._memoryTimer) {
+        miniGame.timerStartTime = Date.now();
+        window._memoryTimer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - miniGame.timerStartTime) / 1000);
+            const timeRemaining = Math.max(0, miniGame.settings.time - elapsed);
+
+            const timerEl = document.getElementById('mem-timer');
+            if (timerEl) {
+                const gameColor = timeRemaining > miniGame.settings.time / 2 ? 'var(--theme-primary)' : timeRemaining > miniGame.settings.time / 4 ? '#F59E0B' : '#EF4444';
+                timerEl.textContent = timeRemaining + 's';
+                timerEl.style.color = gameColor;
+            }
+
+            if (timeRemaining <= 0) {
+                clearInterval(window._memoryTimer);
+                window._memoryTimer = null;
+                miniGame.gameState = 'lost';
+                // Move to next challenge game
+                setTimeout(() => {
+                    if (window._challengeGame) {
+                        window._challengeGame.gameScores[window._challengeGame.games[window._challengeGame.currentGameIndex]] = miniGame.score;
+                        window._challengeGame.gameWins[window._challengeGame.games[window._challengeGame.currentGameIndex]] = false;
+                        window._challengeGame.currentGameIndex++;
+                        window._challengeGame.stats.gamesPlayed++;
+                        window._challengeGame.lives--;
+                        playNextChallengeGame();
+                    }
+                }, 500);
+            }
+        }, 100);
+    }
+};
+
 // Load Memory mini-game into Challenge Mode
 window.loadChallengeMemoryGame = function(container) {
     const miniGame = initializeMemoryGame('medium');
     window._challengeMiniGame = miniGame;
 
-    container.innerHTML = renderMemoryGame(miniGame);
-    // Memory game will auto-start with the timer
+    // Render Memory game grid (without modal wrapper, since it's embedded in Challenge panel)
+    const { cols, rows } = miniGame.settings;
+    const tileSize = miniGame.difficulty === 'easy' ? 70 : miniGame.difficulty === 'medium' ? 60 : 50;
+    const gap = 10;
+
+    let html = `
+        <div style="text-align:center;margin-bottom:16px">
+            <div style="font-size:1.2em;font-weight:800;color:var(--dark);margin-bottom:8px">🧠 Memory Tiles</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div style="background:var(--stats-success-bg);padding:12px;border-radius:10px">
+                    <div style="font-size:0.85em;color:#D1FAE5">Score</div>
+                    <div id="mem-score-challenge" style="font-size:1.5em;font-weight:800;color:var(--theme-primary)">${miniGame.score}</div>
+                </div>
+                <div style="background:var(--stats-progress-bg);padding:12px;border-radius:10px">
+                    <div style="font-size:0.85em;color:#DBEAFE">Progress</div>
+                    <div id="mem-progress-challenge" style="font-size:1.3em;font-weight:800;color:var(--stats-progress-value)">${miniGame.matchesFound}/${miniGame.totalMatches}</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="memory-grid-challenge" style="
+            display:grid;
+            grid-template-columns:repeat(${cols}, 1fr);
+            gap:${gap}px;
+            margin:15px auto;
+            width:fit-content;
+        ">
+            ${miniGame.tiles.map(tile => `
+                <button id="tile-${tile.id}"
+                    class="memory-tile${tile.matched ? ' matched' : ''}"
+                    data-tile-id="${tile.id}"
+                    data-pair-id="${tile.pairId}"
+                    onclick="flipMemoryTileChallenge('${tile.id}')"
+                    style="
+                        width:${tileSize}px;
+                        height:${tileSize}px;
+                        background:${tile.matched ? '#DCFCE7' : tile.flipped ? '#FFFFFF' : 'var(--mid)'};
+                        border:2px solid ${tile.matched ? 'var(--theme-primary)' : tile.flipped ? 'var(--border-darker)' : 'var(--text-secondary)'};
+                        border-radius:8px;
+                        color:${tile.matched ? 'var(--text-muted)' : tile.flipped ? 'var(--dark)' : 'var(--text-muted)'};
+                        cursor:${tile.matched ? 'default' : 'pointer'};
+                        font-weight:600;
+                        font-size:${tileSize > 60 ? '0.85em' : '0.75em'};
+                        padding:8px;
+                        text-align:center;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        transition:all 0.2s ease;
+                        line-height:1.2;
+                        word-break:break-word;
+                        overflow:hidden;
+                        box-shadow:${tile.matched ? '0 2px 8px rgba(16, 185, 129, 0.2)' : 'none'};
+                    "
+                    ${tile.matched ? 'disabled' : ''}
+                >
+                    ${tile.flipped || tile.matched ? tile.text : '?'}
+                </button>
+            `).join('')}
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    // Start timer
     startMemoryTimer(miniGame, container);
+};
+
+// Flip a tile in Challenge Mode Memory game
+window.flipMemoryTileChallenge = function(tileId) {
+    const game = window._challengeMiniGame;
+    const tile = game.tiles.find(t => t.id === tileId);
+
+    if (!tile || tile.matched || game.flippedTiles.length >= 2) return;
+
+    // Flip tile
+    tile.flipped = true;
+    game.flippedTiles.push(tile);
+
+    // Update button display
+    const btn = document.getElementById(`tile-${tileId}`);
+    if (btn) {
+        btn.textContent = tile.text;
+        btn.style.background = 'white';
+        btn.style.color = 'var(--dark)';
+    }
+
+    // Check for match if 2 tiles flipped
+    if (game.flippedTiles.length === 2) {
+        game.attempts++;
+        checkMemoryMatchChallenge(game);
+    }
+};
+
+// Check Memory match in Challenge Mode
+window.checkMemoryMatchChallenge = function(game) {
+    const [tile1, tile2] = game.flippedTiles;
+    const isMatch = tile1.pairId === tile2.pairId;
+
+    setTimeout(() => {
+        if (isMatch) {
+            // Match found!
+            tile1.matched = true;
+            tile2.matched = true;
+            game.matchesFound++;
+            game.combo++;
+            game.stats.pairs_matched++;
+
+            // Calculate points
+            const elapsed = Math.floor((Date.now() - game.timerStartTime) / 1000);
+            const timeRemaining = Math.max(0, game.settings.time - elapsed);
+            const timeBonus = timeRemaining / game.settings.time;
+            const basePoints = 50;
+            const comboMultiplier = game.combo > 2 ? 1.5 : 1;
+            const pointsAwarded = Math.max(0, Math.floor(basePoints * timeBonus * comboMultiplier));
+            game.score += pointsAwarded;
+
+            // Update UI
+            const btn1 = document.getElementById(`tile-${tile1.id}`);
+            const btn2 = document.getElementById(`tile-${tile2.id}`);
+            if (btn1 && btn2) {
+                btn1.classList.add('matched');
+                btn2.classList.add('matched');
+                btn1.style.background = '#DCFCE7';
+                btn1.style.color = 'var(--text-muted)';
+                btn1.style.borderColor = 'var(--theme-primary)';
+                btn1.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
+                btn1.disabled = true;
+                btn2.style.background = '#DCFCE7';
+                btn2.style.color = 'var(--text-muted)';
+                btn2.style.borderColor = 'var(--theme-primary)';
+                btn2.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
+                btn2.disabled = true;
+            }
+
+            // Update score display in Challenge Mode
+            const scoreEl = document.getElementById('mem-score-challenge');
+            if (scoreEl) scoreEl.textContent = game.score;
+
+            // Update progress display in Challenge Mode
+            const progressEl = document.getElementById('mem-progress-challenge');
+            if (progressEl) progressEl.textContent = `${game.matchesFound}/${game.totalMatches}`;
+
+            // Check if game won
+            if (game.matchesFound === game.totalMatches) {
+                clearInterval(window._memoryTimer);
+                window._memoryTimer = null;
+                game.gameState = 'won';
+                setTimeout(() => {
+                    if (window._challengeGame) {
+                        // In Challenge Mode - move to next game
+                        window._challengeGame.gameScores[window._challengeGame.games[window._challengeGame.currentGameIndex]] = game.score;
+                        window._challengeGame.gameWins[window._challengeGame.games[window._challengeGame.currentGameIndex]] = true;
+                        window._challengeGame.currentGameIndex++;
+                        window._challengeGame.stats.gamesPlayed++;
+                        window._challengeGame.stats.gamesWon++;
+                        playNextChallengeGame();
+                    }
+                }, 500);
+            }
+        } else {
+            // No match - flip back
+            game.combo = 1;
+            tile1.flipped = false;
+            tile2.flipped = false;
+
+            // Flash red
+            const btn1 = document.getElementById(`tile-${tile1.id}`);
+            const btn2 = document.getElementById(`tile-${tile2.id}`);
+            if (btn1 && btn2) {
+                btn1.style.background = '#FEE2E2';
+                btn2.style.background = '#FEE2E2';
+                setTimeout(() => {
+                    btn1.style.background = 'var(--mid)';
+                    btn1.textContent = '?';
+                    btn1.style.color = 'var(--text-muted)';
+                    btn2.style.background = 'var(--mid)';
+                    btn2.textContent = '?';
+                    btn2.style.color = 'var(--text-muted)';
+                }, 200);
+            }
+        }
+
+        game.flippedTiles = [];
+    }, isMatch ? 500 : 1000);
 };
 
 // Load Scramble mini-game into Challenge Mode
