@@ -8,7 +8,7 @@
     <style>
         :root {
             /* Default Theme Colors (Spring) */
-            --primary: #10B981;
+            --primary: var(--theme-primary);
             --primary-light: #34D399;
             --secondary: #EC4899;
             --accent: #BFDBFE;
@@ -22,30 +22,30 @@
             --indigo-light: #EEF2FF;
             --orange: #F97316;
             --teal: #14B8A6;
-            --dark: #1E293B;
+            --dark: var(--dark);
             --mid: #475569;
-            --text-secondary: #64748B;
+            --text-secondary: var(--text-secondary);
             --text-muted: #94A3B8;
             --muted: var(--text-muted);
-            --light: #F1F5F9;
+            --light: var(--light);
             --white: #FFFFFF;
 
             /* Border & UI Colors */
             --border-light: #E2E8F0;
-            --border-darker: #CBD5E1;
-            --bg-light-extra: #F8FAFC;
+            --border-darker: var(--border-darker);
+            --bg-light-extra: var(--bg-light-extra);
 
             /* Overlay Colors */
             --bg-overlay-dark: rgba(0, 0, 0, 0.6);
             --bg-overlay-darker: rgba(0, 0, 0, 0.7);
 
             /* Button States */
-            --btn-disabled-bg: #64748B;
+            --btn-disabled-bg: var(--text-secondary);
             --btn-disabled-text: var(--text-muted);
-            --btn-hover-dark: #64748B;
+            --btn-hover-dark: var(--text-secondary);
 
             /* Seasonal Theme Variables (updated dynamically) */
-            --theme-primary: #10B981;
+            --theme-primary: var(--theme-primary);
             --theme-accent: #BFDBFE;
             --theme-secondary: #D1FAE5;
 
@@ -90,7 +90,7 @@
             --card-padding: 15px;
             --card-border-radius: 12px;
             --card-bg: #FFFFFF;
-            --card-bg-light: #F8FAFC;
+            --card-bg-light: var(--bg-light-extra);
 
             /* Time-based Block Colors */
             --time-morning-bg: linear-gradient(135deg, #FEF3C7, #FDE68A);
@@ -422,7 +422,7 @@
         .mood-card-info { flex:1; min-width:0; }
 
         /* ── ACTIVITY BOARD ──────────────────────── */
-        #view-board { background:#F1F5F9; padding-bottom:30px; }
+        #view-board { background:var(--light); padding-bottom:30px; }
 
         .board-hdr {
             background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent));
@@ -462,7 +462,7 @@
         .b-tab {
             display:flex; flex-direction:column; align-items:center; gap:2px;
             padding:7px 11px; border:2px solid transparent;
-            background:#F8FAFC; border-radius:10px;
+            background:var(--bg-light-extra); border-radius:10px;
             cursor:pointer; white-space:nowrap;
             font-size:0.72em; font-weight:700; color: var(--text-secondary);
             min-width:58px; transition:var(--t);
@@ -491,14 +491,14 @@
         .blk-pts-badge { margin-left:auto; background:rgba(0,0,0,0.1); border-radius:20px; padding:2px 9px; font-size:0.82em; }
         .chore-item {
             display:flex; align-items:center; gap:12px;
-            padding:13px 15px; border-bottom:1px solid #F1F5F9;
+            padding:13px 15px; border-bottom:1px solid var(--light);
             cursor:pointer; user-select:none; transition:background 0.15s;
         }
         .chore-item:last-child { border-bottom:none; }
-        .chore-item:active { background:#F8FAFC; }
+        .chore-item:active { background:var(--bg-light-extra); }
         .chore-cb {
             width:28px; height:28px; border-radius:50%;
-            border:3px solid #CBD5E1;
+            border:3px solid var(--border-darker);
             display:flex; align-items:center; justify-content:center;
             flex-shrink:0; transition:var(--t); font-size:0.9em;
         }
@@ -562,7 +562,7 @@
             width: 26px;
             height: 26px;
             border-radius: var(--radius-sm);
-            border: 3px solid #CBD5E1;
+            border: 3px solid var(--border-darker);
             display: flex;
             align-items:center; justify-content:center;
             flex-shrink:0; transition:var(--t); margin-top:3px;
@@ -702,7 +702,7 @@
         .practice-log-list { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
         .log-entry {
             display:flex; align-items:center; gap:10px;
-            padding:9px 0; border-bottom:1px solid #F1F5F9;
+            padding:9px 0; border-bottom:1px solid var(--light);
             font-size:0.88em; color:var(--mid);
         }
         .log-entry:last-child { border-bottom:none; }
@@ -756,7 +756,7 @@
             align-items:center; gap:13px;
         }
         .ev-date-block {
-            background:#F1F5F9; border-radius:9px;
+            background:var(--light); border-radius:9px;
             padding:7px 10px; text-align:center;
             min-width:44px; flex-shrink:0;
         }
@@ -792,7 +792,7 @@
             align-items:center; justify-content:center;
             font-size:0.68em; font-weight:700;
             border:2px solid var(--border-light);
-            background:#F8FAFC; color:var(--text-muted);
+            background:var(--bg-light-extra); color:var(--text-muted);
             cursor:pointer; transition:var(--t);
         }
         .hday.done  { background:var(--success); border-color:var(--success); color:white; }
@@ -804,7 +804,7 @@
 
         .habit-counter {
             display:flex; align-items:center; gap:10px;
-            background:#F8FAFC; border-radius:9px;
+            background:var(--bg-light-extra); border-radius:9px;
             padding:9px 13px;
         }
         .cntr-lbl { flex:1; font-size:0.88em; font-weight:600; color:var(--mid); }
@@ -816,7 +816,7 @@
             display:flex; align-items:center; justify-content:center;
             font-weight:700; transition:var(--t);
         }
-        .cntr-btn:active { transform:scale(0.94); background:#F1F5F9; }
+        .cntr-btn:active { transform:scale(0.94); background:var(--light); }
 
         /* ── MOOD ────────────────────────────────── */
         .mood-q { text-align:center; font-size:1.2em; font-weight:800; color:var(--dark); margin-bottom:18px; }
@@ -872,7 +872,7 @@
         .pbar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--indigo),var(--purple)); transition:width 0.5s ease; }
 
         .pts-how-to { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); margin-top:12px; }
-        .how-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #F1F5F9; font-size:0.88em; }
+        .how-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--light); font-size:0.88em; }
         .how-row:last-child { border-bottom:none; }
         .how-pts { font-weight:700; color:var(--accent); }
 
@@ -948,7 +948,7 @@
             align-items: center;
             gap: 8px;
             padding: 13px 14px 10px;
-            border-bottom: 2px solid #F1F5F9;
+            border-bottom: 2px solid var(--light);
             flex-shrink: 0;
         }
         .db-card-ico { font-size:1.25em; flex-shrink:0; }
@@ -964,7 +964,7 @@
         .db-expand:active { transform:scale(0.95); }
 
         /* thin progress strip under header */
-        .db-pbar-wrap { background:#F1F5F9; height:4px; }
+        .db-pbar-wrap { background:var(--light); height:4px; }
         .db-pbar-fill { height:100%; background: var(--theme-primary); transition:width 0.5s ease; }
 
         /* ── CHORES ────────────────────────────────── */
@@ -982,15 +982,15 @@
         .db-chore-row {
             display:flex; align-items:center; gap:10px;
             padding: 9px 14px;
-            border-bottom: 1px solid #F8FAFC;
+            border-bottom: 1px solid var(--bg-light-extra);
             cursor:pointer; min-height:44px; user-select:none;
             transition:background 0.12s;
         }
-        .db-chore-row:active { background:#F8FAFC; }
+        .db-chore-row:active { background:var(--bg-light-extra); }
         .db-chore-row.done .db-cl { text-decoration:line-through; color:var(--text-muted); }
         .db-cb {
             width:24px; height:24px; border-radius:50%;
-            border:2.5px solid #CBD5E1;
+            border:2.5px solid var(--border-darker);
             display:flex; align-items:center; justify-content:center;
             font-size:0.8em; flex-shrink:0; transition:var(--t);
         }
@@ -1002,13 +1002,13 @@
         /* ── HOMEWORK ──────────────────────────────── */
         .db-hw-row {
             display:flex; align-items:flex-start; gap:10px;
-            padding:10px 14px; border-bottom:1px solid #F8FAFC;
+            padding:10px 14px; border-bottom:1px solid var(--bg-light-extra);
             cursor:pointer; transition:background 0.12s; min-height:46px;
         }
-        .db-hw-row:active { background:#F8FAFC; }
+        .db-hw-row:active { background:var(--bg-light-extra); }
         .db-hw-cb {
             width:22px; height:22px; border-radius:6px;
-            border:2.5px solid #CBD5E1; flex-shrink:0; margin-top:3px;
+            border:2.5px solid var(--border-darker); flex-shrink:0; margin-top:3px;
             display:flex; align-items:center; justify-content:center;
             font-size:0.78em; transition:var(--t);
         }
@@ -1026,7 +1026,7 @@
             cursor:pointer; flex-shrink:0; transition:var(--t); align-self:center;
         }
         .db-pomo-launch:active { transform:scale(0.93); }
-        .db-add-row { padding:9px 14px; border-top:1px solid #F1F5F9; }
+        .db-add-row { padding:9px 14px; border-top:1px solid var(--light); }
 
         /* ── MINI POMODORO ─────────────────────────── */
         .db-pomo-mini {
@@ -1047,7 +1047,7 @@
         .db-pmb-r { background: var(--mid); color: var(--muted); }
 
         /* ── HABITS ────────────────────────────────── */
-        .db-habit-block { padding:16px 14px; border-bottom:1px solid #F8FAFC; }
+        .db-habit-block { padding:16px 14px; border-bottom:1px solid var(--bg-light-extra); }
         .db-habit-top { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
         .db-h-ico  { font-size:1.45em; flex-shrink:0; }
         .db-h-meta { flex:1; min-width:0; }
@@ -1060,20 +1060,20 @@
             font-size:0.75em; font-weight:700; color:var(--mid);
             cursor:pointer; transition:var(--t); flex-shrink:0;
         }
-        .db-h-today-btn.done { background:#DCFCE7; border-color:#10B981; color:#166534; }
+        .db-h-today-btn.done { background:#DCFCE7; border-color:var(--theme-primary); color:#166534; }
         .db-h-today-btn:active { transform:scale(0.94); }
 
         .db-week-row { display:flex; gap:4px; margin-bottom:6px; }
         .db-hd {
             flex:1; height:28px; border-radius:6px;
-            border:2px solid var(--border-light); background:#F8FAFC;
+            border:2px solid var(--border-light); background:var(--bg-light-extra);
             display:flex; align-items:center; justify-content:center;
             font-size:0.67em; font-weight:700; color:var(--text-muted);
             cursor:pointer; transition:var(--t);
         }
-        .db-hd.done   { background:#10B981; border-color:#10B981; color:white; }
+        .db-hd.done   { background:var(--theme-primary); border-color:var(--theme-primary); color:white; }
         .db-hd.today  { border-color:var(--indigo); color:var(--indigo); }
-        .db-hd.today.done { border-color:#10B981; color:white; }
+        .db-hd.today.done { border-color:var(--theme-primary); color:white; }
         .db-hd.future { opacity:0.28; pointer-events:none; }
 
         .db-h-counter { display:flex; align-items:center; gap:7px; }
@@ -1083,7 +1083,7 @@
             border-radius:7px; font-size:1.1em; cursor:pointer; font-weight:700;
             display:flex; align-items:center; justify-content:center; transition:var(--t);
         }
-        .db-cntr-btn:active { background:#F1F5F9; transform:scale(0.93); }
+        .db-cntr-btn:active { background:var(--light); transform:scale(0.93); }
         .db-cntr-val { font-size:1.05em; font-weight:800; color:var(--dark); min-width:26px; text-align:center; }
 
         /* ── MOOD ──────────────────────────────────── */
@@ -1109,12 +1109,12 @@
         .db-guj-info { display:flex; align-items:center; gap:10px; padding:10px 14px 7px; }
         .db-guj-phase { font-size:1.1em; font-weight:800; color: var(--theme-primary); }
         .db-guj-subtext { font-size:0.75em; color: var(--text-secondary); margin-top:2px; }
-        .db-guj-pbar { margin:0 14px 4px; background:#F1F5F9; border-radius:6px; height:5px; overflow:hidden; }
+        .db-guj-pbar { margin:0 14px 4px; background:var(--light); border-radius:6px; height:5px; overflow:hidden; }
         .db-guj-pfill { height:100%; background: var(--theme-primary); border-radius:6px; transition:width 0.4s; }
         .db-guj-plbl { text-align:center; font-size:0.68em; color: var(--text-secondary); margin-bottom:9px; }
         .db-guj-acts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; padding:0 12px 12px; }
         .db-guj-btn {
-            background:#F8FAFC; border:2px solid var(--border-light); border-radius:10px;
+            background:var(--bg-light-extra); border:2px solid var(--border-light); border-radius:10px;
             padding:9px 5px; text-align:center; cursor:pointer;
             text-decoration:none; display:block; transition:var(--t);
         }
@@ -1130,7 +1130,7 @@
         .db-pts-t-name { font-size:0.95em; font-weight:800; color:var(--dark); }
         .db-pts-t-sub  { font-size:0.72em; color: var(--text-secondary); }
         .db-pts-row    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-bottom:9px; }
-        .db-pts-stat   { text-align:center; background:#F8FAFC; border-radius:9px; padding:7px 4px; }
+        .db-pts-stat   { text-align:center; background:var(--bg-light-extra); border-radius:9px; padding:7px 4px; }
         .db-pts-val    { font-size:1em; font-weight:800; color:var(--dark); }
         .db-pts-lbl    { font-size:0.62em; color: var(--text-secondary); font-weight:600; }
         .db-pts-bar    { background:var(--border-light); border-radius:8px; height:6px; overflow:hidden; }
@@ -1140,7 +1140,7 @@
         .db-pts-card:hover { box-shadow:0 4px 24px rgba(99,102,241,0.22); }
 
         /* ── CALENDAR (dashboard) ──────────────────── */
-        .db-ev-row { display:flex; align-items:center; gap:9px; padding:8px 14px; border-bottom:1px solid #F8FAFC; }
+        .db-ev-row { display:flex; align-items:center; gap:9px; padding:8px 14px; border-bottom:1px solid var(--bg-light-extra); }
         .db-ev-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
         .db-ev-info { flex:1; min-width:0; }
         .db-ev-title { font-size:0.85em; font-weight:700; color:var(--dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -1150,10 +1150,10 @@
         /* ── KUNG FU (dashboard) ───────────────────── */
         .db-kf-goals { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; padding:11px 13px 8px; }
         .db-kf-goal {
-            background:#F8FAFC; border:2.5px solid var(--border-light); border-radius:12px;
+            background:var(--bg-light-extra); border:2.5px solid var(--border-light); border-radius:12px;
             padding:10px 6px; text-align:center; cursor:pointer; transition:var(--t);
         }
-        .db-kf-goal.done { background:#ECFDF5; border-color:#10B981; }
+        .db-kf-goal.done { background:#ECFDF5; border-color:var(--theme-primary); }
         .db-kf-goal:active { transform:scale(0.95); }
         .db-kf-ico { font-size:1.4em; margin-bottom:3px; }
         .db-kf-lbl { font-size:0.72em; font-weight:700; color:var(--dark); }
@@ -1645,11 +1645,11 @@ const SUBJECT_COLORS = {
     Reading: { bg:'#FCE7F3', color:'#831843' },
     History: { bg:'#FFEDD5', color:'#9A3412' },
     Art:     { bg:'#FEF9C3', color:'#78350F' },
-    Other:   { bg:'#F1F5F9', color:'var(--mid)' },
+    Other:   { bg:'var(--light)', color:'var(--mid)' },
 };
 
 const EVENT_COLORS = {
-    School: '#3B82F6', Family: '#10B981',
+    School: '#3B82F6', Family: 'var(--theme-primary)',
     Sport:  '#F97316', Health: '#EF4444', Other: 'var(--purple)',
 };
 
@@ -1657,7 +1657,7 @@ const TIER_LEVELS = [
     { name:'Legend',   icon:'🦁', min:1000, color:'#F59E0B' },
     { name:'Champion', icon:'🏆', min:500,  color:'#F59E0B' },
     { name:'Achiever', icon:'⭐', min:250,  color:'var(--indigo)' },
-    { name:'Explorer', icon:'🔍', min:100,  color:'#10B981' },
+    { name:'Explorer', icon:'🔍', min:100,  color:'var(--theme-primary)' },
     { name:'Beginner', icon:'🌱', min:0,    color:'var(--text-muted)' },
 ];
 
@@ -2228,10 +2228,10 @@ function showOnboardingWizard() {
                     ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
                         <button onclick="selectOnboardingAvatar('${emoji}')" style="
                             font-size:2em;padding:12px;border:3px solid ${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : 'var(--border-light)'};
-                            border-radius:12px;background:${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'};cursor:pointer;
+                            border-radius:12px;background:${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : 'var(--bg-light-extra)'};cursor:pointer;
                             transition:all 0.2s;font-weight:${state.trivia.onboarding.avatar === emoji ? '700' : '400'}
                         " onmouseover="this.style.borderColor='#4F46E5';this.style.background='var(--indigo-light)'"
-                        onmouseout="this.style.borderColor='${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : 'var(--border-light)'}';this.style.background='${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'}'"
+                        onmouseout="this.style.borderColor='${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : 'var(--border-light)'}';this.style.background='${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : 'var(--bg-light-extra)'}'"
                         >${emoji}</button>
                     `).join('')}
                 </div>
@@ -2256,7 +2256,7 @@ function showOnboardingWizard() {
                 <p style="font-size:0.85em;color: var(--text-secondary);margin-top:8px;margin-left:30px">You can always turn this on or off later</p>
             </div>
             <button id="lets-go-btn" style="
-                width:100%;padding:12px;background:linear-gradient(135deg,#10B981,#059669);
+                width:100%;padding:12px;background:linear-gradient(135deg,var(--theme-primary),#059669);
                 color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:opacity 0.2s
             " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Let's Go! 🚀</button>
         `;
@@ -2436,10 +2436,10 @@ function showProfileSettings() {
                 ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
                     <button onclick="changeAvatar('${emoji}')" style="
                         font-size:2em;padding:12px;border:2px solid ${profile.avatar === emoji ? '#818CF8' : 'var(--border-light)'};
-                        border-radius:12px;background:${profile.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'};
+                        border-radius:12px;background:${profile.avatar === emoji ? 'var(--indigo-light)' : 'var(--bg-light-extra)'};
                         cursor:pointer;transition:all 0.2s
                     " onmouseover="this.style.borderColor='#818CF8';this.style.background='var(--indigo-light)'"
-                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? '#818CF8' : 'var(--border-light)'}';this.style.background='${profile.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'}'"
+                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? '#818CF8' : 'var(--border-light)'}';this.style.background='${profile.avatar === emoji ? 'var(--indigo-light)' : 'var(--bg-light-extra)'}'"
                     >${emoji}</button>
                 `).join('')}
             </div>
@@ -2536,7 +2536,7 @@ function showGoalCompletion(goal) {
 
     const card = document.createElement('div');
     card.style.cssText = `
-        background:linear-gradient(135deg,#10B981,#059669);
+        background:linear-gradient(135deg,var(--theme-primary),#059669);
         border-radius:24px;padding:40px;max-width:350px;
         text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);
         animation:popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
@@ -2689,7 +2689,7 @@ function showBadgesModal() {
                 html += `
                     <div style="
                         text-align:center;padding:10px;border-radius:10px;
-                        background:${unlocked ? info.color + '20' : '#F1F5F9'};
+                        background:${unlocked ? info.color + '20' : 'var(--light)'};
                         border:2px solid ${unlocked ? info.color : 'var(--border-light)'}
                     " title="${info.requirement}">
                         <div style="font-size:1.8em;margin-bottom:4px;opacity:${unlocked ? 1 : 0.4}">${info.emoji}</div>
@@ -2884,7 +2884,7 @@ async function saveTriviaAnswer(questionId, isCorrect) {
 }
 
 // ── Difficulty display helpers ────────────────────
-function trivDiffColor(d) { return { easy:'#10B981', medium:'#F59E0B', hard:'#EF4444' }[d] || 'var(--indigo)'; }
+function trivDiffColor(d) { return { easy:'var(--theme-primary)', medium:'#F59E0B', hard:'#EF4444' }[d] || 'var(--indigo)'; }
 function trivDiffLabel(d) { return { easy:'Rookie', medium:'Pro', hard:'Legend' }[d] || d; }
 function trivDiffTagline(d) { return { easy:'Builds foundational knowledge', medium:'Tests deeper understanding', hard:'Challenges critical thinking' }[d] || ''; }
 function trivDiffTooltip(d) { return { easy:'Rookie — Clear, foundational questions.', medium:'Pro — Requires deeper knowledge and context.', hard:'Legend — Challenges specific knowledge and critical thinking.' }[d] || ''; }
@@ -2971,7 +2971,7 @@ function getProfileDisplay(label = 'Player') {
     `;
 }
 
-// Light-mode diff colors for trivia panel (activity board is #F1F5F9)
+// Light-mode diff colors for trivia panel (activity board is var(--light))
 function trivDiffBg(d)   { return { easy:'#ECFDF5', medium:'#FFFBEB', hard:'#FEF2F2' }[d] || 'var(--indigo-light)'; }
 function trivDiffText(d) { return { easy:'#065F46', medium:'#78350F', hard:'#7F1D1D' }[d] || '#312E81'; }
 function trivDiffBorder(d){ return { easy:'#6EE7B7', medium:'#FCD34D', hard:'#FCA5A5' }[d] || '#C7D2FE'; }
@@ -3022,29 +3022,29 @@ function renderTriviaPanel() {
         <!-- Phase 4: Difficulty Mode Selector -->
         <div style="display:flex;gap:8px;margin-bottom:14px;justify-content:center">
             <button onclick="setDifficultyMode('rookie')" style="
-                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'rookie' ? '#10B981' : 'var(--border-light)'};
+                padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'rookie' ? 'var(--theme-primary)' : 'var(--border-light)'};
                 background:${state.trivia.difficulty.currentMode === 'rookie' ? '#ECFDF5' : 'white'};
-                color:${state.trivia.difficulty.currentMode === 'rookie' ? '#065F46' : '#64748B'};
+                color:${state.trivia.difficulty.currentMode === 'rookie' ? '#065F46' : 'var(--text-secondary)'};
                 cursor:pointer;font-weight:700;font-size:0.85em;transition:all 0.2s
             ">🎓 Rookie</button>
             <button onclick="setDifficultyMode('pro')" ${!state.trivia.difficulty.proUnlocked ? 'disabled' : ''} style="
                 padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'pro' ? '#F59E0B' : 'var(--border-light)'};
                 background:${state.trivia.difficulty.currentMode === 'pro' ? '#FFFBEB' : 'white'};
-                color:${state.trivia.difficulty.currentMode === 'pro' ? '#78350F' : '#64748B'};
+                color:${state.trivia.difficulty.currentMode === 'pro' ? '#78350F' : 'var(--text-secondary)'};
                 cursor:${state.trivia.difficulty.proUnlocked ? 'pointer' : 'not-allowed'};font-weight:700;font-size:0.85em;
                 opacity:${state.trivia.difficulty.proUnlocked ? '1' : '0.5'};transition:all 0.2s
             ">⭐ Pro ${!state.trivia.difficulty.proUnlocked ? '(80%)' : ''}</button>
             <button onclick="setDifficultyMode('legend')" ${!state.trivia.difficulty.legendUnlocked ? 'disabled' : ''} style="
                 padding:8px 14px;border-radius:8px;border:2px solid ${state.trivia.difficulty.currentMode === 'legend' ? '#EF4444' : 'var(--border-light)'};
                 background:${state.trivia.difficulty.currentMode === 'legend' ? '#FEF2F2' : 'white'};
-                color:${state.trivia.difficulty.currentMode === 'legend' ? '#7F1D1D' : '#64748B'};
+                color:${state.trivia.difficulty.currentMode === 'legend' ? '#7F1D1D' : 'var(--text-secondary)'};
                 cursor:${state.trivia.difficulty.legendUnlocked ? 'pointer' : 'not-allowed'};font-weight:700;font-size:0.85em;
                 opacity:${state.trivia.difficulty.legendUnlocked ? '1' : '0.5'};transition:all 0.2s
             ">🔥 Legend ${!state.trivia.difficulty.legendUnlocked ? '(80%)' : ''}</button>
         </div>
 
         <!-- Boost Points Display -->
-        <div style="display:flex;gap:8px;margin-bottom:14px;padding:10px;background:#F8FAFC;border-radius:10px;justify-content:center;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;margin-bottom:14px;padding:10px;background:var(--bg-light-extra);border-radius:10px;justify-content:center;flex-wrap:wrap">
             ${(() => {
                 const boosts = state.boosts || { double_points: 0, skip: 0, extra_time: 0, hint: 0, combo_freeze: 0 };
                 const boostItems = [
@@ -3054,7 +3054,7 @@ function renderTriviaPanel() {
                     { icon: '💡', name: 'Hint', key: 'hint' }
                 ];
                 return boostItems.map(item => `
-                    <div style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:white;border:1px solid #CBD5E1;border-radius:8px;font-size:0.8em;color:var(--mid)">
+                    <div style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:white;border:1px solid var(--border-darker);border-radius:8px;font-size:0.8em;color:var(--mid)">
                         <span style="font-size:1em">${item.icon}</span>
                         <span style="font-weight:600">${boosts[item.key] || 0}</span>
                     </div>
@@ -3283,7 +3283,7 @@ function showTriviaResult(isCorrect, q) {
     if (!resultEl) return;
     resultEl.style.display = 'block';
     resultEl.innerHTML = `
-        <div style="background:${isCorrect?'#ECFDF5':'#FEF2F2'};border-left:3px solid ${isCorrect?'#10B981':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
+        <div style="background:${isCorrect?'#ECFDF5':'#FEF2F2'};border-left:3px solid ${isCorrect?'var(--theme-primary)':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
             <div style="font-weight:700;font-size:1.05em;color:${isCorrect?'#065F46':'#7F1D1D'}">${isCorrect ? '✅ Correct! Great job!' : `❌ The answer was: <strong style="color:var(--dark)">${q.correct}</strong>`}</div>
             ${isCorrect && triviaLastPointsEarned > 0 ? `<div style="margin-top:8px;font-size:0.9em;color:${isCorrect?'#059669':'#DC2626'};font-weight:600">+ ${triviaLastPointsEarned} 🪙 Points</div>` : ''}
         </div>
@@ -3593,7 +3593,7 @@ window.wordleCalculateScore = function(attempts) {
 // Render Wordle game UI
 window.renderWordleGame = function(game) {
     return `
-        <div style="max-width:400px;margin:20px auto;padding:20px;background:#F8FAFC;border-radius:16px">
+        <div style="max-width:400px;margin:20px auto;padding:20px;background:var(--bg-light-extra);border-radius:16px">
             <div style="text-align:center;margin-bottom:20px">
                 <div style="font-size:0.9em;color: var(--text-secondary)">Guess the 5-letter category name</div>
             </div>
@@ -3601,7 +3601,7 @@ window.renderWordleGame = function(game) {
             <div style="text-align:center;margin-bottom:16px">
                 <div style="font-size:0.8em;color:var(--text-muted);font-weight:600">Attempts: <span style="color:var(--dark);font-weight:800">${game.attempts}/${game.maxAttempts}</span></div>
                 <div style="height:6px;background:var(--border-light);border-radius:3px;margin-top:8px">
-                    <div style="height:100%;background:#10B981;border-radius:3px;width:${(game.attempts / game.maxAttempts) * 100}%"></div>
+                    <div style="height:100%;background:var(--theme-primary);border-radius:3px;width:${(game.attempts / game.maxAttempts) * 100}%"></div>
                 </div>
             </div>
 
@@ -3612,11 +3612,11 @@ window.renderWordleGame = function(game) {
             `).join('')}
 
             ${game.gameState !== 'playing' ? `
-                <div style="margin-bottom:16px;padding:16px;background:${game.gameState === 'won' ? '#ECFDF5' : '#FEF2F2'};border-radius:12px;text-align:center;border:2px solid ${game.gameState === 'won' ? '#10B981' : '#EF4444'}">
+                <div style="margin-bottom:16px;padding:16px;background:${game.gameState === 'won' ? '#ECFDF5' : '#FEF2F2'};border-radius:12px;text-align:center;border:2px solid ${game.gameState === 'won' ? 'var(--theme-primary)' : '#EF4444'}">
                     <div style="font-size:1.5em;margin-bottom:8px">${game.gameState === 'won' ? '🎉' : '😢'}</div>
                     <div style="font-weight:700;color:${game.gameState === 'won' ? '#065F46' : '#7F1D1D'};margin-bottom:4px">${game.gameState === 'won' ? 'You Won!' : 'Game Over'}</div>
                     <div style="font-size:0.9em;color:${game.gameState === 'won' ? '#047857' : '#991B1B'};margin-bottom:12px">Answer: <strong>${game.answer}</strong></div>
-                    <div style="font-size:1.1em;font-weight:800;color:#10B981">Points: ${game.score || 0}</div>
+                    <div style="font-size:1.1em;font-weight:800;color:var(--theme-primary)">Points: ${game.score || 0}</div>
                 </div>
             ` : `
                 <div style="display:flex;gap:8px;margin-bottom:16px">
@@ -3791,12 +3791,12 @@ window.showQuickFireBoostModal = function() {
                             <span style="font-size:1.5em">${boost.icon}</span>
                             <div>
                                 <div style="font-weight:800">${boost.name}</div>
-                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : '#64748B'}">Count: ${boost.count}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : 'var(--text-secondary)'}">Count: ${boost.count}</div>
                             </div>
                         </div>
-                        ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
+                        ${boost.count > 0 ? `<span style="background:var(--theme-primary);color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
                     </div>
-                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : '#64748B'}">${boost.effect}</div>
+                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : 'var(--text-secondary)'}">${boost.effect}</div>
                 </button>
             `).join('')}
         </div>
@@ -3813,13 +3813,13 @@ window.showQuickFireBoostModal = function() {
                 font-size:0.95em;
                 transition:all 0.2s;
             "
-            onmouseover="this.style.background='#64748B'"
+            onmouseover="this.style.background='var(--text-secondary)'"
             onmouseout="this.style.background='var(--mid)'">
                 Play without boost
             </button>
             <button id="play-with-boost" onclick="startQuickFireWithBoost()" style="
                 padding:14px;
-                background:#64748B;
+                background:var(--text-secondary);
                 border:none;
                 color:var(--text-muted);
                 border-radius:10px;
@@ -3937,7 +3937,7 @@ window.renderQuickFireGame = function(game) {
                 ${boostIndicator}
             </div>
             <div style="text-align:right">
-                <div id="qf-timer" style="font-size:1.8em;font-weight:800;color:#10B981">15s</div>
+                <div id="qf-timer" style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">15s</div>
                 <div id="qf-combo" style="font-size:0.9em;color:#FCD34D;font-weight:800;display:${game.combo > 1 ? 'block' : 'none'}">🔥 ${game.combo}× Combo</div>
             </div>
         </div>
@@ -3963,7 +3963,7 @@ window.renderQuickFireGame = function(game) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
             <div style="background:#064E3B;padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#D1FAE5">Score</div>
-                <div style="font-size:1.8em;font-weight:800;color:#10B981">${game.score}</div>
+                <div style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
             </div>
             <div style="background:#1E3A8A;padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#DBEAFE">Progress</div>
@@ -3991,7 +3991,7 @@ window.renderQuickFireGame = function(game) {
             const timerEl = document.getElementById('qf-timer');
             const comboEl = document.getElementById('qf-combo');
             if (timerEl) {
-                const gameColor = timeRemaining > 10 ? '#10B981' : timeRemaining > 5 ? '#F59E0B' : '#EF4444';
+                const gameColor = timeRemaining > 10 ? 'var(--theme-primary)' : timeRemaining > 5 ? '#F59E0B' : '#EF4444';
                 timerEl.textContent = timeRemaining + 's';
                 timerEl.style.color = gameColor;
             }
@@ -4142,12 +4142,12 @@ window.showQuickFireResults = function(game, accuracy) {
     card.innerHTML = `
         <div style="font-size:3em;margin-bottom:16px">${game.stats.correctCount >= 7 ? '🎉' : '🎮'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Final Score</h2>
-        <div style="font-size:3.5em;font-weight:900;color:#10B981;margin-bottom:24px">${game.score}</div>
+        <div style="font-size:3.5em;font-weight:900;color:var(--theme-primary);margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
             <div style="background:#064E3B;padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#D1FAE5">Accuracy</div>
-                <div style="font-size:1.8em;font-weight:800;color:#10B981">${(accuracy * 100).toFixed(0)}%</div>
+                <div style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${(accuracy * 100).toFixed(0)}%</div>
             </div>
             <div style="background:#1E3A8A;padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#DBEAFE">Max Combo</div>
@@ -4158,7 +4158,7 @@ window.showQuickFireResults = function(game, accuracy) {
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
             <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px">Correct: ${game.stats.correctCount}/10</div>
             <div style="height:4px;background:var(--mid);border-radius:2px">
-                <div style="height:100%;background:#10B981;border-radius:2px;width:${(game.stats.correctCount/10)*100}%"></div>
+                <div style="height:100%;background:var(--theme-primary);border-radius:2px;width:${(game.stats.correctCount/10)*100}%"></div>
             </div>
         </div>
 
@@ -4225,7 +4225,7 @@ window.showMemoryDifficultyModal = function() {
                         justify-content:space-between;
                         align-items:center;
                     "
-                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
+                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='var(--text-secondary)'"
                     onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
@@ -4251,7 +4251,7 @@ window.showMemoryDifficultyModal = function() {
             font-weight:600;
             font-size:0.95em;
         "
-        onmouseover="this.style.background='#64748B'"
+        onmouseover="this.style.background='var(--text-secondary)'"
         onmouseout="this.style.background='var(--mid)'">
             Cancel
         </button>
@@ -4315,12 +4315,12 @@ window.showMemoryBoostModal = function(difficulty) {
                             <span style="font-size:1.5em">${boost.icon}</span>
                             <div>
                                 <div style="font-weight:800">${boost.name}</div>
-                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : '#64748B'}">Count: ${boost.count}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : 'var(--text-secondary)'}">Count: ${boost.count}</div>
                             </div>
                         </div>
-                        ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
+                        ${boost.count > 0 ? `<span style="background:var(--theme-primary);color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
                     </div>
-                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : '#64748B'}">${boost.effect}</div>
+                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : 'var(--text-secondary)'}">${boost.effect}</div>
                 </button>
             `).join('')}
         </div>
@@ -4337,13 +4337,13 @@ window.showMemoryBoostModal = function(difficulty) {
                 font-size:0.95em;
                 transition:all 0.2s;
             "
-            onmouseover="this.style.background='#64748B'"
+            onmouseover="this.style.background='var(--text-secondary)'"
             onmouseout="this.style.background='var(--mid)'">
                 Play without boost
             </button>
             <button id="play-memory-with-boost" onclick="startMemoryWithBoost('${difficulty}')" style="
                 padding:14px;
-                background:#64748B;
+                background:var(--text-secondary);
                 border:none;
                 color:var(--text-muted);
                 border-radius:10px;
@@ -4513,7 +4513,7 @@ window.renderMemoryGame = function(game) {
                 <div style="font-size:0.85em;color:var(--text-muted)">${diffLabel}</div>
             </div>
             <div style="text-align:right">
-                <div id="mem-timer" style="font-size:1.8em;font-weight:800;color:#10B981">${game.settings.time}s</div>
+                <div id="mem-timer" style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.settings.time}s</div>
                 <div id="mem-combo" style="font-size:0.9em;color:#FCD34D;font-weight:800;display:${game.combo > 1 ? 'block' : 'none'}">🔥 ${game.combo}× Combo</div>
             </div>
         </div>
@@ -4521,7 +4521,7 @@ window.renderMemoryGame = function(game) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
             <div style="background:#064E3B;padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#D1FAE5">Score</div>
-                <div id="mem-score" style="font-size:1.8em;font-weight:800;color:#10B981">${game.score}</div>
+                <div id="mem-score" style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
             </div>
             <div style="background:#1E3A8A;padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#DBEAFE">Progress</div>
@@ -4550,7 +4550,7 @@ window.renderMemoryGame = function(game) {
                         width:${tileSize}px;
                         height:${tileSize}px;
                         background:${tile.matched ? '#DCFCE7' : tile.flipped ? '#FFFFFF' : 'var(--mid)'};
-                        border:2px solid ${tile.matched ? '#10B981' : tile.flipped ? '#CBD5E1' : '#64748B'};
+                        border:2px solid ${tile.matched ? 'var(--theme-primary)' : tile.flipped ? 'var(--border-darker)' : 'var(--text-secondary)'};
                         border-radius:8px;
                         color:${tile.matched ? 'var(--text-muted)' : tile.flipped ? 'var(--dark)' : 'var(--text-muted)'};
                         cursor:${tile.matched ? 'default' : 'pointer'};
@@ -4598,7 +4598,7 @@ window.renderMemoryGame = function(game) {
 
             const timerEl = document.getElementById('mem-timer');
             if (timerEl) {
-                const gameColor = timeRemaining > game.settings.time / 2 ? '#10B981' : timeRemaining > game.settings.time / 4 ? '#F59E0B' : '#EF4444';
+                const gameColor = timeRemaining > game.settings.time / 2 ? 'var(--theme-primary)' : timeRemaining > game.settings.time / 4 ? '#F59E0B' : '#EF4444';
                 timerEl.textContent = timeRemaining + 's';
                 timerEl.style.color = gameColor;
             }
@@ -4667,12 +4667,12 @@ window.checkMemoryMatch = function(game) {
                 btn2.classList.add('matched');
                 btn1.style.background = '#DCFCE7';
                 btn1.style.color = 'var(--text-muted)';
-                btn1.style.borderColor = '#10B981';
+                btn1.style.borderColor = 'var(--theme-primary)';
                 btn1.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
                 btn1.disabled = true;
                 btn2.style.background = '#DCFCE7';
                 btn2.style.color = 'var(--text-muted)';
-                btn2.style.borderColor = '#10B981';
+                btn2.style.borderColor = 'var(--theme-primary)';
                 btn2.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.2)';
                 btn2.disabled = true;
             }
@@ -4852,13 +4852,13 @@ window.showMemoryResults = function(game, won) {
         <div style="font-size:3em;margin-bottom:16px">${won ? '🎉' : '⏱️'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Game ${won ? 'Won!' : 'Over'}</h2>
         ${isNewBest && game.score > 0 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800;margin-bottom:6px">🏆 New Personal Best!</div>` : ''}
-        ${rank <= allDifficultyScores.length ? `<div style="font-size:0.95em;color:#10B981;font-weight:700;margin-bottom:12px">${rankDisplay} Rank #${rank} of ${allDifficultyScores.length}</div>` : ''}
-        <div style="font-size:3.5em;font-weight:900;color:#10B981;margin-bottom:24px">${game.score}</div>
+        ${rank <= allDifficultyScores.length ? `<div style="font-size:0.95em;color:var(--theme-primary);font-weight:700;margin-bottom:12px">${rankDisplay} Rank #${rank} of ${allDifficultyScores.length}</div>` : ''}
+        <div style="font-size:3.5em;font-weight:900;color:var(--theme-primary);margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
             <div style="background:#064E3B;padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#D1FAE5">Pairs Matched</div>
-                <div style="font-size:1.8em;font-weight:800;color:#10B981">${game.matchesFound}/${game.totalMatches}</div>
+                <div style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.matchesFound}/${game.totalMatches}</div>
             </div>
             <div style="background:#1E3A8A;padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#DBEAFE">Time Used</div>
@@ -4967,7 +4967,7 @@ window.showScrambleDifficultyModal = function() {
                         justify-content:space-between;
                         align-items:center;
                     "
-                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
+                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='var(--text-secondary)'"
                     onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
@@ -4993,7 +4993,7 @@ window.showScrambleDifficultyModal = function() {
             font-weight:600;
             font-size:0.95em;
         "
-        onmouseover="this.style.background='#64748B'"
+        onmouseover="this.style.background='var(--text-secondary)'"
         onmouseout="this.style.background='var(--mid)'">
             Cancel
         </button>
@@ -5057,12 +5057,12 @@ window.showScrambleBoostModal = function(difficulty) {
                             <span style="font-size:1.5em">${boost.icon}</span>
                             <div>
                                 <div style="font-weight:800">${boost.name}</div>
-                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : '#64748B'}">Count: ${boost.count}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : 'var(--text-secondary)'}">Count: ${boost.count}</div>
                             </div>
                         </div>
-                        ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
+                        ${boost.count > 0 ? `<span style="background:var(--theme-primary);color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
                     </div>
-                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : '#64748B'}">${boost.effect}</div>
+                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : 'var(--text-secondary)'}">${boost.effect}</div>
                 </button>
             `).join('')}
         </div>
@@ -5079,13 +5079,13 @@ window.showScrambleBoostModal = function(difficulty) {
                 font-size:0.95em;
                 transition:all 0.2s;
             "
-            onmouseover="this.style.background='#64748B'"
+            onmouseover="this.style.background='var(--text-secondary)'"
             onmouseout="this.style.background='var(--mid)'">
                 Play without boost
             </button>
             <button id="play-scramble-with-boost" onclick="startScrambleWithBoost('${difficulty}')" style="
                 padding:14px;
-                background:#64748B;
+                background:var(--text-secondary);
                 border:none;
                 color:var(--text-muted);
                 border-radius:10px;
@@ -5276,7 +5276,7 @@ window.renderScrambleGame = function(game) {
                 <div style="font-size:0.85em;color:var(--text-muted)">${diffLabel}</div>
             </div>
             <div style="text-align:right">
-                <div id="scr-timer" style="font-size:1.8em;font-weight:800;color:#10B981">${game.settings.time}s</div>
+                <div id="scr-timer" style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.settings.time}s</div>
                 <div style="font-size:0.9em;color:var(--text-muted)">Word ${progress}/5</div>
             </div>
         </div>
@@ -5284,7 +5284,7 @@ window.renderScrambleGame = function(game) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
             <div style="background:#064E3B;padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#D1FAE5">Score</div>
-                <div id="scr-score" style="font-size:1.8em;font-weight:800;color:#10B981">${game.score}</div>
+                <div id="scr-score" style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
             </div>
             <div style="background:#1E3A8A;padding:12px;border-radius:10px;text-align:center">
                 <div style="font-size:0.9em;color:#DBEAFE">Correct</div>
@@ -5317,7 +5317,7 @@ window.renderScrambleGame = function(game) {
                     width:100%;
                     padding:12px;
                     background:white;
-                    border:2px solid #CBD5E1;
+                    border:2px solid var(--border-darker);
                     border-radius:10px;
                     color:var(--dark);
                     font-size:1.1em;
@@ -5326,7 +5326,7 @@ window.renderScrambleGame = function(game) {
                     transition:all 0.2s;
                 "
                 onfocus="this.style.borderColor='#0EA5E9'; this.style.background='#F0F9FF'"
-                onblur="this.style.borderColor='#CBD5E1'; this.style.background='white'"
+                onblur="this.style.borderColor='var(--border-darker)'; this.style.background='white'"
             />
         </div>
 
@@ -5353,7 +5353,7 @@ window.renderScrambleGame = function(game) {
             ">Skip</button>
             <button onclick="quitScrambleGame()" style="
                 padding:12px;
-                background:#64748B;
+                background:var(--text-secondary);
                 border:none;
                 color:white;
                 border-radius:10px;
@@ -5382,7 +5382,7 @@ window.renderScrambleGame = function(game) {
 
             const timerEl = document.getElementById('scr-timer');
             if (timerEl) {
-                const gameColor = timeRemaining > game.settings.time / 2 ? '#10B981' : timeRemaining > game.settings.time / 4 ? '#F59E0B' : '#EF4444';
+                const gameColor = timeRemaining > game.settings.time / 2 ? 'var(--theme-primary)' : timeRemaining > game.settings.time / 4 ? '#F59E0B' : '#EF4444';
                 timerEl.textContent = timeRemaining + 's';
                 timerEl.style.color = gameColor;
             }
@@ -5427,7 +5427,7 @@ window.submitScrambleAnswer = function() {
             input_el.style.borderColor = '#16A34A';
             input_el.disabled = true;
             word_el.textContent = word.original.toUpperCase();
-            word_el.style.color = '#10B981';
+            word_el.style.color = 'var(--theme-primary)';
         }
 
         // Update score
@@ -5457,7 +5457,7 @@ window.submitScrambleAnswer = function() {
             input_el.style.borderColor = '#DC2626';
             setTimeout(() => {
                 input_el.style.background = 'white';
-                input_el.style.borderColor = '#CBD5E1';
+                input_el.style.borderColor = 'var(--border-darker)';
                 input_el.value = '';
                 input_el.focus();
             }, 300);
@@ -5547,13 +5547,13 @@ window.showScrambleResults = function(game, won) {
         <div style="font-size:3em;margin-bottom:16px">${won ? '🎉' : '🎲'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Game ${won ? 'Won!' : 'Over'}</h2>
         ${isNewBest && game.score > 0 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800;margin-bottom:6px">🏆 New Personal Best!</div>` : ''}
-        ${rank <= allDifficultyScores.length ? `<div style="font-size:0.95em;color:#10B981;font-weight:700;margin-bottom:12px">${rankDisplay} Rank #${rank} of ${allDifficultyScores.length}</div>` : ''}
-        <div style="font-size:3.5em;font-weight:900;color:#10B981;margin-bottom:24px">${game.score}</div>
+        ${rank <= allDifficultyScores.length ? `<div style="font-size:0.95em;color:var(--theme-primary);font-weight:700;margin-bottom:12px">${rankDisplay} Rank #${rank} of ${allDifficultyScores.length}</div>` : ''}
+        <div style="font-size:3.5em;font-weight:900;color:var(--theme-primary);margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
             <div style="background:#064E3B;padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#D1FAE5">Words Correct</div>
-                <div style="font-size:1.8em;font-weight:800;color:#10B981">${game.stats.words_correct}/5</div>
+                <div style="font-size:1.8em;font-weight:800;color:var(--theme-primary)">${game.stats.words_correct}/5</div>
             </div>
             <div style="background:#1E3A8A;padding:16px;border-radius:12px">
                 <div style="font-size:0.9em;color:#DBEAFE">Time Used</div>
@@ -5750,7 +5750,7 @@ window.showChallengeDifficultyModal = function() {
                         justify-content:space-between;
                         align-items:center;
                     "
-                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
+                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='var(--text-secondary)'"
                     onmouseout="this.style.background='#0F172A'; this.style.borderColor='var(--mid)'"
                 >
                     <div>
@@ -5774,7 +5774,7 @@ window.showChallengeDifficultyModal = function() {
             font-weight:600;
             font-size:0.95em;
         "
-        onmouseover="this.style.background='#64748B'"
+        onmouseover="this.style.background='var(--text-secondary)'"
         onmouseout="this.style.background='var(--mid)'">
             Cancel
         </button>
@@ -5841,12 +5841,12 @@ window.showChallengeBoostModal = function(difficulty) {
                             <span style="font-size:1.5em">${boost.icon}</span>
                             <div>
                                 <div style="font-weight:800">${boost.name}</div>
-                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : '#64748B'}">Count: ${boost.count}</div>
+                                <div style="font-size:0.85em;color:${boost.count > 0 ? 'var(--text-muted)' : 'var(--text-secondary)'}">Count: ${boost.count}</div>
                             </div>
                         </div>
-                        ${boost.count > 0 ? `<span style="background:#10B981;color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
+                        ${boost.count > 0 ? `<span style="background:var(--theme-primary);color:white;padding:4px 8px;border-radius:6px;font-size:0.8em;font-weight:800">✓</span>` : ''}
                     </div>
-                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : '#64748B'}">${boost.effect}</div>
+                    <div style="font-size:0.9em;color:${boost.count > 0 ? '#D1FAE5' : 'var(--text-secondary)'}">${boost.effect}</div>
                 </button>
             `).join('')}
         </div>
@@ -5863,13 +5863,13 @@ window.showChallengeBoostModal = function(difficulty) {
                 font-size:0.95em;
                 transition:all 0.2s;
             "
-            onmouseover="this.style.background='#64748B'"
+            onmouseover="this.style.background='var(--text-secondary)'"
             onmouseout="this.style.background='var(--mid)'">
                 Play without boost
             </button>
             <button id="play-challenge-with-boost" onclick="startChallengeWithBoost('${difficulty}')" style="
                 padding:14px;
-                background:#64748B;
+                background:var(--text-secondary);
                 border:none;
                 color:var(--text-muted);
                 border-radius:10px;
@@ -6012,13 +6012,13 @@ window.playNextChallengeGame = function() {
             <div style="font-size:0.9em;color: var(--text-secondary);font-weight:600">Game ${gameNum}/3: ${gameType.toUpperCase()}</div>
             <div style="font-size:1.1em;font-weight:800">${lifeDisplay}</div>
         </div>
-        <div style="background:#F1F5F9;padding:12px;border-radius:8px;margin-bottom:16px">
+        <div style="background:var(--light);padding:12px;border-radius:8px;margin-bottom:16px">
             <div style="display:flex;justify-content:space-between">
                 <div style="color: var(--text-secondary);font-size:0.85em">Running Score</div>
-                <div style="color:#10B981;font-weight:800;font-size:1.3em">${challenge.score}</div>
+                <div style="color:var(--theme-primary);font-weight:800;font-size:1.3em">${challenge.score}</div>
             </div>
         </div>
-        <div id="mini-game-content" style="background:#F8FAFC;padding:16px;border-radius:12px">Loading game...</div>
+        <div id="mini-game-content" style="background:var(--bg-light-extra);padding:16px;border-radius:12px">Loading game...</div>
     `;
 
     // Load the appropriate mini-game based on gameType
@@ -6241,7 +6241,7 @@ window.showChallengeResults = function(challenge) {
         const icon = won ? '✅' : '❌';
         return `<div style="display:flex;justify-content:space-between;padding:12px;background:#0F172A;border-radius:8px;margin-bottom:8px;color:white">
             <div>${icon} ${game.toUpperCase()}</div>
-            <div style="font-weight:800;color:#10B981">${score} pts</div>
+            <div style="font-weight:800;color:var(--theme-primary)">${score} pts</div>
         </div>`;
     }).join('');
 
@@ -6263,7 +6263,7 @@ window.showChallengeResults = function(challenge) {
 
         <div style="text-align:center;margin-bottom:24px">
             <div style="font-size:3em;margin-bottom:12px">${challenge.gameState === 'won' ? '🎉' : '💪'}</div>
-            <div style="font-size:2em;font-weight:800;color:#10B981;margin-bottom:8px">${challenge.score}</div>
+            <div style="font-size:2em;font-weight:800;color:var(--theme-primary);margin-bottom:8px">${challenge.score}</div>
             <div style="color: var(--text-secondary);font-size:0.9em">Points Earned</div>
         </div>
 
@@ -6272,7 +6272,7 @@ window.showChallengeResults = function(challenge) {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div>
                     <div style="color:var(--text-muted);font-size:0.85em">Games Won</div>
-                    <div style="font-size:1.5em;font-weight:800;color:#10B981">${challenge.stats.gamesWon}/3</div>
+                    <div style="font-size:1.5em;font-weight:800;color:var(--theme-primary)">${challenge.stats.gamesWon}/3</div>
                 </div>
                 <div>
                     <div style="color:var(--text-muted);font-size:0.85em">Lives Left</div>
@@ -6406,7 +6406,7 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
                 <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px;font-weight:600">Difficulty</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button onclick="window._leaderboardFilters.difficulty='all';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'all' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">All</button>
-                    <button onclick="window._leaderboardFilters.difficulty='easy';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'easy' ? '#10B981' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟢 Easy</button>
+                    <button onclick="window._leaderboardFilters.difficulty='easy';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'easy' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟢 Easy</button>
                     <button onclick="window._leaderboardFilters.difficulty='medium';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'medium' ? '#F59E0B' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟡 Med</button>
                     <button onclick="window._leaderboardFilters.difficulty='hard';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'hard' ? '#EF4444' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🔴 Hard</button>
                 </div>
@@ -6559,7 +6559,7 @@ window.getSeasonalTheme = function() {
     }
 
     const themes = {
-        spring: { primary: '#10B981', accent: '#BFDBFE', name: 'Spring 🌱' },
+        spring: { primary: 'var(--theme-primary)', accent: '#BFDBFE', name: 'Spring 🌱' },
         summer: { primary: '#FBBF24', accent: '#FEF3C7', name: 'Summer ☀️' },
         fall: { primary: '#F97316', accent: '#FED7AA', name: 'Fall 🍂' },
         winter: { primary: '#0EA5E9', accent: '#BAE6FD', name: 'Winter ❄️' },
@@ -6609,7 +6609,7 @@ window.applyTheme = function(theme) {
 // Update CSS variables for the chosen theme
 window.updateThemeColors = function(theme) {
     const themes = {
-        spring: { primary: '#10B981', accent: '#BFDBFE', secondary: '#D1FAE5' },
+        spring: { primary: 'var(--theme-primary)', accent: '#BFDBFE', secondary: '#D1FAE5' },
         summer: { primary: '#FBBF24', accent: '#FEF3C7', secondary: '#FDE047' },
         fall: { primary: '#F97316', accent: '#FED7AA', secondary: '#FDBA74' },
         winter: { primary: '#0EA5E9', accent: '#BAE6FD', secondary: '#E0F2FE' }
@@ -6696,7 +6696,7 @@ window.getTextColorForBackground = function(hexColor) {
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
     // If brightness > 155, use dark text; otherwise use white
-    return brightness > 155 ? '#1E293B' : '#FFFFFF';
+    return brightness > 155 ? 'var(--dark)' : '#FFFFFF';
 };
 
 window.applyHolidayTheme = function() {
@@ -6708,7 +6708,7 @@ window.applyHolidayTheme = function() {
     }
 
     const themeColors = {
-        spring: { primary: '#10B981', accent: '#BFDBFE', secondary: '#D1FAE5' },
+        spring: { primary: 'var(--theme-primary)', accent: '#BFDBFE', secondary: '#D1FAE5' },
         summer: { primary: '#FBBF24', accent: '#FEF3C7', secondary: '#FDE047' },
         fall: { primary: '#F97316', accent: '#FED7AA', secondary: '#FDBA74' },
         winter: { primary: '#0EA5E9', accent: '#BAE6FD', secondary: '#E0F2FE' }
@@ -7663,7 +7663,7 @@ function renderDashReading() {
                 <span style="font-size:0.8em;color:#818CF8;font-weight:600">Week: ${r.weeklyMinutes||0}/100</span>
             </div>
             <div style="background:var(--mid);border-radius:8px;height:6px;overflow:hidden;margin-bottom:10px">
-                <div style="background:linear-gradient(90deg,#10B981,#6EE7B7);height:100%;width:${pct}%;transition:width 0.3s"></div>
+                <div style="background:linear-gradient(90deg,var(--theme-primary),#6EE7B7);height:100%;width:${pct}%;transition:width 0.3s"></div>
             </div>
             <button onclick="showBoard('reading')" style="width:100%;padding:8px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9em">
                 ${r.dailyMinutes >= 20 ? '✓ Daily Goal Done' : 'Log Reading →'}
@@ -7906,7 +7906,7 @@ function renderPomoWidget() {
                 <circle class="r-fill" id="pomo-ring-fill" cx="60" cy="60" r="${R}"
                     stroke-dasharray="${C.toFixed(2)}"
                     stroke-dashoffset="${offset.toFixed(2)}"
-                    stroke="${p.mode === 'work' ? '#F97316' : '#10B981'}"/>
+                    stroke="${p.mode === 'work' ? '#F97316' : 'var(--theme-primary)'}"/>
             </svg>
             <div class="pomo-time" id="pomo-time-display">${mins}:${secs}</div>
         </div>
@@ -8014,7 +8014,7 @@ function updatePomoDisplay() {
     if (timeEl) timeEl.textContent = mins + ':' + secs;
     if (ringEl) {
         ringEl.setAttribute('stroke-dashoffset', offset.toFixed(2));
-        ringEl.setAttribute('stroke', p.mode === 'work' ? '#F97316' : '#10B981');
+        ringEl.setAttribute('stroke', p.mode === 'work' ? '#F97316' : 'var(--theme-primary)');
     }
     if (modeEl) modeEl.textContent = p.mode === 'work' ? 'Focus Time 🎯' : 'Break Time ☕';
 
@@ -8159,11 +8159,11 @@ function _legacyTriviaPanel_unused() {
                 </div>
 
                 <div style="background:rgba(99,102,241,0.1);border-radius:12px;padding:20px;margin-bottom:16px">
-                    <div style="font-size:1.1em;font-weight:600;color:#F1F5F9;line-height:1.5">${q.q}</div>
+                    <div style="font-size:1.1em;font-weight:600;color:var(--light);line-height:1.5">${q.q}</div>
                 </div>
 
                 ${answered ? `
-                    <div style="background:#10B98122;border-left:4px solid #10B981;border-radius:8px;padding:14px;margin-bottom:16px">
+                    <div style="background:var(--theme-primary)22;border-left:4px solid var(--theme-primary);border-radius:8px;padding:14px;margin-bottom:16px">
                         <div style="color:#6EE7B7;font-weight:600;margin-bottom:6px">✓ You answered correctly! +5 points</div>
                         <div style="color:#6EE7B7;font-size:0.9em">Streak: ${t.streak || 0} days 🔥</div>
                     </div>
@@ -8238,7 +8238,7 @@ function renderBoardReading() {
             <div style="margin-bottom:20px">
                 <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px">Today's Progress</div>
                 <div style="background:var(--mid);border-radius:8px;height:8px;overflow:hidden">
-                    <div style="background:linear-gradient(90deg,#10B981,#6EE7B7);height:100%;width:${Math.min(100, (r.dailyMinutes/20)*100)}%;transition:width 0.3s"></div>
+                    <div style="background:linear-gradient(90deg,var(--theme-primary),#6EE7B7);height:100%;width:${Math.min(100, (r.dailyMinutes/20)*100)}%;transition:width 0.3s"></div>
                 </div>
                 <div style="font-size:0.75em;color: var(--text-secondary);margin-top:4px">${r.dailyMinutes} of 20 minutes</div>
             </div>
@@ -8252,7 +8252,7 @@ function renderBoardReading() {
             </div>
 
             ${isGoalMet ? `
-                <div style="background:#10B98122;border-left:4px solid #10B981;border-radius:8px;padding:12px;margin-bottom:20px">
+                <div style="background:var(--theme-primary)22;border-left:4px solid var(--theme-primary);border-radius:8px;padding:12px;margin-bottom:20px">
                     <div style="color:#6EE7B7;font-weight:600">✓ Daily goal reached!</div>
                 </div>
             ` : ''}
@@ -8280,7 +8280,7 @@ function renderBoardReading() {
                         ${r.history.slice(-4).reverse().map(h =>
                             `<div style="display:flex;justify-content:space-between;padding:8px;background:var(--dark);border-radius:6px;font-size:0.9em">
                                 <span style="color:var(--text-muted)">Week of ${h.week}</span>
-                                <span style="color:#10B981;font-weight:600">${h.minutes} min</span>
+                                <span style="color:var(--theme-primary);font-weight:600">${h.minutes} min</span>
                             </div>`
                         ).join('')}
                     </div>
@@ -8452,7 +8452,7 @@ function renderGujaratiPanel() {
             ${['Phase 1: Alphabet (48 letters)', 'Phase 2: Numbers & Words', 'Phase 3: Vocabulary & Sentences'].map((ph, i) => {
                 const isActive  = g.phase === i + 1;
                 const isDone    = g.phase > i + 1;
-                return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #F1F5F9;font-size:0.88em">
+                return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--light);font-size:0.88em">
                     <span style="font-size:1.2em">${isDone ? '✅' : isActive ? '🔵' : '⭕'}</span>
                     <span style="font-weight:${isActive ? '700' : '400'};color:${isDone ? 'var(--success)' : isActive ? 'var(--primary)' : 'var(--muted)'}">${ph}</span>
                     ${isActive ? '<span class="chip chip-b" style="margin-left:auto">Active</span>' : ''}
