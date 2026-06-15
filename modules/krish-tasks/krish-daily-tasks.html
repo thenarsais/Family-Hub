@@ -247,11 +247,11 @@
         /* Dashboard Grid */
         .dash-grid { padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .dash-card {
-            background:#1E293B;
+            background: var(--theme-secondary, #F1F5F9);
             border-radius:var(--radius);
             padding:15px;
             cursor:pointer;
-            transition:var(--t);
+            transition:all 0.3s ease;
             border:2px solid transparent;
             position:relative;
             overflow:hidden;
@@ -769,11 +769,12 @@
 
         /* ── DB CARD BASE ──────────────────────────── */
         .db-card {
-            background: white;
+            background: var(--theme-secondary, white);
             border-radius: 18px;
             overflow: hidden;
             box-shadow: 0 4px 24px rgba(0,0,0,0.14);
             position: relative;
+            transition: background-color 0.3s ease;
         }
 
         .db-card-hdr {
