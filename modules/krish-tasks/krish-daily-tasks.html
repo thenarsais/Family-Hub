@@ -1406,6 +1406,14 @@
             opacity: 1;
             color: rgba(255, 255, 255, 0.6);
         }
+        /* Daily Quests Card */
+        .daily-quests-card {
+            background: linear-gradient(135deg, var(--season-bg-light), rgba(255,255,255,0.05));
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--season-border);
+        }
+
         .game-header {
             display: flex;
             align-items: center;
@@ -1733,6 +1741,10 @@
 
         <!-- COL 4: MOOD + GUJARATI + POINTS (stacked) -->
         <div class="db-side">
+            <div class="db-card" id="db-quests-card">
+                <div id="db-quests-content"></div>
+            </div>
+
             <div class="db-card" id="db-mood-card">
                 <div class="db-card-hdr" onclick="showBoard('mood')" style="cursor:pointer">
                     <span class="db-card-ico">😊</span>
@@ -3749,6 +3761,12 @@ window.recordGamePlay = function(gameId, score, won) {
     if (won) stats.wins += 1;
     if (score > (stats.bestScore || 0)) stats.bestScore = score;
     stats.lastPlayed = todayStr();
+
+    // Update quest progress
+    if (gameId !== 'challenge') { // Don't track challenge mode
+        updateQuestProgress(gameId, { won: won, score: score });
+        renderDashQuests();
+    }
 
     saveState();
 };
@@ -7613,6 +7631,233 @@ window.showPerformanceDashboard = function() {
     document.body.appendChild(modal);
 };
 
+// ── DAILY QUEST SYSTEM ──────────────────────────────
+window.QUEST_POOL = [
+    // Wordle quests
+    { id: 'wordle-1', game: 'wordle', name: 'Wordle Master', desc: 'Complete 2 Wordle games', target: 2, icon: '🎯', difficulty: 'easy' },
+    { id: 'wordle-2', game: 'wordle', name: 'Perfect Guesses', desc: 'Win 1 Wordle with 5+ correct letters', target: 1, icon: '⭐', difficulty: 'medium' },
+
+    // Memory quests
+    { id: 'memory-1', game: 'memory', name: 'Memory Master', desc: 'Complete 2 Memory games', target: 2, icon: '🧠', difficulty: 'easy' },
+    { id: 'memory-2', game: 'memory', name: 'Perfect Match', desc: 'Complete 1 Memory game with 4+ combo', target: 1, icon: '🔥', difficulty: 'hard' },
+    { id: 'memory-3', game: 'memory', name: 'Speed Solver', desc: 'Earn 150+ points in Memory', target: 150, icon: '⚡', difficulty: 'medium' },
+
+    // Scramble quests
+    { id: 'scramble-1', game: 'scramble', name: 'Word Wizard', desc: 'Solve 3 word scrambles', target: 3, icon: '🎲', difficulty: 'easy' },
+    { id: 'scramble-2', game: 'scramble', name: 'Speed Unscrambler', desc: 'Solve 1 word in under 10 seconds', target: 1, icon: '⚡', difficulty: 'hard' },
+
+    // Quick-Fire quests
+    { id: 'quickfire-1', game: 'quickfire', name: 'Speed Solver', desc: 'Answer 5 Quick-Fire questions', target: 5, icon: '💨', difficulty: 'easy' },
+    { id: 'quickfire-2', game: 'quickfire', name: 'Quiz Master', desc: 'Get 8+ correct in Quick-Fire', target: 8, icon: '🎓', difficulty: 'medium' },
+
+    // Multi-game quests
+    { id: 'multi-1', game: 'multi', name: 'Game Hopper', desc: 'Play 4 different games today', target: 4, icon: '🎮', difficulty: 'medium' },
+    { id: 'multi-2', game: 'multi', name: 'Winning Streak', desc: 'Win 3 games in a row', target: 3, icon: '🔥', difficulty: 'hard' },
+];
+
+window.initializeDailyQuests = function() {
+    const today = todayStr();
+
+    // Check if quests exist and are from today
+    if (state.dailyQuests && state.dailyQuests.date === today) {
+        return; // Already initialized for today
+    }
+
+    // Generate new quests for today
+    const selectedQuests = [];
+    const poolCopy = [...QUEST_POOL].sort(() => Math.random() - 0.5);
+
+    // Select 3 random quests
+    for (let i = 0; i < 3 && i < poolCopy.length; i++) {
+        selectedQuests.push({
+            ...poolCopy[i],
+            progress: 0,
+            completed: false,
+            completedTime: null
+        });
+    }
+
+    state.dailyQuests = {
+        date: today,
+        quests: selectedQuests,
+        streak: state.dailyQuests?.streak || 0,
+        allCompleted: false
+    };
+
+    saveState();
+};
+
+window.updateQuestProgress = function(gameId, statsData) {
+    if (!state.dailyQuests) initializeDailyQuests();
+
+    const today = todayStr();
+    if (state.dailyQuests.date !== today) {
+        initializeDailyQuests();
+    }
+
+    // Update progress for matching quests
+    state.dailyQuests.quests.forEach(quest => {
+        if (quest.completed) return; // Skip completed quests
+
+        if (quest.game === gameId) {
+            // Generic game count increase
+            quest.progress++;
+        } else if (quest.game === 'multi' && quest.id === 'multi-1') {
+            // Game hopper: count unique games
+            if (!quest.uniqueGames) quest.uniqueGames = new Set();
+            quest.uniqueGames.add(gameId);
+            quest.progress = quest.uniqueGames.size;
+        } else if (quest.game === 'multi' && quest.id === 'multi-2') {
+            // Winning streak: track consecutive wins
+            if (statsData && statsData.won) {
+                if (!quest.winStreak) quest.winStreak = 0;
+                quest.winStreak++;
+                quest.progress = quest.winStreak;
+            } else if (statsData && !statsData.won) {
+                quest.winStreak = 0;
+                quest.progress = 0;
+            }
+        }
+
+        // Check if quest is completed
+        if (quest.progress >= quest.target && !quest.completed) {
+            quest.completed = true;
+            quest.completedTime = new Date().toLocaleTimeString();
+            checkAllQuestsCompleted();
+        }
+    });
+
+    saveState();
+};
+
+window.checkAllQuestsCompleted = function() {
+    if (!state.dailyQuests) return;
+
+    const allCompleted = state.dailyQuests.quests.every(q => q.completed);
+    if (allCompleted && !state.dailyQuests.allCompleted) {
+        state.dailyQuests.allCompleted = true;
+        state.dailyQuests.streak = (state.dailyQuests.streak || 0) + 1;
+
+        // Award bonus for completing all quests
+        const bonusPoints = 50; // Flat bonus for completing all daily quests
+        awardPoints(bonusPoints);
+        saveState();
+
+        // Show celebration notification
+        showQuestCompletionToast();
+    }
+};
+
+window.showQuestCompletionToast = function() {
+    const existingToast = document.getElementById('quest-completion-toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'quest-completion-toast';
+    toast.className = 'toast-enter';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 320px;
+        background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+        border-left: 4px solid #FCD34D;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 9999;
+        color: white;
+        text-align: center;
+    `;
+
+    toast.innerHTML = `
+        <div style="font-size:2em;margin-bottom:8px">🎉</div>
+        <div style="font-weight:800;font-size:1.1em;margin-bottom:4px">All Quests Complete!</div>
+        <div style="font-size:0.9em;opacity:0.9">+50 bonus points • Streak: ${state.dailyQuests.streak} days</div>
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast && toast.parentNode) {
+            toast.classList.remove('toast-enter');
+            toast.classList.add('toast-exit');
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 300);
+        }
+    }, 4000);
+};
+
+window.renderDailyQuests = function() {
+    if (!state.dailyQuests) initializeDailyQuests();
+
+    const quests = state.dailyQuests.quests || [];
+    const allCompleted = state.dailyQuests.allCompleted || false;
+
+    const questCardsHTML = quests.map((quest, idx) => {
+        const progressPercent = Math.min(100, (quest.progress / quest.target) * 100);
+        const statusIcon = quest.completed ? '✅' : '⏳';
+        const statusColor = quest.completed ? 'var(--season-primary)' : 'var(--season-text)';
+
+        return `
+            <div style="background:var(--season-bg-light);border:1px solid var(--season-border);border-radius:12px;padding:14px;margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1">
+                        <span style="font-size:1.4em">${quest.icon}</span>
+                        <div>
+                            <div style="font-weight:700;color:var(--season-primary);font-size:0.95em">${quest.name}</div>
+                            <div style="font-size:0.8em;color:var(--season-text);opacity:0.8">${quest.desc}</div>
+                        </div>
+                    </div>
+                    <span style="font-size:1.2em">${statusIcon}</span>
+                </div>
+                <div style="background:rgba(0,0,0,0.1);border-radius:6px;height:6px;margin-bottom:8px;overflow:hidden">
+                    <div style="height:100%;background:${quest.completed ? 'var(--season-primary)' : 'var(--season-accent)'};width:${progressPercent}%;transition:width 0.3s ease"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.8em;color:var(--season-text);opacity:0.7">
+                    <span>${quest.progress}/${quest.target}</span>
+                    <span>${Math.round(progressPercent)}%</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const completionBonus = allCompleted ? `
+        <div style="background:linear-gradient(135deg, #FBBF24, #F59E0B);padding:14px;border-radius:12px;text-align:center;color:white;font-weight:700;margin-bottom:12px;border:2px solid #FCD34D">
+            <div style="font-size:1.5em;margin-bottom:4px">🎉</div>
+            <div style="font-size:0.95em">All Quests Complete!</div>
+            <div style="font-size:0.8em;opacity:0.9;margin-top:4px">+50 bonus • Streak: ${state.dailyQuests.streak} days</div>
+        </div>
+    ` : '';
+
+    return `
+        <div class="daily-quests-card">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+                <span style="font-size:1.5em">⭐</span>
+                <h3 style="font-size:1.1em;font-weight:800;color:var(--season-primary);margin:0">Daily Quests</h3>
+                <span style="font-size:0.75em;background:var(--season-primary);color:white;padding:4px 8px;border-radius:12px;font-weight:700">${quests.filter(q => q.completed).length}/${quests.length}</span>
+            </div>
+            ${completionBonus}
+            ${questCardsHTML}
+        </div>
+    `;
+};
+
+window.getQuestProgress = function() {
+    if (!state.dailyQuests) return { completed: 0, total: 0, percent: 0 };
+
+    const total = state.dailyQuests.quests.length;
+    const completed = state.dailyQuests.quests.filter(q => q.completed).length;
+
+    return {
+        completed: completed,
+        total: total,
+        percent: Math.round((completed / total) * 100)
+    };
+};
+
 // Play Challenge Mode again
 window.playAgainChallenge = function() {
     quitChallengeGame();
@@ -8501,10 +8746,14 @@ function renderDashboard() {
     const brEl = document.getElementById('daily-bar-right');
     if (brEl) brEl.textContent = 'Goal: ' + goal + ' pts';
 
+    // Initialize daily quests (must be before renderDashQuests)
+    initializeDailyQuests();
+
     renderDashChores();
     renderDashHomework();
     renderDashPomoMini();
     renderDashHabits();
+    renderDashQuests();
     renderDashMood();
     renderDashGujarati();
     renderDashCalendar();
@@ -8620,6 +8869,13 @@ function renderDashPomoMini() {
             }
             <button class="db-pmb db-pmb-r" onclick="resetPomodoro()">↺</button>
         </div>`;
+}
+
+// ── Dashboard: Daily Quests ────────────────────────
+function renderDashQuests() {
+    const el = document.getElementById('db-quests-content');
+    if (!el) return;
+    el.innerHTML = renderDailyQuests();
 }
 
 // ── Dashboard: Habits ──────────────────────────────
