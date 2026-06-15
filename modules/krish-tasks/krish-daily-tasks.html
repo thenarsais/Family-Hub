@@ -44,10 +44,20 @@
             --btn-disabled-text: #94A3B8;
             --btn-hover-dark: #64748B;
 
-            /* Seasonal Theme Variables (updated dynamically) */
-            --theme-primary: #10B981;
-            --theme-accent: #BFDBFE;
-            --theme-secondary: #D1FAE5;
+            /* ═══ SEASONAL THEME VARIABLES (Dynamic) ═══ */
+            /* Default: Spring */
+            --season: 'spring';
+            --season-primary: #10B981;
+            --season-accent: #BFDBFE;
+            --season-secondary: #D1FAE5;
+            --season-bg-light: #ECFDF5;
+            --season-text: #065F46;
+            --season-border: #A7F3D0;
+
+            /* Legacy aliases (for backwards compatibility) */
+            --theme-primary: var(--season-primary);
+            --theme-accent: var(--season-accent);
+            --theme-secondary: var(--season-secondary);
 
             /* Light backgrounds for status colors */
             --info-light: #F0F9FF;
@@ -1855,6 +1865,82 @@ function getMondayOfWeek(dateStr) {
     d.setDate(d.getDate() + diff);
     return d.toISOString().split('T')[0];
 }
+
+// ── SEASONAL THEME SYSTEM ──────────────────────
+window.SEASONAL_THEMES = {
+    spring: {
+        primary: '#10B981',
+        accent: '#BFDBFE',
+        secondary: '#D1FAE5',
+        bgLight: '#ECFDF5',
+        text: '#065F46',
+        border: '#A7F3D0'
+    },
+    summer: {
+        primary: '#FBBF24',
+        accent: '#FEF3C7',
+        secondary: '#FDE047',
+        bgLight: '#FFFBEB',
+        text: '#78350F',
+        border: '#FCD34D'
+    },
+    fall: {
+        primary: '#F97316',
+        accent: '#FED7AA',
+        secondary: '#FDBA74',
+        bgLight: '#FFEDD5',
+        text: '#7C2D12',
+        border: '#FDBA74'
+    },
+    winter: {
+        primary: '#0EA5E9',
+        accent: '#BAE6FD',
+        secondary: '#E0F2FE',
+        bgLight: '#F0F9FF',
+        text: '#0C4A6E',
+        border: '#BAE6FD'
+    }
+};
+
+// Apply seasonal theme to entire app
+window.applySeasonalTheme = function(season = 'spring') {
+    const theme = window.SEASONAL_THEMES[season];
+    if (!theme) {
+        console.warn(`Season '${season}' not found. Using spring.`);
+        return applySeasonalTheme('spring');
+    }
+
+    const root = document.documentElement;
+    root.style.setProperty('--season', `'${season}'`);
+    root.style.setProperty('--season-primary', theme.primary);
+    root.style.setProperty('--season-accent', theme.accent);
+    root.style.setProperty('--season-secondary', theme.secondary);
+    root.style.setProperty('--season-bg-light', theme.bgLight);
+    root.style.setProperty('--season-text', theme.text);
+    root.style.setProperty('--season-border', theme.border);
+
+    // Save preference
+    if (state && state.settings) {
+        state.settings.currentSeason = season;
+        saveState();
+    }
+};
+
+// Auto-detect season based on date or load from settings
+window.initializeSeasonalTheme = function() {
+    if (state && state.settings && state.settings.currentSeason) {
+        applySeasonalTheme(state.settings.currentSeason);
+    } else {
+        // Auto-detect based on month
+        const month = new Date().getMonth();
+        let season = 'spring';
+        if (month >= 2 && month <= 4) season = 'spring';
+        else if (month >= 5 && month <= 7) season = 'summer';
+        else if (month >= 8 && month <= 10) season = 'fall';
+        else season = 'winter';
+        applySeasonalTheme(season);
+    }
+};
 
 // ── TRIVIA ENGINE (Phase 1) ──────────────────────
 // Questions: loaded from trivia-questions.js
@@ -7666,6 +7752,9 @@ function buildDefaultState() {
             hint: 0,
             combo_freeze: 0,
         },
+        settings: {
+            currentSeason: 'spring', // spring | summer | fall | winter
+        },
     };
 }
 
@@ -7697,6 +7786,10 @@ function applyResets() {
     const today = todayStr();
     const weekStart = getMondayOfWeek(today);
     const month = today.slice(0, 7);
+
+    // Ensure settings object exists (for seasonal theme support)
+    if (!state.settings) state.settings = { currentSeason: 'spring' };
+    if (!state.settings.currentSeason) state.settings.currentSeason = 'spring';
 
     // Ensure trivia onboarding object exists (for migration from old state)
     if (!state.trivia) state.trivia = {};
@@ -9630,6 +9723,7 @@ function renderPointsPanel() {
 function init() {
     loadState();
     initializeTheme(); // Apply saved or default theme
+    initializeSeasonalTheme(); // Apply seasonal color theme
     renderDashboard();
 
     // If Pomodoro was active from a previous session, restore interval
