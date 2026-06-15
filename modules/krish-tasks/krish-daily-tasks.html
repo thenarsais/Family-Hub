@@ -483,7 +483,7 @@
         }
 
         /* ── DASHBOARD ─────────────────────────── */
-        #view-dashboard { background: linear-gradient(160deg, rgba(16,185,129,0.12) 0%, rgba(14,165,233,0.08) 100%); padding-bottom:30px; transition: background 0.3s ease; }
+        #view-dashboard { background: linear-gradient(160deg, color-mix(in srgb, var(--season-primary) 12%, transparent) 0%, color-mix(in srgb, var(--season-secondary) 8%, transparent) 100%); padding-bottom:30px; transition: background 0.3s ease; }
 
         .dash-header {
             background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent));
@@ -1406,12 +1406,12 @@
             opacity: 1;
             color: rgba(255, 255, 255, 0.6);
         }
-        /* Daily Quests Card */
+        /* Daily Quests Banner */
         .daily-quests-card {
-            background: linear-gradient(135deg, var(--season-bg-light), rgba(255,255,255,0.05));
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid var(--season-border);
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            border: none;
         }
 
         .game-header {
@@ -1658,6 +1658,11 @@
                 <div class="dash-streak-num" id="dash-achievements" style="font-size: 0.85em; margin-top: 2px;">0/2</div>
             </div>
         </div>
+
+        <!-- Daily Quests Banner -->
+        <div id="dash-quests-banner" style="padding:16px 0; border-top:1px solid rgba(0,0,0,0.1); margin-top:16px">
+            <div id="dash-quests-content"></div>
+        </div>
     </header>
 
     <!-- ══ BENTO GRID ══ -->
@@ -1741,10 +1746,6 @@
 
         <!-- COL 4: MOOD + GUJARATI + POINTS (stacked) -->
         <div class="db-side">
-            <div class="db-card" id="db-quests-card">
-                <div id="db-quests-content"></div>
-            </div>
-
             <div class="db-card" id="db-mood-card">
                 <div class="db-card-hdr" onclick="showBoard('mood')" style="cursor:pointer">
                     <span class="db-card-ico">😊</span>
@@ -8831,7 +8832,7 @@ function renderDashPomoMini() {
 
 // ── Dashboard: Daily Quests ────────────────────────
 function renderDashQuests() {
-    const el = document.getElementById('db-quests-content');
+    const el = document.getElementById('dash-quests-content');
     if (!el) return;
     el.innerHTML = renderDailyQuests();
 }
