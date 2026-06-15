@@ -17,10 +17,12 @@
             --danger: #EF4444;
             --warning: #F59E0B;
             --info: #3B82F6;
-            --purple: #8B5CF6;
+            --purple: var(--purple);
+            --indigo: var(--indigo);
+            --indigo-light: var(--indigo-light);
             --orange: #F97316;
             --teal: #14B8A6;
-            --dark: #1E293B;
+            --dark: var(--dark);
             --mid: #475569;
             --text-secondary: #64748B;
             --muted: #94A3B8;
@@ -181,7 +183,7 @@
         }
         .unlock-toast-btn-primary {
             background: var(--accent);
-            color: #1E293B;
+            color: var(--dark);
         }
         .unlock-toast-btn-primary:hover {
             opacity: 0.9;
@@ -385,11 +387,11 @@
         .card-icon { font-size:1.8em; margin-bottom:4px; }
         .card-val { font-size:1.35em; font-weight:700; color:white; line-height:1.2; }
         .card-sub { font-size:0.78em; color: var(--text-secondary); margin-top:2px; }
-        .card-bar { margin-top:8px; background:#334155; border-radius:6px; height:5px; overflow:hidden; flex-shrink:0; }
+        .card-bar { margin-top:8px; background:var(--mid); border-radius:6px; height:5px; overflow:hidden; flex-shrink:0; }
         .card-bar-fill { height:100%; border-radius:6px; transition:width 0.4s ease; }
         .card-badge-top {
             position:absolute; top:10px; right:10px;
-            background:var(--accent); color:#1E293B;
+            background:var(--accent); color:var(--dark);
             font-size:0.68em; font-weight:800;
             padding:2px 8px; border-radius:20px;
         }
@@ -420,7 +422,7 @@
         .back-btn:active { transform:scale(0.96); }
         .board-title { font-size:1.15em; font-weight:800; flex:1; }
         .board-pts-chip {
-            background:var(--accent); color:#1E293B;
+            background:var(--accent); color:var(--dark);
             font-weight:800; font-size:0.88em;
             padding:5px 13px; border-radius:20px;
             cursor:pointer; white-space:nowrap;
@@ -489,16 +491,26 @@
         .hw-add-form { background:white; border-radius:var(--radius); padding:15px; margin-bottom:14px; box-shadow:var(--shadow); }
         .form-row { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
         .f-input {
-            flex:1; min-width:120px; padding:11px 13px;
-            border:2px solid #E2E8F0; border-radius:10px;
-            font-size:0.95em; font-family:var(--font);
-            outline:none; transition:border-color 0.2s; background:white;
+            flex: 1;
+            min-width: 120px;
+            padding: var(--btn-padding-lg);
+            border: 2px solid #E2E8F0;
+            border-radius: var(--btn-border-radius);
+            font-size: 0.9em;
+            font-family: var(--font);
+            outline: none;
+            transition: border-color 0.2s;
+            background: white;
         }
-        .f-input:focus { border-color:var(--primary); }
+        .f-input:focus { border-color: var(--theme-primary); }
         .f-select {
-            padding:11px 13px; border:2px solid #E2E8F0;
-            border-radius:10px; font-size:0.95em;
-            font-family:var(--font); background:white; outline:none;
+            padding: var(--btn-padding-lg);
+            border: 2px solid #E2E8F0;
+            border-radius: var(--btn-border-radius);
+            font-size: 0.9em;
+            font-family: var(--font);
+            background: white;
+            outline: none;
         }
         .btn-add {
             padding: var(--btn-padding-lg);
@@ -553,7 +565,7 @@
 
         /* Pomodoro widget */
         .pomo-widget {
-            background:linear-gradient(135deg,#1E293B,#0F172A);
+            background:linear-gradient(135deg,var(--dark),#0F172A);
             border-radius:var(--radius); padding:22px;
             text-align:center; margin-bottom:14px; color:white;
         }
@@ -562,7 +574,7 @@
         .pomo-ring { position:relative; width:130px; height:130px; margin:0 auto 14px; }
         .pomo-ring svg { transform:rotate(-90deg); width:130px; height:130px; }
         .pomo-ring circle { fill:none; stroke-width:9; }
-        .pomo-ring .r-bg { stroke:#334155; }
+        .pomo-ring .r-bg { stroke:var(--mid); }
         .pomo-ring .r-fill { stroke:#F97316; stroke-linecap:round; transition:stroke-dashoffset 0.9s linear; }
         .pomo-time {
             position:absolute; top:50%; left:50%;
@@ -616,7 +628,7 @@
             display:flex; flex-direction:column;
             align-items:center; justify-content:center; padding:20px;
         }
-        .fc-front { background:linear-gradient(135deg,#1E293B,#334155); color:white; }
+        .fc-front { background:linear-gradient(135deg,var(--dark),var(--mid)); color:white; }
         .fc-back  { background: linear-gradient(135deg, var(--theme-primary), var(--theme-accent)); color:white; transform:rotateY(180deg); }
         .fc-hint  { font-size:0.78em; opacity:0.7; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
         .fc-term  { font-size:1.9em; font-weight:800; }
@@ -794,7 +806,7 @@
             background:white; padding:4px;
         }
         .mood-opt:active { transform:scale(0.94); }
-        .mood-opt.selected { border-color:var(--primary); background:#EEF2FF; transform:scale(1.04); }
+        .mood-opt.selected { border-color:var(--primary); background:var(--indigo-light); transform:scale(1.04); }
         .mood-em { font-size:2em; margin-bottom:3px; }
         .mood-lbl { font-size:0.68em; font-weight:700; color: var(--text-secondary); text-align:center; line-height:1.2; }
         .mood-opt.selected .mood-lbl { color:var(--primary); }
@@ -808,7 +820,7 @@
 
         /* ── POINTS PANEL ────────────────────────── */
         .pts-tier-card {
-            background:linear-gradient(135deg,#1E293B,#334155);
+            background:linear-gradient(135deg,var(--dark),var(--mid));
             border-radius:var(--radius); padding:22px;
             text-align:center; color:white; margin-bottom:14px;
             position:relative; overflow:hidden;
@@ -833,7 +845,7 @@
         .next-tier-card { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); }
         .nt-label { display:flex; justify-content:space-between; font-size:0.85em; font-weight:700; margin-bottom:8px; }
         .pbar { background:#E2E8F0; border-radius:10px; height:10px; overflow:hidden; }
-        .pbar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,#6366F1,#8B5CF6); transition:width 0.5s ease; }
+        .pbar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--indigo),var(--purple)); transition:width 0.5s ease; }
 
         .pts-how-to { background:white; border-radius:var(--radius); padding:15px; box-shadow:var(--shadow); margin-top:12px; }
         .how-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #F1F5F9; font-size:0.88em; }
@@ -916,13 +928,13 @@
             flex-shrink: 0;
         }
         .db-card-ico { font-size:1.25em; flex-shrink:0; }
-        .db-ct { font-size:0.97em; font-weight:800; color:#1E293B; flex:1; white-space:nowrap; }
+        .db-ct { font-size:0.97em; font-weight:800; color:var(--dark); flex:1; white-space:nowrap; }
         .db-cs { font-size:0.75em; font-weight:600; color: var(--text-secondary); white-space:nowrap; }
 
         .db-expand {
             background: var(--theme-secondary); border: none; border-radius:8px;
             padding: 5px 10px; font-size:0.72em; font-weight:700;
-            color: var(--theme-secondary-text, #1E293B); cursor:pointer; transition:var(--t); white-space:nowrap;
+            color: var(--theme-secondary-text, var(--dark)); cursor:pointer; transition:var(--t); white-space:nowrap;
         }
         .db-expand:hover  { opacity: 0.8; }
         .db-expand:active { transform:scale(0.95); }
@@ -960,7 +972,7 @@
         }
         .db-chore-row.done .db-cb { background: var(--theme-primary); border-color: var(--theme-primary); color:white; }
         .db-ci { font-size:1.15em; }
-        .db-cl { flex:1; font-size:0.9em; font-weight:600; color:#1E293B; }
+        .db-cl { flex:1; font-size:0.9em; font-weight:600; color:var(--dark); }
         .db-cp { font-size:0.7em; font-weight:700; color:#D97706; background:#FEF3C7; padding:2px 7px; border-radius:20px; flex-shrink:0; }
 
         /* ── HOMEWORK ──────────────────────────────── */
@@ -979,7 +991,7 @@
         .db-hw-row.done .db-hw-cb { background: var(--theme-primary); border-color: var(--theme-primary); color:white; }
         .db-hw-info { flex:1; min-width:0; }
         .db-hw-subj { display:inline-block; padding:1px 7px; border-radius:20px; font-size:0.68em; font-weight:700; margin-bottom:2px; }
-        .db-hw-title { font-size:0.87em; font-weight:700; color:#1E293B; }
+        .db-hw-title { font-size:0.87em; font-weight:700; color:var(--dark); }
         .db-hw-row.done .db-hw-title { text-decoration:line-through; color:#94A3B8; }
         .db-hw-due  { font-size:0.7em; color: var(--text-secondary); margin-top:2px; }
         .db-hw-due.urgent  { color:#EF4444; font-weight:700; }
@@ -994,7 +1006,7 @@
 
         /* ── MINI POMODORO ─────────────────────────── */
         .db-pomo-mini {
-            background:linear-gradient(135deg,#1E293B,#334155);
+            background:linear-gradient(135deg,var(--dark),var(--mid));
             color:white; padding:11px 14px;
             display:flex; align-items:center; gap:12px;
         }
@@ -1015,7 +1027,7 @@
         .db-habit-top { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
         .db-h-ico  { font-size:1.45em; flex-shrink:0; }
         .db-h-meta { flex:1; min-width:0; }
-        .db-h-name { font-size:0.9em; font-weight:700; color:#1E293B; }
+        .db-h-name { font-size:0.9em; font-weight:700; color:var(--dark); }
         .db-h-sub  { font-size:0.68em; color: var(--text-secondary); }
         .db-h-streak { font-size:0.7em; font-weight:700; background:#FEF3C7; color:#78350F; padding:2px 8px; border-radius:20px; flex-shrink:0; }
         .db-h-today-btn {
@@ -1036,7 +1048,7 @@
             cursor:pointer; transition:var(--t);
         }
         .db-hd.done   { background:#10B981; border-color:#10B981; color:white; }
-        .db-hd.today  { border-color:#6366F1; color:#6366F1; }
+        .db-hd.today  { border-color:var(--indigo); color:var(--indigo); }
         .db-hd.today.done { border-color:#10B981; color:white; }
         .db-hd.future { opacity:0.28; pointer-events:none; }
 
@@ -1048,7 +1060,7 @@
             display:flex; align-items:center; justify-content:center; transition:var(--t);
         }
         .db-cntr-btn:active { background:#F1F5F9; transform:scale(0.93); }
-        .db-cntr-val { font-size:1.05em; font-weight:800; color:#1E293B; min-width:26px; text-align:center; }
+        .db-cntr-val { font-size:1.05em; font-weight:800; color:var(--dark); min-width:26px; text-align:center; }
 
         /* ── MOOD ──────────────────────────────────── */
         .db-mood-row { display:flex; gap:5px; padding:11px 13px 7px; }
@@ -1059,7 +1071,7 @@
             cursor:pointer; transition:var(--t);
         }
         .db-mood-btn:active { transform:scale(0.93); }
-        .db-mood-btn.selected { border-color:#6366F1; background:#EEF2FF; transform:scale(1.05); }
+        .db-mood-btn.selected { border-color:var(--indigo); background:var(--indigo-light); transform:scale(1.05); }
         .db-me { font-size:1.45em; }
         .db-ml { font-size:0.6em; font-weight:700; color: var(--text-secondary); text-align:center; line-height:1.2; }
         .db-mood-btn.selected .db-ml { color:#4F46E5; }
@@ -1082,23 +1094,23 @@
             padding:9px 5px; text-align:center; cursor:pointer;
             text-decoration:none; display:block; transition:var(--t);
         }
-        .db-guj-btn:hover  { border-color:#6366F1; background:#EEF2FF; }
+        .db-guj-btn:hover  { border-color:var(--indigo); background:var(--indigo-light); }
         .db-guj-btn:active { transform:scale(0.95); }
         .db-guj-bi { font-size:1.4em; display:block; }
-        .db-guj-bl { font-size:0.68em; font-weight:700; color:#1E293B; margin-top:3px; }
+        .db-guj-bl { font-size:0.68em; font-weight:700; color:var(--dark); margin-top:3px; }
 
         /* ── POINTS ────────────────────────────────── */
         .db-pts-inner  { padding:12px 14px; }
         .db-pts-tier   { display:flex; align-items:center; gap:9px; margin-bottom:9px; }
         .db-pts-t-ico  { font-size:1.9em; }
-        .db-pts-t-name { font-size:0.95em; font-weight:800; color:#1E293B; }
+        .db-pts-t-name { font-size:0.95em; font-weight:800; color:var(--dark); }
         .db-pts-t-sub  { font-size:0.72em; color: var(--text-secondary); }
         .db-pts-row    { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-bottom:9px; }
         .db-pts-stat   { text-align:center; background:#F8FAFC; border-radius:9px; padding:7px 4px; }
-        .db-pts-val    { font-size:1em; font-weight:800; color:#1E293B; }
+        .db-pts-val    { font-size:1em; font-weight:800; color:var(--dark); }
         .db-pts-lbl    { font-size:0.62em; color: var(--text-secondary); font-weight:600; }
         .db-pts-bar    { background:#E2E8F0; border-radius:8px; height:6px; overflow:hidden; }
-        .db-pts-bfill  { height:100%; background:linear-gradient(90deg,#6366F1,#8B5CF6); border-radius:8px; transition:width 0.5s; }
+        .db-pts-bfill  { height:100%; background:linear-gradient(90deg,var(--indigo),var(--purple)); border-radius:8px; transition:width 0.5s; }
         .db-pts-next-lbl { display:flex; justify-content:space-between; font-size:0.7em; font-weight:700; color: var(--text-secondary); margin-bottom:4px; }
         .db-pts-card   { cursor:pointer; }
         .db-pts-card:hover { box-shadow:0 4px 24px rgba(99,102,241,0.22); }
@@ -1107,9 +1119,9 @@
         .db-ev-row { display:flex; align-items:center; gap:9px; padding:8px 14px; border-bottom:1px solid #F8FAFC; }
         .db-ev-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
         .db-ev-info { flex:1; min-width:0; }
-        .db-ev-title { font-size:0.85em; font-weight:700; color:#1E293B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .db-ev-title { font-size:0.85em; font-weight:700; color:var(--dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .db-ev-when  { font-size:0.68em; color: var(--text-secondary); }
-        .db-today-tag { background:#6366F1; color:white; font-size:0.6em; font-weight:800; padding:1px 6px; border-radius:10px; flex-shrink:0; }
+        .db-today-tag { background:var(--indigo); color:white; font-size:0.6em; font-weight:800; padding:1px 6px; border-radius:10px; flex-shrink:0; }
 
         /* ── KUNG FU (dashboard) ───────────────────── */
         .db-kf-goals { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; padding:11px 13px 8px; }
@@ -1120,14 +1132,14 @@
         .db-kf-goal.done { background:#ECFDF5; border-color:#10B981; }
         .db-kf-goal:active { transform:scale(0.95); }
         .db-kf-ico { font-size:1.4em; margin-bottom:3px; }
-        .db-kf-lbl { font-size:0.72em; font-weight:700; color:#1E293B; }
+        .db-kf-lbl { font-size:0.72em; font-weight:700; color:var(--dark); }
         .db-kf-sub { font-size:0.62em; color: var(--text-secondary); margin-top:1px; }
         .db-kf-goal.done .db-kf-lbl { color:#059669; }
         .db-kf-goal.done .db-kf-ico::after { content:' ✓'; font-size:0.6em; }
 
         .db-mini-fc {
             margin:0 13px 9px;
-            background:linear-gradient(135deg,#1E293B,#334155);
+            background:linear-gradient(135deg,var(--dark),var(--mid));
             border-radius:12px; padding:12px 14px;
             cursor:pointer; color:white; min-height:66px;
             display:flex; flex-direction:column; justify-content:center;
@@ -1161,7 +1173,7 @@
             transition: all 0.2s ease;
         }
         .game-card.unlocked {
-            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            background: linear-gradient(135deg, var(--dark) 0%, #0F172A 100%);
             border-color: var(--theme-primary);
             box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
         }
@@ -1171,7 +1183,7 @@
             transform: translateY(-2px);
         }
         .game-card.locked {
-            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            background: linear-gradient(135deg, var(--dark) 0%, #0F172A 100%);
             border-color: #475569;
             opacity: 0.7;
         }
@@ -1213,7 +1225,7 @@
         .progress-bar {
             width: 100%;
             height: 6px;
-            background: #334155;
+            background: var(--mid);
             border-radius: 3px;
             overflow: hidden;
             margin-bottom: 4px;
@@ -1368,7 +1380,7 @@
                     <span id="dash-profile-name" style="color:var(--theme-primary-text, white);font-size:0.9em;font-weight:600">Profile</span>
                 </div>
                 <span id="dash-pts-chip" onclick="showBoard('points')" style="
-                    background:var(--accent);color:#1E293B;
+                    background:var(--accent);color:var(--dark);
                     font-weight:800;font-size:0.88em;
                     padding:5px 13px;border-radius:20px;
                     cursor:pointer;white-space:nowrap;
@@ -1611,13 +1623,13 @@ const SUBJECT_COLORS = {
 
 const EVENT_COLORS = {
     School: '#3B82F6', Family: '#10B981',
-    Sport:  '#F97316', Health: '#EF4444', Other: '#8B5CF6',
+    Sport:  '#F97316', Health: '#EF4444', Other: 'var(--purple)',
 };
 
 const TIER_LEVELS = [
     { name:'Legend',   icon:'🦁', min:1000, color:'#F59E0B' },
     { name:'Champion', icon:'🏆', min:500,  color:'#F59E0B' },
-    { name:'Achiever', icon:'⭐', min:250,  color:'#6366F1' },
+    { name:'Achiever', icon:'⭐', min:250,  color:'var(--indigo)' },
     { name:'Explorer', icon:'🔍', min:100,  color:'#10B981' },
     { name:'Beginner', icon:'🌱', min:0,    color:'#94A3B8' },
 ];
@@ -2173,14 +2185,14 @@ function showOnboardingWizard() {
         card.innerHTML = `
             <div style="text-align:center;margin-bottom:24px">
                 <div style="font-size:3em;margin-bottom:12px">🎯</div>
-                <h2 style="color:#1E293B;font-size:1.5em;margin-bottom:8px">Welcome to Trivia!</h2>
+                <h2 style="color:var(--dark);font-size:1.5em;margin-bottom:8px">Welcome to Trivia!</h2>
                 <p style="color: var(--text-secondary);font-size:0.95em">Let's set up your profile.</p>
             </div>
             <div style="margin-bottom:18px">
                 <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Pick a nickname</label>
                 <input type="text" id="onboarding-name" placeholder="e.g. Quiz Master, Brain..." value="${state.trivia.onboarding.name || ''}" style="
                     width:100%;padding:10px 12px;border:2px solid #E2E8F0;border-radius:8px;
-                    font-size:1em;color:#1E293B
+                    font-size:1em;color:var(--dark)
                 " autofocus>
             </div>
             <div style="margin-bottom:24px">
@@ -2189,28 +2201,28 @@ function showOnboardingWizard() {
                     ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
                         <button onclick="selectOnboardingAvatar('${emoji}')" style="
                             font-size:2em;padding:12px;border:3px solid ${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : '#E2E8F0'};
-                            border-radius:12px;background:${state.trivia.onboarding.avatar === emoji ? '#EEF2FF' : '#F8FAFC'};cursor:pointer;
+                            border-radius:12px;background:${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'};cursor:pointer;
                             transition:all 0.2s;font-weight:${state.trivia.onboarding.avatar === emoji ? '700' : '400'}
-                        " onmouseover="this.style.borderColor='#4F46E5';this.style.background='#EEF2FF'"
-                        onmouseout="this.style.borderColor='${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : '#E2E8F0'}';this.style.background='${state.trivia.onboarding.avatar === emoji ? '#EEF2FF' : '#F8FAFC'}'"
+                        " onmouseover="this.style.borderColor='#4F46E5';this.style.background='var(--indigo-light)'"
+                        onmouseout="this.style.borderColor='${state.trivia.onboarding.avatar === emoji ? '#4F46E5' : '#E2E8F0'}';this.style.background='${state.trivia.onboarding.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'}'"
                         >${emoji}</button>
                     `).join('')}
                 </div>
             </div>
             <button onclick="completeOnboardingStep1()" style="
-                width:100%;padding:12px;background:#1E293B;
+                width:100%;padding:12px;background:var(--dark);
                 color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1em;transition:background 0.2s
-            " onmouseover="this.style.background='#0F172A'" onmouseout="this.style.background='#1E293B'">Next →</button>
+            " onmouseover="this.style.background='#0F172A'" onmouseout="this.style.background='var(--dark)'">Next →</button>
         `;
     } else {
         card.innerHTML = `
             <div style="text-align:center;margin-bottom:24px">
                 <div style="font-size:3em;margin-bottom:12px">${state.trivia.onboarding.avatar}</div>
-                <h2 style="color:#1E293B;font-size:1.5em;margin-bottom:8px">Hey ${state.trivia.onboarding.name}!</h2>
+                <h2 style="color:var(--dark);font-size:1.5em;margin-bottom:8px">Hey ${state.trivia.onboarding.name}!</h2>
                 <p style="color: var(--text-secondary);font-size:0.95em">One more thing...</p>
             </div>
             <div style="margin-bottom:24px;padding:16px;background:#F0F9FF;border-radius:12px;border-left:3px solid #3B82F6">
-                <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-weight:600;color:#1E293B">
+                <label style="display:flex;align-items:center;gap:12px;cursor:pointer;font-weight:600;color:var(--dark)">
                     <input type="checkbox" id="tts-toggle" checked style="width:18px;height:18px;cursor:pointer">
                     🔊 Should I read each question to you?
                 </label>
@@ -2376,7 +2388,7 @@ function showProfileSettings() {
 
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">Profile</h2>
+            <h2 style="color:var(--dark);font-size:1.5em;font-weight:800;margin:0">Profile</h2>
             <button id="close-profile" style="
                 background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px
             ">✕</button>
@@ -2386,7 +2398,7 @@ function showProfileSettings() {
             <label style="display:block;color:#475569;font-weight:600;margin-bottom:8px">Nickname</label>
             <input type="text" id="profile-nickname-input" placeholder="Your nickname..." value="${profile.name || ''}" style="
                 width:100%;padding:10px 12px;border:2px solid #E2E8F0;border-radius:8px;
-                font-size:1em;color:#1E293B
+                font-size:1em;color:var(--dark)
             ">
         </div>
 
@@ -2397,16 +2409,16 @@ function showProfileSettings() {
                 ${['🧠','🎓','📚','🔥','⭐','🎯','💪','🚀'].map(emoji => `
                     <button onclick="changeAvatar('${emoji}')" style="
                         font-size:2em;padding:12px;border:2px solid ${profile.avatar === emoji ? '#818CF8' : '#E2E8F0'};
-                        border-radius:12px;background:${profile.avatar === emoji ? '#EEF2FF' : '#F8FAFC'};
+                        border-radius:12px;background:${profile.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'};
                         cursor:pointer;transition:all 0.2s
-                    " onmouseover="this.style.borderColor='#818CF8';this.style.background='#EEF2FF'"
-                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? '#818CF8' : '#E2E8F0'}';this.style.background='${profile.avatar === emoji ? '#EEF2FF' : '#F8FAFC'}'"
+                    " onmouseover="this.style.borderColor='#818CF8';this.style.background='var(--indigo-light)'"
+                    onmouseout="this.style.borderColor='${profile.avatar === emoji ? '#818CF8' : '#E2E8F0'}';this.style.background='${profile.avatar === emoji ? 'var(--indigo-light)' : '#F8FAFC'}'"
                     >${emoji}</button>
                 `).join('')}
             </div>
         </div>
 
-        <div style="margin-bottom:24px;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:12px;padding:16px">
+        <div style="margin-bottom:24px;background:var(--indigo-light);border:1px solid #C7D2FE;border-radius:12px;padding:16px">
             <div style="font-size:0.9em;color:#4338CA;font-weight:700;margin-bottom:8px">🎨 Upcoming Holiday Theme</div>
             <div id="upcoming-holiday-display" style="font-size:0.95em;color:#312E81;font-weight:600">Loading...</div>
         </div>
@@ -2419,9 +2431,9 @@ function showProfileSettings() {
         </div>
 
         <button id="done-profile-btn" style="
-            width:100%;padding:12px;background:#6366F1;color:white;border:none;
+            width:100%;padding:12px;background:var(--indigo);color:white;border:none;
             border-radius:10px;cursor:pointer;font-weight:700;transition:background 0.2s
-        " onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='#6366F1'">Done</button>
+        " onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='var(--indigo)'">Done</button>
     `;
 
     modal.appendChild(card);
@@ -2542,7 +2554,7 @@ function showDifficultyUnlock(mode) {
 
     const card = document.createElement('div');
     card.style.cssText = `
-        background:linear-gradient(135deg,#818CF8,#6366F1);
+        background:linear-gradient(135deg,#818CF8,var(--indigo));
         border-radius:24px;padding:40px;max-width:350px;
         text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);
         animation:popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)
@@ -2553,7 +2565,7 @@ function showDifficultyUnlock(mode) {
         <h2 style="color:white;font-size:1.8em;margin-bottom:8px;font-weight:800">${info.label} Unlocked!</h2>
         <div style="color:#E0E7FF;font-size:1em;margin-bottom:20px">${info.desc}</div>
         <button onclick="this.parentElement.parentElement.remove()" style="
-            background:white;color:#6366F1;border:none;padding:12px 24px;
+            background:white;color:var(--indigo);border:none;padding:12px 24px;
             border-radius:10px;cursor:pointer;font-weight:700;font-size:1em
         ">Let's Go! 🚀</button>
     `;
@@ -2587,7 +2599,7 @@ function showBadgeCelebration(category, tier) {
 
     card.innerHTML = `
         <div style="font-size:4em;margin-bottom:16px;animation:spin 1s ease-in-out">${badge.emoji}</div>
-        <h2 style="color:#1E293B;font-size:1.8em;margin-bottom:8px;font-weight:800">Badge Unlocked!</h2>
+        <h2 style="color:var(--dark);font-size:1.8em;margin-bottom:8px;font-weight:800">Badge Unlocked!</h2>
         <div style="color:#92400E;font-size:1.1em;margin-bottom:12px;font-weight:700">${badge.label} Badge — ${category}</div>
         <div style="color:#78350F;font-size:0.9em;margin-bottom:20px">${badge.requirement}</div>
         <button onclick="this.parentElement.parentElement.remove()" style="
@@ -2627,7 +2639,7 @@ function showBadgesModal() {
 
     let html = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-            <h2 style="color:#1E293B;font-size:1.6em;font-weight:800">🏆 My Badges</h2>
+            <h2 style="color:var(--dark);font-size:1.6em;font-weight:800">🏆 My Badges</h2>
             <button id="close-badges-btn" style="
                 background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px
             ">✕</button>
@@ -2641,7 +2653,7 @@ function showBadgesModal() {
             const catBadges = badges[cat];
             html += `
                 <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #E2E8F0">
-                    <div style="font-weight:700;color:#1E293B;margin-bottom:10px;font-size:0.95em">${cat}</div>
+                    <div style="font-weight:700;color:var(--dark);margin-bottom:10px;font-size:0.95em">${cat}</div>
                     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
             `;
             Object.entries(BADGE_TIERS).forEach(([tier, threshold]) => {
@@ -2845,7 +2857,7 @@ async function saveTriviaAnswer(questionId, isCorrect) {
 }
 
 // ── Difficulty display helpers ────────────────────
-function trivDiffColor(d) { return { easy:'#10B981', medium:'#F59E0B', hard:'#EF4444' }[d] || '#6366F1'; }
+function trivDiffColor(d) { return { easy:'#10B981', medium:'#F59E0B', hard:'#EF4444' }[d] || 'var(--indigo)'; }
 function trivDiffLabel(d) { return { easy:'Rookie', medium:'Pro', hard:'Legend' }[d] || d; }
 function trivDiffTagline(d) { return { easy:'Builds foundational knowledge', medium:'Tests deeper understanding', hard:'Challenges critical thinking' }[d] || ''; }
 function trivDiffTooltip(d) { return { easy:'Rookie — Clear, foundational questions.', medium:'Pro — Requires deeper knowledge and context.', hard:'Legend — Challenges specific knowledge and critical thinking.' }[d] || ''; }
@@ -2862,10 +2874,10 @@ function renderGoalsPreview() {
             <div style="margin-bottom:8px">
                 <div style="display:flex;justify-content:space-between;font-size:0.8em;font-weight:600;margin-bottom:4px">
                     <span style="color:#475569">${goalLabel} ${goal.type}</span>
-                    <span style="color:#6366F1">${goal.current}/${goalDesc}</span>
+                    <span style="color:var(--indigo)">${goal.current}/${goalDesc}</span>
                 </div>
                 <div style="background:#E2E8F0;border-radius:6px;height:6px;overflow:hidden">
-                    <div style="background:linear-gradient(90deg,#6366F1,#818CF8);height:100%;width:${pct}%;transition:width 0.3s"></div>
+                    <div style="background:linear-gradient(90deg,var(--indigo),#818CF8);height:100%;width:${pct}%;transition:width 0.3s"></div>
                 </div>
             </div>
         `;
@@ -2925,7 +2937,7 @@ function getProfileDisplay(label = 'Player') {
         <div style="margin-bottom:14px;padding:12px;background:rgba(102,126,234,0.1);border-radius:12px;display:flex;align-items:center;gap:12px">
             <div style="font-size:2em">${profile.avatar}</div>
             <div style="flex:1">
-                <div style="font-weight:600;color:#1E293B">${profile.name || 'Pick a nickname'}</div>
+                <div style="font-weight:600;color:var(--dark)">${profile.name || 'Pick a nickname'}</div>
                 <div style="font-size:0.85em;color: var(--text-secondary)">${label}</div>
             </div>
         </div>
@@ -2933,7 +2945,7 @@ function getProfileDisplay(label = 'Player') {
 }
 
 // Light-mode diff colors for trivia panel (activity board is #F1F5F9)
-function trivDiffBg(d)   { return { easy:'#ECFDF5', medium:'#FFFBEB', hard:'#FEF2F2' }[d] || '#EEF2FF'; }
+function trivDiffBg(d)   { return { easy:'#ECFDF5', medium:'#FFFBEB', hard:'#FEF2F2' }[d] || 'var(--indigo-light)'; }
 function trivDiffText(d) { return { easy:'#065F46', medium:'#78350F', hard:'#7F1D1D' }[d] || '#312E81'; }
 function trivDiffBorder(d){ return { easy:'#6EE7B7', medium:'#FCD34D', hard:'#FCA5A5' }[d] || '#C7D2FE'; }
 
@@ -3035,7 +3047,7 @@ function renderTriviaPanel() {
                 <div style="font-size:0.75em;color:#065F46;font-weight:700;margin-top:2px">${categoryStreak}</div>
                 <div style="font-size:0.65em;color:#047857;margin-top:1px">Category</div>
             </div>
-            <div style="background:#EEF2FF;border:1px solid #C7D2FE;border-radius:10px;padding:10px;text-align:center">
+            <div style="background:var(--indigo-light);border:1px solid #C7D2FE;border-radius:10px;padding:10px;text-align:center">
                 <div style="font-size:1.3em;font-weight:800;color:#4338CA">⚡</div>
                 <div style="font-size:0.75em;color:#312E81;font-weight:700;margin-top:2px">${accuracyStreak}</div>
                 <div style="font-size:0.65em;color:#4C1D95;margin-top:1px">Correct</div>
@@ -3065,20 +3077,20 @@ function renderTriviaPanel() {
 
         <!-- Phase 2: Export Buttons -->
         <div style="display:flex;gap:6px;margin-bottom:12px;justify-content:flex-end">
-            <button onclick="exportTriviaDataJSON()" style="background:#EEF2FF;border:1px solid #C7D2FE;color:#4338CA;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.75em;font-weight:600">📥 JSON</button>
+            <button onclick="exportTriviaDataJSON()" style="background:var(--indigo-light);border:1px solid #C7D2FE;color:#4338CA;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.75em;font-weight:600">📥 JSON</button>
             <button onclick="exportTriviaDataCSV()" style="background:#F5F3FF;border:1px solid #DDD6FE;color:#5B21B6;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.75em;font-weight:600">📥 CSV</button>
         </div>
 
         ${triedBefore ? `<div style="background:#FFFBEB;border-left:3px solid #F59E0B;padding:10px 14px;margin:0 0 12px;font-size:0.88em;color:#78350F;font-weight:600">💪 You found this tricky before — give it another shot!</div>` : ''}
 
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-            <span style="background:#EEF2FF;color:#4338CA;padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:700">${q.category}</span>
+            <span style="background:var(--indigo-light);color:#4338CA;padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:700">${q.category}</span>
             <span style="background:${dBg};color:${dText};border:1px solid ${dBorder};padding:4px 12px;border-radius:20px;font-size:0.82em;font-weight:700;cursor:help" title="${dTooltip}">
                 ${dLabel} <span style="opacity:0.7;font-weight:500">— ${dTagline}</span>
             </span>
         </div>
 
-        <div style="background:white;border-radius:14px;padding:18px;margin-bottom:16px;font-size:1.05em;line-height:1.65;font-weight:500;color:#1E293B;box-shadow:0 1px 6px rgba(0,0,0,0.07)">
+        <div style="background:white;border-radius:14px;padding:18px;margin-bottom:16px;font-size:1.05em;line-height:1.65;font-weight:500;color:var(--dark);box-shadow:0 1px 6px rgba(0,0,0,0.07)">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
                 <div style="flex:1">${q.question}</div>
                 <button onclick="speakQuestion()" style="
@@ -3095,10 +3107,10 @@ function renderTriviaPanel() {
             ${options.map((opt,i) => `<button class="trivia-opt"
                 data-answer="${opt.replace(/"/g,'&quot;').replace(/'/g,'&#39;')}"
                 onclick="checkTriviaAnswer(this)"
-                style="padding:13px 14px;background:white;border:2px solid #E2E8F0;border-radius:12px;color:#1E293B;cursor:pointer;font-size:0.92em;text-align:left;line-height:1.4;transition:all 0.15s;font-family:inherit;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
-                onmouseover="if(!this.dataset.locked){this.style.background='#EEF2FF';this.style.borderColor='#6366F1'}"
+                style="padding:13px 14px;background:white;border:2px solid #E2E8F0;border-radius:12px;color:var(--dark);cursor:pointer;font-size:0.92em;text-align:left;line-height:1.4;transition:all 0.15s;font-family:inherit;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.05)"
+                onmouseover="if(!this.dataset.locked){this.style.background='var(--indigo-light)';this.style.borderColor='var(--indigo)'}"
                 onmouseout="if(!this.dataset.locked){this.style.background='white';this.style.borderColor='#E2E8F0'}">
-                <span style="display:inline-block;background:#EEF2FF;color:#4338CA;border-radius:6px;padding:1px 7px;margin-right:8px;font-size:0.8em;font-weight:800">${String.fromCharCode(65+i)}</span>${opt}
+                <span style="display:inline-block;background:var(--indigo-light);color:#4338CA;border-radius:6px;padding:1px 7px;margin-right:8px;font-size:0.8em;font-weight:800">${String.fromCharCode(65+i)}</span>${opt}
             </button>`).join('')}
         </div>
 
@@ -3245,14 +3257,14 @@ function showTriviaResult(isCorrect, q) {
     resultEl.style.display = 'block';
     resultEl.innerHTML = `
         <div style="background:${isCorrect?'#ECFDF5':'#FEF2F2'};border-left:3px solid ${isCorrect?'#10B981':'#EF4444'};padding:14px;border-radius:0 12px 12px 0;margin-bottom:14px">
-            <div style="font-weight:700;font-size:1.05em;color:${isCorrect?'#065F46':'#7F1D1D'}">${isCorrect ? '✅ Correct! Great job!' : `❌ The answer was: <strong style="color:#1E293B">${q.correct}</strong>`}</div>
+            <div style="font-weight:700;font-size:1.05em;color:${isCorrect?'#065F46':'#7F1D1D'}">${isCorrect ? '✅ Correct! Great job!' : `❌ The answer was: <strong style="color:var(--dark)">${q.correct}</strong>`}</div>
             ${isCorrect && triviaLastPointsEarned > 0 ? `<div style="margin-top:8px;font-size:0.9em;color:${isCorrect?'#059669':'#DC2626'};font-weight:600">+ ${triviaLastPointsEarned} 🪙 Points</div>` : ''}
         </div>
-        <div style="background:#EEF2FF;border:1px solid #C7D2FE;padding:14px;border-radius:12px;margin-bottom:14px">
+        <div style="background:var(--indigo-light);border:1px solid #C7D2FE;padding:14px;border-radius:12px;margin-bottom:14px">
             <div style="font-size:0.78em;color:#4338CA;font-weight:800;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">${showEnhanced ? '🔍 Deep Dive' : '💡 Fun Fact'}</div>
             <div style="font-size:0.92em;line-height:1.55;color:#312E81">${showEnhanced ? q.enhancedFunFact : q.funFact}</div>
         </div>
-        ${q.learningLink ? `<a href="${q.learningLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:#4338CA;font-size:0.85em;font-weight:600;text-decoration:none;margin-bottom:16px;padding:6px 12px;background:#EEF2FF;border-radius:8px;border:1px solid #C7D2FE" onmouseover="this.style.background='#E0E7FF'" onmouseout="this.style.background='#EEF2FF'">📚 Learn more →</a>` : ''}
+        ${q.learningLink ? `<a href="${q.learningLink}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:#4338CA;font-size:0.85em;font-weight:600;text-decoration:none;margin-bottom:16px;padding:6px 12px;background:var(--indigo-light);border-radius:8px;border:1px solid #C7D2FE" onmouseover="this.style.background='#E0E7FF'" onmouseout="this.style.background='var(--indigo-light)'">📚 Learn more →</a>` : ''}
         <button onclick="loadNextTriviaQuestion()" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--theme-primary),var(--theme-accent));color:var(--theme-primary-text, white);border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:1em" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
             Next Question →
         </button>`;
@@ -3560,7 +3572,7 @@ window.renderWordleGame = function(game) {
             </div>
 
             <div style="text-align:center;margin-bottom:16px">
-                <div style="font-size:0.8em;color:#94A3B8;font-weight:600">Attempts: <span style="color:#1E293B;font-weight:800">${game.attempts}/${game.maxAttempts}</span></div>
+                <div style="font-size:0.8em;color:#94A3B8;font-weight:600">Attempts: <span style="color:var(--dark);font-weight:800">${game.attempts}/${game.maxAttempts}</span></div>
                 <div style="height:6px;background:#E2E8F0;border-radius:3px;margin-top:8px">
                     <div style="height:100%;background:#10B981;border-radius:3px;width:${(game.attempts / game.maxAttempts) * 100}%"></div>
                 </div>
@@ -3629,7 +3641,7 @@ window.startWordleGame = function() {
     card.style.cssText = 'background:white;border-radius:20px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">🎯 Wordle</h2>
+            <h2 style="color:var(--dark);font-size:1.5em;font-weight:800;margin:0">🎯 Wordle</h2>
             <button onclick="document.getElementById('wordle-modal').remove()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px">✕</button>
         </div>
         <div id="wordle-panel-content">${renderWordleGame(window._wordleGame)}</div>
@@ -3721,7 +3733,7 @@ window.showQuickFireBoostModal = function() {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">⚡ Quick-Fire</h2>
         <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your score?</p>
@@ -3733,7 +3745,7 @@ window.showQuickFireBoostModal = function() {
                     onclick="selectBoost('${boost.id}')"
                     style="
                         padding:16px;
-                        background:${boost.count > 0 ? '#0F172A' : '#334155'};
+                        background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
                         border:2px solid #475569;
                         border-radius:12px;
                         color:${boost.count > 0 ? 'white' : '#94A3B8'};
@@ -3744,8 +3756,8 @@ window.showQuickFireBoostModal = function() {
                         opacity:${boost.count > 0 ? '1' : '0.6'};
                     "
                     ${boost.count === 0 ? 'disabled' : ''}
-                    onmouseover="if(${boost.count > 0}) this.style.background='#1E293B'"
-                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : '#334155'}'"
+                    onmouseover="if(${boost.count > 0}) this.style.background='var(--dark)'"
+                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : 'var(--mid)'}'"
                 >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:12px">
@@ -3889,7 +3901,7 @@ window.renderQuickFireGame = function(game) {
     }</div>` : '';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:24px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:24px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -3909,12 +3921,12 @@ window.renderQuickFireGame = function(game) {
             ${hiddenAnswerIndex >= 0 ? '<div style="font-size:0.8em;color:#FCD34D;margin-bottom:8px">💡 1 incorrect answer hidden</div>' : ''}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 ${options.map((opt, i) => `
-                    ${i === hiddenAnswerIndex ? '<div style="padding:12px;background:#334155;border:2px solid #475569;border-radius:10px;color:#94A3B8;font-weight:600;font-size:0.9em;text-align:center">❌ Hidden</div>' : `
+                    ${i === hiddenAnswerIndex ? '<div style="padding:12px;background:var(--mid);border:2px solid #475569;border-radius:10px;color:#94A3B8;font-weight:600;font-size:0.9em;text-align:center">❌ Hidden</div>' : `
                         <button class="qf-answer"
                             data-answer="${opt.replace(/"/g,'&quot;')}"
                             onclick="quickFireAnswerClick(this)"
-                            style="padding:12px;background:white;border:2px solid #E2E8F0;border-radius:10px;color:#1E293B;cursor:pointer;font-weight:600;font-size:0.9em;transition:all 0.2s;text-align:left">
-                            <span style="display:inline-block;background:#EEF2FF;color:#4338CA;border-radius:6px;padding:2px 8px;margin-right:8px;font-weight:800;font-size:0.85em">${String.fromCharCode(65+i)}</span>${opt}
+                            style="padding:12px;background:white;border:2px solid #E2E8F0;border-radius:10px;color:var(--dark);cursor:pointer;font-weight:600;font-size:0.9em;transition:all 0.2s;text-align:left">
+                            <span style="display:inline-block;background:var(--indigo-light);color:#4338CA;border-radius:6px;padding:2px 8px;margin-right:8px;font-weight:800;font-size:0.85em">${String.fromCharCode(65+i)}</span>${opt}
                         </button>
                     `}
                 `).join('')}
@@ -4099,7 +4111,7 @@ window.showQuickFireResults = function(game, accuracy) {
 
     modal.innerHTML = '';
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center';
     card.innerHTML = `
         <div style="font-size:3em;margin-bottom:16px">${game.stats.correctCount >= 7 ? '🎉' : '🎮'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Final Score</h2>
@@ -4118,7 +4130,7 @@ window.showQuickFireResults = function(game, accuracy) {
 
         <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
             <div style="font-size:0.9em;color:#94A3B8;margin-bottom:12px">Correct: ${game.stats.correctCount}/10</div>
-            <div style="height:4px;background:#334155;border-radius:2px">
+            <div style="height:4px;background:var(--mid);border-radius:2px">
                 <div style="height:100%;background:#10B981;border-radius:2px;width:${(game.stats.correctCount/10)*100}%"></div>
             </div>
         </div>
@@ -4163,7 +4175,7 @@ window.showMemoryDifficultyModal = function() {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.8em;font-weight:800;margin:0 0 8px 0">🧠 Memory Tiles</h2>
         <p style="color:#94A3B8;margin:0 0 28px 0">Select a difficulty level</p>
@@ -4186,7 +4198,7 @@ window.showMemoryDifficultyModal = function() {
                         justify-content:space-between;
                         align-items:center;
                     "
-                    onmouseover="this.style.background='#1E293B'; this.style.borderColor='#64748B'"
+                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
                     onmouseout="this.style.background='#0F172A'; this.style.borderColor='#475569'"
                 >
                     <div>
@@ -4245,7 +4257,7 @@ window.showMemoryBoostModal = function(difficulty) {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">🧠 Memory Tiles</h2>
         <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your score?</p>
@@ -4257,7 +4269,7 @@ window.showMemoryBoostModal = function(difficulty) {
                     onclick="selectMemoryBoost('${boost.id}', '${difficulty}')"
                     style="
                         padding:16px;
-                        background:${boost.count > 0 ? '#0F172A' : '#334155'};
+                        background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
                         border:2px solid #475569;
                         border-radius:12px;
                         color:${boost.count > 0 ? 'white' : '#94A3B8'};
@@ -4268,8 +4280,8 @@ window.showMemoryBoostModal = function(difficulty) {
                         opacity:${boost.count > 0 ? '1' : '0.6'};
                     "
                     ${boost.count === 0 ? 'disabled' : ''}
-                    onmouseover="if(${boost.count > 0}) this.style.background='#1E293B'"
-                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : '#334155'}'"
+                    onmouseover="if(${boost.count > 0}) this.style.background='var(--dark)'"
+                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : 'var(--mid)'}'"
                 >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:12px">
@@ -4463,7 +4475,7 @@ window.renderMemoryGame = function(game) {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:24px;max-width:700px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:24px;max-width:700px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
 
     // Header
     const diffLabel = { easy: '🟢 Easy', medium: '🟡 Medium', hard: '🔴 Hard' }[game.difficulty];
@@ -4513,7 +4525,7 @@ window.renderMemoryGame = function(game) {
                         background:${tile.matched ? '#DCFCE7' : tile.flipped ? '#FFFFFF' : '#475569'};
                         border:2px solid ${tile.matched ? '#10B981' : tile.flipped ? '#CBD5E1' : '#64748B'};
                         border-radius:8px;
-                        color:${tile.matched ? '#94A3B8' : tile.flipped ? '#1E293B' : '#94A3B8'};
+                        color:${tile.matched ? '#94A3B8' : tile.flipped ? 'var(--dark)' : '#94A3B8'};
                         cursor:${tile.matched ? 'default' : 'pointer'};
                         font-weight:600;
                         font-size:${tileSize > 60 ? '0.85em' : '0.75em'};
@@ -4588,7 +4600,7 @@ window.flipMemoryTile = function(tileId) {
     if (btn) {
         btn.textContent = tile.text;
         btn.style.background = 'white';
-        btn.style.color = '#1E293B';
+        btn.style.color = 'var(--dark)';
     }
 
     // Check for match if 2 tiles flipped
@@ -4800,7 +4812,7 @@ window.showMemoryResults = function(game, won) {
 
     modal.innerHTML = '';
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center;max-height:90vh;overflow-y:auto';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center;max-height:90vh;overflow-y:auto';
     card.innerHTML = `
         <div style="font-size:3em;margin-bottom:16px">${won ? '🎉' : '⏱️'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Game ${won ? 'Won!' : 'Over'}</h2>
@@ -4844,7 +4856,7 @@ window.showMemoryResults = function(game, won) {
                     const dateStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
                     const isCurrent = entry.score === game.score;
                     return `
-                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #334155;${isCurrent ? 'background:#1E3A8A;padding:8px;border-radius:6px;border:none' : ''}">
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mid);${isCurrent ? 'background:#1E3A8A;padding:8px;border-radius:6px;border:none' : ''}">
                             <span style="color:${isCurrent ? '#60A5FA' : '#D1FAE5'}">${medals[i]} ${entry.score} pts ${isCurrent ? '← You' : ''}</span>
                             <span style="font-size:0.85em;color: var(--text-secondary)">${dateStr}</span>
                         </div>
@@ -4894,7 +4906,7 @@ window.showScrambleDifficultyModal = function() {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.8em;font-weight:800;margin:0 0 8px 0">🎲 Word Scramble</h2>
         <p style="color:#94A3B8;margin:0 0 28px 0">Select a difficulty level</p>
@@ -4917,7 +4929,7 @@ window.showScrambleDifficultyModal = function() {
                         justify-content:space-between;
                         align-items:center;
                     "
-                    onmouseover="this.style.background='#1E293B'; this.style.borderColor='#64748B'"
+                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
                     onmouseout="this.style.background='#0F172A'; this.style.borderColor='#475569'"
                 >
                     <div>
@@ -4976,7 +4988,7 @@ window.showScrambleBoostModal = function(difficulty) {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">🎲 Word Scramble</h2>
         <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your score?</p>
@@ -4988,7 +5000,7 @@ window.showScrambleBoostModal = function(difficulty) {
                     onclick="selectScrambleBoost('${boost.id}', '${difficulty}')"
                     style="
                         padding:16px;
-                        background:${boost.count > 0 ? '#0F172A' : '#334155'};
+                        background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
                         border:2px solid #475569;
                         border-radius:12px;
                         color:${boost.count > 0 ? 'white' : '#94A3B8'};
@@ -4999,8 +5011,8 @@ window.showScrambleBoostModal = function(difficulty) {
                         opacity:${boost.count > 0 ? '1' : '0.6'};
                     "
                     ${boost.count === 0 ? 'disabled' : ''}
-                    onmouseover="if(${boost.count > 0}) this.style.background='#1E293B'"
-                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : '#334155'}'"
+                    onmouseover="if(${boost.count > 0}) this.style.background='var(--dark)'"
+                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : 'var(--mid)'}'"
                 >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:12px">
@@ -5212,7 +5224,7 @@ window.renderScrambleGame = function(game) {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:24px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:24px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
 
     const attemptEmojis = ['○', '○', '○'];
     for (let i = 0; i < word.attempts; i++) {
@@ -5269,7 +5281,7 @@ window.renderScrambleGame = function(game) {
                     background:white;
                     border:2px solid #CBD5E1;
                     border-radius:10px;
-                    color:#1E293B;
+                    color:var(--dark);
                     font-size:1.1em;
                     font-family:inherit;
                     box-sizing:border-box;
@@ -5476,7 +5488,7 @@ window.showScrambleResults = function(game, won) {
 
     modal.innerHTML = '';
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center;max-height:90vh;overflow-y:auto';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center;max-height:90vh;overflow-y:auto';
     card.innerHTML = `
         <div style="font-size:3em;margin-bottom:16px">${won ? '🎉' : '🎲'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Game ${won ? 'Won!' : 'Over'}</h2>
@@ -5639,7 +5651,7 @@ window.showChallengeDifficultyModal = function() {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.8em;font-weight:800;margin:0 0 8px 0">🏆 Challenge Mode</h2>
         <p style="color:#94A3B8;margin:0 0 28px 0">Select difficulty • 3 random games • cumulative scoring</p>
@@ -5662,7 +5674,7 @@ window.showChallengeDifficultyModal = function() {
                         justify-content:space-between;
                         align-items:center;
                     "
-                    onmouseover="this.style.background='#1E293B'; this.style.borderColor='#64748B'"
+                    onmouseover="this.style.background='var(--dark)'; this.style.borderColor='#64748B'"
                     onmouseout="this.style.background='#0F172A'; this.style.borderColor='#475569'"
                 >
                     <div>
@@ -5722,7 +5734,7 @@ window.showChallengeBoostModal = function(difficulty) {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#1E293B;border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.4);color:white';
     card.innerHTML = `
         <h2 style="font-size:1.6em;font-weight:800;margin:0 0 8px 0">🏆 Challenge Mode</h2>
         <p style="color:#94A3B8;margin:0 0 24px 0">Use a power-up to boost your chances?</p>
@@ -5734,7 +5746,7 @@ window.showChallengeBoostModal = function(difficulty) {
                     onclick="selectChallengeBoost('${boost.id}', '${difficulty}')"
                     style="
                         padding:16px;
-                        background:${boost.count > 0 ? '#0F172A' : '#334155'};
+                        background:${boost.count > 0 ? '#0F172A' : 'var(--mid)'};
                         border:2px solid #475569;
                         border-radius:12px;
                         color:${boost.count > 0 ? 'white' : '#94A3B8'};
@@ -5745,8 +5757,8 @@ window.showChallengeBoostModal = function(difficulty) {
                         opacity:${boost.count > 0 ? '1' : '0.6'};
                     "
                     ${boost.count === 0 ? 'disabled' : ''}
-                    onmouseover="if(${boost.count > 0}) this.style.background='#1E293B'"
-                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : '#334155'}'"
+                    onmouseover="if(${boost.count > 0}) this.style.background='var(--dark)'"
+                    onmouseout="this.style.background='${boost.count > 0 ? '#0F172A' : 'var(--mid)'}'"
                 >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="display:flex;align-items:center;gap:12px">
@@ -5797,7 +5809,7 @@ window.showChallengeBoostModal = function(difficulty) {
         <button onclick="closeChallengeDifficultyModal()" style="
             width:100%;
             padding:12px;
-            background:#334155;
+            background:var(--mid);
             border:none;
             color:white;
             border-radius:10px;
@@ -5807,7 +5819,7 @@ window.showChallengeBoostModal = function(difficulty) {
             transition:all 0.2s;
         "
         onmouseover="this.style.background='#475569'"
-        onmouseout="this.style.background='#334155'">
+        onmouseout="this.style.background='var(--mid)'">
             Cancel
         </button>
     `;
@@ -5880,7 +5892,7 @@ window.startChallengeGameSequence = function() {
     card.style.cssText = 'background:white;border-radius:20px;padding:20px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto';
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">🏆 Challenge Mode</h2>
+            <h2 style="color:var(--dark);font-size:1.5em;font-weight:800;margin:0">🏆 Challenge Mode</h2>
             <button onclick="quitChallengeGame()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px">✕</button>
         </div>
         <div id="challenge-panel-content" style="min-height:400px"></div>
@@ -6170,7 +6182,7 @@ window.showChallengeResults = function(challenge) {
 
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h2 style="color:#1E293B;font-size:1.5em;font-weight:800;margin:0">🏆 Challenge Complete</h2>
+            <h2 style="color:var(--dark);font-size:1.5em;font-weight:800;margin:0">🏆 Challenge Complete</h2>
         </div>
 
         <div style="text-align:center;margin-bottom:24px">
@@ -6479,7 +6491,7 @@ window.getTextColorForBackground = function(hexColor) {
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
     // If brightness > 155, use dark text; otherwise use white
-    return brightness > 155 ? '#1E293B' : '#FFFFFF';
+    return brightness > 155 ? 'var(--dark)' : '#FFFFFF';
 };
 
 window.applyHolidayTheme = function() {
@@ -7387,14 +7399,14 @@ function renderDashTrivia() {
     }
 
     const diffColors = { easy:'#059669', medium:'#B45309', hard:'#DC2626' };
-    const dc = diffColors[q.difficulty] || '#6366F1';
+    const dc = diffColors[q.difficulty] || 'var(--indigo)';
 
     el.innerHTML = `
         <div style="padding:12px 14px 14px">
             <!-- Phase 2: Metrics row + Phase 4: Points -->
             <div style="display:flex;gap:8px;margin-bottom:10px;font-size:0.85em;font-weight:600;flex-wrap:wrap">
                 <span style="color:#DC2626">🔥 ${dailyStreak} day${dailyStreak !== 1 ? 's' : ''}</span>
-                <span style="color:#6366F1">💯 ${accuracy}%</span>
+                <span style="color:var(--indigo)">💯 ${accuracy}%</span>
                 <span style="color:#059669">🪙 ${state.points.today || 0} pts</span>
             </div>
 
@@ -7417,7 +7429,7 @@ function renderDashTrivia() {
 
             <!-- Question preview -->
             <div style="font-size:0.78em;font-weight:600;color: var(--text-secondary);margin-bottom:6px">${q.category} · <span style="color:${dc}">${trivDiffLabel(q.difficulty)}</span></div>
-            <div style="font-size:0.9em;color:#1E293B;margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,85)}${q.question.length>85?'...':''}</div>
+            <div style="font-size:0.9em;color:var(--dark);margin-bottom:10px;line-height:1.45;font-weight:500">${q.question.substring(0,85)}${q.question.length>85?'...':''}</div>
 
             <!-- Phase 4: Goals Preview -->
             <div style="background:#F0F9FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px;margin-bottom:10px">
@@ -7428,7 +7440,7 @@ function renderDashTrivia() {
             <!-- Buttons -->
             <div style="display:flex;gap:8px">
                 <button onclick="showBoard('trivia')" style="flex:1;padding:8px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em">Answer ↗</button>
-                <button onclick="showBadgesModal()" style="flex:0.4;padding:8px;background:#FCD34D;color:#1E293B;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em;align-self:center;transition:all 0.2s" onmouseover="this.style.background='#FBBF24'" onmouseout="this.style.background='#FCD34D'" title="View all badges">🏆</button>
+                <button onclick="showBadgesModal()" style="flex:0.4;padding:8px;background:#FCD34D;color:var(--dark);border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.88em;align-self:center;transition:all 0.2s" onmouseover="this.style.background='#FBBF24'" onmouseout="this.style.background='#FCD34D'" title="View all badges">🏆</button>
             </div>
         </div>`;
 }
@@ -7445,7 +7457,7 @@ function renderDashReading() {
                 <span style="font-size:0.8em;color:#94A3B8">Today: ${r.dailyMinutes||0}/20 min</span>
                 <span style="font-size:0.8em;color:#818CF8;font-weight:600">Week: ${r.weeklyMinutes||0}/100</span>
             </div>
-            <div style="background:#334155;border-radius:8px;height:6px;overflow:hidden;margin-bottom:10px">
+            <div style="background:var(--mid);border-radius:8px;height:6px;overflow:hidden;margin-bottom:10px">
                 <div style="background:linear-gradient(90deg,#10B981,#6EE7B7);height:100%;width:${pct}%;transition:width 0.3s"></div>
             </div>
             <button onclick="showBoard('reading')" style="width:100%;padding:8px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.9em">
@@ -7487,7 +7499,7 @@ function renderDashPoints() {
                 <span>${next.min - pts.month} to ${next.name} ${next.icon}</span>
             </div>
             <div class="db-pts-bar"><div class="db-pts-bfill" style="width:${pct.toFixed(0)}%"></div></div>`
-            : `<div style="text-align:center;font-size:0.78em;color:#6366F1;font-weight:700;margin-top:6px">Max tier! 🦁</div>`}
+            : `<div style="text-align:center;font-size:0.78em;color:var(--indigo);font-weight:700;margin-top:6px">Max tier! 🦁</div>`}
     </div>`;
 
     const el = document.getElementById('db-pts-content');
@@ -7951,32 +7963,32 @@ function _legacyTriviaPanel_unused() {
                         <div style="color:#6EE7B7;font-size:0.9em">Streak: ${t.streak || 0} days 🔥</div>
                     </div>
 
-                    <div style="background:rgba(139,92,246,0.15);border-left:3px solid #8B5CF6;padding:16px;border-radius:8px;margin-bottom:16px">
+                    <div style="background:rgba(139,92,246,0.15);border-left:3px solid var(--purple);padding:16px;border-radius:8px;margin-bottom:16px">
                         <div style="color:#A78BFA;font-weight:600;margin-bottom:8px">💡 Fun Fact</div>
                         <div style="color:#D8B4FE;font-size:0.95em;line-height:1.4">${q.funFact}</div>
                     </div>
 
                     ${q.links && q.links.correct ? `
-                        <a href="${q.links.correct}" target="_blank" style="display:block;padding:12px;background:#6366F1;color:white;text-decoration:none;border-radius:8px;text-align:center;font-weight:600;margin-bottom:10px;transition:0.2s" onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='#6366F1'">
+                        <a href="${q.links.correct}" target="_blank" style="display:block;padding:12px;background:var(--indigo);color:white;text-decoration:none;border-radius:8px;text-align:center;font-weight:600;margin-bottom:10px;transition:0.2s" onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='var(--indigo)'">
                             📚 Learn More About This Topic
                         </a>
                     ` : ''}
                 ` : `
                     <div id="trivia-form">
                         <input type="text" id="trivia-answer" placeholder="Your answer (case-insensitive)..."
-                            style="width:100%;padding:12px;border:2px solid #475569;background:#1E293B;color:white;border-radius:8px;font-size:1em;margin-bottom:10px;font-family:inherit"
+                            style="width:100%;padding:12px;border:2px solid #475569;background:var(--dark);color:white;border-radius:8px;font-size:1em;margin-bottom:10px;font-family:inherit"
                             onkeypress="if(event.key==='Enter') checkTriviaAnswer()">
 
                         <div style="display:flex;gap:8px;margin-bottom:10px">
-                            <button onclick="checkTriviaAnswer()" style="flex:1;padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:0.2s" onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='#6366F1'">
+                            <button onclick="checkTriviaAnswer()" style="flex:1;padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:0.2s" onmouseover="this.style.background='#4F46E5'" onmouseout="this.style.background='var(--indigo)'">
                                 Check Answer
                             </button>
-                            <button onclick="toggleTriviaHint()" style="flex:0.3;padding:12px;background:#8B5CF6;color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;transition:0.2s" onmouseover="this.style.background='#7C3AED'" onmouseout="this.style.background='#8B5CF6'">
+                            <button onclick="toggleTriviaHint()" style="flex:0.3;padding:12px;background:var(--purple);color:white;border:none;border-radius:8px;cursor:pointer;font-size:1em;transition:0.2s" onmouseover="this.style.background='#7C3AED'" onmouseout="this.style.background='var(--purple)'">
                                 💡
                             </button>
                         </div>
 
-                        <div id="trivia-hint" style="display:none;background:rgba(139,92,246,0.15);border-left:3px solid #8B5CF6;padding:12px;border-radius:8px;color:#C4B5FD;font-size:0.95em">
+                        <div id="trivia-hint" style="display:none;background:rgba(139,92,246,0.15);border-left:3px solid var(--purple);padding:12px;border-radius:8px;color:#C4B5FD;font-size:0.95em">
                             <strong>Hint:</strong> ${q.hint}
                         </div>
 
@@ -8020,7 +8032,7 @@ function renderBoardReading() {
             <!-- Progress bars -->
             <div style="margin-bottom:20px">
                 <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px">Today's Progress</div>
-                <div style="background:#334155;border-radius:8px;height:8px;overflow:hidden">
+                <div style="background:var(--mid);border-radius:8px;height:8px;overflow:hidden">
                     <div style="background:linear-gradient(90deg,#10B981,#6EE7B7);height:100%;width:${Math.min(100, (r.dailyMinutes/20)*100)}%;transition:width 0.3s"></div>
                 </div>
                 <div style="font-size:0.75em;color: var(--text-secondary);margin-top:4px">${r.dailyMinutes} of 20 minutes</div>
@@ -8028,8 +8040,8 @@ function renderBoardReading() {
 
             <div style="margin-bottom:20px">
                 <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px">This Week</div>
-                <div style="background:#334155;border-radius:8px;height:8px;overflow:hidden">
-                    <div style="background:linear-gradient(90deg,#6366F1,#A78BFA);height:100%;width:${Math.min(100, (r.weeklyMinutes/100)*100)}%;transition:width 0.3s"></div>
+                <div style="background:var(--mid);border-radius:8px;height:8px;overflow:hidden">
+                    <div style="background:linear-gradient(90deg,var(--indigo),#A78BFA);height:100%;width:${Math.min(100, (r.weeklyMinutes/100)*100)}%;transition:width 0.3s"></div>
                 </div>
                 <div style="font-size:0.75em;color: var(--text-secondary);margin-top:4px">${r.weeklyMinutes} of 100 minutes</div>
             </div>
@@ -8042,17 +8054,17 @@ function renderBoardReading() {
 
             <!-- Quick add buttons -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
-                <button onclick="addReadingMinutes(5)" style="padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+5 min</button>
-                <button onclick="addReadingMinutes(10)" style="padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+10 min</button>
-                <button onclick="addReadingMinutes(15)" style="padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+15 min</button>
-                <button onclick="addReadingMinutes(20)" style="padding:12px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+20 min</button>
+                <button onclick="addReadingMinutes(5)" style="padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+5 min</button>
+                <button onclick="addReadingMinutes(10)" style="padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+10 min</button>
+                <button onclick="addReadingMinutes(15)" style="padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+15 min</button>
+                <button onclick="addReadingMinutes(20)" style="padding:12px;background:var(--indigo);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">+20 min</button>
             </div>
 
             <!-- Custom input -->
             <div style="display:flex;gap:8px;margin-bottom:20px">
                 <input type="number" id="reading-custom-input" placeholder="Minutes" min="1" max="120"
-                    style="flex:1;padding:10px;border:2px solid #475569;background:#1E293B;color:white;border-radius:8px;font-size:1em;font-family:inherit">
-                <button onclick="addReadingCustom()" style="padding:10px 16px;background:#8B5CF6;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">Add</button>
+                    style="flex:1;padding:10px;border:2px solid #475569;background:var(--dark);color:white;border-radius:8px;font-size:1em;font-family:inherit">
+                <button onclick="addReadingCustom()" style="padding:10px 16px;background:var(--purple);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600">Add</button>
             </div>
 
             <!-- History -->
@@ -8061,7 +8073,7 @@ function renderBoardReading() {
                     <div style="font-size:0.85em;color:#94A3B8;margin-bottom:8px;font-weight:600">Week History</div>
                     <div style="display:flex;flex-direction:column;gap:6px">
                         ${r.history.slice(-4).reverse().map(h =>
-                            `<div style="display:flex;justify-content:space-between;padding:8px;background:#1E293B;border-radius:6px;font-size:0.9em">
+                            `<div style="display:flex;justify-content:space-between;padding:8px;background:var(--dark);border-radius:6px;font-size:0.9em">
                                 <span style="color:#94A3B8">Week of ${h.week}</span>
                                 <span style="color:#10B981;font-weight:600">${h.minutes} min</span>
                             </div>`
@@ -8195,7 +8207,7 @@ function renderGujaratiPanel() {
             <div class="lbl">Study Timer</div>
             <div class="guj-timer-display" id="guj-timer-display">${mins}:${secs}</div>
             <div class="pbar" style="margin-bottom:12px">
-                <div class="pbar-fill" style="background:linear-gradient(90deg,#6366F1,#8B5CF6);width:${pct}%"></div>
+                <div class="pbar-fill" style="background:linear-gradient(90deg,var(--indigo),var(--purple));width:${pct}%"></div>
             </div>
             <div style="font-size:0.78em;color:var(--mid);text-align:center;margin-bottom:10px">Daily goal: 10 minutes</div>
             <div class="guj-timer-btns">
