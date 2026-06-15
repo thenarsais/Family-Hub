@@ -4819,13 +4819,22 @@ window.showMemoryResults = function(game, won) {
     const isNewBest = game.score === (leaderboard[0]?.score || 0);
     const personalBest = leaderboard[0]?.score || 0;
 
+    // Calculate rank (find position in leaderboard)
+    const allDifficultyScores = (state.games.stats?.memory?.leaderboard || [])
+        .filter(e => e.difficulty === game.difficulty)
+        .sort((a, b) => b.score - a.score);
+    const rank = allDifficultyScores.findIndex(e => e.score === game.score) + 1;
+    const rankBadges = ['🥇', '🥈', '🥉'];
+    const rankDisplay = rank <= 3 ? rankBadges[rank - 1] : '🎖️';
+
     modal.innerHTML = '';
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center;max-height:90vh;overflow-y:auto';
     card.innerHTML = `
         <div style="font-size:3em;margin-bottom:16px">${won ? '🎉' : '⏱️'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Game ${won ? 'Won!' : 'Over'}</h2>
-        ${isNewBest && game.score > 0 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800;margin-bottom:12px">🏆 New Personal Best!</div>` : ''}
+        ${isNewBest && game.score > 0 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800;margin-bottom:6px">🏆 New Personal Best!</div>` : ''}
+        ${rank <= allDifficultyScores.length ? `<div style="font-size:0.95em;color:#10B981;font-weight:700;margin-bottom:12px">${rankDisplay} Rank #${rank} of ${allDifficultyScores.length}</div>` : ''}
         <div style="font-size:3.5em;font-weight:900;color:#10B981;margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
@@ -5495,12 +5504,30 @@ window.showScrambleResults = function(game, won) {
     // Update leaderboard
     updateScrambleLeaderboard(game);
 
+    // Get leaderboard for rank calculation
+    const scrambleStats = state.games.stats?.scramble || {};
+    const leaderboard = (scrambleStats.leaderboard || [])
+        .filter(e => e.difficulty === game.difficulty)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+    // Calculate rank
+    const allDifficultyScores = (state.games.stats?.scramble?.leaderboard || [])
+        .filter(e => e.difficulty === game.difficulty)
+        .sort((a, b) => b.score - a.score);
+    const rank = allDifficultyScores.findIndex(e => e.score === game.score) + 1;
+    const rankBadges = ['🥇', '🥈', '🥉'];
+    const rankDisplay = rank <= 3 ? rankBadges[rank - 1] : '🎖️';
+    const isNewBest = game.score === (allDifficultyScores[0]?.score || 0);
+
     modal.innerHTML = '';
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:600px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;text-align:center;max-height:90vh;overflow-y:auto';
     card.innerHTML = `
         <div style="font-size:3em;margin-bottom:16px">${won ? '🎉' : '🎲'}</div>
         <h2 style="font-size:2em;font-weight:800;margin:0 0 8px 0">Game ${won ? 'Won!' : 'Over'}</h2>
+        ${isNewBest && game.score > 0 ? `<div style="font-size:1em;color:#FCD34D;font-weight:800;margin-bottom:6px">🏆 New Personal Best!</div>` : ''}
+        ${rank <= allDifficultyScores.length ? `<div style="font-size:0.95em;color:#10B981;font-weight:700;margin-bottom:12px">${rankDisplay} Rank #${rank} of ${allDifficultyScores.length}</div>` : ''}
         <div style="font-size:3.5em;font-weight:900;color:#10B981;margin-bottom:24px">${game.score}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
@@ -5526,6 +5553,24 @@ window.showScrambleResults = function(game, won) {
                       game.selectedBoost === 'skip' ? '⏭️ Skip Word — Auto-solved (+50% pts)' :
                       game.selectedBoost === 'hint' ? '💡 Hint — First letter revealed' : ''}
                 </div>
+            </div>
+        ` : ''}
+
+        ${leaderboard.length > 0 ? `
+            <div style="background:#0F172A;padding:16px;border-radius:12px;margin-bottom:24px;text-align:left">
+                <div style="font-size:0.95em;font-weight:800;color:#94A3B8;margin-bottom:12px">Top Scores (${diffLabel})</div>
+                ${leaderboard.map((entry, i) => {
+                    const medals = ['🥇', '🥈', '🥉'];
+                    const daysAgo = Math.floor((Date.now() - new Date(entry.date).getTime()) / (1000 * 60 * 60 * 24));
+                    const dateStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo} days ago`;
+                    const isCurrent = entry.score === game.score;
+                    return `
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--mid);${isCurrent ? 'background:#1E3A8A;padding:8px;border-radius:6px;border:none' : ''}">
+                            <span style="color:${isCurrent ? '#60A5FA' : '#D1FAE5'}">${medals[i]} ${entry.score} pts ${isCurrent ? '← You' : ''}</span>
+                            <span style="font-size:0.85em;color: var(--text-secondary)">${dateStr}</span>
+                        </div>
+                    `;
+                }).join('')}
             </div>
         ` : ''}
 
