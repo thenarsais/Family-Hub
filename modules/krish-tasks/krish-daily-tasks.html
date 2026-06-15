@@ -167,6 +167,47 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        /* ── DAILY BONUS TOAST ───────────────── */
+        .daily-bonus-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(0);
+            width: 320px;
+            background: linear-gradient(135deg, #7C3AED 0%, #EC4899 100%);
+            border-left: 4px solid #FFD700;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            animation: slideUp 0.3s ease-out;
+            color: white;
+        }
+        .daily-bonus-toast.dismiss {
+            animation: slideDown 0.3s ease-in forwards;
+        }
+        .daily-bonus-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+        .daily-bonus-title {
+            font-size: 1em;
+            font-weight: 800;
+            margin-bottom: 4px;
+            color: #FFD700;
+        }
+        .daily-bonus-desc {
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+        .daily-bonus-streak {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+
         /* ── VIEWS ─────────────────────────────── */
         .view { display:none; min-height:100vh; }
         .view.active { display:block; }
@@ -243,6 +284,38 @@
         .dash-bar-wrap { background:rgba(255,255,255,0.22); border-radius:10px; height:8px; overflow:hidden; margin-bottom:6px; }
         .dash-bar-fill { height:100%; background:var(--accent); border-radius:10px; transition:width 0.6s ease; }
         .dash-bar-labels { display:flex; justify-content:space-between; font-size:0.78em; opacity:0.88; }
+
+        /* Daily Streak Display */
+        .dash-streak-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dash-streak-item {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.85em;
+        }
+        .dash-streak-icon {
+            font-size: 1.4em;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .dash-streak-label {
+            font-size: 0.65em;
+            opacity: 0.75;
+            margin-bottom: 2px;
+        }
+        .dash-streak-num {
+            font-size: 1.2em;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.95);
+        }
 
         /* Dashboard Grid */
         .dash-grid { padding:14px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -1255,6 +1328,18 @@
         <div class="dash-bar-labels">
             <span id="daily-bar-left">0 / 0 chores done</span>
             <span id="daily-bar-right">Goal: 50 pts</span>
+        </div>
+        <div class="dash-streak-row">
+            <div class="dash-streak-item">
+                <span class="dash-streak-icon">🔥</span>
+                <div class="dash-streak-label">Daily Streak</div>
+                <div class="dash-streak-num" id="dash-daily-streak">0</div>
+            </div>
+            <div class="dash-streak-item">
+                <span class="dash-streak-icon">🎁</span>
+                <div class="dash-streak-label">Bonus Status</div>
+                <div class="dash-streak-num" id="dash-bonus-status" style="font-size: 0.9em; margin-top: 2px;">—</div>
+            </div>
         </div>
     </header>
 
@@ -2574,6 +2659,9 @@ async function saveTriviaAnswer(questionId, isCorrect) {
             awardPoints(points);
             // Store points info for display in result
             triviaLastPointsEarned = points;
+
+            // ── PHASE 5: Award Daily Bonus (first game of day) ──
+            awardDailyBonus();
         } else {
             triviaLastPointsEarned = 0;
         }
@@ -2897,6 +2985,27 @@ function renderTriviaPanel() {
                 <div style="font-size:0.65em;color:#4C1D95;margin-top:1px">Correct</div>
             </div>
         </div>
+
+        <!-- Daily Bonus Status -->
+        ${(() => {
+            const today = todayStr();
+            const claimed = state.games?.dailyBonus?.claimed && state.games.dailyBonus.lastClaimedDate === today;
+            const streak = state.games?.dailyBonus?.streak || 0;
+            let statusText = claimed ? '✓ Bonus Claimed Today!' : '🎁 Ready for Bonus!';
+            let bgColor = claimed ? '#ECFDF5' : '#FEF3C7';
+            let textColor = claimed ? '#065F46' : '#78350F';
+            let borderColor = claimed ? '#A7F3D0' : '#FCD34D';
+
+            return `
+                <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:10px;padding:12px;margin-bottom:14px;text-align:center">
+                    <div style="font-size:1.2em;margin-bottom:6px;font-weight:700;color:${textColor}">${statusText}</div>
+                    <div style="font-size:0.85em;color:${textColor};opacity:0.9">
+                        ${claimed ? `Streak: ${streak} day${streak !== 1 ? 's' : ''}` : 'First correct answer gets +10 bonus!'}
+                    </div>
+                </div>
+            `;
+        })()}
+
 
         <!-- Phase 2: Export Buttons -->
         <div style="display:flex;gap:6px;margin-bottom:12px;justify-content:flex-end">
@@ -6135,11 +6244,39 @@ window.awardDailyBonus = function() {
         state.points.today += bonusPoints;
         saveState();
 
-        // Show notification (optional - can be suppressed if too intrusive)
-        console.log(`🎁 Daily Bonus: +${bonusPoints} pts! Streak: ${streak} day${streak > 1 ? 's' : ''}`);
+        // Show celebratory notification
+        showDailyBonusToast(bonusPoints, streak);
         return bonusPoints;
     }
     return 0;
+};
+
+window.showDailyBonusToast = function(bonusPoints, streak) {
+    // Create daily bonus toast notification
+    const existingToast = document.getElementById('daily-bonus-toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'daily-bonus-toast';
+    toast.className = 'daily-bonus-toast';
+    toast.innerHTML = `
+        <div class="daily-bonus-icon">🎁</div>
+        <div class="daily-bonus-title">Daily Bonus!</div>
+        <div class="daily-bonus-desc">+${bonusPoints} bonus points</div>
+        <div class="daily-bonus-streak">🔥 Streak: ${streak} day${streak > 1 ? 's' : ''}</div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        if (toast && toast.parentNode) {
+            toast.classList.add('dismiss');
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 300);
+        }
+    }, 3000);
 };
 
 window.getSeasonalTheme = function() {
@@ -6818,6 +6955,21 @@ function renderDashboard() {
     // Update points display in new dashboard header chip
     const dashPtsNum = document.getElementById('dash-pts-num');
     if (dashPtsNum) dashPtsNum.textContent = state.points.today;
+
+    // Update daily streak and bonus display
+    const dailyStreakEl = document.getElementById('dash-daily-streak');
+    const bonusStatusEl = document.getElementById('dash-bonus-status');
+    if (state.games && state.games.dailyBonus) {
+        const streak = state.games.dailyBonus.streak || 0;
+        if (dailyStreakEl) dailyStreakEl.textContent = streak;
+
+        if (bonusStatusEl) {
+            const today = todayStr();
+            const claimed = state.games.dailyBonus.claimed && state.games.dailyBonus.lastClaimedDate === today;
+            bonusStatusEl.textContent = claimed ? '✓ Claimed' : 'Ready';
+            bonusStatusEl.style.color = claimed ? 'rgba(255, 255, 255, 0.7)' : '#FFD700';
+        }
+    }
 
     const all  = allChoresCount();
     const done = doneChoresCount();
