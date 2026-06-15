@@ -3665,11 +3665,11 @@ window.startWordleGame = function() {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:white;border-radius:20px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2)';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:20px;max-width:500px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.2);color:white';
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <h2 style="color:var(--dark);font-size:1.5em;font-weight:800;margin:0">🎯 Wordle</h2>
-            <button onclick="document.getElementById('wordle-modal').remove()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#94A3B8;padding:0;width:30px;height:30px">✕</button>
+            <h2 style="color:white;font-size:1.5em;font-weight:800;margin:0">🎯 Wordle</h2>
+            <button onclick="document.getElementById('wordle-modal').remove()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:white;padding:0;width:30px;height:30px">✕</button>
         </div>
         <div id="wordle-panel-content">${renderWordleGame(window._wordleGame)}</div>
     `;
@@ -4165,8 +4165,8 @@ window.showQuickFireResults = function(game, accuracy) {
         ${boostSummary}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <button onclick="playAgainQuickFire()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
-            <button onclick="backToTriviaFromQuickFire()" style="padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
+            <button onclick="playAgainQuickFire()" style="padding:12px;background:var(--theme-primary);border:none;color:var(--theme-primary-text, white);border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
+            <button onclick="backToTriviaFromQuickFire()" style="padding:12px;background:var(--mid);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
         </div>
     `;
 
@@ -4908,7 +4908,7 @@ window.showMemoryResults = function(game, won) {
 
         <button onclick="showLeaderboardViewer('memory')" style="width:100%;padding:12px;background:#7C3AED;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em;margin-bottom:8px">🏆 View Leaderboard</button>
 
-        <button onclick="backToTriviaFromMemory()" style="width:100%;padding:12px;background:#475569;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
+        <button onclick="backToTriviaFromMemory()" style="width:100%;padding:12px;background:var(--mid);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
     `;
 
     modal.appendChild(card);
@@ -5601,7 +5601,7 @@ window.showScrambleResults = function(game, won) {
 
         <button onclick="showLeaderboardViewer('scramble')" style="width:100%;padding:12px;background:#7C3AED;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em;margin-bottom:8px">🏆 View Leaderboard</button>
 
-        <button onclick="backToTriviaFromScramble()" style="width:100%;padding:12px;background:#475569;border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
+        <button onclick="backToTriviaFromScramble()" style="width:100%;padding:12px;background:var(--mid);border:none;color:white;border-radius:var(--btn-border-radius);cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
     `;
 
     modal.appendChild(card);
@@ -6389,7 +6389,7 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
             <h2 style="font-size:1.8em;font-weight:800;margin:0">🏆 ${gameName} Leaderboard</h2>
-            <button onclick="document.getElementById('leaderboard-modal').remove()" style="background:#475569;border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">Close</button>
+            <button onclick="document.getElementById('leaderboard-modal').remove()" style="background:var(--mid);border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600">Close</button>
         </div>
 
         ${personalBest > 0 ? `
@@ -6403,7 +6403,7 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
         <!-- Filters -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
             <div>
-                <div style="font-size:0.85em;color:#94A3B8;margin-bottom:6px;font-weight:600">Difficulty</div>
+                <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px;font-weight:600">Difficulty</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button onclick="window._leaderboardFilters.difficulty='all';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'all' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">All</button>
                     <button onclick="window._leaderboardFilters.difficulty='easy';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'easy' ? '#10B981' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟢 Easy</button>
