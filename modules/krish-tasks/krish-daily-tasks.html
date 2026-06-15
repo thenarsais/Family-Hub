@@ -2938,7 +2938,7 @@ function renderTriviaPanel() {
         </div>
 
         <div style="margin-bottom:14px">
-            <button onclick="toggleTriviaHint()" style="background:#F5F3FF;border:1px solid #DDD6FE;color:#5B21B6;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.88em;font-weight:600">💡 Show Hint</button>
+            <button onclick="toggleTriviaHint()" style="background:var(--theme-secondary);border:1px solid var(--theme-primary);color:var(--theme-primary);padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.88em;font-weight:600">💡 Show Hint</button>
             <div id="trivia-hint" style="display:none;margin-top:10px;background:var(--theme-secondary);border-left:3px solid var(--theme-primary);padding:12px;border-radius:0 10px 10px 0;color:var(--theme-primary);font-size:0.92em">${q.hint}</div>
         </div>
 
@@ -3417,7 +3417,7 @@ window.renderWordleGame = function(game) {
             ` : `
                 <div style="display:flex;gap:8px;margin-bottom:16px">
                     <input type="text" id="wordle-input" placeholder="Guess..." maxlength="5" style="flex:1;padding:12px;border:2px solid #E2E8F0;border-radius:8px;font-size:1em;text-transform:uppercase;font-weight:600;letter-spacing:2px">
-                    <button onclick="wordleSubmitBtn()" style="padding:12px 20px;background:#6366F1;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700">Submit</button>
+                    <button onclick="wordleSubmitBtn()" style="padding:12px 20px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:8px;cursor:pointer;font-weight:700">Submit</button>
                 </div>
             `}
 
@@ -4690,7 +4690,7 @@ window.showMemoryResults = function(game, won) {
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <button onclick="playAgainMemory()" style="padding:12px;background:#0EA5E9;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Play Again</button>
-            <button onclick="showMemoryDifficultyModal()" style="padding:12px;background:#F59E0B;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Try Different Difficulty</button>
+            <button onclick="showMemoryDifficultyModal()" style="padding:12px;background:var(--theme-primary);color:var(--theme-primary-text, white);border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Try Different Difficulty</button>
         </div>
 
         <button onclick="backToTriviaFromMemory()" style="width:100%;padding:12px;background:#475569;border:none;color:white;border-radius:10px;cursor:pointer;font-weight:600;font-size:0.95em">Back to Trivia</button>
