@@ -1593,6 +1593,13 @@
                 <div class="date-sub" id="date-display"></div>
             </div>
             <div style="display:flex;gap:12px;align-items:center">
+                <button onclick="showPerformanceDashboard()" style="
+                    background:rgba(0,0,0,0.2);border:none;color:white;
+                    padding:8px 12px;border-radius:20px;cursor:pointer;font-size:1.3em;
+                    transition:all 0.2s;border:1px solid rgba(255,255,255,0.2)
+                " onmouseover="this.style.background='rgba(0,0,0,0.3)'" onmouseout="this.style.background='rgba(0,0,0,0.2)'" title="Performance Dashboard">
+                    📊
+                </button>
                 <button onclick="showGameSettings()" style="
                     background:rgba(0,0,0,0.2);border:none;color:white;
                     padding:8px 12px;border-radius:20px;cursor:pointer;font-size:1.3em;
@@ -7438,6 +7445,170 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
     `;
 
     card.appendChild(document.createElement('div'));
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+};
+
+// ── PERFORMANCE DASHBOARD ───────────────────────────────
+window.showPerformanceDashboard = function() {
+    // Collect all performance data
+    const totalPoints = state.points?.total || 0;
+    const todayPoints = state.points?.today || 0;
+    const weekPoints = state.points?.week || 0;
+    const monthPoints = state.points?.month || 0;
+
+    const streak = state.dailyBonusEnhanced?.dailyStreak || 0;
+    const bonusHistory = state.dailyBonusEnhanced?.bonusHistory || [];
+
+    // Calculate game stats
+    const games = ['wordle', 'memory', 'scramble', 'quickfire'];
+    const gameStats = {};
+    let totalGamesPlayed = 0;
+    let totalGamesWon = 0;
+    let personalBests = {};
+
+    games.forEach(gameId => {
+        const gStats = state.games?.stats?.[gameId];
+        if (gStats) {
+            gameStats[gameId] = gStats;
+            totalGamesPlayed += gStats.plays || 0;
+            totalGamesWon += gStats.wins || 0;
+            personalBests[gameId] = gStats.bestScore || 0;
+        } else {
+            gameStats[gameId] = { plays: 0, wins: 0, bestScore: 0 };
+        }
+    });
+
+    // Calculate win rate
+    const winRate = totalGamesPlayed > 0 ? Math.round((totalGamesWon / totalGamesPlayed) * 100) : 0;
+
+    // Get last 7 days of activity
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Count activity for this day from bonus history
+        const dayBonuses = bonusHistory.filter(b => b.date === dateStr);
+        const activity = dayBonuses.length > 0 ? dayBonuses.length : 0;
+
+        last7Days.push({ date: dateStr, activity: activity, dayName: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()] });
+    }
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'performance-dashboard-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px;overflow-y:auto';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:900px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
+
+    // Calculate points trend (last 30 days)
+    const pointsTrend = [];
+    for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayPoints = bonusHistory.filter(b => b.date === dateStr).reduce((sum, b) => sum + b.bonus, 0);
+        pointsTrend.push({ date: dateStr, points: dayPoints });
+    }
+
+    // Build activity heatmap HTML
+    const heatmapHTML = last7Days.map((day, idx) => {
+        const intensity = Math.min(day.activity, 3);
+        const colors = ['#475569', '#65A30D', '#BFEF45', '#FFFF00'];
+        const bgColor = colors[Math.min(intensity, 3)];
+        const textColor = intensity >= 2 ? '#000' : '#fff';
+        return `
+            <div style="text-align:center">
+                <div style="width:40px;height:40px;background:${bgColor};border-radius:8px;display:flex;align-items:center;justify-content:center;color:${textColor};font-weight:700;font-size:0.9em;margin:0 auto 6px;cursor:pointer;transition:all 0.2s" title="${day.date}: ${day.activity} games">
+                    ${day.activity}
+                </div>
+                <div style="font-size:0.75em;color:var(--text-muted)">${day.dayName}</div>
+            </div>
+        `;
+    }).join('');
+
+    // Build performance cards HTML
+    const performanceCardsHTML = games.map(gameId => {
+        const stats = gameStats[gameId];
+        const winRate = stats.plays > 0 ? Math.round((stats.wins / stats.plays) * 100) : 0;
+        const gameNames = { wordle: '🎯 Wordle', memory: '🧠 Memory', scramble: '🎲 Scramble', quickfire: '⚡ Quick-Fire' };
+
+        return `
+            <div style="background:var(--modal-bg);padding:16px;border-radius:12px;border-left:4px solid var(--theme-primary)">
+                <div style="font-weight:700;color:var(--theme-primary);margin-bottom:12px;font-size:1.1em">${gameNames[gameId]}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.9em">
+                    <div>
+                        <div style="color:var(--text-muted);font-size:0.8em;margin-bottom:4px">Games Played</div>
+                        <div style="font-size:1.5em;font-weight:800;color:var(--theme-primary)">${stats.plays || 0}</div>
+                    </div>
+                    <div>
+                        <div style="color:var(--text-muted);font-size:0.8em;margin-bottom:4px">Win Rate</div>
+                        <div style="font-size:1.5em;font-weight:800;color:${winRate >= 50 ? '#10B981' : '#F59E0B'}">${winRate}%</div>
+                    </div>
+                    <div style="grid-column:1/-1">
+                        <div style="color:var(--text-muted);font-size:0.8em;margin-bottom:4px">Personal Best</div>
+                        <div style="font-size:1.3em;font-weight:800;color:var(--season-accent)">${stats.bestScore || 0} pts</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">
+            <h2 style="font-size:2em;font-weight:800;margin:0">📊 Performance Dashboard</h2>
+            <button onclick="document.getElementById('performance-dashboard-modal').remove()" style="background:none;border:none;font-size:1.8em;cursor:pointer;color:var(--text-muted);padding:0;width:40px;height:40px;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+
+        <!-- OVERVIEW STATS -->
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;margin-bottom:28px">
+            <div style="background:linear-gradient(135deg,#ECFDF5,#D1FAE5);padding:16px;border-radius:12px;border:1px solid var(--theme-primary)">
+                <div style="font-size:0.85em;color:#065F46;font-weight:600;margin-bottom:8px">Total Points</div>
+                <div style="font-size:2em;font-weight:900;color:var(--theme-primary)">${totalPoints}</div>
+                <div style="font-size:0.75em;color:#047857;margin-top:4px">+${monthPoints} this month</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#F0F9FF,#BFDBFE);padding:16px;border-radius:12px;border:1px solid #0EA5E9">
+                <div style="font-size:0.85em;color:#0C4A6E;font-weight:600;margin-bottom:8px">Games Played</div>
+                <div style="font-size:2em;font-weight:900;color:#0EA5E9">${totalGamesPlayed}</div>
+                <div style="font-size:0.75em;color:#0369A1;margin-top:4px">${winRate}% win rate</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#FEF3C7,#FDE047);padding:16px;border-radius:12px;border:1px solid #FBBF24">
+                <div style="font-size:0.85em;color:#78350F;font-weight:600;margin-bottom:8px">Current Streak</div>
+                <div style="font-size:2em;font-weight:900;color:#F59E0B">🔥 ${streak}</div>
+                <div style="font-size:0.75em;color:#B45309;margin-top:4px">days in a row</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#F5F3FF,#E9D5FF);padding:16px;border-radius:12px;border:1px solid #C084FC">
+                <div style="font-size:0.85em;color:#6B21A8;font-weight:600;margin-bottom:8px">Today's Points</div>
+                <div style="font-size:2em;font-weight:900;color:#A855F7">+${todayPoints}</div>
+                <div style="font-size:0.75em;color:#7E22CE;margin-top:4px">this session</div>
+            </div>
+        </div>
+
+        <!-- ACTIVITY HEATMAP -->
+        <div style="background:var(--modal-bg);padding:20px;border-radius:12px;margin-bottom:28px">
+            <h3 style="font-size:1.2em;font-weight:800;margin:0 0 16px 0;color:var(--season-accent)">📅 Last 7 Days Activity</h3>
+            <div style="display:grid;grid-template-columns:repeat(7, 1fr);gap:12px">
+                ${heatmapHTML}
+            </div>
+        </div>
+
+        <!-- GAME PERFORMANCE -->
+        <div style="margin-bottom:28px">
+            <h3 style="font-size:1.2em;font-weight:800;margin:0 0 16px 0;color:var(--season-accent)">🎮 Game Performance</h3>
+            <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:12px">
+                ${performanceCardsHTML}
+            </div>
+        </div>
+
+        <!-- CLOSE BUTTON -->
+        <button onclick="document.getElementById('performance-dashboard-modal').remove()" style="width:100%;padding:14px;background:var(--theme-primary);border:none;color:white;border-radius:10px;cursor:pointer;font-weight:700;font-size:1em;transition:all 0.2s">
+            Close Dashboard
+        </button>
+    `;
+
     modal.appendChild(card);
     document.body.appendChild(modal);
 };
