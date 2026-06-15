@@ -6294,9 +6294,14 @@ window.renderWordleGameChallenge = function(game, container) {
             </div>
         </div>
 
-        ${game.feedback.map(f => `
-            <div style="margin-bottom:6px;padding:10px;background:white;border-radius:8px;font-family:monospace;font-size:1.2em;font-weight:800;letter-spacing:3px;text-align:center">
-                ${f.feedback.join('')}
+        ${game.feedback.map((f, idx) => `
+            <div style="margin-bottom:8px;padding:10px;background:white;border-radius:8px;border:1px solid var(--border-light)">
+                <div style="font-family:monospace;font-size:1.2em;font-weight:800;letter-spacing:3px;text-align:center;margin-bottom:4px">
+                    ${f.feedback.join('')}
+                </div>
+                <div style="font-family:monospace;font-size:0.95em;font-weight:700;letter-spacing:2px;text-align:center;color:var(--dark)">
+                    ${f.guess}
+                </div>
             </div>
         `).join('')}
 
@@ -6631,37 +6636,50 @@ window.renderScrambleGameChallenge = function(game, container) {
         attemptEmojis[i] = '❌';
     }
 
+    // Show previous attempts for this word
+    const previousAttemptsHTML = word.guesses && word.guesses.length > 0 ? `
+        <div style="margin-bottom:12px;padding:10px;background:#FEF2F2;border-radius:8px;border:1px solid #FECACA">
+            <div style="font-size:0.8em;color:#7F1D1D;font-weight:600;margin-bottom:6px">Previous attempts:</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+                ${word.guesses.map(g => `<span style="background:#EF4444;color:white;padding:4px 10px;border-radius:6px;font-size:0.85em;font-weight:600">${g}</span>`).join('')}
+            </div>
+        </div>
+    ` : '';
+
     container.innerHTML = `
-        <div style="text-align:center;margin-bottom:16px">
-            <div style="font-size:1.2em;font-weight:800;color:var(--dark);margin-bottom:8px">🎲 Word Scramble</div>
-            <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:12px">${diffLabel}</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                <div style="background:var(--stats-success-bg);padding:12px;border-radius:10px">
-                    <div style="font-size:0.85em;color:#D1FAE5">Score</div>
-                    <div id="scr-score-challenge" style="font-size:1.5em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
-                </div>
-                <div style="background:var(--stats-progress-bg);padding:12px;border-radius:10px">
-                    <div style="font-size:0.85em;color:#DBEAFE">Correct</div>
-                    <div style="font-size:1.3em;font-weight:800;color:var(--stats-progress-value)">${game.stats.words_correct}/5</div>
-                </div>
+        <div style="text-align:center;margin-bottom:14px">
+            <div style="font-size:1.1em;font-weight:800;color:var(--dark);margin-bottom:6px">🎲 Word Scramble</div>
+            <div style="font-size:0.9em;color:var(--text-secondary)">${diffLabel}</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <div style="background:linear-gradient(135deg,#ECFDF5,#D1FAE5);padding:12px;border-radius:10px;border:1px solid var(--theme-primary)">
+                <div style="font-size:0.8em;color:#065F46;font-weight:600">Score</div>
+                <div id="scr-score-challenge" style="font-size:1.5em;font-weight:800;color:var(--theme-primary)">${game.score}</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#F0F9FF,#BFDBFE);padding:12px;border-radius:10px;border:1px solid #0EA5E9">
+                <div style="font-size:0.8em;color:#0C4A6E;font-weight:600">Correct</div>
+                <div style="font-size:1.5em;font-weight:800;color:#0EA5E9">${game.stats.words_correct}/5</div>
             </div>
         </div>
 
-        <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:16px;text-align:center">
-            <div style="font-size:0.9em;color:var(--text-muted);margin-bottom:10px">Unscramble the word:</div>
-            <div id="scr-word-challenge" style="font-size:2.2em;font-weight:800;color:var(--text-muted);letter-spacing:6px;margin-bottom:12px;font-family:monospace">${word.scrambled}</div>
-            <div style="font-size:0.85em;color:var(--text-secondary);margin-bottom:10px">
+        <div style="background:white;padding:14px;border-radius:10px;border:2px solid var(--border-light);margin-bottom:12px;text-align:center">
+            <div style="font-size:0.85em;color:var(--text-secondary);font-weight:600;margin-bottom:8px">UNSCRAMBLE THE WORD</div>
+            <div id="scr-word-challenge" style="font-size:2em;font-weight:700;color:var(--dark);letter-spacing:5px;margin-bottom:10px;font-family:monospace">${word.scrambled}</div>
+            <div style="font-size:0.8em;color:var(--text-muted);margin-bottom:8px">
                 ${word.original.length} letters — Word ${progress}/5
             </div>
             <div style="text-align:center">
-                ${attemptEmojis.map(e => `<span style="font-size:1.3em;margin:0 3px">${e}</span>`).join('')}
+                ${attemptEmojis.map(e => `<span style="font-size:1.2em;margin:0 3px">${e}</span>`).join('')}
             </div>
         </div>
 
-        <div style="margin-bottom:14px">
+        ${previousAttemptsHTML}
+
+        <div style="margin-bottom:12px">
             <input id="scr-input-challenge"
                 type="text"
-                placeholder="Type the word here..."
+                placeholder="Type your answer..."
                 autocomplete="off"
                 autocorrect="off"
                 spellcheck="false"
@@ -6669,16 +6687,16 @@ window.renderScrambleGameChallenge = function(game, container) {
                     width:100%;
                     padding:12px;
                     background:white;
-                    border:2px solid var(--border-darker);
-                    border-radius:10px;
+                    border:2px solid var(--border-light);
+                    border-radius:8px;
                     color:var(--dark);
-                    font-size:1.1em;
+                    font-size:1.05em;
                     font-weight:600;
                     box-sizing:border-box;
                     transition:all 0.2s;
                 "
-                onfocus="this.style.borderColor='#0EA5E9'; this.style.background='#F0F9FF'"
-                onblur="this.style.borderColor='var(--border-darker)'; this.style.background='white'"
+                onfocus="this.style.borderColor='var(--theme-primary)'; this.style.background='#ECFDF5'"
+                onblur="this.style.borderColor='var(--border-light)'; this.style.background='white'"
             />
         </div>
 
@@ -6688,29 +6706,29 @@ window.renderScrambleGameChallenge = function(game, container) {
                 background:var(--theme-primary);
                 border:none;
                 color:white;
-                border-radius:10px;
+                border-radius:8px;
                 cursor:pointer;
                 font-weight:700;
                 font-size:0.95em;
                 transition:all 0.2s;
             "
-            onmouseover="this.style.background='#0EA5E9'"
+            onmouseover="this.style.background='#059669'"
             onmouseout="this.style.background='var(--theme-primary)'">
                 Submit
             </button>
             <button onclick="skipScrambleWordChallenge()" style="
                 padding:12px;
-                background:var(--mid);
+                background:#CBD5E1;
                 border:none;
-                color:white;
-                border-radius:10px;
+                color:var(--dark);
+                border-radius:8px;
                 cursor:pointer;
                 font-weight:700;
                 font-size:0.95em;
                 transition:all 0.2s;
             "
-            onmouseover="this.style.background='#64748B'"
-            onmouseout="this.style.background='var(--mid)'">
+            onmouseover="this.style.background='#94A3B8'"
+            onmouseout="this.style.background='#CBD5E1'">
                 Skip
             </button>
         </div>
@@ -6740,6 +6758,9 @@ window.submitScrambleAnswerChallenge = function() {
     const guess = input.value.trim().toLowerCase();
     const currentWord = miniGame.words[miniGame.currentWordIndex];
     if (!currentWord) return;
+
+    // Initialize guesses array if needed
+    if (!currentWord.guesses) currentWord.guesses = [];
 
     const isCorrectAnswer = guess === currentWord.original.toLowerCase();
     let pointsAwarded = 0;
@@ -6777,7 +6798,10 @@ window.submitScrambleAnswerChallenge = function() {
             renderScrambleGameChallenge(miniGame, document.getElementById('mini-game-content'));
         }
     } else {
+        // Store incorrect guess
+        currentWord.guesses.push(guess);
         currentWord.attempts++;
+
         if (currentWord.attempts >= 3) {
             advanceScrambleWord(miniGame);
             if (miniGame.currentWordIndex >= 5) {
