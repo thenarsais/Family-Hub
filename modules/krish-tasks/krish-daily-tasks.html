@@ -7339,7 +7339,7 @@ window.updateChallengeLeaderboard = function(challenge) {
     saveState();
 };
 
-// ── LEADERBOARD VIEWER WITH FILTERS ──────────────────────
+// ── LEADERBOARD VIEWER WITH ENHANCED FILTERS ──────────────────────
 window.showLeaderboardViewer = function(gameId = 'memory') {
     const stats = state.games?.stats?.[gameId] || {};
     const leaderboard = stats.leaderboard || [];
@@ -7355,10 +7355,10 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:10000;padding:20px';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:700px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:85vh;overflow-y:auto';
+    card.style.cssText = 'background:var(--dark);border-radius:20px;padding:32px;max-width:800px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,0.3);color:white;max-height:90vh;overflow-y:auto';
 
     // Title
-    const gameNames = { memory: 'Memory Tiles', scramble: 'Word Scramble', challenge: 'Challenge Mode' };
+    const gameNames = { memory: 'Memory Tiles', scramble: 'Word Scramble', wordle: '🎯 Wordle', quickfire: '⚡ Quick-Fire', challenge: '🏆 Challenge Mode' };
     const gameName = gameNames[gameId] || 'Game';
 
     // Get filters from state if they exist, otherwise default
@@ -7366,7 +7366,8 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
         window._leaderboardFilters = {
             gameId: gameId,
             difficulty: 'all',
-            dateRange: 'all'
+            timeView: 'all',
+            sortBy: 'score'
         };
     }
     const filters = window._leaderboardFilters;
@@ -7378,23 +7379,35 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
         filtered = filtered.filter(e => e.difficulty === filters.difficulty);
     }
 
-    if (filters.dateRange !== 'all') {
+    // Time-based filtering
+    if (filters.timeView !== 'all') {
         const today = new Date();
         const cutoffDate = new Date(today);
-        if (filters.dateRange === '7days') {
+        if (filters.timeView === 'week') {
             cutoffDate.setDate(cutoffDate.getDate() - 7);
-        } else if (filters.dateRange === 'month') {
+        } else if (filters.timeView === 'month') {
             cutoffDate.setMonth(cutoffDate.getMonth() - 1);
         }
         filtered = filtered.filter(e => new Date(e.date) >= cutoffDate);
     }
 
-    // Sort by score descending
-    filtered.sort((a, b) => b.score - a.score);
+    // Sorting logic
+    if (filters.sortBy === 'score') {
+        filtered.sort((a, b) => b.score - a.score);
+    } else if (filters.sortBy === 'recent') {
+        filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } else if (filters.sortBy === 'consistency') {
+        // Sort by frequency in current filtered view (highest plays first)
+        const scoreCounts = {};
+        filtered.forEach(e => {
+            scoreCounts[e.score] = (scoreCounts[e.score] || 0) + 1;
+        });
+        filtered.sort((a, b) => (scoreCounts[b.score] || 0) - (scoreCounts[a.score] || 0));
+    }
 
-    // Calculate personal best
-    const personalBest = filtered.length > 0 ? filtered[0].score : 0;
-    const bestRank = filtered.length > 0 ? 1 : 0;
+    // Calculate personal best (always based on highest score, not current sort)
+    const personalBest = Math.max(...filtered.map(e => e.score), 0);
+    const bestRank = filtered.filter(e => e.score >= personalBest).length > 0 ? filtered.findIndex(e => e.score === personalBest) + 1 : 0;
 
     card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
@@ -7403,56 +7416,72 @@ window.showLeaderboardViewer = function(gameId = 'memory') {
         </div>
 
         ${personalBest > 0 ? `
-            <div style="background:linear-gradient(135deg,var(--theme-primary),var(--theme-accent));padding:16px;border-radius:12px;margin-bottom:20px;text-align:center">
+            <div style="background:linear-gradient(135deg,var(--season-primary),var(--season-accent));padding:16px;border-radius:12px;margin-bottom:20px;text-align:center">
                 <div style="font-size:0.9em;opacity:0.9;margin-bottom:4px">Your Best Score</div>
                 <div style="font-size:2.2em;font-weight:900">🥇 ${personalBest} pts</div>
                 <div style="font-size:0.85em;opacity:0.85;margin-top:4px">Rank #${bestRank}</div>
             </div>
         ` : ''}
 
-        <!-- Filters -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-            <div>
-                <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px;font-weight:600">Difficulty</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap">
-                    <button onclick="window._leaderboardFilters.difficulty='all';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'all' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">All</button>
-                    <button onclick="window._leaderboardFilters.difficulty='easy';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'easy' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟢 Easy</button>
-                    <button onclick="window._leaderboardFilters.difficulty='medium';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'medium' ? '#F59E0B' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟡 Med</button>
-                    <button onclick="window._leaderboardFilters.difficulty='hard';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'hard' ? '#EF4444' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🔴 Hard</button>
-                </div>
+        <!-- View Controls (Time Range) -->
+        <div style="margin-bottom:16px">
+            <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:8px;font-weight:600">📅 View</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button onclick="window._leaderboardFilters.timeView='all';window.showLeaderboardViewer('${gameId}')" style="padding:8px 14px;background:${filters.timeView === 'all' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85em;transition:all 0.2s">All-Time</button>
+                <button onclick="window._leaderboardFilters.timeView='week';window.showLeaderboardViewer('${gameId}')" style="padding:8px 14px;background:${filters.timeView === 'week' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85em;transition:all 0.2s">This Week</button>
+                <button onclick="window._leaderboardFilters.timeView='month';window.showLeaderboardViewer('${gameId}')" style="padding:8px 14px;background:${filters.timeView === 'month' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85em;transition:all 0.2s">This Month</button>
             </div>
-            <div>
-                <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:6px;font-weight:600">Date Range</div>
-                <div style="display:flex;gap:6px;flex-wrap:wrap">
-                    <button onclick="window._leaderboardFilters.dateRange='all';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.dateRange === 'all' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">All</button>
-                    <button onclick="window._leaderboardFilters.dateRange='7days';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.dateRange === '7days' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">7 days</button>
-                    <button onclick="window._leaderboardFilters.dateRange='month';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.dateRange === 'month' ? 'var(--theme-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">Month</button>
-                </div>
+        </div>
+
+        <!-- Sort Controls -->
+        <div style="margin-bottom:16px">
+            <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:8px;font-weight:600">🔄 Sort By</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button onclick="window._leaderboardFilters.sortBy='score';window.showLeaderboardViewer('${gameId}')" style="padding:8px 14px;background:${filters.sortBy === 'score' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85em;transition:all 0.2s">Highest Score</button>
+                <button onclick="window._leaderboardFilters.sortBy='recent';window.showLeaderboardViewer('${gameId}')" style="padding:8px 14px;background:${filters.sortBy === 'recent' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85em;transition:all 0.2s">Most Recent</button>
+                <button onclick="window._leaderboardFilters.sortBy='consistency';window.showLeaderboardViewer('${gameId}')" style="padding:8px 14px;background:${filters.sortBy === 'consistency' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85em;transition:all 0.2s">Most Played</button>
+            </div>
+        </div>
+
+        <!-- Difficulty Filter -->
+        <div style="margin-bottom:16px">
+            <div style="font-size:0.85em;color:var(--text-muted);margin-bottom:8px;font-weight:600">⚙️ Difficulty</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button onclick="window._leaderboardFilters.difficulty='all';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'all' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">All</button>
+                <button onclick="window._leaderboardFilters.difficulty='easy';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'easy' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟢 Easy</button>
+                <button onclick="window._leaderboardFilters.difficulty='medium';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'medium' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🟡 Medium</button>
+                <button onclick="window._leaderboardFilters.difficulty='hard';window.showLeaderboardViewer('${gameId}')" style="padding:6px 12px;background:${filters.difficulty === 'hard' ? 'var(--season-primary)' : '#334155'};border:none;color:white;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.8em">🔴 Hard</button>
             </div>
         </div>
 
         <!-- Leaderboard List -->
         <div style="background:var(--modal-bg);padding:16px;border-radius:12px;margin-bottom:20px">
             ${filtered.length > 0 ? `
-                ${filtered.map((entry, i) => {
+                ${filtered.slice(0, 20).map((entry, i) => {
                     const medals = ['🥇', '🥈', '🥉'];
                     const diffIcon = { easy: '🟢', medium: '🟡', hard: '🔴' }[entry.difficulty] || '⭐';
                     const daysAgo = Math.floor((Date.now() - new Date(entry.date).getTime()) / (1000 * 60 * 60 * 24));
                     const dateStr = daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : `${daysAgo}d ago`;
                     const medal = i < 3 ? medals[i] : '🎖️';
+
+                    // Count how many times this exact score appears (for consistency metric)
+                    const scoreCount = filtered.filter(e => e.score === entry.score).length;
+                    const consistencyStr = scoreCount > 1 ? ` (${scoreCount}× this score)` : '';
+
                     return `
                         <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #334155;${i === 0 ? 'background:var(--stats-progress-bg);padding:12px;border-radius:8px;border:none;margin-bottom:8px' : ''}">
-                            <div style="display:flex;align-items:center;gap:12px;flex:1">
+                            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
                                 <span style="font-size:1.4em;min-width:30px;text-align:center">${medal}</span>
-                                <div>
-                                    <div style="font-weight:700;color:${i === 0 ? 'var(--stats-progress-value)' : '#E0E7FF'}">#${i + 1} — ${entry.score} pts</div>
-                                    <div style="font-size:0.8em;color:var(--text-muted)">${diffIcon} ${entry.difficulty.charAt(0).toUpperCase() + entry.difficulty.slice(1)}</div>
+                                <div style="min-width:0;flex:1">
+                                    <div style="font-weight:700;color:${i === 0 ? 'var(--stats-progress-value)' : 'var(--season-accent)'}">#${i + 1} — ${entry.score} pts</div>
+                                    <div style="font-size:0.8em;color:var(--text-muted)">${diffIcon} ${entry.difficulty.charAt(0).toUpperCase() + entry.difficulty.slice(1)}${consistencyStr}</div>
                                 </div>
                             </div>
-                            <div style="text-align:right;font-size:0.85em;color:var(--text-muted)">${dateStr}</div>
+                            <div style="text-align:right;font-size:0.85em;color:var(--text-muted);margin-left:12px;white-space:nowrap">${dateStr}</div>
                         </div>
                     `;
                 }).join('')}
+                ${filtered.length > 20 ? `<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:0.85em">...and ${filtered.length - 20} more scores</div>` : ''}
             ` : `
                 <div style="text-align:center;padding:20px;color:var(--text-muted)">No scores found for these filters</div>
             `}
