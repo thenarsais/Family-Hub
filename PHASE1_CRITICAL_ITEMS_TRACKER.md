@@ -117,15 +117,15 @@
 - ✅ Distributed tracing: Simple request IDs (Phase 1), upgrade to Jaeger in Phase 2+
 - ⏳ SLA Target: 99% uptime (3 days downtime/year acceptable)
 
-### ⏳ Data & Storage (IN PROGRESS - 5/8 decisions locked)
+### ✅ Data & Storage (COMPLETE)
 - ✅ Backup frequency/retention: Daily backups, 30-day retention
 - ✅ Backup encryption: Encrypted to external USB drive (no-cost option)
 - ✅ Recovery testing: Quarterly restore tests
 - ✅ RPO/RTO targets: RPO 1 hour, RTO 4 hours
 - ✅ Data retention policy: 30-day retention after deletion (GDPR compliant)
-- ⏳ GDPR/right-to-be-forgotten: (Decision #6)
-- ⏳ PII identification & handling: (Decision #7)
-- ⏳ Data anonymization strategy: (Decision #8)
+- ✅ Right-to-be-forgotten: Soft delete with 30-day window (safe recovery)
+- ✅ PII identification: Comprehensive list (names, emails, phone, IPs, device IDs, locations, activity history)
+- ✅ Data anonymization: Anonymization on export (strip PII before sharing/dev)
 
 ### ✅ Real-Time Sync & Messaging (COMPLETE)
 - ✅ WebSocket library: ws (server-side), native WebSocket (clients)
@@ -180,6 +180,54 @@
 
 ---
 
+### ✅ Release Management (COMPLETE)
+- ✅ Version numbering: Semantic versioning (MAJOR.MINOR.PATCH)
+- ✅ Release notes: Auto-generated from commits (Conventional Commits)
+- ✅ Release checklist: Automated CI/CD + manual verification
+- ✅ Hotfix procedure: Hybrid approach (critical checks only, quick review)
+- ✅ Version support: Current + previous version, 6-month window
+
+### ✅ Documentation (COMPLETE)
+- ✅ API documentation: OpenAPI 3.0 with Swagger UI + ReDoc (auto-generated SDKs)
+- ✅ Architecture documentation: ADR + Mermaid diagrams (text-based, git-friendly)
+- ✅ Code documentation: Docstrings for public functions (IDE support, minimal maintenance)
+- ✅ Operational runbooks: Written guides for common ops issues (database full, Redis down, etc.)
+- ✅ User troubleshooting: FAQ guide for common user issues (self-service support)
+
+### ✅ Performance & Optimization (COMPLETE)
+- ✅ Performance profiling: Built-in logging (query + endpoint times)
+- ✅ Load testing: Manual load testing before launch (k6, simulate users)
+- ✅ Performance targets: Standard response times by request type (100-500ms API)
+- ✅ Query optimization: Systematic approach (profile → identify → fix)
+- ✅ Caching strategy: Redis-only for Phase 1 (add multi-layer in Phase 2+ for scale)
+- ✅ Optimization priorities: Critical path first (login, activities, points)
+
+### ✅ Error Handling & Recovery (COMPLETE)
+- ✅ Error handling strategy: Retry + graceful degradation (transient vs permanent)
+- ✅ Circuit breaker pattern: Simple circuit breaker (track failures, stop + cooldown)
+- ✅ Error logging: Database error logging + JSON logs to ELK
+- ✅ User messages: Contextual friendly messages (no stack traces, error ID for support)
+- ✅ Retry logic: Exponential backoff with max retries (1s, 2s, 4s, 8s)
+- ✅ Cascade prevention: Timeout + fallback + queue (multiple fallback strategies)
+
+### ✅ Feature Management (COMPLETE)
+- ✅ Feature flag strategy: Database feature flags (runtime control, no redeploy)
+- ✅ Feature rollout: Gradual percentage rollout (5% → 25% → 50% → 100%)
+- ✅ A/B testing: Not needed for Phase 1 (Phase 2+ if needed)
+- ✅ Feature analytics: Database event logging (Phase 2+: upgrade to external analytics)
+- ✅ Feature configuration: Database config table (runtime control, per-feature settings)
+- ✅ Feature deprecation: Deprecation period with warnings (3-6 month timeline)
+
+### ✅ State Management & Versioning (COMPLETE)
+- ✅ Migration framework: Flyway (SQL-based, language-agnostic)
+- ✅ Schema changelog: Changelog file + metadata table (both human + machine readable)
+- ✅ Data transformation: Node.js migration scripts (complex business logic)
+- ✅ Rollback strategy: Rollback scripts + blue-green testing (fast recovery)
+- ✅ Migration testing: Automated tests in CI (catch issues before prod)
+- ✅ State versioning: App version tracking (handle version-specific logic)
+
+---
+
 ## 📈 UPGRADE PATHS (Phase 1.5+)
 
 ### Phase 1.5 (Post-MVP Optimization)
@@ -214,10 +262,15 @@
 
 ## 📊 TRACKING STATUS
 
-**Total Critical Items:** 50+
-- Locked: 5 (Concern #1)
-- In Review: 4 (Concerns #2-5)
-- Pending: 41 (Critical Decisions)
+**Total Categories:** 17
+- Completed: 12 (71%)
+- In Progress: 1 (Category #13 Decision #1)
+- Remaining: 4 (Categories #13-17)
 
-**Status:** 10% locked, 90% to review
+**Total Decisions Locked:** 59 (Dec 30-July 1)
+- Implementation Concerns: 5/5 ✅
+- Categories 1-12: 54/54 ✅
+- Remaining: ~25 decisions (Categories #13-17)
+
+**Status:** 71% complete, resuming tomorrow with Category #13 Decision #2
 
