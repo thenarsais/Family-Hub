@@ -282,20 +282,10 @@ CREATE INDEX idx_gujarati_learning_child_id ON gujarati_learning(child_id);
 CREATE INDEX idx_activity_points_user_id ON activity_points(user_id);
 CREATE INDEX idx_sync_queue_user_id ON sync_queue(user_id);
 
--- Enable Row Level Security (RLS)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE parent_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE child_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE linked_accounts ENABLE ROW LEVEL SECURITY;
-
--- Create RLS Policies
--- Users can view their own profile
-CREATE POLICY users_view_own ON users FOR SELECT
-  USING (auth.uid()::text = id::text);
-
--- Parents can view their own profile and their children's profiles
-CREATE POLICY parent_view_own ON parent_profiles FOR SELECT
-  USING (auth.uid()::text = user_id::text);
-
-CREATE POLICY child_view_own ON child_profiles FOR SELECT
-  USING (auth.uid()::text = user_id::text OR auth.uid()::text = parent_id::text);
+-- Row Level Security (RLS) - Disabled for Phase 1
+-- RLS policies will be implemented in application layer during Phase 1
+-- This can be enabled in Phase 2 if needed
+-- ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE parent_profiles ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE child_profiles ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE linked_accounts ENABLE ROW LEVEL SECURITY;
