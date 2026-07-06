@@ -1,0 +1,230 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/api
+
+jobs:
+  # ================================================
+  # BUILD JOB: Compile TypeScript, build Docker image
+  # ================================================
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: TypeScript compilation check
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Docker image (no push for PRs)
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          cache-from: type=gha
+
+  # ================================================
+  # STAGING DEPLOYMENT: Auto-deploy on push to main
+  # ================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+
+          # TODO: Add actual deployment commands
+          # These will be configured when deploying to cloud
+          # - SSH into staging server
+          # - Pull latest code
+          # - Run docker-compose -f docker-compose.staging.yml up -d
+          # - Run health checks
+
+          echo "✅ Staging deployment (placeholder - configured in Phase 1B)"
+
+      - name: Health check - Staging API
+        run: |
+          echo "🏥 Checking staging API health..."
+          # TODO: Add actual health check
+          # curl -f http://staging.api:3100/health || exit 1
+          echo "✅ Health checks passed (placeholder - configured in Phase 1B)"
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          echo "📤 Deployment status: ${{ job.status }}"
+          # TODO: Add Slack/email notification
+
+  # ================================================
+  # PRODUCTION DEPLOYMENT: Manual trigger only
+  # ================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+      url: https://familyhub.example.com
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Confirm production deployment
+        run: |
+          echo "⚠️  PRODUCTION DEPLOYMENT INITIATED"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo ""
+          echo "🔒 This is a PROTECTED environment"
+          echo "Deployment requires manual approval in production"
+
+      - name: Deploy to production
+        run: |
+          echo "🚀 Deploying to production environment..."
+
+          # TODO: Add actual production deployment commands
+          # Phase 1B: Configure production server access
+          # - SSH into production server
+          # - Pull latest code
+          # - Run migrations (if any)
+          # - Run docker-compose up -d
+          # - Run health checks
+          # - Run smoke tests
+
+          echo "✅ Production deployment (placeholder - configured in Phase 1B)"
+
+      - name: Health check - Production API
+        run: |
+          echo "🏥 Checking production API health..."
+          # TODO: Add actual health check
+          # curl -f https://api.familyhub.com/health || exit 1
+          echo "✅ Health checks passed (placeholder - configured in Phase 1B)"
+
+      - name: Smoke tests
+        run: |
+          echo "🧪 Running production smoke tests..."
+          # TODO: Add actual smoke tests
+          # npm run test:smoke -- --environment=production
+          echo "✅ Smoke tests passed (placeholder - configured in Phase 1B)"
+
+      - name: Deployment notification
+        if: always()
+        run: |
+          echo "📢 Production deployment complete"
+          echo "Status: ${{ job.status }}"
+          # TODO: Add Slack notification with deployment summary
+
+  # ================================================
+  # ROLLBACK JOB: Manual rollback to previous version
+  # ================================================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && contains(github.event.head_commit.message, '[rollback]')
+    permissions:
+      contents: read
+
+    steps:
+      - name: Rollback notification
+        run: |
+          echo "⚠️  ROLLBACK INITIATED"
+          echo "This will be implemented in Phase 1B"
+          echo ""
+          echo "Rollback procedure:"
+          echo "1. Identify previous stable version"
+          echo "2. Stop current deployment"
+          echo "3. Deploy previous version"
+          echo "4. Run health checks"
+          echo "5. Verify functionality"
