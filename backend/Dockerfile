@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci --only=production && \
+# Install all dependencies (including dev for build)
+RUN npm ci && \
     npm cache clean --force
 
 # Copy application code
@@ -48,4 +48,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start application
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/server.js"]
