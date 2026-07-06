@@ -97,12 +97,18 @@
 - Activity history shows both completion and deletion
 - Transparent, builds understanding
 
-**Daily Limit Grace Period:**
+**Daily Limit Overflow (Phase 1):**
 - Daily limit: 10 activities
-- Offline grace: up to 15 activities (50% overflow)
-- All sync through if under grace limit
+- Offline overflow: ALLOW ALL (no restriction for Phase 1)
+- All offline activities sync through regardless of limit
+- Points awarded normally
+- Rationale: Home monitor is always connected (offline unlikely)
+
+**Daily Limit Upgrade Path (Phase 2+ with mobile):**
+- Implement grace period: up to 15 activities (50% overflow)
 - Notification: "You exceeded daily limit. This is allowed for offline. Tomorrow: 10-activity limit."
 - Future days: strict 10-activity limit enforced
+- Rationale: Mobile has real offline scenarios (connectivity loss)
 - Respects offline as exceptional, maintains fairness going forward
 
 ---
