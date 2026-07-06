@@ -1,5 +1,7 @@
 import { Client } from 'pg';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config({ path: '../.env.local' });
 
@@ -15,7 +17,7 @@ async function seed() {
 
   try {
     await client.connect();
-    console.log('🌱 Seeding database...');
+    console.log('🌱 Seeding database...\n');
 
     // Seed Trivia Questions
     const triviaQuestions = [
@@ -59,6 +61,63 @@ async function seed() {
     }
     console.log(`✅ Seeded ${triviaQuestions.length} trivia questions`);
 
+    // Seed Feature Flags
+    const featureFlags = [
+      { name: 'wordle_game', enabled: true },
+      { name: 'quickfire_trivia', enabled: true },
+      { name: 'word_scramble', enabled: true },
+      { name: 'hangman_game', enabled: true },
+      { name: 'daily_quests', enabled: true },
+      { name: 'homework', enabled: true },
+      { name: 'kung_fu', enabled: true },
+      { name: 'habits', enabled: true },
+      { name: 'reading', enabled: true },
+      { name: 'mood_tracker', enabled: true },
+      { name: 'gujarati_module', enabled: true },
+      { name: 'weekly_goals', enabled: true },
+      { name: 'monthly_goals', enabled: true },
+      { name: 'category_mastery', enabled: true },
+      { name: 'daily_challenge', enabled: true },
+      { name: 'streak_recovery', enabled: true },
+      { name: 'parent_portal', enabled: true },
+      { name: 'google_drive_sync', enabled: true },
+      { name: 'hint_token_system', enabled: true },
+      { name: 'chore_points', enabled: true },
+      { name: 'chore_badges', enabled: true },
+      { name: 'privacy_mode', enabled: true }
+    ];
+
+    for (const flag of featureFlags) {
+      await client.query(
+        `INSERT INTO feature_flags (flag_name, is_enabled)
+         VALUES ($1, $2)
+         ON CONFLICT (flag_name) DO UPDATE SET is_enabled = $2`,
+        [flag.name, flag.enabled]
+      );
+    }
+    console.log(`✅ Seeded ${featureFlags.length} feature flags`);
+
+    // Seed System Settings
+    const settings = [
+      { key: 'app_version', value: '1.0.0', type: 'string' },
+      { key: 'hints_per_day', value: '2', type: 'integer' },
+      { key: 'hints_earned_per_activity', value: '5', type: 'integer' },
+      { key: 'hints_cap', value: '10', type: 'integer' },
+      { key: 'points_multiplier', value: '1.0', type: 'float' },
+      { key: 'max_active_weekly_goals', value: '3', type: 'integer' },
+      { key: 'max_active_monthly_goals', value: '2', type: 'integer' }
+    ];
+
+    for (const setting of settings) {
+      await client.query(
+        `INSERT INTO system_settings (setting_key, setting_value, setting_type)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (setting_key) DO UPDATE SET setting_value = $2`,
+        [setting.key, setting.value, setting.type]
+      );
+    }
+    console.log(`✅ Seeded ${settings.length} system settings`);
+
     // Seed Badges
     const badges = [
       // Bronze Tier
@@ -79,6 +138,18 @@ async function seed() {
       // Platinum Tier
       { title: 'Ultimate Champion', description: 'Answer 100 trivia questions correctly', icon: '💎', category: 'trivia', tier: 'platinum', points: 1000 },
       { title: 'Legendary Achiever', description: 'Earn all gold badges', icon: '⭐', category: 'achievement', tier: 'platinum', points: 800 },
+
+      // Chore Badges (Phase 1 new feature)
+      { title: 'Trash Master Bronze', description: 'Empty trash 5 times', icon: '🗑️', category: 'chore_trash', tier: 'bronze', points: 0 },
+      { title: 'Trash Master Silver', description: 'Empty trash 15 times', icon: '🗑️', category: 'chore_trash', tier: 'silver', points: 50 },
+      { title: 'Trash Master Gold', description: 'Empty trash 30 times', icon: '🗑️', category: 'chore_trash', tier: 'gold', points: 100 },
+      { title: 'Laundry Legend Bronze', description: 'Do laundry 5 times', icon: '👔', category: 'chore_laundry', tier: 'bronze', points: 0 },
+      { title: 'Laundry Legend Silver', description: 'Do laundry 15 times', icon: '👔', category: 'chore_laundry', tier: 'silver', points: 50 },
+      { title: 'Dishes Champion Bronze', description: 'Wash dishes 5 times', icon: '🍽️', category: 'chore_dishes', tier: 'bronze', points: 0 },
+      { title: 'Dishes Champion Silver', description: 'Wash dishes 15 times', icon: '🍽️', category: 'chore_dishes', tier: 'silver', points: 50 },
+      { title: 'Chore Helper', description: 'Complete any chore 10 times', icon: '🏡', category: 'chore', tier: 'bronze', points: 30 },
+      { title: 'Chore Champion', description: 'Complete any chore 50 times', icon: '🏡', category: 'chore', tier: 'silver', points: 75 },
+      { title: 'Household Manager', description: 'Complete any chore 100 times', icon: '🏡', category: 'chore', tier: 'gold', points: 150 },
     ];
 
     for (const badge of badges) {
@@ -87,9 +158,16 @@ async function seed() {
         [badge.title, badge.description, badge.icon, badge.category, badge.tier, badge.points]
       );
     }
-    console.log(`✅ Seeded ${badges.length} badges`);
+    console.log(`✅ Seeded ${badges.length} badges (activity + chore)`);
 
     console.log('\n✨ Database seeding completed successfully!');
+    console.log('\n📊 Summary:');
+    console.log(`   Trivia questions: ${triviaQuestions.length}`);
+    console.log(`   Feature flags: ${featureFlags.length}`);
+    console.log(`   System settings: ${settings.length}`);
+    console.log(`   Badges: ${badges.length} (activity + chore mastery)`);
+    console.log('\n⚠️  Note: This is Phase 1 seed data.');
+    console.log('   Full seed data (1000+ trivia, 130+ quests) will be imported in Phase 1B.');
   } catch (error: any) {
     console.error('❌ Seeding failed:', error.message);
     process.exit(1);
