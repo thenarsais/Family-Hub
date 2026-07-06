@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contrast Ratio Checker</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .season { margin: 20px 0; padding: 20px; background: white; border-radius: 8px; }
+        .combo { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .color-swatch { display: inline-block; width: 30px; height: 30px; margin-right: 10px; vertical-align: middle; border-radius: 4px; }
+        .ratio { font-weight: bold; }
+        .pass { color: green; }
+        .fail { color: red; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>Seasonal Color Contrast Ratio Analysis</h1>
+    <p>WCAG AA Standard: 4.5:1 for normal text, 3:1 for large text/UI components</p>
+    
+    <div id="results"></div>
+
+    <script>
+        // Function to convert hex to RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Calculate relative luminance
+        function getLuminance(hex) {
+            const rgb = hexToRgb(hex);
+            const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(val => {
+                val = val / 255;
+                return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
+
+        // Calculate contrast ratio
+        function getContrastRatio(hex1, hex2) {
+            const lum1 = getLuminance(hex1);
+            const lum2 = getLuminance(hex2);
+            const lighter = Math.max(lum1, lum2);
+            const darker = Math.min(lum1, lum2);
+            return ((lighter + 0.05) / (darker + 0.05)).toFixed(2);
+        }
+
+        const seasons = {
+            'Spring': {
+                primary: '#10B981',
+                bgLight: '#ECFDF5',
+                bgBody: '#F0FDFB',
+                text: '#065F46',
+                border: '#A7F3D0',
+                accent: '#BFDBFE'
+            },
+            'Summer': {
+                primary: '#FBBF24',
+                bgLight: '#FFFBEB',
+                bgBody: '#FFFEF2',
+                text: '#78350F',
+                border: '#FCD34D',
+                accent: '#FEF3C7'
+            },
+            'Fall': {
+                primary: '#F97316',
+                bgLight: '#FFEDD5',
+                bgBody: '#FFFBF7',
+                text: '#7C2D12',
+                border: '#FDBA74',
+                accent: '#FED7AA'
+            },
+            'Winter': {
+                primary: '#0EA5E9',
+                bgLight: '#F0F9FF',
+                bgBody: '#F8FCFF',
+                text: '#0C4A6E',
+                border: '#BAE6FD',
+                accent: '#BAE6FD'
+            }
+        };
+
+        let html = '';
+        for (const [seasonName, colors] of Object.entries(seasons)) {
+            const ratio1 = getContrastRatio(colors.text, colors.bgLight);
+            const ratio2 = getContrastRatio(colors.text, colors.bgBody);
+            const ratio3 = getContrastRatio(colors.primary, colors.bgBody);
+            const ratio4 = getContrastRatio('#FFFFFF', colors.primary);
+
+            const pass1 = ratio1 >= 4.5 ? 'pass' : 'fail';
+            const pass2 = ratio2 >= 4.5 ? 'pass' : 'fail';
+            const pass3 = ratio3 >= 4.5 ? 'pass' : 'fail';
+            const pass4 = ratio4 >= 4.5 ? 'pass' : 'fail';
+
+            html += `
+                <div class="season">
+                    <h2>${seasonName}</h2>
+                    <table>
+                        <tr>
+                            <th>Text Color</th>
+                            <th>Background</th>
+                            <th>Contrast Ratio</th>
+                            <th>Status (AA: 4.5:1)</th>
+                        </tr>
+                        <tr>
+                            <td><span class="color-swatch" style="background: ${colors.text}"></span>${colors.text}</td>
+                            <td><span class="color-swatch" style="background: ${colors.bgLight}"></span>${colors.bgLight}</td>
+                            <td class="ratio">${ratio1}:1</td>
+                            <td class="${pass1}">${pass1.toUpperCase()}</td>
+                        </tr>
+                        <tr>
+                            <td><span class="color-swatch" style="background: ${colors.text}"></span>${colors.text}</td>
+                            <td><span class="color-swatch" style="background: ${colors.bgBody}"></span>${colors.bgBody}</td>
+                            <td class="ratio">${ratio2}:1</td>
+                            <td class="${pass2}">${pass2.toUpperCase()}</td>
+                        </tr>
+                        <tr>
+                            <td><span class="color-swatch" style="background: ${colors.primary}"></span>${colors.primary} (Primary)</td>
+                            <td><span class="color-swatch" style="background: ${colors.bgBody}"></span>${colors.bgBody}</td>
+                            <td class="ratio">${ratio3}:1</td>
+                            <td class="${pass3}">${pass3.toUpperCase()}</td>
+                        </tr>
+                        <tr>
+                            <td><span class="color-swatch" style="background: #FFFFFF"></span>#FFFFFF (White)</td>
+                            <td><span class="color-swatch" style="background: ${colors.primary}"></span>${colors.primary}</td>
+                            <td class="ratio">${ratio4}:1</td>
+                            <td class="${pass4}">${pass4.toUpperCase()}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+        }
+
+        document.getElementById('results').innerHTML = html;
+    </script>
+</body>
+</html>

@@ -7,6 +7,8 @@
     "dev": "nodemon --exec ts-node --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "migrate": "ts-node --transpile-only src/runMigrations.ts",
+    "seed": "ts-node --transpile-only src/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
