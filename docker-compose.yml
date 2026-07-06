@@ -9,14 +9,11 @@ services:
     container_name: family-hub-api
     ports:
       - "3000:3000"
+    env_file:
+      - ./backend/.env.local
     environment:
-      NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/family_hub
       REDIS_URL: redis://redis:6379
-      LOG_LEVEL: info
-      ENVIRONMENT: local
-      SUPABASE_URL: https://placeholder.supabase.co
-      SUPABASE_ANON_KEY: placeholder-key
     depends_on:
       postgres:
         condition: service_healthy
