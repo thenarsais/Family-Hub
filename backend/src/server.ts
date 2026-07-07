@@ -13,6 +13,8 @@ import { errorHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
 import { rateLimit, rateLimitPresets } from './middleware/rate-limiter';
 import { batchOperations } from './middleware/batch-operations';
+import { compression, compressionPresets } from './middleware/compression';
+import performanceRoutes from './routes/performance';
 
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
@@ -28,6 +30,7 @@ const PORT = process.env.PORT || process.env.API_PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(compression(compressionPresets.standard)); // Response compression
 app.use(responseFormatter()); // Standard response formatting
 app.use(requestLogger()); // Request logging
 app.use(rateLimit(rateLimitPresets.standard)); // Rate limiting
@@ -99,6 +102,9 @@ app.use('/points', pointsRoutes);
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', externalApisRoutes);
 
+// Performance monitoring: Metrics, diagnostics, health
+app.use('/performance', performanceRoutes);
+
 // ================================================
 // TEST ENDPOINTS
 // ================================================
@@ -156,7 +162,9 @@ app.listen(PORT, () => {
   console.log(`   Badges: 8 endpoints`);
   console.log(`   Points: 8+ endpoints`);
   console.log(`   External APIs: 10+ endpoints (dictionary, weather, email)`);
-  console.log(`   📊 34+ Total Endpoints Ready!`);
+  console.log(`   Performance: 6+ endpoints (monitoring, diagnostics, health)`);
+  console.log(`   📊 60+ Total Endpoints Ready!`);
+  console.log(`   🚀 Features: Rate Limiting, Logging, Caching, Compression, Batch Ops`);
 });
 
 export default app;

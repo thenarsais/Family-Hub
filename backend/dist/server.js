@@ -18,6 +18,8 @@ const error_handler_1 = require("./middleware/error-handler");
 const request_logger_1 = require("./middleware/request-logger");
 const rate_limiter_1 = require("./middleware/rate-limiter");
 const batch_operations_1 = require("./middleware/batch-operations");
+const compression_1 = require("./middleware/compression");
+const performance_1 = __importDefault(require("./routes/performance"));
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
 // When running locally with npm run dev, load from .env.local
@@ -29,6 +31,7 @@ const PORT = process.env.PORT || process.env.API_PORT || 3000;
 // ================================================
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+app.use((0, compression_1.compression)(compression_1.compressionPresets.standard)); // Response compression
 app.use((0, response_formatter_1.responseFormatter)()); // Standard response formatting
 app.use((0, request_logger_1.requestLogger)()); // Request logging
 app.use((0, rate_limiter_1.rateLimit)(rate_limiter_1.rateLimitPresets.standard)); // Rate limiting
@@ -89,6 +92,8 @@ app.use('/badges', badges_1.default);
 app.use('/points', points_1.default);
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', external_apis_1.default);
+// Performance monitoring: Metrics, diagnostics, health
+app.use('/performance', performance_1.default);
 // ================================================
 // TEST ENDPOINTS
 // ================================================
@@ -139,7 +144,9 @@ app.listen(PORT, () => {
     console.log(`   Badges: 8 endpoints`);
     console.log(`   Points: 8+ endpoints`);
     console.log(`   External APIs: 10+ endpoints (dictionary, weather, email)`);
-    console.log(`   📊 34+ Total Endpoints Ready!`);
+    console.log(`   Performance: 6+ endpoints (monitoring, diagnostics, health)`);
+    console.log(`   📊 60+ Total Endpoints Ready!`);
+    console.log(`   🚀 Features: Rate Limiting, Logging, Caching, Compression, Batch Ops`);
 });
 exports.default = app;
 //# sourceMappingURL=server.js.map
