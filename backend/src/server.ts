@@ -17,17 +17,39 @@ const PORT = process.env.PORT || process.env.API_PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Initialize Supabase
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Lazy-initialize Supabase
+let supabase: any = null;
 
-let supabase: any;
-try {
-  supabase = createClient(supabaseUrl, supabaseKey);
-  console.log('✅ Supabase client initialized');
-} catch (error: any) {
-  console.error('❌ Supabase initialization failed:', error.message);
-  process.exit(1);
+function getSupabase() {
+  if (!supabase) {
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL!;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+      // For Node.js 18, provide ws transport for realtime
+      let clientOptions: any = {};
+      try {
+        if (process.version.startsWith('v16') || process.version.startsWith('v18')) {
+          const WebSocket = require('ws');
+          clientOptions = {
+            global: {
+              fetch: fetch,
+              WebSocket: WebSocket
+            }
+          };
+        }
+      } catch (e) {
+        // ws not available, continue without it
+      }
+
+      supabase = createClient(supabaseUrl, supabaseKey, clientOptions);
+      console.log('✅ Supabase client initialized');
+    } catch (error: any) {
+      console.error('❌ Supabase initialization failed:', error.message);
+      throw error;
+    }
+  }
+  return supabase;
 }
 
 // ================================================
@@ -58,13 +80,9 @@ app.use('/users', userRoutes);
 
 app.get('/test-db', async (req, res) => {
   try {
-    if (!supabase) {
-      return res.status(503).json({
-        error: 'Supabase not initialized'
-      });
-    }
+    const client = getSupabase();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('users')
       .select('count')
       .limit(1);
@@ -86,7 +104,7 @@ app.get('/test-db', async (req, res) => {
 // 404 HANDLER
 // ================================================
 
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     error: 'Not found',
     path: req.path,

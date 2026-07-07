@@ -95,7 +95,7 @@ router.get('/me', verifyAuth, async (req, res) => {
  */
 router.get('/:id', verifyAuth, async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id;
         const user = await UserRepository.getUserById(id);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
@@ -127,7 +127,7 @@ router.get('/:id', verifyAuth, async (req, res) => {
  */
 router.put('/:id', verifyAuth, async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id;
         const { name, email } = req.body;
         if (!name && !email) {
             return res.status(400).json({
@@ -167,7 +167,7 @@ router.put('/:id', verifyAuth, async (req, res) => {
  */
 router.get('/:parentId/children', verifyAuth, async (req, res) => {
     try {
-        const { parentId } = req.params;
+        const parentId = req.params.parentId;
         const children = await UserRepository.getChildrenByParentId(parentId);
         res.json({
             parent_id: parentId,
@@ -255,7 +255,7 @@ router.get('/', verifyAuth, async (req, res) => {
  */
 router.delete('/:id', verifyAuth, async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = req.params.id;
         await UserRepository.deleteUser(id);
         res.json({
             message: 'User deleted successfully'

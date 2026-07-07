@@ -42,10 +42,10 @@ pool.on('remove', () => {
  * @param params Query parameters
  * @returns Query result
  */
-export async function query<T = any>(
+export async function query(
   sql: string,
   params: any[] = []
-): Promise<QueryResult<T>> {
+): Promise<any> {
   const start = Date.now();
   try {
     const result = await pool.query(sql, params);
@@ -70,7 +70,7 @@ export async function queryOne<T = any>(
   sql: string,
   params: any[] = []
 ): Promise<T | null> {
-  const result = await query<T>(sql, params);
+  const result = await query(sql, params);
   return result.rows[0] || null;
 }
 
@@ -81,7 +81,7 @@ export async function queryAll<T = any>(
   sql: string,
   params: any[] = []
 ): Promise<T[]> {
-  const result = await query<T>(sql, params);
+  const result = await query(sql, params);
   return result.rows;
 }
 

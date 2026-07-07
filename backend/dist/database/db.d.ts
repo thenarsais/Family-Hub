@@ -9,7 +9,7 @@ import { PoolClient, QueryResult } from 'pg';
  * @param params Query parameters
  * @returns Query result
  */
-export declare function query<T = any>(sql: string, params?: any[]): Promise<QueryResult<T>>;
+export declare function query(sql: string, params?: any[]): Promise<any>;
 /**
  * Execute a query and return first row
  */

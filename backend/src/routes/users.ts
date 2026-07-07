@@ -70,7 +70,7 @@ router.get('/me', verifyAuth, async (req: Request, res: Response) => {
  */
 router.get('/:id', verifyAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const user = await UserRepository.getUserById(id);
 
     if (!user) {
@@ -105,7 +105,7 @@ router.get('/:id', verifyAuth, async (req: Request, res: Response) => {
  */
 router.put('/:id', verifyAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { name, email } = req.body;
 
     if (!name && !email) {
@@ -148,7 +148,7 @@ router.put('/:id', verifyAuth, async (req: Request, res: Response) => {
  */
 router.get('/:parentId/children', verifyAuth, async (req: Request, res: Response) => {
   try {
-    const { parentId } = req.params;
+    const parentId = req.params.parentId as string;
 
     const children = await UserRepository.getChildrenByParentId(parentId);
 
@@ -243,7 +243,7 @@ router.get('/', verifyAuth, async (req: Request, res: Response) => {
  */
 router.delete('/:id', verifyAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     await UserRepository.deleteUser(id);
 
