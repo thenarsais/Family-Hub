@@ -8,6 +8,8 @@ import userRoutes from './routes/users';
 import badgeRoutes from './routes/badges';
 import pointsRoutes from './routes/points';
 import externalApisRoutes from './routes/external-apis';
+import { responseFormatter } from './middleware/response-formatter';
+import { errorHandler } from './middleware/error-handler';
 
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
@@ -17,8 +19,13 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 3000;
 
+// ================================================
+// MIDDLEWARE
+// ================================================
+
 app.use(cors());
 app.use(express.json());
+app.use(responseFormatter()); // Standard response formatting
 
 // Lazy-initialize Supabase
 let supabase: any = null;
@@ -125,16 +132,10 @@ app.use((req, res) => {
 });
 
 // ================================================
-// ERROR HANDLER
+// ERROR HANDLER (MUST BE LAST)
 // ================================================
 
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: process.env.ENVIRONMENT === 'development' ? err.message : undefined
-  });
-});
+app.use(errorHandler());
 
 // ================================================
 // START SERVER

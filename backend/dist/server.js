@@ -13,14 +13,20 @@ const users_1 = __importDefault(require("./routes/users"));
 const badges_1 = __importDefault(require("./routes/badges"));
 const points_1 = __importDefault(require("./routes/points"));
 const external_apis_1 = __importDefault(require("./routes/external-apis"));
+const response_formatter_1 = require("./middleware/response-formatter");
+const error_handler_1 = require("./middleware/error-handler");
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
 // When running locally with npm run dev, load from .env.local
 dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../.env.local') });
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || process.env.API_PORT || 3000;
+// ================================================
+// MIDDLEWARE
+// ================================================
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+app.use((0, response_formatter_1.responseFormatter)()); // Standard response formatting
 // Lazy-initialize Supabase
 let supabase = null;
 function getSupabase() {
@@ -112,15 +118,9 @@ app.use((req, res) => {
     });
 });
 // ================================================
-// ERROR HANDLER
+// ERROR HANDLER (MUST BE LAST)
 // ================================================
-app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
-    res.status(500).json({
-        error: 'Internal server error',
-        message: process.env.ENVIRONMENT === 'development' ? err.message : undefined
-    });
-});
+app.use((0, error_handler_1.errorHandler)());
 // ================================================
 // START SERVER
 // ================================================
