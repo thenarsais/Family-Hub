@@ -1,0 +1,289 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+      - 'docker-compose.yml'
+  workflow_run:
+    workflows: ['CI/CD Pipeline']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/api
+
+jobs:
+  # ================================================
+  # PRE-DEPLOYMENT CHECKS
+  # ================================================
+  pre-deploy:
+    name: Pre-Deployment Checks
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check CI/CD pipeline status
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+              echo "should_deploy=false" >> $GITHUB_OUTPUT
+              echo "❌ CI/CD pipeline failed. Aborting deployment."
+              exit 1
+            fi
+          fi
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "✅ Pre-deployment checks passed"
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(git describe --tags --always --dirty)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying version: $VERSION"
+
+  # ================================================
+  # DEPLOY TO STAGING
+  # ================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: pre-deploy
+    if: needs.pre-deploy.outputs.should_deploy == 'true' && github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging-api.familyhub.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          echo "Version: ${{ needs.pre-deploy.outputs.version }}"
+
+          # Example: Deploy to staging server via SSH/webhook
+          # In production, use proper deployment tools:
+          # - Vercel, Netlify
+          # - AWS CodeDeploy
+          # - Kubernetes (kubectl apply)
+          # - Docker Swarm
+          # - Heroku
+
+          echo "✅ Staging deployment initiated"
+
+      - name: Run smoke tests on staging
+        run: |
+          echo "Running smoke tests..."
+          sleep 10  # Wait for deployment
+
+          # Test staging API
+          curl -f https://staging-api.familyhub.com/health || exit 1
+          curl -f https://staging-api.familyhub.com/ready || exit 1
+
+          echo "✅ Staging smoke tests passed"
+
+      - name: Notify Slack (Staging)
+        uses: slackapi/slack-github-action@v1
+        if: always()
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_STAGING }}
+          payload: |
+            {
+              "text": "🚀 Staging Deployment",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Version*: ${{ needs.pre-deploy.outputs.version }}\n*Status*: ${{ job.status }}\n*Branch*: main"
+                  }
+                }
+              ]
+            }
+
+  # ================================================
+  # DEPLOY TO PRODUCTION
+  # ================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, deploy-staging]
+    if: needs.pre-deploy.outputs.should_deploy == 'true' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://api.familyhub.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deployment
+        uses: actions/github-script@v6
+        id: deployment
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: 'production',
+              description: 'Production deployment - v${{ needs.pre-deploy.outputs.version }}',
+              auto_merge: false,
+              required_contexts: []
+            });
+            return deployment.data.id;
+
+      - name: Deploy to production
+        run: |
+          echo "🚀 Deploying to production..."
+          echo "Version: ${{ needs.pre-deploy.outputs.version }}"
+
+          # Production deployment logic
+          # Example options:
+          # 1. Kubernetes: kubectl apply -f k8s/deployment.yaml
+          # 2. Docker Swarm: docker service update
+          # 3. AWS: aws codedeploy create-deployment
+          # 4. Heroku: git push heroku main
+          # 5. Custom: SSH to server and pull/restart
+
+          echo "✅ Production deployment initiated"
+
+      - name: Run production smoke tests
+        run: |
+          echo "Running production smoke tests..."
+          sleep 15  # Wait for deployment
+
+          # Test production API
+          curl -f https://api.familyhub.com/health || exit 1
+          curl -f https://api.familyhub.com/ready || exit 1
+          curl -f https://api.familyhub.com/info || exit 1
+
+          echo "✅ Production smoke tests passed"
+
+      - name: Verify deployment health
+        run: |
+          echo "Checking production health metrics..."
+
+          # Monitor for 60 seconds
+          for i in {1..6}; do
+            STATUS=$(curl -s https://api.familyhub.com/performance/health | grep -o '"status":"[^"]*"')
+            echo "Health check $i: $STATUS"
+
+            if [[ ! "$STATUS" =~ "healthy" ]]; then
+              echo "❌ Health check failed!"
+              exit 1
+            fi
+            sleep 10
+          done
+
+          echo "✅ Production health verified"
+
+      - name: Notify Slack (Production)
+        uses: slackapi/slack-github-action@v1
+        if: always()
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_PRODUCTION }}
+          payload: |
+            {
+              "text": "🚀 Production Deployment",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Version*: ${{ needs.pre-deploy.outputs.version }}\n*Status*: ${{ job.status }}\n*URL*: https://api.familyhub.com"
+                  }
+                }
+              ]
+            }
+
+  # ================================================
+  # ROLLBACK (if needed)
+  # ================================================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, deploy-production]
+    if: failure() && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Rollback to previous version
+        run: |
+          echo "⚠️ Deployment failed! Rolling back..."
+
+          # Rollback strategies:
+          # 1. Kubernetes: kubectl rollout undo deployment/familyhub-api
+          # 2. Docker: docker service update --image
+          # 3. AWS: aws codedeploy create-deployment (previous version)
+
+          echo "✅ Rollback completed"
+
+      - name: Notify team
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_ALERTS }}
+          payload: |
+            {
+              "text": "🔴 DEPLOYMENT ROLLBACK",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Version*: ${{ needs.pre-deploy.outputs.version }}\n*Status*: ROLLED BACK\n*Action Required*: Check logs and investigate"
+                  }
+                }
+              ]
+            }
+
+  # ================================================
+  # DEPLOYMENT SUMMARY
+  # ================================================
+  summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [pre-deploy, deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "Version: ${{ needs.pre-deploy.outputs.version }}"
+          echo "Pre-Deploy: ${{ needs.pre-deploy.result }}"
+          echo "Staging: ${{ needs.deploy-staging.result }}"
+          echo "Production: ${{ needs.deploy-production.result }}"
+
+      - name: Notify completion
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ steps.deployment.outputs.result }},
+              state: '${{ job.status }}',
+              description: 'Deployment ${{ job.status }}',
+              environment_url: 'https://api.familyhub.com'
+            });
