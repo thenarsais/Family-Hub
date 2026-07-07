@@ -10,6 +10,9 @@ import pointsRoutes from './routes/points';
 import externalApisRoutes from './routes/external-apis';
 import { responseFormatter } from './middleware/response-formatter';
 import { errorHandler } from './middleware/error-handler';
+import { requestLogger } from './middleware/request-logger';
+import { rateLimit, rateLimitPresets } from './middleware/rate-limiter';
+import { batchOperations } from './middleware/batch-operations';
 
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
@@ -26,6 +29,9 @@ const PORT = process.env.PORT || process.env.API_PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(responseFormatter()); // Standard response formatting
+app.use(requestLogger()); // Request logging
+app.use(rateLimit(rateLimitPresets.standard)); // Rate limiting
+app.use(batchOperations()); // Batch operations support
 
 // Lazy-initialize Supabase
 let supabase: any = null;

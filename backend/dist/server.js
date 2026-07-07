@@ -15,6 +15,9 @@ const points_1 = __importDefault(require("./routes/points"));
 const external_apis_1 = __importDefault(require("./routes/external-apis"));
 const response_formatter_1 = require("./middleware/response-formatter");
 const error_handler_1 = require("./middleware/error-handler");
+const request_logger_1 = require("./middleware/request-logger");
+const rate_limiter_1 = require("./middleware/rate-limiter");
+const batch_operations_1 = require("./middleware/batch-operations");
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
 // When running locally with npm run dev, load from .env.local
@@ -27,6 +30,9 @@ const PORT = process.env.PORT || process.env.API_PORT || 3000;
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use((0, response_formatter_1.responseFormatter)()); // Standard response formatting
+app.use((0, request_logger_1.requestLogger)()); // Request logging
+app.use((0, rate_limiter_1.rateLimit)(rate_limiter_1.rateLimitPresets.standard)); // Rate limiting
+app.use((0, batch_operations_1.batchOperations)()); // Batch operations support
 // Lazy-initialize Supabase
 let supabase = null;
 function getSupabase() {
