@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import badgeRoutes from './routes/badges';
+import pointsRoutes from './routes/points';
 
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
@@ -78,6 +79,9 @@ app.use('/users', userRoutes);
 // Badge endpoints: GET /badges, GET /badges/:id, POST/DELETE user badges
 app.use('/badges', badgeRoutes);
 
+// Points endpoints: GET/POST user points, leaderboard
+app.use('/points', pointsRoutes);
+
 // ================================================
 // TEST ENDPOINTS
 // ================================================
@@ -136,9 +140,11 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.ENVIRONMENT || 'unknown'}`);
   console.log(`   Health: GET /health`);
-  console.log(`   Auth: POST /auth/signup, POST /auth/login, POST /auth/logout, GET /auth/me`);
-  console.log(`   Users: GET /users, GET /users/:id, PUT /users/:id, DELETE /users/:id`);
-  console.log(`   Badges: GET /badges, POST/DELETE user badges`);
+  console.log(`   Auth: 4 endpoints (signup, login, logout, me)`);
+  console.log(`   Users: 4 endpoints (GET all, GET one, PUT, DELETE)`);
+  console.log(`   Badges: 8 endpoints (list, details, user badges, award, revoke)`);
+  console.log(`   Points: 8+ endpoints (total, history, breakdown, add, leaderboard)`);
+  console.log(`   📊 24+ Total Endpoints Ready!`);
 });
 
 export default app;
