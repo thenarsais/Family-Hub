@@ -5,6 +5,7 @@ import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
+import badgeRoutes from './routes/badges';
 
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
@@ -74,6 +75,9 @@ app.use('/auth', authRoutes);
 // User endpoints: GET /users, GET /users/:id, PUT /users/:id, DELETE /users/:id
 app.use('/users', userRoutes);
 
+// Badge endpoints: GET /badges, GET /badges/:id, POST/DELETE user badges
+app.use('/badges', badgeRoutes);
+
 // ================================================
 // TEST ENDPOINTS
 // ================================================
@@ -132,8 +136,9 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.ENVIRONMENT || 'unknown'}`);
   console.log(`   Health: GET /health`);
-  console.log(`   Auth: POST /auth/signup, POST /auth/login, POST /auth/logout`);
+  console.log(`   Auth: POST /auth/signup, POST /auth/login, POST /auth/logout, GET /auth/me`);
   console.log(`   Users: GET /users, GET /users/:id, PUT /users/:id, DELETE /users/:id`);
+  console.log(`   Badges: GET /badges, POST/DELETE user badges`);
 });
 
 export default app;

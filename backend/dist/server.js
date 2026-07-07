@@ -10,6 +10,7 @@ const path_1 = __importDefault(require("path"));
 const supabase_js_1 = require("@supabase/supabase-js");
 const auth_1 = __importDefault(require("./routes/auth"));
 const users_1 = __importDefault(require("./routes/users"));
+const badges_1 = __importDefault(require("./routes/badges"));
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
 // When running locally with npm run dev, load from .env.local
@@ -68,6 +69,8 @@ app.get('/health', (req, res) => {
 app.use('/auth', auth_1.default);
 // User endpoints: GET /users, GET /users/:id, PUT /users/:id, DELETE /users/:id
 app.use('/users', users_1.default);
+// Badge endpoints: GET /badges, GET /badges/:id, POST/DELETE user badges
+app.use('/badges', badges_1.default);
 // ================================================
 // TEST ENDPOINTS
 // ================================================
@@ -119,8 +122,9 @@ app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
     console.log(`   Environment: ${process.env.ENVIRONMENT || 'unknown'}`);
     console.log(`   Health: GET /health`);
-    console.log(`   Auth: POST /auth/signup, POST /auth/login, POST /auth/logout`);
+    console.log(`   Auth: POST /auth/signup, POST /auth/login, POST /auth/logout, GET /auth/me`);
     console.log(`   Users: GET /users, GET /users/:id, PUT /users/:id, DELETE /users/:id`);
+    console.log(`   Badges: GET /badges, POST/DELETE user badges`);
 });
 exports.default = app;
 //# sourceMappingURL=server.js.map
