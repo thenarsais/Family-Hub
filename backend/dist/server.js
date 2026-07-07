@@ -12,6 +12,7 @@ const auth_1 = __importDefault(require("./routes/auth"));
 const users_1 = __importDefault(require("./routes/users"));
 const badges_1 = __importDefault(require("./routes/badges"));
 const points_1 = __importDefault(require("./routes/points"));
+const external_apis_1 = __importDefault(require("./routes/external-apis"));
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
 // When running locally with npm run dev, load from .env.local
@@ -74,6 +75,8 @@ app.use('/users', users_1.default);
 app.use('/badges', badges_1.default);
 // Points endpoints: GET/POST user points, leaderboard
 app.use('/points', points_1.default);
+// External APIs: Dictionary, Weather, Email
+app.use('/api/external', external_apis_1.default);
 // ================================================
 // TEST ENDPOINTS
 // ================================================
@@ -125,11 +128,12 @@ app.listen(PORT, () => {
     console.log(`✅ Server running on http://localhost:${PORT}`);
     console.log(`   Environment: ${process.env.ENVIRONMENT || 'unknown'}`);
     console.log(`   Health: GET /health`);
-    console.log(`   Auth: 4 endpoints (signup, login, logout, me)`);
-    console.log(`   Users: 4 endpoints (GET all, GET one, PUT, DELETE)`);
-    console.log(`   Badges: 8 endpoints (list, details, user badges, award, revoke)`);
-    console.log(`   Points: 8+ endpoints (total, history, breakdown, add, leaderboard)`);
-    console.log(`   📊 24+ Total Endpoints Ready!`);
+    console.log(`   Auth: 4 endpoints`);
+    console.log(`   Users: 4 endpoints`);
+    console.log(`   Badges: 8 endpoints`);
+    console.log(`   Points: 8+ endpoints`);
+    console.log(`   External APIs: 10+ endpoints (dictionary, weather, email)`);
+    console.log(`   📊 34+ Total Endpoints Ready!`);
 });
 exports.default = app;
 //# sourceMappingURL=server.js.map
