@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
 
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
@@ -15,33 +17,50 @@ const PORT = process.env.PORT || process.env.API_PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Initialize Supabase (with fallback for Phase 1A development)
-const supabaseUrl = process.env.SUPABASE_URL || 'http://localhost:54321';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'local-dev-key';
+// Initialize Supabase
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// Only create Supabase client if we have valid credentials
 let supabase: any;
 try {
   supabase = createClient(supabaseUrl, supabaseKey);
   console.log('✅ Supabase client initialized');
 } catch (error: any) {
-  console.warn('⚠️  Supabase initialization failed (Phase 1A placeholder):', error.message);
-  // Create a dummy client for Phase 1A development
-  console.log('   Using placeholder Supabase client for development');
+  console.error('❌ Supabase initialization failed:', error.message);
+  process.exit(1);
 }
 
-// Health check
+// ================================================
+// HEALTH CHECK
+// ================================================
+
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date(),
+    environment: process.env.ENVIRONMENT || 'unknown'
+  });
 });
 
-// Test database connection
+// ================================================
+// API ROUTES
+// ================================================
+
+// Auth endpoints: POST /auth/signup, POST /auth/login, POST /auth/logout, GET /auth/me
+app.use('/auth', authRoutes);
+
+// User endpoints: GET /users, GET /users/:id, PUT /users/:id, DELETE /users/:id
+app.use('/users', userRoutes);
+
+// ================================================
+// TEST ENDPOINTS
+// ================================================
+
 app.get('/test-db', async (req, res) => {
   try {
     if (!supabase) {
       return res.status(503).json({
-        error: 'Supabase not initialized',
-        message: 'Phase 1A: Supabase will be configured in Phase 1B'
+        error: 'Supabase not initialized'
       });
     }
 
@@ -63,11 +82,40 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-// Start server
+// ================================================
+// 404 HANDLER
+// ================================================
+
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    path: req.path,
+    method: req.method
+  });
+});
+
+// ================================================
+// ERROR HANDLER
+// ================================================
+
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    error: 'Internal server error',
+    message: process.env.ENVIRONMENT === 'development' ? err.message : undefined
+  });
+});
+
+// ================================================
+// START SERVER
+// ================================================
+
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`   Health check: http://localhost:${PORT}/health`);
-  console.log(`   Test DB: http://localhost:${PORT}/test-db`);
+  console.log(`   Environment: ${process.env.ENVIRONMENT || 'unknown'}`);
+  console.log(`   Health: GET /health`);
+  console.log(`   Auth: POST /auth/signup, POST /auth/login, POST /auth/logout`);
+  console.log(`   Users: GET /users, GET /users/:id, PUT /users/:id, DELETE /users/:id`);
 });
 
 export default app;
