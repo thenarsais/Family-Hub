@@ -1,16 +1,21 @@
 name: Deploy to Production
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy.yml'
-      - 'docker-compose.yml'
-  workflow_run:
-    workflows: ['CI/CD Pipeline']
-    types: [completed]
-    branches: [main]
+  # NOTE: Automated deployments disabled until production infrastructure is ready
+  # Uncomment the sections below to enable automatic deployments
+
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'backend/**'
+  #     - '.github/workflows/deploy.yml'
+  #     - 'docker-compose.yml'
+
+  # workflow_run:
+  #   workflows: ['CI/CD Pipeline']
+  #   types: [completed]
+  #   branches: [main]
+
   workflow_dispatch:
     inputs:
       environment:
