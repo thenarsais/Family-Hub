@@ -239,6 +239,30 @@ class ApiClient {
     return response.data;
   }
 
+  // ============ SmartThings Devices ============
+  async getSmartThingsDevices() {
+    const response = await this.client.get('/smartthings/devices');
+    return response.data;
+  }
+
+  async getSmartThingsDevice(deviceId: string) {
+    const response = await this.client.get(`/smartthings/devices/${deviceId}`);
+    return response.data;
+  }
+
+  async controlSmartThingsDevice(deviceId: string, command: string, args?: any[]) {
+    const response = await this.client.put(`/smartthings/devices/${deviceId}`, {
+      command,
+      arguments: args,
+    });
+    return response.data;
+  }
+
+  async getSmartThingsStatus() {
+    const response = await this.client.get('/smartthings/status');
+    return response.data;
+  }
+
   // ============ Batch Operations ============
   async batchOperations(operations: Array<{
     id: string;

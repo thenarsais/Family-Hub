@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { apiClient } from '@services/api';
+import { Wifi } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [userPoints, setUserPoints] = useState(0);
   const [totalBadges, setTotalBadges] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,6 +88,13 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button className="btn btn-primary">Start Activity</button>
+          <button
+            className="btn btn-secondary flex items-center justify-center gap-2"
+            onClick={() => navigate('/smartthings')}
+          >
+            <Wifi className="w-4 h-4" />
+            Smart Home
+          </button>
           <button className="btn btn-secondary">View Badges</button>
           <button className="btn btn-secondary">Check Leaderboard</button>
           <button className="btn btn-secondary">Account Settings</button>

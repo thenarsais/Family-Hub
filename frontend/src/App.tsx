@@ -6,6 +6,7 @@ import Dashboard from '@pages/Dashboard';
 import Login from '@pages/Login';
 import Signup from '@pages/Signup';
 import ActivityBoard from '@pages/ActivityBoard';
+import SmartHome from '@pages/SmartHome';
 import NotFound from '@pages/NotFound';
 
 // Components (to be created)
@@ -45,6 +46,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/activity" element={<ActivityBoard />} />
+            <Route path="/smartthings" element={<SmartHome />} />
           </Route>
 
           {/* Redirect root to dashboard */}
