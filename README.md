@@ -1,249 +1,127 @@
-# Family Hub 🏠
+# 🏠 Family Hub — An AI-Powered Smart Home for Families
 
-A comprehensive home automation and family management system built on Home Assistant, with integrated educational modules, smart home controls, and family coordination tools.
+A complete, self-hosted smart home dashboard and learning platform for families using Home Assistant. Control your home, manage chores, plan meals, and learn new languages — all from a touchscreen mounted on your wall.
 
-## Project Overview
-
-**Family Hub** is a modular platform designed to centralize family activities, learning, and smart home management. Currently in **Phase 8** with a focus on language education and household automation.
-
-### Current Residents
-- **Priya** (Admin) - Denver, CO
-- **Krish** (10 years old)
-- **Karishma** (8 years old)
+**Status:** MVP Complete & Live | Phase 8B Expansion Planned
 
 ---
 
-## 🎓 Current Features
+## ✨ What You Get
 
-### Gujarati Learning Module ✅ (Live)
-Interactive learning platform for children with 158 verified lessons.
+### 📱 Smart Home Dashboard
+- **Real-time controls** — Lights, locks, climate, entertainment with one tap
+- **Family calendar** — Synced events, school calendar, trash pickup reminders
+- **Weather & world clocks** — Local + multi-city time, 5-day forecast
+- **Meal planner** — Weekly dinner planning with drag-and-drop recipes
+- **Announcements** — Dynamic family messages (school countdown, weather alerts)
 
-**Three Progressive Phases:**
-- **Phase 1:** Gujarati Alphabet (48 letters - vowels + consonants)
-- **Phase 2:** Numbers 0-100 (30 Gujarati numerals)
-- **Phase 3:** Vocabulary (80 essential words across 6 categories)
+### 👦 Krish's Learning Module (Age 9)
+- **Learn** — Browse lessons (Alphabet, Numbers, Vocabulary)
+- **Quiz** — Answer questions with instant feedback
+- **Trace** — Practice writing letters with guided tracing (10 reps/letter)
+- **Progress tracking** — Points, streaks, completion tracking
 
-**Three Learning Modes:**
-1. **Learn** - Daily words/letters with pronunciation (TTS)
-2. **Quiz** - 4-option multiple choice with instant feedback
-3. **Trace** - Canvas-based letter tracing with visual guides
+### 📝 Chore System
+- **Time-based chores** — Morning, afternoon, evening tasks
+- **Instant points** — Toggle chores, earn points automatically
+- **Monthly rewards** — 🥉 Bronze 200pts | 🥈 Silver 300pts | 🥇 Gold 400pts
+- **Daily reset** — Chores reset at 6 AM automatically
 
-**Key Features:**
-- ✅ Multi-user profiles (Krish & Karishma)
-- ✅ Progress tracking & points system
-- ✅ Curriculum verified against authoritative sources
-- ✅ Mobile-responsive, kid-friendly interface
-- ✅ LocalStorage persistence
-- ✅ Web Speech API TTS support
+### 🚗 School Transit Tracker
+- **Real-time drive times** — Waze integration for accurate travel times
+- **Smart reminders** — Leave time calculated from school arrival + travel time
+- **Calendar-aware** — Shows only on school days
 
-**Live Demo:** Open `gujarati-learning-module.html` in any modern browser
+### 🛒 Shopping & Meal Planning
+- **Shared shopping list** — Barcode scanning support (via phone)
+- **Mealie integration** — 500+ recipe database, meal planning
+- **Grocery tracking** — Tie meals to shopping lists
 
-**Repository:** `gujarati-learning/` directory
-
----
-
-## 📋 Architecture & Stack
-
-### Current Tech
-- **Frontend:** HTML5, CSS3, JavaScript (vanilla)
-- **Data:** JSON (curriculum)
-- **Persistence:** LocalStorage (browser)
-- **Deployment:** GitHub, Home Assistant
-- **Infrastructure:** Docker (HA), Home Assistant Core
-
-### Planned
-- Backend API (Node.js/Python)
-- Database (PostgreSQL)
-- Mobile app (React Native)
-- Server-side progress sync
-- OAuth authentication
+### 🔔 Home Automations
+- **Trash & recycling** — Pickup reminders, bin tracking
+- **HVAC filter** — Countdown to replacement, overdue warnings
+- **Cold weather alerts** — Car start reminders when temp drops
+- **Time-based** — Night mode, automations, scheduling
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
-### Local Development
+### For Families Building Their Own Hub
 
-**1. Clone the repo:**
-```bash
-git clone https://github.com/thenarsais/Family-Hub.git
-cd Family-Hub
-```
-
-**2. Gujarati Module:**
-```bash
-cd gujarati-learning
-# Open gujarati-learning-module.html in a browser
-```
-
-**3. Home Assistant Deployment:**
-- Copy `gujarati-learning-module.html` to HA config
-- Add Webpage card to dashboard
-- Configure multi-user access via profiles
+1. **Clone this repo** — `git clone https://github.com/thenarsais/Family-Hub`
+2. **Read the setup guide** — See `/docs/getting-started.md`
+3. **Choose your hardware** — See `/docs/hardware-setup.md`
+4. **Install software** — Follow `/docs/software-setup.md`
+5. **Customize for your family** — Adapt integrations & automations
 
 ---
 
-## 📁 Repository Structure
+## 📚 Documentation
 
-```
-Family-Hub/
-├── gujarati-learning/              # Language learning module
-│   ├── gujarati-learning-module.html
-│   ├── gujarati-curriculum-final-verified.json
-│   └── README.md
-├── REQUIREMENTS.md                 # Project requirements & status
-├── FEATURES.md                     # Current feature list
-└── README.md                       # This file
-```
+- [`getting-started.md`](/docs/getting-started.md) — Complete setup walkthrough
+- [`hardware-setup.md`](/docs/hardware-setup.md) — Hardware options & installation
+- [`software-setup.md`](/docs/software-setup.md) — Docker, Home Assistant, integrations
+- [`features.md`](/docs/features.md) — Complete feature list with status
+- [`roadmap.md`](/docs/roadmap.md) — Phase 8B expansion plan
+- [`session-log.md`](/docs/session-log.md) — Build progression (7 sessions)
 
 ---
 
-## 🎯 Project Phases
+## 🛠️ Tech Stack
 
-### ✅ Phase 8 (Current - June 2026)
-
-**Completed:**
-- [x] Gujarati curriculum design (158 lessons)
-- [x] Interactive learning module (Learn/Quiz/Trace modes)
-- [x] Multi-user support
-- [x] GitHub repository setup
-
-**In Progress:**
-- [ ] Home Assistant integration
-- [ ] Dashboard embedding
-
-**Pending:**
-- [ ] Karishma's chore system
-- [ ] Bambu Lab A1 printer integration
-- [ ] Shopping list barcode scanner
-- [ ] HVAC filter tracking
-- [ ] Family announcement banner
-
-### 📅 Phase 9 (Q3 2026)
-- Spanish learning module (replicating Gujarati architecture)
-- Advanced dashboard customization
-- Mobile app wrapper
-
-### 🎨 Phase 10 (Q4 2026+)
-- Hindi learning module
-- Family automation workflows
-- Expanded smart home controls
-- Analytics & insights
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| Home Assistant | Smart home hub | ✅ Running |
+| Docker | Container orchestration | ✅ Running |
+| Mealie | Meal planning | ✅ Running |
+| Google Calendar | Calendar sync | ✅ Connected |
+| Waze | Travel times | ✅ Connected |
+| Met.no | Weather | ✅ Connected |
 
 ---
 
-## 👥 User Roles
+## 📊 Current Features
 
-| Role | Access | Capabilities |
-|------|--------|--------------|
-| **Priya (Admin)** | Full | All features, configuration, settings |
-| **Krish (Child)** | Limited | Learning modules, chores, clock, weather |
-| **Karishma (Child)** | Limited | Learning modules, chores, clock, weather |
+**Dashboard:** ✅ Complete
+- Clock + Weather, Calendar, Shopping List, Meal Planner, Chore System, Transit Tracker, Trash Reminders, HVAC Filter, Automations
 
----
-
-## 🔐 Privacy & Data
-
-- ✅ No cloud sync (yet) - all data local
-- ✅ No tracking/analytics collection
-- ✅ Progress stored in browser LocalStorage
-- ✅ No account creation required (standalone mode)
-- 📅 Backend sync planned for Phase 9
+**Learning:** MVP Complete
+- ✅ Gujarati Learn/Quiz/Trace modes
+- 📋 Phase 8B expansion (SRS, difficulty, parent dashboard)
 
 ---
 
-## 📊 Current Metrics
+## 🎯 For Friends Forking This Project
 
-| Metric | Value |
-|--------|-------|
-| Total Lessons | 158 |
-| Curriculum Hours | ~8-10 weeks (daily practice) |
-| Target Accuracy | >80% |
-| Daily Target | 15+ minutes |
-| Multi-user Profiles | 2 active (Krish, Karishma) |
-| Supported Languages | 1 (Gujarati) |
+This repo is designed to be **customized for your family**:
+1. Replace language modules (Gujarati → your language)
+2. Modify chores to match your family
+3. Adjust automations for your timezone/location
+4. Add integrations for your smart devices
 
----
-
-## 🤝 Contributing
-
-Currently a private family project. Structure allows future expansion:
-
-**To add a new language module:**
-1. Create curriculum JSON following `gujarati-curriculum-final-verified.json` schema
-2. Replicate HTML module structure
-3. Add to `/[language]/` directory
-
-**Sources for curriculum verification:**
-- LearnGujarati.net (exemplary for language design)
-- Shabdkosh.com (vocabulary reference)
-- Native speaker review recommended
+See [`docs/customize.md`](/docs/customize.md) for guides.
 
 ---
 
-## 🐛 Known Issues & Limitations
+## 📈 Build Timeline
 
-### Current
-1. Tracing accuracy detection not implemented
-2. TTS limited to browser Web Speech API
-3. No backend persistence
-4. Curriculum incomplete (Phase 3 partial)
-5. Home Assistant integration pending
-
-### Resolved ✅
-- ~~Gujarati vs. Hindi word mixing~~ (Fixed with authoritative sources)
-- ~~Curriculum phase ordering~~ (Reordered: Alphabet → Numbers → Vocabulary)
+| Phase | Duration | Status |
+|-------|----------|--------|
+| MVP (Sessions 1-7) | 2-3 weeks | ✅ Complete |
+| Phase 8B.1+ | 2 weeks | 🚧 In Progress |
+| Phase 8B.2-7 | 14-18 weeks | 📋 Planned |
 
 ---
 
-## 🗺️ Roadmap
+## 📞 Questions?
 
-### Phase 8 (June 2026) - Learning Foundation
-- [x] Gujarati curriculum
-- [ ] Home Assistant dashboard
-- [ ] Multi-user profiles
-
-### Phase 9 (Q3 2026) - Expansion
-- [ ] Spanish module
-- [ ] Mobile app
-- [ ] Backend persistence
-- [ ] Chore system
-
-### Phase 10+ (Q4 2026)
-- [ ] Hindi module
-- [ ] Advanced automation
-- [ ] Analytics dashboard
-- [ ] Family calendar
+- Setup help → See [`getting-started.md`](/docs/getting-started.md)
+- Troubleshooting → See [`known-issues.md`](/docs/known-issues.md)
+- Integration guides → Check [`/docs/integrations/`](/docs/integrations/)
 
 ---
 
-## 📚 References & Sources
-
-**Gujarati Learning:**
-- [LearnGujarati.net](https://www.learngujarati.net) - Alphabet, numbers
-- [Shabdkosh.com](https://shabdkosh.com) - Vocabulary verification
-
-**Technology:**
-- [Home Assistant](https://www.home-assistant.io/)
-- [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
-- [HTML5 Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
-
----
-
-## 📞 Contact
-
-**Project Owner:** Priya  
-**Email:** thenarsais@gmail.com  
-**Repository:** https://github.com/thenarsais/Family-Hub
-
----
-
-## 📄 License
-
-Private project - family use only.
-
----
-
-**Last Updated:** June 1, 2026  
-**Current Version:** Phase 8.0  
-**Status:** Active Development
+**Built by:** Priya Narsai & Family 🏠
+**Last Updated:** June 2026
+**Status:** MVP Complete | Actively Maintained

@@ -1,0 +1,185 @@
+.tutorials-page {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ── Section layout ──────────────────────────────────────── */
+.tut-section {
+  margin-bottom: 2.5rem;
+}
+
+.tut-subtitle {
+  color: #666;
+  font-size: 0.92rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Done pill ───────────────────────────────────────────── */
+.done-pill {
+  display: inline-block;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 50px;
+  margin-left: 0.5rem;
+}
+
+/* ── Onboarding replay card ──────────────────────────────── */
+.onboard-replay-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #f5f7ff 0%, #ede9ff 100%);
+  border: 2px solid #d0c8f8;
+  border-radius: 16px;
+  padding: 1.5rem;
+  gap: 1rem;
+}
+
+.onboard-replay-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.onboard-replay-icon { font-size: 2.5rem; }
+
+.onboard-replay-left h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3436;
+  margin: 0 0 0.25rem;
+}
+
+.onboard-replay-left p {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0;
+}
+
+/* ── Shared action button ────────────────────────────────── */
+.btn-tut-action {
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-tut-action:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.btn-tut-full {
+  width: 100%;
+  border-radius: 12px;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* ── Feature tours grid ──────────────────────────────────── */
+.tours-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.tour-card {
+  background: white;
+  border: 2px solid #e8e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s;
+}
+
+.tour-card:hover { border-color: #667eea; }
+.tour-card--done { border-color: #c8e6c9; background: #fafffe; }
+
+.tour-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tour-card-icon { font-size: 2rem; }
+.tour-card-title { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 0; }
+.tour-card-desc  { font-size: 0.83rem; color: #666; margin: 0; flex: 1; }
+.tour-card-meta  { font-size: 0.78rem; color: #aaa; }
+
+/* ── Scenarios grid ──────────────────────────────────────── */
+.scenarios-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.scenario-card {
+  background: white;
+  border: 2px solid #e8e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s;
+}
+
+.scenario-card:hover { border-color: #667eea; }
+.scenario-card--done { border-color: #c8e6c9; background: #fafffe; }
+
+.scenario-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scenario-card-icon { font-size: 2rem; }
+
+.scenario-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.scenario-difficulty  { font-size: 0.8rem; font-weight: 700; }
+.scenario-sep         { color: #ccc; font-size: 0.8rem; }
+.scenario-duration    { font-size: 0.78rem; color: #999; }
+.scenario-steps-count { font-size: 0.78rem; color: #999; }
+
+.scenario-card-title { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 0; }
+.scenario-card-desc  { font-size: 0.83rem; color: #666; margin: 0; }
+
+.scenario-goal-box {
+  background: #f5f7ff;
+  border-left: 3px solid #667eea;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  color: #444;
+  line-height: 1.45;
+}
+
+.scenario-done-pill { margin-left: 0; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tours-grid     { grid-template-columns: 1fr; }
+  .scenarios-grid { grid-template-columns: 1fr; }
+  .onboard-replay-card { flex-direction: column; text-align: center; }
+  .onboard-replay-left { flex-direction: column; }
+  .btn-tut-action:not(.btn-tut-full) { width: 100%; border-radius: 12px; }
+}

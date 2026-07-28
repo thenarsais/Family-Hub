@@ -1,0 +1,242 @@
+- id: '1778864005915'
+  alias: Krish Morning Chore Points
+  description: Adds or removes points when Krish toggles a morning chore
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.krish_make_bed
+    - input_boolean.krish_get_dressed
+    - input_boolean.krish_brush_teeth
+    - input_boolean.krish_lunchbag_water_bottle
+    - input_boolean.krish_pack_backpack
+    - input_boolean.krish_breakfast_dishes
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.state == ''on'' }}'
+      sequence:
+      - action: counter.increment
+        target:
+          entity_id: counter.krish_points
+      - action: counter.increment
+        target:
+          entity_id: counter.krish_monthly_points
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.state == ''off'' }}'
+      sequence:
+      - action: counter.decrement
+        target:
+          entity_id: counter.krish_points
+      - action: counter.decrement
+        target:
+          entity_id: counter.krish_monthly_points
+  mode: single
+- id: '1778864893546'
+  alias: Krish Afternoon Chore Points
+  description: Adds or removes points when Krish toggles an afternoon chore
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.krish_put_away_backpack
+    - input_boolean.krish_empty_lunchbox
+    - input_boolean.krish_empty_karishma_lunchbox
+    - input_boolean.krish_workbook_pages
+    - input_boolean.krish_read
+    - input_boolean.krish_share_school_papers
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.state == ''on'' }}'
+      sequence:
+      - action: counter.increment
+        target:
+          entity_id: counter.krish_points
+      - action: counter.increment
+        target:
+          entity_id: counter.krish_monthly_points
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.state == ''off'' }}'
+      sequence:
+      - action: counter.decrement
+        target:
+          entity_id: counter.krish_points
+      - action: counter.decrement
+        target:
+          entity_id: counter.krish_monthly_points
+  mode: single
+- id: '1778864931228'
+  alias: Krish Evening Chore Points
+  description: Adds or removes points when Krish toggles an evening chore
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.krish_prathna
+    - input_boolean.krish_jai
+    - input_boolean.krish_fill_water_bottles
+    - input_boolean.krish_put_away_shoes
+    - input_boolean.krish_kung_fu_practice
+    - input_boolean.krish_put_away_coats
+    - input_boolean.krish_clothes_for_tomorrow
+    - input_boolean.krish_shower
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.state == ''on'' }}'
+      sequence:
+      - action: counter.increment
+        target:
+          entity_id: counter.krish_points
+      - action: counter.increment
+        target:
+          entity_id: counter.krish_monthly_points
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.state == ''off'' }}'
+      sequence:
+      - action: counter.decrement
+        target:
+          entity_id: counter.krish_points
+      - action: counter.decrement
+        target:
+          entity_id: counter.krish_monthly_points
+  mode: single
+- id: '1778881867141'
+  alias: Krish Daily Chore Reset
+  description: Resets all of Krish's chores to off every morning at 6am
+  triggers:
+  - trigger: time
+    at: 06:00:00
+  conditions: []
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id:
+      - input_boolean.krish_make_bed
+      - input_boolean.krish_get_dressed
+      - input_boolean.krish_brush_teeth
+      - input_boolean.krish_lunchbag_water_bottle
+      - input_boolean.krish_pack_backpack
+      - input_boolean.krish_breakfast_dishes
+      - input_boolean.krish_put_away_backpack
+      - input_boolean.krish_empty_lunchbox
+      - input_boolean.krish_empty_karishma_lunchbox
+      - input_boolean.krish_workbook_pages
+      - input_boolean.krish_read
+      - input_boolean.krish_share_school_papers
+      - input_boolean.krish_prathna
+      - input_boolean.krish_jai
+      - input_boolean.krish_fill_water_bottles
+      - input_boolean.krish_put_away_shoes
+      - input_boolean.krish_kung_fu_practice
+      - input_boolean.krish_put_away_coats
+      - input_boolean.krish_clothes_for_tomorrow
+      - input_boolean.krish_shower
+  mode: single
+- id: '1778882247479'
+  alias: Krish Monthly Points Reset
+  description: Resets Krish's monthly points counter on the 1st of each month
+  triggers:
+  - trigger: time
+    at: 00:00:00
+  conditions:
+  - condition: template
+    value_template: '{{ now().day == 1 }}'
+  actions:
+  - action: counter.reset
+    target:
+      entity_id: counter.krish_monthly_points
+  mode: single
+- id: '1778882799249'
+  alias: Night Mode On
+  description: Dims screen and activates night mode at 9pm
+  triggers:
+  - trigger: time
+    at: '21:00:00'
+  conditions: []
+  actions:
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.night_mode
+  mode: single
+- id: '1778882836259'
+  alias: Night Mode Off
+  description: Turns off night mode at 6am
+  triggers:
+  - trigger: time
+    at: 06:00:00
+  conditions: []
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.night_mode
+  mode: single
+- id: '1779478390644'
+  alias: Trash Pickup Reminder - Night Before
+  description: Reminds to take bins out the evening before pickup
+  triggers:
+  - trigger: time
+    at: 07:00:00
+  conditions:
+  - condition: template
+    value_template: '{{ (as_timestamp(states(''sensor.trash_recycling_current_pickup''))
+      - as_timestamp(now()) | int) < 86400 }}
+
+      '
+  actions:
+  - action: persistent_notification.create
+    data:
+      title: "\U0001F5D1️ Trash Pickup Tomorrow!"
+      message: 'Don''t forget! Pickup is tomorrow ({{ states(''sensor.trash_recycling_current_pickup'')
+        }}). Bins: {{ state_attr(''sensor.trash_recycling_current_pickup'', ''pickup_types'')
+        | join('', '') | title }}
+
+        '
+      notification_id: trash_reminder
+  mode: single
+- id: '1779478463808'
+  alias: Trash Pickup Reminder - Bring Bins In
+  description: Reminds to bring bins in the evening of pickup day
+  triggers:
+  - trigger: time
+    at: '18:00:00'
+  conditions:
+  - condition: template
+    value_template: '{{ as_timestamp(states(''sensor.trash_recycling_current_pickup''))
+      | timestamp_custom(''%Y-%m-%d'') == now().strftime(''%Y-%m-%d'') }}
+
+      '
+  actions:
+  - action: persistent_notification.create
+    data:
+      title: "\U0001F5D1️ Bring the Bins In!"
+      message: 'Trash was picked up today — don''t forget to bring the bins back in!
+
+        '
+      notification_id: trash_bringin_reminder
+  mode: single
+- id: '1779491828637'
+  alias: HVAC Filter Replaced Today
+  description: Sets filter last replaced date to today when toggle is turned on
+  triggers:
+  - trigger: state
+    entity_id: input_boolean.hvac_filter_replaced
+    to: 'on'
+  conditions: []
+  actions:
+  - action: input_datetime.set_datetime
+    target:
+      entity_id: input_datetime.hvac_filter_last_replaced
+    data:
+      date: '{{ now().strftime(''%Y-%m-%d'') }}'
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.hvac_filter_replaced
+  mode: single

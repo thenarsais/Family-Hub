@@ -1,0 +1,114 @@
+{
+  "features": [
+    {
+      "flag_name": "wordle_game",
+      "is_enabled": true,
+      "description": "Wordle game module"
+    },
+    {
+      "flag_name": "quickfire_trivia",
+      "is_enabled": true,
+      "description": "Quick-Fire Trivia game module"
+    },
+    {
+      "flag_name": "word_scramble",
+      "is_enabled": true,
+      "description": "Word Scramble game module"
+    },
+    {
+      "flag_name": "hangman_game",
+      "is_enabled": true,
+      "description": "Hangman game module"
+    },
+    {
+      "flag_name": "daily_quests",
+      "is_enabled": true,
+      "description": "Daily Quests module"
+    },
+    {
+      "flag_name": "homework",
+      "is_enabled": true,
+      "description": "Homework tracking module"
+    },
+    {
+      "flag_name": "kung_fu",
+      "is_enabled": true,
+      "description": "Kung Fu learning module"
+    },
+    {
+      "flag_name": "habits",
+      "is_enabled": true,
+      "description": "Habits tracking module"
+    },
+    {
+      "flag_name": "reading",
+      "is_enabled": true,
+      "description": "Reading tracking module"
+    },
+    {
+      "flag_name": "mood_tracker",
+      "is_enabled": true,
+      "description": "Mood tracking module"
+    },
+    {
+      "flag_name": "gujarati_module",
+      "is_enabled": true,
+      "description": "Gujarati learning module (Phase 1 curriculum only)"
+    },
+    {
+      "flag_name": "weekly_goals",
+      "is_enabled": true,
+      "description": "Weekly goals module"
+    },
+    {
+      "flag_name": "monthly_goals",
+      "is_enabled": true,
+      "description": "Monthly goals module"
+    },
+    {
+      "flag_name": "category_mastery",
+      "is_enabled": true,
+      "description": "Category mastery tracking"
+    },
+    {
+      "flag_name": "daily_challenge",
+      "is_enabled": true,
+      "description": "Daily challenge mode"
+    },
+    {
+      "flag_name": "streak_recovery",
+      "is_enabled": true,
+      "description": "Streak recovery system"
+    },
+    {
+      "flag_name": "parent_portal",
+      "is_enabled": true,
+      "description": "Parent portal access"
+    },
+    {
+      "flag_name": "google_drive_sync",
+      "is_enabled": true,
+      "description": "Google Drive backup sync"
+    },
+    {
+      "flag_name": "hint_token_system",
+      "is_enabled": true,
+      "description": "Hint token system (2 base + 1 per 5 activities)"
+    },
+    {
+      "flag_name": "chore_points",
+      "is_enabled": true,
+      "description": "Award points for chore completion"
+    },
+    {
+      "flag_name": "chore_badges",
+      "is_enabled": true,
+      "description": "Earn badges for chore mastery"
+    },
+    {
+      "flag_name": "privacy_mode",
+      "is_enabled": true,
+      "description": "Privacy/screensaver mode for home monitor"
+    }
+  ]
+}

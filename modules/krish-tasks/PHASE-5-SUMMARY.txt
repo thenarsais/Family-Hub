@@ -1,0 +1,194 @@
+═══════════════════════════════════════════════════════════════════════════════
+  PHASE 5 IMPLEMENTATION SUMMARY: MINI-GAMES & POWER-UPS
+═══════════════════════════════════════════════════════════════════════════════
+
+OVERVIEW
+────────────────────────────────────────────────────────────────────────────────
+Goal: Increase engagement 30% by adding 4 mini-games and power-up system
+Target: Krish (elementary school learner, ages 8-12)
+Effort: 4-5 sprints, staggered releases
+Status: Ready for Sprint 1 kickoff
+
+UNLOCK SYSTEM (Milestone-Based)
+────────────────────────────────────────────────────────────────────────────────
+🔓 ACCESS       → Play 5 trivia Q's (Gate: Can't skip)
+🥉 BRONZE       → 10 correct + 70% accuracy (Soft gate: Recommended)
+🥈 SILVER       → 50 correct + bronze in 2 categories
+🥇 GOLD         → 100 correct + silver + 80% category accuracy
+💎 PLATINUM     → 200 correct + all badges + 80%+ overall
+
+MINI-GAMES PRIORITY (Build Order)
+────────────────────────────────────────────────────────────────────────────────
+
+#1 WORDLE VARIANT (Sprint 1) — EFFORT: 1.5 sprints
+   Guess 5-letter category names in 6 tries
+   Mechanics: Green/Yellow/Gray feedback (standard Wordle)
+   Scoring: 100 pts (≤3 tries), 50 pts (4-6), 0 pts (fail)
+   Learning: Reinforces category mastery
+
+#2 QUICK-FIRE (Sprint 2) — EFFORT: 1 sprint
+   10 random Qs, 15 sec each, combo multiplier (2x after 3 correct, 3x after 5)
+   Mechanics: Reuse existing trivia engine + timer
+   Scoring: Base 10 × combo × (time_remaining / 15)
+   Learning: Speed + accuracy under pressure
+
+#3 MEMORY TILES (Sprint 3) — EFFORT: 1.5 sprints
+   12 tiles (4×3), match Q&A pairs
+   Mechanics: 3 difficulty levels (Easy: 8 tiles; Medium: 12; Hard: 16)
+   Scoring: 50 base + 25 per 10 sec remaining
+   Learning: Active recall & retention
+
+#4 WORD SCRAMBLE (Sprint 4) — EFFORT: 2 sprints
+   5 anagrams per round, 20 sec per word, fill-in or type
+   Mechanics: Easy (3-letter), Medium (5-7), Hard (8+)
+   Scoring: 10 pts/word + 5 pts per 5 sec remaining
+   Learning: Spelling, vocabulary, problem-solving
+
+#5 CHALLENGE MODE (DEFER to Phase 5.2) — EFFORT: 2 sprints
+   Composite: 3 random mini-games, cumulative, 3-life health bar
+   (Dependencies on all 4 mini-games must be stable first)
+
+POWER-UP SYSTEM
+────────────────────────────────────────────────────────────────────────────────
+Currency: "Boost Points" (earned separately from main Points)
+
+Types (Cost | Effect | Recharge):
+  • Double Points  (10 pts) → 1 game: 2× scoring | Daily
+  • Skip Question  (5 pts)  → Trivia: auto-correct | Per session
+  • Extra Time     (8 pts)  → Mini-games: +10 sec | Daily
+  • Hint Unlock    (3 pts)  → Trivia: reveal hint | Unlimited
+  • Combo Freeze   (7 pts)  → Quick-Fire: maintain combo if fail | Per game
+
+Earning:
+  • Milestone rewards: 5-pt bundle at each badge tier
+  • Streaks: 3-day streak = 1 free random power-up
+  • Achievements: Beat personal best = +2 pts
+  • Daily bonus: First game = +5 pts
+
+UI/UX INTEGRATION
+────────────────────────────────────────────────────────────────────────────────
+Entry Point:
+  • Add "Games" tab to activity board (alongside Trivia, Habits, Calendar)
+  • Show locked/unlocked status with progress bar
+
+In-Game:
+  • Header: Game name, timer, score/combo counter
+  • Center: Game board
+  • Footer: Power-up quick-access bar, Back button, Pause
+
+Post-Game:
+  • Results screen (score, accuracy %, personal best)
+  • Loot notification (boosts earned, milestones unlocked)
+  • CTA: "Play Again" or "Try Another Game"
+
+Mobile-First Design:
+  • Touch-friendly tap targets (48px minimum)
+  • No hovers; use active states
+  • Vertical stacking, full-width cards
+
+SEASONAL CONTENT
+────────────────────────────────────────────────────────────────────────────────
+Quarterly rotation (auto-swap at season boundaries):
+  Spring (Mar-May):   Garden theme, nature Wordle words
+  Summer (Jun-Aug):   Beach theme, travel questions, happy-hour bonus
+  Fall (Sep-Nov):     Harvest theme, back-to-school content
+  Winter (Dec-Feb):   Holiday theme, gift-themed rewards
+
+Phase 5.0 MVP: CSS color/gradient swaps (lightweight)
+Phase 5.1: Emoji icon sets per season
+Phase 5.2: New trivia question subset + full assets
+
+TECHNICAL BUILD PLAN
+────────────────────────────────────────────────────────────────────────────────
+Code: krish-daily-tasks.html (expand from 4805 → ~5500 lines)
+
+Add sections:
+  • Game engine functions (wordle, quickfire, memory, scramble)
+  • Power-up logic (spend, earn, balance check)
+  • Unlock checker (milestone triggers)
+  • Seasonal renderer (CSS class swap)
+
+State schema:
+  state.games.unlocked, .stats (per game)
+  state.boosts (currency + history)
+  state.milestones (unlock dates)
+  state.seasonal (theme preference)
+
+Key functions:
+  checkGameUnlocks()        → Run after each trivia answer
+  spendBoostPoints()        → Validate, deduct, log
+  getGameUnlockProgress()   → Display bar on game card
+  applySeasonalTheme()      → Swap CSS vars at startup
+
+SPRINT BREAKDOWN
+────────────────────────────────────────────────────────────────────────────────
+Sprint 1 (Now):
+  ✓ Unlock system architecture
+  ✓ Wordle variant (category guessing)
+  ✓ Toast notifications for unlocks
+  ✓ Boost points UI stub
+  Time: 1.5 weeks
+
+Sprint 2:
+  ✓ Quick-Fire game (10Q, 15s, combos)
+  ✓ Power-up "Use?" modal
+  Time: 1 week
+
+Sprint 3:
+  ✓ Memory Tiles (3 difficulty levels)
+  ✓ Leaderboard infrastructure (optional)
+  Time: 1.5 weeks
+
+Sprint 4:
+  ✓ Word Scramble (anagram engine)
+  ✓ Seasonal stub (theme selector)
+  ✓ Daily bonus tracker
+  ✓ Metrics & telemetry
+  Time: 2 weeks
+
+Sprint 5+:
+  • Challenge Mode (defer if time-boxed)
+  • Seasonal assets
+  • Multiplayer leaderboards (future)
+  • A/B testing thresholds
+
+RISKS & MITIGATIONS
+────────────────────────────────────────────────────────────────────────────────
+RISK: Scope creep
+  → MITIGATE: Lock Sprint 5 to Challenge Mode only; defer cosmetics
+
+RISK: Power-ups trivialize learning
+  → MITIGATE: Playtest with Krish; Skip ≠ streak credit
+
+RISK: Mobile tile flipping is janky
+  → MITIGATE: Use CSS transforms (GPU-accelerated); test on tablet
+
+SUCCESS METRICS (End of Phase 5)
+────────────────────────────────────────────────────────────────────────────────
+✓ Engagement: +30% daily app opens
+✓ Retention: 70% unlock ≥2 games by week 1
+✓ Learning: No accuracy decrease (power-ups don't degrade rigor)
+✓ Monetization-ready: Boost system validates future IAP model
+
+NEXT STEPS
+────────────────────────────────────────────────────────────────────────────────
+1. Review this plan with Priya + Krish (playtest approval)
+2. Lock Sprint 1 scope: Wordle variant only
+3. Design unlock toast notifications (flavor text)
+4. Create game card UI mockup for "Games" tab
+5. Code-review Phase 1 architecture (unlock checker + state schema)
+
+DETAILED DOCUMENT
+────────────────────────────────────────────────────────────────────────────────
+See PHASE-5-PLAN.md in this directory for:
+  • Full unlock table & trigger conditions
+  • Game mechanics & scoring formulas
+  • Power-up currency flow & earning rules
+  • Complete UI/UX layouts
+  • State schema with examples
+  • Dependency graph & critical path
+  • Sample unlock notifications
+
+═══════════════════════════════════════════════════════════════════════════════
+Created: 2026-06-12
+Ready for kickoff: Yes ✓

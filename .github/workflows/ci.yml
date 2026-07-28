@@ -1,0 +1,355 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/api
+
+jobs:
+  # ================================================
+  # CODE QUALITY & LINTING
+  # ================================================
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint --if-present
+
+      - name: Check formatting
+        run: npm run format:check --if-present
+
+  # ================================================
+  # TYPESCRIPT COMPILATION
+  # ================================================
+  build:
+    name: Build TypeScript
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: backend/dist
+
+  # ================================================
+  # UNIT & INTEGRATION TESTS
+  # ================================================
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: familyhub_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:unit --if-present
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/familyhub_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Run integration tests
+        run: npm run test:integration --if-present
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/familyhub_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+
+  # ================================================
+  # API ENDPOINT TESTS
+  # ================================================
+  api-tests:
+    name: API Endpoint Tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start API server
+        run: npm start &
+        env:
+          NODE_ENV: development
+          PORT: 3000
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/familyhub
+          REDIS_URL: redis://localhost:6379
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Wait for server startup
+        run: |
+          for i in {1..30}; do
+            curl -f http://localhost:3000/health && echo "API is ready" && break
+            echo "Waiting for API... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run API health checks
+        run: |
+          echo "Testing health endpoint..."
+          curl -f http://localhost:3000/health || exit 1
+
+          echo "Testing readiness endpoint..."
+          curl -f http://localhost:3000/ready || exit 1
+
+          echo "Testing info endpoint..."
+          curl -f http://localhost:3000/info || exit 1
+
+          echo "✅ All API tests passed!"
+
+  # ================================================
+  # DOCKER BUILD & PUSH
+  # ================================================
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, api-tests]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+  # ================================================
+  # SECURITY SCANNING
+  # ================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'backend'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Check dependencies for vulnerabilities
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  # ================================================
+  # PERFORMANCE BASELINE
+  # ================================================
+  performance:
+    name: Performance Baseline
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate build statistics
+        run: |
+          echo "=== Build Statistics ===" > build-stats.txt
+          echo "Build time: $(date)" >> build-stats.txt
+          echo "Node version: $(node -v)" >> build-stats.txt
+          echo "npm version: $(npm -v)" >> build-stats.txt
+
+          # Check dist size
+          if [ -d "backend/dist" ]; then
+            echo "Dist folder size: $(du -sh backend/dist | cut -f1)" >> build-stats.txt
+            echo "Main bundle size: $(ls -lh backend/dist/server.js | awk '{print $5}')" >> build-stats.txt
+          fi
+
+          cat build-stats.txt
+
+      - name: Upload performance baseline
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-baseline
+          path: build-stats.txt
+
+  # ================================================
+  # SUMMARY & NOTIFICATIONS
+  # ================================================
+  summary:
+    name: CI/CD Summary
+    runs-on: ubuntu-latest
+    needs: [lint, build, test, api-tests, docker, security, performance]
+    if: always()
+    steps:
+      - name: Check job status
+        run: |
+          echo "=== CI/CD Pipeline Summary ==="
+          echo "Lint: ${{ needs.lint.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Tests: ${{ needs.test.result }}"
+          echo "API Tests: ${{ needs.api-tests.result }}"
+          echo "Docker: ${{ needs.docker.result }}"
+          echo "Security: ${{ needs.security.result }}"
+          echo "Performance: ${{ needs.performance.result }}"
+
+      - name: Determine pipeline status
+        run: |
+          if [ "${{ needs.lint.result }}" = "failure" ] || \
+             [ "${{ needs.build.result }}" = "failure" ] || \
+             [ "${{ needs.test.result }}" = "failure" ] || \
+             [ "${{ needs.api-tests.result }}" = "failure" ]; then
+            echo "❌ Pipeline FAILED"
+            exit 1
+          else
+            echo "✅ Pipeline PASSED"
+          fi
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ✅ CI/CD Pipeline Results
+
+              - **Lint**: ${{ needs.lint.result }}
+              - **Build**: ${{ needs.build.result }}
+              - **Tests**: ${{ needs.test.result }}
+              - **API Tests**: ${{ needs.api-tests.result }}
+              - **Security**: ${{ needs.security.result }}
+
+              [View full workflow](${context.payload.pull_request.html_url}/checks)`
+            })

@@ -1,0 +1,62 @@
+.transaction-history {
+  overflow-x: auto;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.transaction-history table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+
+.transaction-history thead {
+  background: #f5f7ff;
+  border-bottom: 2px solid #667eea;
+}
+
+.transaction-history th {
+  padding: 1.5rem;
+  text-align: left;
+  color: #667eea;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.transaction-history tbody tr {
+  border-bottom: 1px solid #eee;
+  transition: background 0.3s ease;
+}
+
+.transaction-history tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.transaction-history tbody tr.buy {
+  border-left: 4px solid #4caf50;
+}
+
+.transaction-history tbody tr.sell {
+  border-left: 4px solid #f44336;
+}
+
+.transaction-history td {
+  padding: 1.2rem 1.5rem;
+  color: #333;
+}
+
+.transaction-history .type {
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .transaction-history table {
+    font-size: 0.9rem;
+  }
+
+  .transaction-history th,
+  .transaction-history td {
+    padding: 0.75rem;
+  }
+}

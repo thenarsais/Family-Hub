@@ -1,0 +1,297 @@
+/* ════════════════════════════════════════════════════════════
+   Onboarding overlay & modal
+   ════════════════════════════════════════════════════════════ */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 20, 60, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.onboarding-modal {
+  background: white;
+  border-radius: 24px;
+  padding: 2.5rem 2.5rem 2rem;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.onboarding-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.onboarding-dot.active { background: #667eea; transform: scale(1.3); }
+.onboarding-dot.done   { background: #c5cae9; }
+
+.onboarding-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.onboarding-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #2d3436;
+  margin-bottom: 0.75rem;
+}
+
+.onboarding-body {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.onboarding-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.btn-onboard-back {
+  padding: 0.7rem 1.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 50px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #555;
+  transition: border-color 0.2s;
+}
+
+.btn-onboard-back:hover { border-color: #667eea; color: #667eea; }
+
+.btn-onboard-next,
+.btn-onboard-done {
+  padding: 0.7rem 2rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-onboard-next:hover,
+.btn-onboard-done:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-onboard-skip {
+  background: none;
+  border: none;
+  color: #bbb;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.btn-onboard-skip:hover { color: #888; }
+
+
+/* ════════════════════════════════════════════════════════════
+   Floating bottom panel — shared by GuidedTour & ScenarioRunner
+   ════════════════════════════════════════════════════════════ */
+.floating-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1500;
+  background: white;
+  border-top: 3px solid #667eea;
+  box-shadow: 0 -8px 30px rgba(102, 126, 234, 0.2);
+  animation: slideUpPanel 0.3s ease;
+}
+
+@keyframes slideUpPanel {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.floating-panel .panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: #f5f7ff;
+  border-bottom: 1px solid #e8e8f0;
+}
+
+.panel-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #667eea;
+  flex: 1;
+}
+
+.panel-step-count {
+  font-size: 0.8rem;
+  color: #999;
+  font-weight: 600;
+}
+
+.panel-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #bbb;
+  padding: 0.2rem 0.4rem;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s;
+}
+
+.panel-close:hover { background: #f0f0f0; color: #555; }
+
+.floating-panel .panel-body {
+  padding: 1rem 1.5rem;
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
+.panel-step-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3436;
+  margin-bottom: 0.4rem;
+}
+
+.panel-step-text {
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.55;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.panel-tip {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  background: #fffde7;
+  border-left: 3px solid #ffc107;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.floating-panel .panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.panel-dots {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.pdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.pdot.active { background: #667eea; transform: scale(1.25); }
+.pdot.done   { background: #b39ddb; }
+
+.btn-panel-next {
+  padding: 0.6rem 1.75rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-panel-next:hover { opacity: 0.9; }
+
+.btn-panel-done {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-panel-done:hover { opacity: 0.9; }
+
+/* Scenario completion state */
+.scenario-panel--complete .panel-body {
+  text-align: center;
+}
+
+.scenario-complete-body { text-align: center; }
+
+.scenario-complete-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.scenario-complete-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #2d3436;
+  margin-bottom: 0.5rem;
+}
+
+.scenario-lesson {
+  border-left-color: #667eea;
+  background: #f5f7ff;
+}
+
+/* Main content padding when panel is open */
+.has-panel .main-content {
+  padding-bottom: 260px;
+}
