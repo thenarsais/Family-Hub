@@ -10,6 +10,7 @@ import pointsRoutes from './routes/points';
 import externalApisRoutes from './routes/external-apis';
 import smartthingsRoutes from './routes/smartthings';
 import choresRoutes from './routes/chores';
+import learningRoutes from './routes/learning';
 import { responseFormatter } from './middleware/response-formatter';
 import { errorHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
@@ -108,6 +109,9 @@ app.use('/api/smartthings', smartthingsRoutes);
 // Chores endpoints: Create, list, complete, progress
 app.use('/api/chores', choresRoutes);
 
+// Learning endpoints: Lessons, quizzes, progress, stats
+app.use('/api/learning', learningRoutes);
+
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', externalApisRoutes);
 
@@ -178,9 +182,10 @@ app.listen(PORT, () => {
   console.log(`   • Points: 8+ endpoints`);
   console.log(`   • SmartThings: 6 endpoints`);
   console.log(`   • Chores: 5 endpoints`);
+  console.log(`   • Learning: 5 endpoints`);
   console.log(`   • External APIs: 10+ endpoints`);
   console.log(`   • Performance: 6+ endpoints`);
-  console.log(`   ┗━ TOTAL: 70+ Endpoints`);
+  console.log(`   ┗━ TOTAL: 75+ Endpoints`);
   console.log(`\n🔧 Advanced Features:`);
   console.log(`   ✓ Rate Limiting`);
   console.log(`   ✓ Request Logging`);
