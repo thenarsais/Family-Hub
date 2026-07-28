@@ -8,6 +8,7 @@ import userRoutes from './routes/users';
 import badgeRoutes from './routes/badges';
 import pointsRoutes from './routes/points';
 import externalApisRoutes from './routes/external-apis';
+import smartthingsRoutes from './routes/smartthings';
 import { responseFormatter } from './middleware/response-formatter';
 import { errorHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
@@ -100,6 +101,9 @@ app.use('/badges', badgeRoutes);
 // Points endpoints: GET/POST user points, leaderboard
 app.use('/points', pointsRoutes);
 
+// SmartThings endpoints: Devices, control, status
+app.use('/api/smartthings', smartthingsRoutes);
+
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', externalApisRoutes);
 
@@ -168,9 +172,10 @@ app.listen(PORT, () => {
   console.log(`   • Users: 4 endpoints`);
   console.log(`   • Badges: 8 endpoints`);
   console.log(`   • Points: 8+ endpoints`);
+  console.log(`   • SmartThings: 6 endpoints`);
   console.log(`   • External APIs: 10+ endpoints`);
   console.log(`   • Performance: 6+ endpoints`);
-  console.log(`   ┗━ TOTAL: 60+ Endpoints`);
+  console.log(`   ┗━ TOTAL: 65+ Endpoints`);
   console.log(`\n🔧 Advanced Features:`);
   console.log(`   ✓ Rate Limiting`);
   console.log(`   ✓ Request Logging`);
