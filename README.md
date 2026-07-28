@@ -2,46 +2,31 @@
 
 A complete, self-hosted smart home dashboard and learning platform for families using Home Assistant. Control your home, manage chores, plan meals, and learn new languages — all from a touchscreen mounted on your wall.
 
-**Status:** MVP Complete & Live | Phase 8B Expansion Planned
+**Status:** Phase 1 In Progress (Building with Node.js + React) | Phase 2 Planned (Activity Board) | Phase 3 Planned (Flutter Mobile)
 
 ---
 
-## ✨ What You Get
+## ✨ Phase 1: Core Features (In Progress)
 
-### 📱 Smart Home Dashboard
-- **Real-time controls** — Lights, locks, climate, entertainment with one tap
-- **Family calendar** — Synced events, school calendar, trash pickup reminders
-- **Weather & world clocks** — Local + multi-city time, 5-day forecast
-- **Meal planner** — Weekly dinner planning with drag-and-drop recipes
-- **Announcements** — Dynamic family messages (school countdown, weather alerts)
+### 📱 Smart Home Dashboard (React + Node.js)
+- **Device control** — Lights, locks, climate, switches with real-time status
+- **SmartThings integration** — Direct API integration with your SmartThings hub
+- **Device status** — Real-time device state and responsiveness
+- **Quick actions** — One-tap controls for frequently used devices
+- **Error handling** — Graceful handling of offline devices
 
-### 👦 Krish's Learning Module (Age 9)
-- **Learn** — Browse lessons (Alphabet, Numbers, Vocabulary)
-- **Quiz** — Answer questions with instant feedback
-- **Trace** — Practice writing letters with guided tracing (10 reps/letter)
-- **Progress tracking** — Points, streaks, completion tracking
+### 👦 Gujarati Learning Module (158 Lessons)
+- **Learn** — Interactive lessons covering alphabet, numbers, vocabulary
+- **Quiz** — Answer questions with instant feedback and scoring
+- **Trace** — Guided writing practice with stroke-by-stroke instruction
+- **Progress tracking** — Track completion, points, and achievements
 
-### 📝 Chore System
-- **Time-based chores** — Morning, afternoon, evening tasks
-- **Instant points** — Toggle chores, earn points automatically
-- **Monthly rewards** — 🥉 Bronze 200pts | 🥈 Silver 300pts | 🥇 Gold 400pts
-- **Daily reset** — Chores reset at 6 AM automatically
-
-### 🚗 School Transit Tracker
-- **Real-time drive times** — Waze integration for accurate travel times
-- **Smart reminders** — Leave time calculated from school arrival + travel time
-- **Calendar-aware** — Shows only on school days
-
-### 🛒 Shopping & Meal Planning
-- **Shared shopping list** — Barcode scanning support (via phone)
-- **Mealie integration** — 500+ recipe database, meal planning
-- **Grocery tracking** — Tie meals to shopping lists
-
-### 🔔 Home Automations
-- **Trash & recycling** — Pickup reminders, bin tracking
-- **HVAC filter** — Countdown to replacement, overdue warnings
-- **Cold weather alerts** — Car start reminders when temp drops
-- **Time-based** — Night mode, automations, scheduling
+### 📝 Chore System & Points
+- **Daily chores** — Morning, afternoon, evening tasks
+- **Auto-completion** — Mark chores done, points awarded instantly
+- **Auto-reset** — Chores reset daily at 6 AM
+- **Points tracking** — Daily/weekly/monthly totals
+- **Leaderboards** — Competition between family members
 
 ---
 
@@ -72,23 +57,41 @@ A complete, self-hosted smart home dashboard and learning platform for families 
 
 | Component | Purpose | Status |
 |-----------|---------|--------|
-| Home Assistant | Smart home hub | ✅ Running |
-| Docker | Container orchestration | ✅ Running |
-| Mealie | Meal planning | ✅ Running |
-| Google Calendar | Calendar sync | ✅ Connected |
-| Waze | Travel times | ✅ Connected |
-| Met.no | Weather | ✅ Connected |
+| Node.js + Express | Backend API server | 🚧 Building |
+| React 18 | Frontend dashboard | 🚧 Building |
+| PostgreSQL | Database | 🚧 Setting up |
+| TypeScript | Type-safe code | ✅ Configured |
+| Docker | Containerization | ✅ Ready |
+| SmartThings API | Smart home integration | ✅ Connected |
+| Jest | Testing framework | ✅ Ready |
 
 ---
 
-## 📊 Current Features
+## 📊 Project Phases
 
-**Dashboard:** ✅ Complete
-- Clock + Weather, Calendar, Shopping List, Meal Planner, Chore System, Transit Tracker, Trash Reminders, HVAC Filter, Automations
+**Phase 1: Core Platform** 🚧 In Progress
+- 🚧 Smart Home Dashboard (React + Node.js)
+- 🚧 Gujarati Learning Module (158 lessons)
+- 🚧 Chore System with Points & Tracking
+- **Timeline:** 4 weeks
+- **Status:** Foundation & Database (Week 1-2)
 
-**Learning:** MVP Complete
-- ✅ Gujarati Learn/Quiz/Trace modes
-- 📋 Phase 8B expansion (SRS, difficulty, parent dashboard)
+**Phase 2: Activity Board & Enhancement** 📋 Planned
+- 📋 Interactive Trivia System (400+ questions, multiplayer)
+- 📋 Daily Habits Tracker (Streaks, achievements)
+- 📋 Mood/Emotion Journal (Daily tracking)
+- 📋 Reading Tracker (Book management, goals)
+- 📋 Parent Portal Dashboard
+- 📋 Enhanced Points & Leaderboard
+- **Timeline:** 20 weeks
+- **Status:** Design complete
+
+**Phase 3: Mobile Apps** 📋 Planned (Future)
+- 📋 Flutter iOS/Android native apps
+- 📋 Flutter Web app (replaces React)
+- 📋 Reuse Phase 1-2 Node.js backend
+- **Timeline:** 8-12 weeks
+- **Status:** Planned
 
 ---
 
@@ -108,9 +111,15 @@ See [`docs/customize.md`](/docs/customize.md) for guides.
 
 | Phase | Duration | Status |
 |-------|----------|--------|
-| MVP (Sessions 1-7) | 2-3 weeks | ✅ Complete |
-| Phase 8B.1+ | 2 weeks | 🚧 In Progress |
-| Phase 8B.2-7 | 14-18 weeks | 📋 Planned |
+| Phase 1: Core Platform | 4 weeks | 🚧 In Progress |
+| Phase 2: Activity Board | 20 weeks | 📋 Planned |
+| Phase 3: Mobile Apps | 8-12 weeks | 📋 Planned |
+| **Total Estimated** | **~32-36 weeks** | — |
+
+**Architecture Notes:**
+- Phase 1: Clean Node.js + React foundation (no throwaway code)
+- Phase 2: Built on Phase 1 backend (100% code reuse)
+- Phase 3: Reuses Phase 1-2 backend (single backend for all platforms)
 
 ---
 
@@ -123,5 +132,5 @@ See [`docs/customize.md`](/docs/customize.md) for guides.
 ---
 
 **Built by:** Priya Narsai & Family 🏠
-**Last Updated:** June 2026
-**Status:** MVP Complete | Actively Maintained
+**Last Updated:** July 27, 2026 (Architecture Finalized - Node.js + React Approach)
+**Status:** Phase 1 Building | Clean Architecture | Single Tech Stack

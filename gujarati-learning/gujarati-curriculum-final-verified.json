@@ -1,0 +1,241 @@
+{
+  "phase_1_alphabet": {
+    "vowels": {
+      "lessons": [
+        {"letter": "અ", "romanization": "a", "pronunciation": "uh (as in 'cup')", "english": "vowel a"},
+        {"letter": "આ", "romanization": "ā", "pronunciation": "ah (as in 'father')", "english": "vowel aa"},
+        {"letter": "ઇ", "romanization": "i", "pronunciation": "ih (as in 'sit')", "english": "vowel i"},
+        {"letter": "ઈ", "romanization": "ī", "pronunciation": "ee (as in 'feet')", "english": "vowel ii"},
+        {"letter": "ઉ", "romanization": "u", "pronunciation": "oo (as in 'book')", "english": "vowel u"},
+        {"letter": "ઊ", "romanization": "ū", "pronunciation": "oo (as in 'moon')", "english": "vowel uu"},
+        {"letter": "ઋ", "romanization": "ṛ", "pronunciation": "ri (with rolled r)", "english": "vowel ri"},
+        {"letter": "એ", "romanization": "e", "pronunciation": "eh (as in 'bed')", "english": "vowel e"},
+        {"letter": "ઐ", "romanization": "ai", "pronunciation": "eye (as in 'high')", "english": "vowel ai"},
+        {"letter": "ઓ", "romanization": "o", "pronunciation": "oh (as in 'go')", "english": "vowel o"},
+        {"letter": "ઔ", "romanization": "au", "pronunciation": "ow (as in 'cow')", "english": "vowel au"}
+      ]
+    },
+    "consonants": {
+      "lessons": [
+        {"letter": "ક", "romanization": "ka", "pronunciation": "kah", "english": "consonant ka"},
+        {"letter": "ખ", "romanization": "kha", "pronunciation": "khah", "english": "consonant kha"},
+        {"letter": "ગ", "romanization": "ga", "pronunciation": "gah", "english": "consonant ga"},
+        {"letter": "ઘ", "romanization": "gha", "pronunciation": "ghah", "english": "consonant gha"},
+        {"letter": "ઙ", "romanization": "ña", "pronunciation": "ngah", "english": "consonant nga"},
+        {"letter": "ચ", "romanization": "cha", "pronunciation": "chah", "english": "consonant cha"},
+        {"letter": "છ", "romanization": "chha", "pronunciation": "chhah", "english": "consonant chha"},
+        {"letter": "જ", "romanization": "ja", "pronunciation": "jah", "english": "consonant ja"},
+        {"letter": "ઝ", "romanization": "jha", "pronunciation": "jhah", "english": "consonant jha"},
+        {"letter": "ઞ", "romanization": "ña", "pronunciation": "nyah", "english": "consonant nya"},
+        {"letter": "ટ", "romanization": "ṭa", "pronunciation": "tah (retroflex)", "english": "consonant ta"},
+        {"letter": "ઠ", "romanization": "ṭha", "pronunciation": "thah (retroflex)", "english": "consonant tha"},
+        {"letter": "ડ", "romanization": "ḍa", "pronunciation": "dah (retroflex)", "english": "consonant da"},
+        {"letter": "ઢ", "romanization": "ḍha", "pronunciation": "dhah (retroflex)", "english": "consonant dha"},
+        {"letter": "ણ", "romanization": "ṇa", "pronunciation": "nah (retroflex)", "english": "consonant na"},
+        {"letter": "ત", "romanization": "ta", "pronunciation": "tah (dental)", "english": "consonant ta"},
+        {"letter": "થ", "romanization": "tha", "pronunciation": "thah (dental)", "english": "consonant tha"},
+        {"letter": "દ", "romanization": "da", "pronunciation": "dah (dental)", "english": "consonant da"},
+        {"letter": "ધ", "romanization": "dha", "pronunciation": "dhah (dental)", "english": "consonant dha"},
+        {"letter": "ન", "romanization": "na", "pronunciation": "nah", "english": "consonant na"},
+        {"letter": "પ", "romanization": "pa", "pronunciation": "pah", "english": "consonant pa"},
+        {"letter": "ફ", "romanization": "pha", "pronunciation": "fah", "english": "consonant pha"},
+        {"letter": "બ", "romanization": "ba", "pronunciation": "bah", "english": "consonant ba"},
+        {"letter": "ભ", "romanization": "bha", "pronunciation": "bhah", "english": "consonant bha"},
+        {"letter": "મ", "romanization": "ma", "pronunciation": "mah", "english": "consonant ma"},
+        {"letter": "ય", "romanization": "ya", "pronunciation": "yah", "english": "consonant ya"},
+        {"letter": "ર", "romanization": "ra", "pronunciation": "rah", "english": "consonant ra"},
+        {"letter": "લ", "romanization": "la", "pronunciation": "lah", "english": "consonant la"},
+        {"letter": "વ", "romanization": "va", "pronunciation": "vah", "english": "consonant va"},
+        {"letter": "શ", "romanization": "sha", "pronunciation": "shah", "english": "consonant sha"},
+        {"letter": "ષ", "romanization": "ṣa", "pronunciation": "shah (retroflex)", "english": "consonant sha"},
+        {"letter": "સ", "romanization": "sa", "pronunciation": "sah", "english": "consonant sa"},
+        {"letter": "હ", "romanization": "ha", "pronunciation": "hah", "english": "consonant ha"},
+        {"letter": "ળ", "romanization": "ḷa", "pronunciation": "lah (retroflex)", "english": "consonant la"},
+        {"letter": "ક્ષ", "romanization": "kṣa", "pronunciation": "kshah", "english": "consonant ksha"},
+        {"letter": "જ્ઞ", "romanization": "jña", "pronunciation": "gnya", "english": "consonant gnya"}
+      ]
+    }
+  },
+  "phase_2_numbers": {
+    "lessons": [
+      {"numeral": "૦", "romanization": "zero", "pronunciation": "shoonya", "english": "zero", "word": "શૂન્ય"},
+      {"numeral": "૧", "romanization": "one", "pronunciation": "ek", "english": "one", "word": "એક"},
+      {"numeral": "૨", "romanization": "two", "pronunciation": "be", "english": "two", "word": "બે"},
+      {"numeral": "૩", "romanization": "three", "pronunciation": "tre", "english": "three", "word": "ત્રણ"},
+      {"numeral": "૪", "romanization": "four", "pronunciation": "char", "english": "four", "word": "ચાર"},
+      {"numeral": "૫", "romanization": "five", "pronunciation": "paanch", "english": "five", "word": "પાંચ"},
+      {"numeral": "૬", "romanization": "six", "pronunciation": "chha", "english": "six", "word": "છ"},
+      {"numeral": "૭", "romanization": "seven", "pronunciation": "saat", "english": "seven", "word": "સાત"},
+      {"numeral": "૮", "romanization": "eight", "pronunciation": "ath", "english": "eight", "word": "આઠ"},
+      {"numeral": "૯", "romanization": "nine", "pronunciation": "nau", "english": "nine", "word": "નવ"}
+    ]
+  },
+  "phase_3_vocabulary": {
+    "categories": {
+      "animals": {
+        "lessons": [
+          {"gujarati": "કૃષ્ણમૃગ", "romanization": "krishna mrig", "pronunciation": "KRISH-nuh mrig", "english": "antelope"},
+          {"gujarati": "સિંહ", "romanization": "sinh", "pronunciation": "SINH", "english": "lion"},
+          {"gujarati": "ટિપું", "romanization": "tipu", "pronunciation": "TI-poo", "english": "tiger"},
+          {"gujarati": "ગધેડો", "romanization": "gadh", "pronunciation": "GUHD", "english": "donkey"},
+          {"gujarati": "ઘોડો", "romanization": "ghodo", "pronunciation": "GHO-do", "english": "horse"},
+          {"gujarati": "ગાય", "romanization": "gay", "pronunciation": "GYE", "english": "cow"},
+          {"gujarati": "બકરો", "romanization": "bakro", "pronunciation": "BUK-ro", "english": "goat"},
+          {"gujarati": "ખુમી", "romanization": "khumi", "pronunciation": "KHOO-mee", "english": "pig"},
+          {"gujarati": "ઘેટું", "romanization": "ghetu", "pronunciation": "GHE-too", "english": "sheep"},
+          {"gujarati": "કૂતરો", "romanization": "kutro", "pronunciation": "KOO-tro", "english": "dog"}
+        ]
+      },
+      "family": {
+        "lessons": [
+          {"gujarati": "માતા", "romanization": "mata", "pronunciation": "MAH-tuh", "english": "mother"},
+          {"gujarati": "પિતા", "romanization": "pita", "pronunciation": "PIT-uh", "english": "father"},
+          {"gujarati": "ભાઈ", "romanization": "bhai", "pronunciation": "BHAI", "english": "brother"},
+          {"gujarati": "બહેન", "romanization": "bahan", "pronunciation": "BUH-hen", "english": "sister"},
+          {"gujarati": "દાદા", "romanization": "dada", "pronunciation": "DAH-duh", "english": "grandfather"},
+          {"gujarati": "દાદી", "romanization": "dadi", "pronunciation": "DAH-dee", "english": "grandmother"},
+          {"gujarati": "કાકો", "romanization": "kako", "pronunciation": "KAH-ko", "english": "uncle"},
+          {"gujarati": "કાકી", "romanization": "kaki", "pronunciation": "KAH-kee", "english": "aunt"},
+          {"gujarati": "પુત્ર", "romanization": "putr", "pronunciation": "POO-truh", "english": "son"},
+          {"gujarati": "પુત્રી", "romanization": "putri", "pronunciation": "POO-tree", "english": "daughter"}
+        ]
+      },
+      "food": {
+        "lessons": [
+          {"gujarati": "ચોખા", "romanization": "chokha", "pronunciation": "CHO-kuh", "english": "rice"},
+          {"gujarati": "રોટલી", "romanization": "rotli", "pronunciation": "ROT-lee", "english": "bread"},
+          {"gujarati": "દાળ", "romanization": "dal", "pronunciation": "DAHL", "english": "lentils"},
+          {"gujarati": "તેલ", "romanization": "tel", "pronunciation": "TELL", "english": "oil"},
+          {"gujarati": "મધ", "romanization": "madh", "pronunciation": "MUHD", "english": "honey"},
+          {"gujarati": "મીઠાઈ", "romanization": "mithai", "pronunciation": "MEET-high", "english": "sweets"},
+          {"gujarati": "ફળ", "romanization": "phal", "pronunciation": "FAHL", "english": "fruit"},
+          {"gujarati": "આમ", "romanization": "am", "pronunciation": "AHM", "english": "mango"},
+          {"gujarati": "નાળીયેર", "romanization": "naliyer", "pronunciation": "nuh-LEE-yer", "english": "coconut"},
+          {"gujarati": "દૂધ", "romanization": "dudh", "pronunciation": "DOODH", "english": "milk"}
+        ]
+      },
+      "colors": {
+        "lessons": [
+          {"gujarati": "લાલ", "romanization": "lal", "pronunciation": "LAHL", "english": "red"},
+          {"gujarati": "સફેદ", "romanization": "safed", "pronunciation": "suh-FED", "english": "white"},
+          {"gujarati": "સીલું", "romanization": "silu", "pronunciation": "SIL-oo", "english": "blue"},
+          {"gujarati": "લીલું", "romanization": "lilu", "pronunciation": "LEE-loo", "english": "green"},
+          {"gujarati": "પીળું", "romanization": "pilu", "pronunciation": "PEE-loo", "english": "yellow"},
+          {"gujarati": "કાળું", "romanization": "kalu", "pronunciation": "KAH-loo", "english": "black"},
+          {"gujarati": "ગુલાબી", "romanization": "gulabi", "pronunciation": "goo-LAH-bee", "english": "pink"},
+          {"gujarati": "નારંગી", "romanization": "naragi", "pronunciation": "nuh-RUN-gee", "english": "orange"},
+          {"gujarati": "જામણી", "romanization": "jamni", "pronunciation": "JAHM-nee", "english": "purple"},
+          {"gujarati": "ભૂરું", "romanization": "bhuru", "pronunciation": "BHOO-roo", "english": "brown"}
+        ]
+      },
+      "numbers_words": {
+        "lessons": [
+          {"gujarati": "એક", "romanization": "ek", "pronunciation": "EK", "english": "one"},
+          {"gujarati": "બે", "romanization": "be", "pronunciation": "BEH", "english": "two"},
+          {"gujarati": "ત્રણ", "romanization": "tran", "pronunciation": "TRUN", "english": "three"},
+          {"gujarati": "ચાર", "romanization": "char", "pronunciation": "CHAR", "english": "four"},
+          {"gujarati": "પાંચ", "romanization": "panch", "pronunciation": "PANCH", "english": "five"},
+          {"gujarati": "છ", "romanization": "chha", "pronunciation": "CHUH", "english": "six"},
+          {"gujarati": "સાત", "romanization": "sat", "pronunciation": "SAHT", "english": "seven"},
+          {"gujarati": "આઠ", "romanization": "ath", "pronunciation": "AATH", "english": "eight"},
+          {"gujarati": "નવ", "romanization": "nav", "pronunciation": "NUV", "english": "nine"},
+          {"gujarati": "દસ", "romanization": "das", "pronunciation": "DUS", "english": "ten"}
+        ]
+      },
+      "body_parts": {
+        "lessons": [
+          {"gujarati": "માથું", "romanization": "mathu", "pronunciation": "MUH-thoo", "english": "head"},
+          {"gujarati": "આંખ", "romanization": "ankh", "pronunciation": "AHNK", "english": "eye"},
+          {"gujarati": "નાક", "romanization": "nak", "pronunciation": "NAHK", "english": "nose"},
+          {"gujarati": "કાન", "romanization": "kan", "pronunciation": "KAHN", "english": "ear"},
+          {"gujarati": "મુખ", "romanization": "mukh", "pronunciation": "MOOKH", "english": "face"},
+          {"gujarati": "દાંત", "romanization": "dant", "pronunciation": "DAHNT", "english": "tooth"},
+          {"gujarati": "જીભ", "romanization": "jibh", "pronunciation": "JEEBH", "english": "tongue"},
+          {"gujarati": "હાથ", "romanization": "hath", "pronunciation": "HATH", "english": "hand"},
+          {"gujarati": "પગ", "romanization": "pag", "pronunciation": "PUG", "english": "foot"},
+          {"gujarati": "હૃદય", "romanization": "hriday", "pronunciation": "HRI-dy", "english": "heart"}
+        ]
+      },
+      "school": {
+        "lessons": [
+          {"gujarati": "સ્કૂલ", "romanization": "skul", "pronunciation": "SKOOL", "english": "school"},
+          {"gujarati": "શિક્ષક", "romanization": "shikshak", "pronunciation": "SHIK-shuk", "english": "teacher"},
+          {"gujarati": "વિદ્યાર્થી", "romanization": "vidyarthi", "pronunciation": "vid-YAR-tee", "english": "student"},
+          {"gujarati": "પુસ્તક", "romanization": "pustak", "pronunciation": "PUS-tuk", "english": "book"},
+          {"gujarati": "કલમ", "romanization": "kalam", "pronunciation": "KUH-lum", "english": "pen"},
+          {"gujarati": "પેપર", "romanization": "pepar", "pronunciation": "PEH-pur", "english": "paper"},
+          {"gujarati": "બોર્ડ", "romanization": "bord", "pronunciation": "BORD", "english": "board"},
+          {"gujarati": "ક્લાસરૂમ", "romanization": "klasrum", "pronunciation": "KLAS-room", "english": "classroom"},
+          {"gujarati": "બેગ", "romanization": "bag", "pronunciation": "BAG", "english": "bag"},
+          {"gujarati": "શાળા", "romanization": "shala", "pronunciation": "SHAH-luh", "english": "school"}
+        ]
+      },
+      "clothes": {
+        "lessons": [
+          {"gujarati": "શર્ટ", "romanization": "shirt", "pronunciation": "SHIRT", "english": "shirt"},
+          {"gujarati": "પ્રતીક", "romanization": "pratik", "pronunciation": "PRU-tik", "english": "pants"},
+          {"gujarati": "ડ્રેસ", "romanization": "dres", "pronunciation": "DRESS", "english": "dress"},
+          {"gujarati": "જૂતાં", "romanization": "juta", "pronunciation": "JOO-tuh", "english": "shoes"},
+          {"gujarati": "મોજાં", "romanization": "moja", "pronunciation": "MO-juh", "english": "socks"},
+          {"gujarati": "ટોપી", "romanization": "topi", "pronunciation": "TO-pee", "english": "hat"},
+          {"gujarati": "પ્રમાણપત્ર", "romanization": "pramadpatra", "pronunciation": "pruh-MAN-puh-truh", "english": "scarf"},
+          {"gujarati": "ધાબળો", "romanization": "dhabla", "pronunciation": "DHAB-luh", "english": "towel"},
+          {"gujarati": "ખોપ", "romanization": "khop", "pronunciation": "KHOP", "english": "blanket"},
+          {"gujarati": "બટ", "romanization": "bat", "pronunciation": "BUT", "english": "button"}
+        ]
+      },
+      "fruits": {
+        "lessons": [
+          {"gujarati": "આમ", "romanization": "am", "pronunciation": "AHM", "english": "mango"},
+          {"gujarati": "કેળું", "romanization": "kelu", "pronunciation": "KE-loo", "english": "banana"},
+          {"gujarati": "સફરજન", "romanization": "safran", "pronunciation": "saf-RUN", "english": "apple"},
+          {"gujarati": "નારંગી", "romanization": "naragi", "pronunciation": "nuh-RUN-gee", "english": "orange"},
+          {"gujarati": "લીંબુ", "romanization": "limbu", "pronunciation": "LIM-boo", "english": "lemon"},
+          {"gujarati": "અંગુર", "romanization": "angur", "pronunciation": "AN-gur", "english": "grape"},
+          {"gujarati": "ડાળીમ", "romanization": "dalim", "pronunciation": "DAH-lim", "english": "pomegranate"},
+          {"gujarati": "તरબૂચ", "romanization": "tarbuch", "pronunciation": "tar-BOOCH", "english": "watermelon"},
+          {"gujarati": "સ્ટ્રૉબેરી", "romanization": "strawberry", "pronunciation": "STRAW-ber-ee", "english": "strawberry"},
+          {"gujarati": "ચેરી", "romanization": "cheri", "pronunciation": "CHER-ee", "english": "cherry"},
+          {"gujarati": "પપાયો", "romanization": "payao", "pronunciation": "puh-PAH-yo", "english": "papaya"},
+          {"gujarati": "પીચ", "romanization": "pich", "pronunciation": "PEECH", "english": "peach"},
+          {"gujarati": "પીનાપલ", "romanization": "pinapal", "pronunciation": "PEEN-uh-pul", "english": "pineapple"},
+          {"gujarati": "કોકણ", "romanization": "kokan", "pronunciation": "KO-kun", "english": "fig"},
+          {"gujarati": "તાળીપાતીજ", "romanization": "talipatra", "pronunciation": "tal-puh-TRU", "english": "dates"}
+        ]
+      },
+      "objects": {
+        "lessons": [
+          {"gujarati": "ઘર", "romanization": "ghar", "pronunciation": "GHAR", "english": "house"},
+          {"gujarati": "દરવાજો", "romanization": "darvajo", "pronunciation": "dar-VAH-jo", "english": "door"},
+          {"gujarati": "બારી", "romanization": "bari", "pronunciation": "BAH-ree", "english": "window"},
+          {"gujarati": "ટેબલ", "romanization": "tabel", "pronunciation": "TAH-bul", "english": "table"},
+          {"gujarati": "ખુરશી", "romanization": "khurshi", "pronunciation": "KHOOR-shee", "english": "chair"},
+          {"gujarati": "અલમારી", "romanization": "almari", "pronunciation": "ul-MAH-ree", "english": "cupboard"},
+          {"gujarati": "પુસ્તક", "romanization": "pustak", "pronunciation": "PUS-tuk", "english": "book"},
+          {"gujarati": "કલમ", "romanization": "kalam", "pronunciation": "KUH-lum", "english": "pen"},
+          {"gujarati": "પેન્સિલ", "romanization": "pensil", "pronunciation": "PEN-sul", "english": "pencil"},
+          {"gujarati": "ચશ્મા", "romanization": "chashma", "pronunciation": "CHASH-muh", "english": "glasses"}
+        ]
+      },
+      "animals_extended": {
+        "lessons": [
+          {"gujarati": "બંદર", "romanization": "bandar", "pronunciation": "BUN-dar", "english": "monkey"},
+          {"gujarati": "હાથી", "romanization": "hathi", "pronunciation": "HAH-tee", "english": "elephant"},
+          {"gujarati": "સિંહણી", "romanization": "sinhni", "pronunciation": "SINH-nee", "english": "lioness"},
+          {"gujarati": "પક્ષી", "romanization": "pakshi", "pronunciation": "PUK-shee", "english": "bird"},
+          {"gujarati": "તોતો", "romanization": "toto", "pronunciation": "TO-to", "english": "parrot"},
+          {"gujarati": "ગરુડ", "romanization": "garud", "pronunciation": "GU-rood", "english": "eagle"},
+          {"gujarati": "બતક", "romanization": "batak", "pronunciation": "BU-tuk", "english": "duck"},
+          {"gujarati": "મોર", "romanization": "mor", "pronunciation": "MOR", "english": "peacock"},
+          {"gujarati": "ચોમાસુ", "romanization": "chomasu", "pronunciation": "CHO-muh-soo", "english": "fish"},
+          {"gujarati": "સાપ", "romanization": "sap", "pronunciation": "SUP", "english": "snake"},
+          {"gujarati": "ઉંદર", "romanization": "undar", "pronunciation": "UN-dar", "english": "mouse"},
+          {"gujarati": "બિલાડી", "romanization": "biladi", "pronunciation": "bi-LAH-dee", "english": "cat"},
+          {"gujarati": "ખરગોશ", "romanization": "khargosh", "pronunciation": "khar-GOSH", "english": "rabbit"},
+          {"gujarati": "કાયમ", "romanization": "kayal", "pronunciation": "KYUL", "english": "frog"},
+          {"gujarati": "કાચુપો", "romanization": "katupo", "pronunciation": "kuh-CHOO-po", "english": "tortoise"}
+        ]
+      }
+    }
+  }
+}
