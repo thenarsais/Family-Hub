@@ -34,13 +34,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.signup(email, password, name);
-      const { user, token } = response.data;
+      const token = response.data.session?.access_token || response.data.token;
+      const user = response.data.user;
+
+      if (!token) {
+        throw new Error('No token in response');
+      }
 
       localStorage.setItem('auth_token', token);
       set({ user, token, isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.message || 'Signup failed',
+        error: error.response?.data?.message || error.message || 'Signup failed',
         isLoading: false
       });
       throw error;
@@ -51,13 +56,18 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.login(email, password);
-      const { user, token } = response.data;
+      const token = response.data.session?.access_token || response.data.token;
+      const user = response.data.user;
+
+      if (!token) {
+        throw new Error('No token in response');
+      }
 
       localStorage.setItem('auth_token', token);
       set({ user, token, isLoading: false });
     } catch (error: any) {
       set({
-        error: error.response?.data?.message || 'Login failed',
+        error: error.response?.data?.message || error.message || 'Login failed',
         isLoading: false
       });
       throw error;
