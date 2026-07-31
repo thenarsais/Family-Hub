@@ -34,8 +34,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.signup(email, password, name);
-      const token = response.data.session?.access_token || response.data.token;
-      const user = response.data.user;
+      const token = response.session?.access_token || response.token;
+      const user = response.user;
 
       if (!token) {
         throw new Error('No token in response');
@@ -56,8 +56,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.login(email, password);
-      const token = response.data.session?.access_token || response.data.token;
-      const user = response.data.user;
+      const token = response.session?.access_token || response.token;
+      const user = response.user;
 
       if (!token) {
         throw new Error('No token in response');
