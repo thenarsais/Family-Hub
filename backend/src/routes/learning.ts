@@ -11,7 +11,7 @@ const learning = getLearningService();
 router.post('/lessons/:lessonId/complete', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
-    const { lessonId } = req.params;
+    const lessonId = Array.isArray(req.params.lessonId) ? req.params.lessonId[0] : req.params.lessonId;
     const { category, phase, pointsValue = 10 } = req.body;
 
     if (!userId) {
@@ -110,7 +110,7 @@ router.post('/quiz/answer', async (req: Request, res: Response) => {
 router.get('/progress/:phase', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
-    const { phase } = req.params;
+    const phase = Array.isArray(req.params.phase) ? req.params.phase[0] : req.params.phase;
 
     if (!userId) {
       return res.status(401).json({
