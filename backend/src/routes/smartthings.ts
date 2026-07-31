@@ -35,7 +35,7 @@ router.get('/devices', async (req: Request, res: Response) => {
  */
 router.get('/devices/:deviceId', async (req: Request, res: Response) => {
   try {
-    const { deviceId } = req.params;
+    const deviceId = Array.isArray(req.params.deviceId) ? req.params.deviceId[0] : req.params.deviceId;
     const device = await smartthings.getDevice(deviceId);
 
     if (!device) {
@@ -66,7 +66,7 @@ router.get('/devices/:deviceId', async (req: Request, res: Response) => {
  */
 router.put('/devices/:deviceId', async (req: Request, res: Response) => {
   try {
-    const { deviceId } = req.params;
+    const deviceId = Array.isArray(req.params.deviceId) ? req.params.deviceId[0] : req.params.deviceId;
     const { command, arguments: args } = req.body;
 
     if (!command) {
@@ -236,7 +236,7 @@ router.post('/discover', async (req: Request, res: Response) => {
  */
 router.get('/devices/:deviceId/history', async (req: Request, res: Response) => {
   try {
-    const { deviceId } = req.params;
+    const deviceId = Array.isArray(req.params.deviceId) ? req.params.deviceId[0] : req.params.deviceId;
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
 
     const result = await query(

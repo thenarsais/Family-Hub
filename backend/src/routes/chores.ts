@@ -99,7 +99,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.post('/:choreId/complete', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
-    const { choreId } = req.params;
+    const choreId = Array.isArray(req.params.choreId) ? req.params.choreId[0] : req.params.choreId;
 
     if (!userId) {
       return res.status(401).json({

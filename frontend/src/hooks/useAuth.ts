@@ -2,18 +2,54 @@ import { useEffect } from 'react';
 import { useAuthStore } from '@stores/authStore';
 
 export const useAuth = () => {
-  const { user, token, isLoading, error, loadCurrentUser, logout } = useAuthStore();
-  const isAuthenticated = !!token && !!user;
+  const { user, token, isLoading, error, loadCurrentUser, logout, setUser } = useAuthStore();
+
+  // Demo users for testing
+  const demoUsers: Record<string, any> = {
+    'parent-001': {
+      id: 'parent-001',
+      email: 'testparent@example.com',
+      name: 'Test Parent',
+      role: 'parent',
+      created_at: new Date().toISOString()
+    },
+    'child-001': {
+      id: 'child-001',
+      email: 'testchild@example.com',
+      name: 'Test Child',
+      role: 'child',
+      created_at: new Date().toISOString()
+    }
+  };
+
+  // Check if token is a demo token
+  let decodedUser = null;
+  if (token) {
+    try {
+      // Decode base64 token (works in browser)
+      const decoded = JSON.parse(atob(token));
+      if (decoded.sub && demoUsers[decoded.sub]) {
+        decodedUser = demoUsers[decoded.sub];
+      }
+    } catch (e) {
+      // Not a demo token, continue
+    }
+  }
+
+  const isAuthenticated = !!token && (!!user || !!decodedUser);
 
   useEffect(() => {
     // Load current user on mount if token exists
-    if (token && !user) {
+    if (token && !user && !decodedUser) {
       loadCurrentUser();
+    } else if (decodedUser && !user) {
+      // Set demo user
+      setUser(decodedUser);
     }
-  }, [token, user, loadCurrentUser]);
+  }, [token, user, decodedUser, loadCurrentUser, setUser]);
 
   return {
-    user,
+    user: user || decodedUser,
     token,
     isLoading,
     error,

@@ -148,6 +148,58 @@ app.get('/test-db', async (req, res) => {
 });
 
 // ================================================
+// DATABASE INITIALIZATION
+// ================================================
+
+app.post('/init-db', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const pathModule = require('path');
+    const { pool } = require('./database/connection');
+
+    console.log('🔄 Initializing database schema...');
+
+    // Read and execute migration file
+    const migrationsDir = pathModule.join(__dirname, '..', 'migrations');
+    const migrationFile = pathModule.join(migrationsDir, '001_initial_schema.sql');
+
+    if (!fs.existsSync(migrationFile)) {
+      return res.status(400).json({
+        error: 'Migration file not found',
+        file: migrationFile
+      });
+    }
+
+    const sql = fs.readFileSync(migrationFile, 'utf8');
+
+    // Execute SQL
+    await pool.query(sql);
+
+    console.log('✅ Database schema initialized successfully');
+
+    res.json({
+      status: 'Database initialized successfully',
+      message: 'All tables and indexes created'
+    });
+  } catch (error: any) {
+    // Check if error is about already existing objects
+    if (error.message.includes('already exists') || error.code === '42P07' || error.code === '42710') {
+      console.warn('⚠️  Tables already exist, skipping initialization');
+      return res.json({
+        status: 'Database already initialized',
+        message: 'Tables already exist'
+      });
+    }
+
+    console.error('❌ Database initialization failed:', error.message);
+    res.status(500).json({
+      error: 'Database initialization failed',
+      message: error.message
+    });
+  }
+});
+
+// ================================================
 // 404 HANDLER
 // ================================================
 
