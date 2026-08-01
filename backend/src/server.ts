@@ -12,21 +12,36 @@ import smartthingsRoutes from './routes/smartthings';
 import choresRoutes from './routes/chores';
 import learningRoutes from './routes/learning';
 import { responseFormatter } from './middleware/response-formatter';
-import { errorHandler } from './middleware/error-handler';
+import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/request-logger';
 import { rateLimit, rateLimitPresets } from './middleware/rate-limiter';
 import { batchOperations } from './middleware/batch-operations';
 import { compression, compressionPresets } from './middleware/compression';
 import performanceRoutes from './routes/performance';
 import deploymentRoutes from './routes/deployment';
+import healthRoutes from './routes/health';
+import { validateEnv } from './config/env';
+import { initSentry } from './config/sentry';
 
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
 // When running locally with npm run dev, load from .env.local
 dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
+// ================================================
+// PHASE 0 COMPLIANCE: VALIDATE ENVIRONMENT
+// ================================================
+// Fail-fast if required environment variables are missing
+validateEnv();
+
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 3000;
+
+// ================================================
+// PHASE 0 COMPLIANCE: INITIALIZE SENTRY MONITORING
+// ================================================
+// Error tracking (graceful degradation if SENTRY_DSN not set)
+initSentry();
 
 // ================================================
 // MIDDLEWARE
@@ -76,9 +91,12 @@ function getSupabase() {
 }
 
 // ================================================
-// HEALTH CHECK
+// HEALTH CHECK (PHASE 0 COMPLIANCE)
 // ================================================
+// Mount comprehensive health check endpoint
+app.use('/api', healthRoutes);
 
+// Legacy health endpoint for backwards compatibility
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -214,8 +232,8 @@ app.use((req, res) => {
 // ================================================
 // ERROR HANDLER (MUST BE LAST)
 // ================================================
-
-app.use(errorHandler());
+// Uses errorHandler with PII scrubbing (PHASE 0 COMPLIANCE - Decision 29: COPPA)
+app.use(errorHandler);
 
 // ================================================
 // START SERVER

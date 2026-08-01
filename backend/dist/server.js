@@ -13,6 +13,9 @@ const users_1 = __importDefault(require("./routes/users"));
 const badges_1 = __importDefault(require("./routes/badges"));
 const points_1 = __importDefault(require("./routes/points"));
 const external_apis_1 = __importDefault(require("./routes/external-apis"));
+const smartthings_1 = __importDefault(require("./routes/smartthings"));
+const chores_1 = __importDefault(require("./routes/chores"));
+const learning_1 = __importDefault(require("./routes/learning"));
 const response_formatter_1 = require("./middleware/response-formatter");
 const error_handler_1 = require("./middleware/error-handler");
 const request_logger_1 = require("./middleware/request-logger");
@@ -91,6 +94,12 @@ app.use('/users', users_1.default);
 app.use('/badges', badges_1.default);
 // Points endpoints: GET/POST user points, leaderboard
 app.use('/points', points_1.default);
+// SmartThings endpoints: Devices, control, status
+app.use('/api/smartthings', smartthings_1.default);
+// Chores endpoints: Create, list, complete, progress
+app.use('/api/chores', chores_1.default);
+// Learning endpoints: Lessons, quizzes, progress, stats
+app.use('/api/learning', learning_1.default);
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', external_apis_1.default);
 // Performance monitoring: Metrics, diagnostics, health
@@ -117,6 +126,49 @@ app.get('/test-db', async (req, res) => {
     catch (error) {
         res.status(500).json({
             error: 'Database connection failed',
+            message: error.message
+        });
+    }
+});
+// ================================================
+// DATABASE INITIALIZATION
+// ================================================
+app.post('/init-db', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const pathModule = require('path');
+        const { pool } = require('./database/connection');
+        console.log('🔄 Initializing database schema...');
+        // Read and execute migration file
+        const migrationsDir = pathModule.join(__dirname, '..', 'migrations');
+        const migrationFile = pathModule.join(migrationsDir, '001_initial_schema.sql');
+        if (!fs.existsSync(migrationFile)) {
+            return res.status(400).json({
+                error: 'Migration file not found',
+                file: migrationFile
+            });
+        }
+        const sql = fs.readFileSync(migrationFile, 'utf8');
+        // Execute SQL
+        await pool.query(sql);
+        console.log('✅ Database schema initialized successfully');
+        res.json({
+            status: 'Database initialized successfully',
+            message: 'All tables and indexes created'
+        });
+    }
+    catch (error) {
+        // Check if error is about already existing objects
+        if (error.message.includes('already exists') || error.code === '42P07' || error.code === '42710') {
+            console.warn('⚠️  Tables already exist, skipping initialization');
+            return res.json({
+                status: 'Database already initialized',
+                message: 'Tables already exist'
+            });
+        }
+        console.error('❌ Database initialization failed:', error.message);
+        res.status(500).json({
+            error: 'Database initialization failed',
             message: error.message
         });
     }
@@ -149,9 +201,12 @@ app.listen(PORT, () => {
     console.log(`   • Users: 4 endpoints`);
     console.log(`   • Badges: 8 endpoints`);
     console.log(`   • Points: 8+ endpoints`);
+    console.log(`   • SmartThings: 6 endpoints`);
+    console.log(`   • Chores: 5 endpoints`);
+    console.log(`   • Learning: 5 endpoints`);
     console.log(`   • External APIs: 10+ endpoints`);
     console.log(`   • Performance: 6+ endpoints`);
-    console.log(`   ┗━ TOTAL: 60+ Endpoints`);
+    console.log(`   ┗━ TOTAL: 75+ Endpoints`);
     console.log(`\n🔧 Advanced Features:`);
     console.log(`   ✓ Rate Limiting`);
     console.log(`   ✓ Request Logging`);
