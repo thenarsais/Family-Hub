@@ -1,367 +1,197 @@
-# Family Hub - Development Environment Setup
-## Fresh Install After Windows Reset
+# Family Hub — Setup & Development Guide
 
-**Current Status:** Post-Windows reset, dependencies need to be installed  
-**Estimated Time:** 30-45 minutes  
-**Difficulty:** Medium
+## Initial Setup
 
----
-
-## ✅ What's Needed
-
-### Required (Must Install)
-- [ ] Node.js 18+ (includes npm)
-- [ ] Git (already installed ✓)
-- [ ] .env.local configuration file
-
-### Recommended (For Full Stack)
-- [ ] Docker Desktop (for Supabase local dev & Redis)
-- [ ] VS Code with extensions
-- [ ] PostgreSQL client tools (psql)
-
-### Optional (For Deployment)
-- [ ] GitHub CLI (gh)
-- [ ] AWS CLI (if using cloud deployment)
-
----
-
-## 📋 STEP 1: Install Node.js
-
-### Windows Installation
-
-**Option A: Using Installer (Easiest)**
-1. Go to https://nodejs.org/
-2. Download **LTS version** (18.x or 20.x)
-3. Run the installer
-4. Accept all defaults
-5. **Restart PowerShell/Terminal**
-
-**Option B: Using Chocolatey** (if installed)
-```powershell
-choco install nodejs
+### 1. Install Dependencies
+```bash
+npm install --workspaces
 ```
 
-**Verify Installation:**
-```powershell
-node --version
-npm --version
-# Should output: v18.x.x or higher
+### 2. Create Environment Files
+```bash
+cd backend && cp .env.example .env
+cd ../frontend && cp .env.example .env
+```
+
+**Required variables** (app will crash without these):
+- Backend: NODE_ENV, PORT, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, DATABASE_URL
+- Frontend: VITE_API_URL, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+### 3. Install Pre-commit Hooks
+```bash
+npx husky install
 ```
 
 ---
 
-## 📋 STEP 2: Set Up Environment Configuration
+## Code Style: Absolute Imports (TypeScript Path Aliases)
 
-### Create .env.local
+Always use the `@/` path alias prefix for internal workspace module imports.
 
-```powershell
-cd C:\Users\priya\Family-Hub
-cp .env.local.example .env.local
+This prevents relative import spaghetti (`../../../../services/api`) and makes refactoring easier.
+
+**Good:**
+```typescript
+import { api } from '@/services/api';
+import Button from '@/components/Button';
+import { useAuth } from '@/hooks/useAuth';
 ```
 
-Edit `.env.local` with your Supabase credentials (get from https://supabase.com):
-
-```env
-# Minimal required for local dev
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-key-here
-DATABASE_URL=postgresql://postgres:password@localhost:5432/family_hub
-JWT_SECRET=change-me-in-production-$(openssl rand -base64 32)
+**Bad:**
+```typescript
+import { api } from '../../../../services/api';
+import Button from '../../../components/Button';
 ```
 
-**Note:** `.env.local` is in `.gitignore` and won't be committed.
+**This standard is enforced from the first file created.**
 
 ---
 
-## 📋 STEP 3: Install Backend Dependencies
+## Running the App
 
-```powershell
-cd C:\Users\priya\Family-Hub\backend
-
-# Install npm dependencies
-npm install
-
-# Verify installation
-npm list --depth=0
+### Development Mode
+```bash
+npm run dev --workspaces
 ```
 
-**Expected output:** Should list all dependencies without errors
+- Backend: http://localhost:3000
+- Frontend: http://localhost:5173
+
+### Testing
+```bash
+npm run test --workspaces
+npm run test:watch --workspaces
+npm run test:coverage --workspaces
+```
+
+### Validation & Linting
+```bash
+npm run validate --workspaces
+npm run lint --workspaces
+npm run format --workspaces
+```
+
+### Tech Debt Inventory
+```bash
+npm run check:debt --workspaces
+```
+
+Shows all TODO/FIXME comments in the codebase.
 
 ---
 
-## 📋 STEP 4: Verify TypeScript Compilation
+## Phase 1: Enable Sentry Monitoring
 
-```powershell
-# Build TypeScript
-npm run build
-
-# Should complete without errors and create ./dist/ directory
-ls dist/
-```
-
-**Expected:** `dist/` folder with compiled JavaScript files
-
----
-
-## 📋 STEP 5: Set Up Database (Choose One)
-
-### Option A: Supabase Cloud (Easier for Testing)
-
-1. Create account at https://supabase.com
-2. Create new project
-3. Get credentials from Settings → API
-4. Update `.env.local` with values
-5. Create tables (manual or via SQL in dashboard):
-
-```sql
--- Create users table
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) UNIQUE NOT NULL,
-  name VARCHAR(255),
-  role VARCHAR(50),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Create badges table
-CREATE TABLE badges (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(255),
-  description TEXT,
-  category VARCHAR(50),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Create points table
-CREATE TABLE points (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id),
-  points INTEGER,
-  activity_type VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### Option B: Docker + PostgreSQL (Full Local Setup)
-
-```powershell
-# Install Docker Desktop from https://docker.com/products/docker-desktop
-
-# Create docker-compose.yml in project root:
-version: '3.8'
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: family_hub
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-
-volumes:
-  postgres_data:
-
-# Start services
-docker-compose up -d
-
-# Verify
-docker ps
-```
+1. Create free account at https://sentry.io
+2. Create backend + frontend projects
+3. Copy DSNs to `.env`:
+   ```
+   SENTRY_DSN=<backend-dsn>
+   VITE_SENTRY_DSN=<frontend-dsn>
+   ```
+4. Change sampling rate from 0% to 100% in:
+   - `backend/src/config/sentry.ts`
+   - `frontend/src/config/sentry.ts`
+5. Redeploy
 
 ---
 
-## 📋 STEP 6: Run Migrations (Optional - if database tables needed)
+## Phase 1: Enable Database Migrations
 
-```powershell
-cd C:\Users\priya\Family-Hub\backend
+1. Install Supabase CLI:
+   ```bash
+   npm install -g supabase
+   ```
 
-# Run migrations
-npm run migrate
+2. Configure your project:
+   ```bash
+   cd backend
+   supabase login
+   supabase link --project-ref <your-project-id>
+   ```
 
-# Seed sample data
-npm run seed
+3. Test migrations locally:
+   ```bash
+   npm run migrate
+   ```
+
+4. Deploy to production:
+   ```bash
+   npm run migrate:prod
+   ```
+
+---
+
+## Git Workflow
+
+### Commit Guidelines
+- Use conventional commits: feat:, fix:, docs:, test:, refactor:, etc.
+- Write atomic commits (one logical change per commit)
+- Pre-commit hooks run automatically on `git commit`
+- Pre-push hooks run automatically on `git push` (validates entire test suite)
+
+### Example Workflow
+```bash
+# Create feature branch
+git checkout -b feat/new-feature
+
+# Make changes
+# ... edit files ...
+
+# Stage and commit
+git add .
+git commit -m "feat: Add new feature with tests and docs"
+
+# Push to remote (pre-push validation runs automatically)
+git push origin feat/new-feature
+
+# Open PR against main
+# CI/CD validates: lint, type-check, tests, coverage (80%+)
+# After PR merged, auto-deploy to production
 ```
 
 ---
 
-## ✅ STEP 7: Start Development Server
+## Debugging
 
-```powershell
-cd C:\Users\priya\Family-Hub\backend
-
-# Start dev server
-npm run dev
-
-# Expected output:
-# 🚀 ====================================
-#    Family Hub API - PRODUCTION READY
-#    ====================================
-# ✅ Server running on http://localhost:3000
+### Pre-commit Hook Issues
+```bash
+npx husky install
 ```
+
+### Pre-push Hook Blocked Push
+Fix the failing linter/test errors, then retry:
+```bash
+git push
+```
+
+Emergency override (production emergencies only):
+```bash
+git push --no-verify
+```
+
+### Environment Validation Errors
+If you see "Missing required environment variables":
+1. Copy template: `cp .env.example .env`
+2. Fill in actual values
+3. Restart the dev server
+
+### Backend Won't Start
+Check that `SUPABASE_SERVICE_KEY` is set in `.env`
+
+### Frontend Won't Load
+Check that `VITE_API_URL` points to running backend (default: http://localhost:3000)
 
 ---
 
-## ✅ STEP 8: Verify It Works
+## Performance & Quality
 
-### Test Health Endpoint
-
-```powershell
-# In another terminal/PowerShell window
-curl http://localhost:3000/health
-
-# Expected response:
-# {"status":"ok","timestamp":"2026-07-27T...","environment":"local"}
-```
-
-### Test Database Connection
-
-```powershell
-curl http://localhost:3000/test-db
-
-# Expected response:
-# {"status":"Database connected!","data":[...]}
-```
-
-### Run Tests
-
-```powershell
-cd C:\Users\priya\Family-Hub\backend
-
-# Run all tests
-npm run test
-
-# Run specific tests
-npm run test:unit
-npm run test:integration
-
-# Check coverage
-npm run test:coverage
-```
+- **Test Coverage:** Enforced at 80%+ (pre-push hook checks this)
+- **Bundle Size:** No single dependency should exceed 15KB
+- **TypeScript:** Strict mode enforced (no `any` types allowed)
+- **API Performance:** /health endpoint should respond in <100ms
 
 ---
 
-## 🎯 Common Issues & Solutions
-
-### Issue: "node: command not found"
-**Solution:** Restart PowerShell/Terminal after installing Node.js
-
-### Issue: "npm ERR! ERESOLVE unable to resolve dependency tree"
-**Solution:** 
-```powershell
-npm install --legacy-peer-deps
-```
-
-### Issue: "Port 3000 already in use"
-**Solution:** Change in `.env.local`:
-```env
-API_PORT=3001
-```
-
-### Issue: "SUPABASE_URL is required"
-**Solution:** Verify `.env.local` has:
-```env
-SUPABASE_URL=https://your-project.supabase.co
-```
-
-### Issue: "Cannot connect to database"
-**Solution:** 
-1. Verify DATABASE_URL in `.env.local`
-2. Verify database is running (Docker or Supabase)
-3. Check PostgreSQL connection string format
-
-### Issue: "TypeScript compilation errors"
-**Solution:**
-```powershell
-# Delete node_modules and reinstall
-rm -r node_modules package-lock.json
-npm install
-npm run build
-```
-
----
-
-## 📦 Optional: Install VS Code Extensions
-
-For better development experience:
-
-```powershell
-# Install extensions via CLI
-code --install-extension ms-vscode.vscode-typescript-next
-code --install-extension esbenp.prettier-vscode
-code --install-extension dbaeumer.vscode-eslint
-code --install-extension ms-mssql.mssql
-code --install-extension ms-vscode-remote.remote-containers
-```
-
-Or manually in VS Code:
-- Prettier - Code formatter
-- ESLint
-- REST Client
-- Thunder Client (API testing)
-- Docker
-- PostgreSQL
-
----
-
-## 🚀 Next Steps After Setup
-
-1. **Verify all endpoints work** → Test auth, users, badges, points
-2. **Run full test suite** → `npm run test`
-3. **Check database schema** → Connect with psql or Supabase UI
-4. **Try git workflow** → Create feature branch and make a test commit
-
----
-
-## 📚 Useful Commands
-
-```powershell
-# Backend development
-cd backend
-npm run dev              # Start dev server
-npm run build            # Compile TypeScript
-npm test                 # Run tests
-npm run test:coverage    # Coverage report
-npm run migrate          # Run migrations
-npm run seed             # Seed sample data
-
-# Git workflow
-git status               # Check changes
-git add .                # Stage files
-git commit -m "msg"      # Create commit
-git push origin main     # Push to GitHub
-
-# Docker (if using)
-docker-compose up -d     # Start containers
-docker-compose down      # Stop containers
-docker ps                # List running containers
-docker logs -f api       # View logs
-```
-
----
-
-## ✅ Verification Checklist
-
-- [ ] Node.js 18+ installed
-- [ ] npm works
-- [ ] Backend dependencies installed (`node_modules/` exists)
-- [ ] TypeScript compiles (`npm run build` succeeds)
-- [ ] `.env.local` created with valid Supabase credentials
-- [ ] Database accessible (Supabase or Docker)
-- [ ] Dev server starts (`npm run dev` without errors)
-- [ ] Health endpoint responds (`curl localhost:3000/health`)
-- [ ] Tests pass (`npm test` all green)
-- [ ] Git is configured
-
----
-
-**Status:** Setup guide ready  
-**Next:** Follow steps 1-8 above, then verify all checks  
-**Estimated time to completion:** 30-45 minutes
+**Last Updated:** August 1, 2026  
+**Phase:** Phase 0 Complete, Phase 1 Ready

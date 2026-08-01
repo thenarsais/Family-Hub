@@ -1,0 +1,29 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo ""
+echo "🔍 Running pre-push validation across workspaces..."
+echo ""
+
+npm run validate --workspaces
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ PUSH BLOCKED: Validation failed"
+  echo ""
+  echo "Failures detected in:"
+  echo "  • ESLint (run: npm run format)"
+  echo "  • TypeScript (fix type errors)"
+  echo "  • Tests (fix failing tests)"
+  echo "  • Coverage (must meet 80% threshold)"
+  echo ""
+  echo "After fixing, try: git push"
+  echo ""
+  echo "EMERGENCY OVERRIDE: git push --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "✅ All validations passed. Push allowed."
+echo ""
+exit 0
