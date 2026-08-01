@@ -17,7 +17,9 @@
     "test:smoke": "ts-node --transpile-only tests/smoke.test.ts",
     "lint": "echo \"Linting...\" && exit 0",
     "format": "echo \"Formatting code...\" && exit 0",
-    "format:check": "echo \"Checking format...\" && exit 0"
+    "format:check": "echo \"Checking format...\" && exit 0",
+    "validate": "npm run lint && npm run build && npm run test",
+    "check:debt": "grep -r 'TODO\\|FIXME' src --include='*.ts' || echo 'No tech debt found'"
   },
   "keywords": [],
   "author": "",

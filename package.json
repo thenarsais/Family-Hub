@@ -1,4 +1,23 @@
 {
+  "name": "family-hub",
+  "version": "1.0.0",
+  "description": "Family Hub - Home automation and educational platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "validate": "npm run validate --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces",
+    "test": "npm run test --workspaces",
+    "test:watch": "npm run test:watch --workspaces",
+    "test:coverage": "npm run test:coverage --workspaces",
+    "check:debt": "npm run check:debt --workspaces"
+  },
   "devDependencies": {
     "playwright": "^1.60.0"
   }
