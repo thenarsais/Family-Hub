@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
-import { createPool } from 'pg';
+import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
@@ -19,7 +19,7 @@ async function runMigrations() {
     console.log('🔄 Running migrations...');
 
     // Create connection pool for raw SQL execution
-    pool = createPool({
+    pool = new Pool({
       connectionString: databaseUrl,
       max: 20,
       idleTimeoutMillis: 30000,

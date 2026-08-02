@@ -24,9 +24,9 @@ describe('Health Endpoints', () => {
 
     it('should have valid timestamp', async () => {
       const response = await fetch(`${baseURL}/health`);
-      const data = await response.json();
+      const data = await response.json() as any;
 
-      const timestamp = new Date(data.timestamp);
+      const timestamp = new Date((data as any).timestamp);
       expect(timestamp.getTime()).toBeGreaterThan(0);
     });
   });
@@ -39,18 +39,18 @@ describe('Health Endpoints', () => {
 
     it('should include readiness checks', async () => {
       const response = await fetch(`${baseURL}/ready`);
-      const data = await response.json();
+      const data = await response.json() as any;
 
       expect(data).toHaveProperty('status');
       expect(data).toHaveProperty('checks');
-      expect(Array.isArray(data.checks)).toBe(true);
+      expect(Array.isArray((data as any).checks)).toBe(true);
     });
 
     it('should report database check', async () => {
       const response = await fetch(`${baseURL}/ready`);
-      const data = await response.json();
+      const data = await response.json() as any;
 
-      const dbCheck = data.checks?.find((c: any) => c.name === 'database');
+      const dbCheck = (data as any).checks?.find((c: any) => c.name === 'database');
       expect(dbCheck).toBeDefined();
       expect(['healthy', 'degraded', 'unhealthy']).toContain(dbCheck?.status);
     });
@@ -61,7 +61,7 @@ describe('Health Endpoints', () => {
       const response = await fetch(`${baseURL}/info`);
       expect(response.status).toBe(200);
 
-      const data = await response.json();
+      const data = await response.json() as any;
       expect(data).toHaveProperty('application', 'Family Hub API');
       expect(data).toHaveProperty('version');
       expect(data).toHaveProperty('environment');
@@ -71,14 +71,14 @@ describe('Health Endpoints', () => {
 
     it('should list all endpoints', async () => {
       const response = await fetch(`${baseURL}/info`);
-      const data = await response.json();
+      const data = await response.json() as any;
 
-      expect(data.endpoints).toHaveProperty('auth');
-      expect(data.endpoints).toHaveProperty('users');
-      expect(data.endpoints).toHaveProperty('badges');
-      expect(data.endpoints).toHaveProperty('points');
-      expect(data.endpoints).toHaveProperty('total');
-      expect(data.endpoints.total).toBeGreaterThanOrEqual(60);
+      expect((data as any).endpoints).toHaveProperty('auth');
+      expect((data as any).endpoints).toHaveProperty('users');
+      expect((data as any).endpoints).toHaveProperty('badges');
+      expect((data as any).endpoints).toHaveProperty('points');
+      expect((data as any).endpoints).toHaveProperty('total');
+      expect((data as any).endpoints.total).toBeGreaterThanOrEqual(60);
     });
   });
 

@@ -1,5 +1,4 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SmartHome } from '../components/SmartHome/SmartHome';
 import { DeviceCard } from '../components/SmartHome/DeviceCard';
 import * as deviceHook from '../hooks/useDevices';

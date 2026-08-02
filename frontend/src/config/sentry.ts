@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 
 export function initSentry(): void {
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
 
   if (!dsn) {
     console.warn(
@@ -15,12 +15,6 @@ export function initSentry(): void {
     environment: import.meta.env.MODE || 'development',
     tracesSampleRate: 0, // Phase 0: disabled (enable in Phase 1)
     replaysSessionSampleRate: 0,
-    integrations: [
-      new Sentry.Replay({
-        maskAllText: true, // Mask sensitive content
-        blockAllMedia: true,
-      }),
-    ],
   });
 }
 

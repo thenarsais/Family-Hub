@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import { httpIntegration, onUncaughtExceptionIntegration, onUnhandledRejectionIntegration } from '@sentry/node';
 
 export function initSentry(): void {
   const dsn = process.env.SENTRY_DSN;
@@ -16,9 +17,9 @@ export function initSentry(): void {
     tracesSampleRate: 0, // Phase 0: disabled (enable in Phase 1)
     profilesSampleRate: 0,
     integrations: [
-      new Sentry.Integrations.Http({ tracing: false }),
-      new Sentry.Integrations.OnUncaughtException(),
-      new Sentry.Integrations.OnUnhandledRejection(),
+      httpIntegration(),
+      onUncaughtExceptionIntegration(),
+      onUnhandledRejectionIntegration(),
     ],
   });
 }
