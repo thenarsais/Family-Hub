@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 
-const router = Router();
+export const healthRoutes = Router();
 
-router.get('/health', (req: Request, res: Response) => {
+healthRoutes.get('/', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -11,4 +11,8 @@ router.get('/health', (req: Request, res: Response) => {
   });
 });
 
-export default router;
+healthRoutes.head('/', (req: Request, res: Response) => {
+  res.status(200).end();
+});
+
+export default healthRoutes;

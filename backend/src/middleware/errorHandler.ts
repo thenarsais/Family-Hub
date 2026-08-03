@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Sentry } from '../config/sentry';
+import { sanitizeForSentry } from '../utils/pii-scrubber';
 
 export function errorHandler(
   err: Error,
@@ -9,7 +10,7 @@ export function errorHandler(
 ): void {
   console.error('❌ Error:', err.message);
 
-  // Scrub sensitive data before sending to Sentry
+  // Scrub sensitive data before sending to Sentry (COPPA Compliance - Decision 29)
   const cleanedError = {
     message: err.message,
     stack: err.stack,
@@ -18,9 +19,10 @@ export function errorHandler(
     // COPPA: Exclude user data, tokens, PII
   };
 
-  // Send to Sentry (non-blocking)
+  // Send to Sentry (non-blocking) with PII scrubbing
   if (process.env.SENTRY_DSN) {
-    Sentry.captureException(cleanedError);
+    const sanitized = sanitizeForSentry(cleanedError);
+    Sentry.captureException(sanitized);
   }
 
   res.status(500).json({
