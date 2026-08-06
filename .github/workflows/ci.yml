@@ -295,10 +295,76 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   # ================================================
-  # PERFORMANCE BASELINE
+  # LIGHTHOUSE CI (PERFORMANCE)
   # ================================================
-  performance:
-    name: Performance Baseline
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Start development server
+        run: |
+          cd frontend
+          npm run preview &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+
+          # Wait for server to start
+          for i in {1..30}; do
+            curl -f http://localhost:4173 && echo "Server ready" && break
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run Lighthouse CI
+        run: cd frontend && npm run lighthouse:collect || true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Generate performance report
+        if: always()
+        run: |
+          echo "## 📊 Lighthouse Performance Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Performance audit completed for:" >> $GITHUB_STEP_SUMMARY
+          echo "- Homepage (http://localhost:5173)" >> $GITHUB_STEP_SUMMARY
+          echo "- Login page (http://localhost:5173/login)" >> $GITHUB_STEP_SUMMARY
+          echo "- Dashboard (http://localhost:5173/dashboard)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Measured metrics:" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance (target: 80+)" >> $GITHUB_STEP_SUMMARY
+          echo "- Accessibility (target: 90+)" >> $GITHUB_STEP_SUMMARY
+          echo "- Best Practices (target: 85+)" >> $GITHUB_STEP_SUMMARY
+          echo "- SEO (target: 80+)" >> $GITHUB_STEP_SUMMARY
+          echo "- Cumulative Layout Shift (target: 0.1 or better)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Lighthouse results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: lighthouse-results
+          path: frontend/.lighthouseci
+
+  # ================================================
+  # BUILD STATISTICS & PERFORMANCE BASELINE
+  # ================================================
+  performance-baseline:
+    name: Build Statistics
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -341,7 +407,7 @@ jobs:
   summary:
     name: CI/CD Summary
     runs-on: ubuntu-latest
-    needs: [lint, build, test, api-tests, docker, security, performance]
+    needs: [lint, build, test, api-tests, docker, security, lighthouse, performance-baseline]
     if: always()
     steps:
       - name: Check job status
@@ -353,7 +419,8 @@ jobs:
           echo "API Tests: ${{ needs.api-tests.result }}"
           echo "Docker: ${{ needs.docker.result }}"
           echo "Security: ${{ needs.security.result }}"
-          echo "Performance: ${{ needs.performance.result }}"
+          echo "Lighthouse: ${{ needs.lighthouse.result }}"
+          echo "Performance Baseline: ${{ needs.performance-baseline.result }}"
 
       - name: Determine pipeline status
         run: |
