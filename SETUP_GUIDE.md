@@ -1,197 +1,207 @@
-# Family Hub — Setup & Development Guide
+# Development Setup Guide - Family Hub
 
-## Initial Setup
+Quick start guide for getting the Family Hub project running locally.
+
+## Prerequisites
+
+- **Node.js 18+** ([download](https://nodejs.org/))
+- **npm 8+** (included with Node.js)
+- **Git** ([download](https://git-scm.com/))
+
+## Quick Start (Recommended)
+
+### Windows
+```powershell
+.\setup-dev.ps1
+```
+
+### macOS / Linux
+```bash
+chmod +x setup-dev.sh
+./setup-dev.sh
+```
+
+This will:
+- ✅ Install all dependencies
+- ✅ Create `.env.local` files with Supabase credentials
+- ✅ Verify TypeScript compilation
+- ✅ Run validation checks
+
+Takes ~3-5 minutes first time, ~30 seconds on subsequent runs.
+
+---
+
+## Manual Setup (If Needed)
 
 ### 1. Install Dependencies
+
 ```bash
-npm install --workspaces
+npm ci
+cd backend && npm ci
+cd ../frontend && npm ci
+cd ..
 ```
 
 ### 2. Create Environment Files
-```bash
-cd backend && cp .env.example .env
-cd ../frontend && cp .env.example .env
+
+**Backend** (`backend/.env.local`):
+```env
+NODE_ENV=development
+PORT=3000
+SUPABASE_URL=https://kzxnlhwyzcxrnloamkck.supabase.co
+SUPABASE_ANON_KEY=[REDACTED_ANON_KEY]
+SUPABASE_SERVICE_KEY=[REDACTED_SERVICE_KEY]
+DATABASE_URL=postgresql://postgres:[REDACTED_PASSWORD]@db.kzxnlhwyzcxrnloamkck.supabase.co:5432/postgres
 ```
 
-**Required variables** (app will crash without these):
-- Backend: NODE_ENV, PORT, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, DATABASE_URL
-- Frontend: VITE_API_URL, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+**Frontend** (`frontend/.env.local`):
+```env
+VITE_API_URL=http://localhost:3000
+VITE_SUPABASE_URL=https://kzxnlhwyzcxrnloamkck.supabase.co
+VITE_SUPABASE_ANON_KEY=[REDACTED_ANON_KEY]
+```
 
-### 3. Install Pre-commit Hooks
+### 3. Verify Build
+
 ```bash
-npx husky install
+cd backend && npm run build
+cd ../frontend && npm run type-check
 ```
 
 ---
 
-## Code Style: Absolute Imports (TypeScript Path Aliases)
+## Starting Development Servers
 
-Always use the `@/` path alias prefix for internal workspace module imports.
+### Terminal 1: Backend
 
-This prevents relative import spaghetti (`../../../../services/api`) and makes refactoring easier.
-
-**Good:**
-```typescript
-import { api } from '@/services/api';
-import Button from '@/components/Button';
-import { useAuth } from '@/hooks/useAuth';
+```bash
+cd backend
+npm run dev
 ```
 
-**Bad:**
-```typescript
-import { api } from '../../../../services/api';
-import Button from '../../../components/Button';
+Server runs on `http://localhost:3000`
+
+### Terminal 2: Frontend
+
+```bash
+cd frontend
+npm run dev
 ```
 
-**This standard is enforced from the first file created.**
+App runs on `http://localhost:5173`
 
 ---
 
-## Running the App
+## Verify Everything Works
 
-### Development Mode
-```bash
-npm run dev --workspaces
-```
+### 1. Check Build
 
-- Backend: http://localhost:3000
-- Frontend: http://localhost:5173
-
-### Testing
-```bash
-npm run test --workspaces
-npm run test:watch --workspaces
-npm run test:coverage --workspaces
-```
-
-### Validation & Linting
 ```bash
 npm run validate --workspaces
-npm run lint --workspaces
-npm run format --workspaces
 ```
 
-### Tech Debt Inventory
+All tests, lints, and type checks should pass.
+
+### 2. Test Endpoints
+
 ```bash
-npm run check:debt --workspaces
+# Health check
+curl http://localhost:3000/health
+
+# Info endpoint
+curl http://localhost:3000/info
 ```
 
-Shows all TODO/FIXME comments in the codebase.
+### 3. Open in Browser
+
+Navigate to: http://localhost:5173
 
 ---
 
-## Phase 1: Enable Sentry Monitoring
+## Common Issues
 
-1. Create free account at https://sentry.io
-2. Create backend + frontend projects
-3. Copy DSNs to `.env`:
-   ```
-   SENTRY_DSN=<backend-dsn>
-   VITE_SENTRY_DSN=<frontend-dsn>
-   ```
-4. Change sampling rate from 0% to 100% in:
-   - `backend/src/config/sentry.ts`
-   - `frontend/src/config/sentry.ts`
-5. Redeploy
-
----
-
-## Phase 1: Enable Database Migrations
-
-1. Install Supabase CLI:
-   ```bash
-   npm install -g supabase
-   ```
-
-2. Configure your project:
-   ```bash
-   cd backend
-   supabase login
-   supabase link --project-ref <your-project-id>
-   ```
-
-3. Test migrations locally:
-   ```bash
-   npm run migrate
-   ```
-
-4. Deploy to production:
-   ```bash
-   npm run migrate:prod
-   ```
-
----
-
-## Git Workflow
-
-### Commit Guidelines
-- Use conventional commits: feat:, fix:, docs:, test:, refactor:, etc.
-- Write atomic commits (one logical change per commit)
-- Pre-commit hooks run automatically on `git commit`
-- Pre-push hooks run automatically on `git push` (validates entire test suite)
-
-### Example Workflow
+### "Module not found" errors
 ```bash
-# Create feature branch
-git checkout -b feat/new-feature
+# Clean reinstall
+rm -rf node_modules
+npm ci
+npm run build --workspaces
+```
 
-# Make changes
-# ... edit files ...
+### Port already in use
+```bash
+# Change backend port
+cd backend
+PORT=3001 npm run dev
 
-# Stage and commit
-git add .
-git commit -m "feat: Add new feature with tests and docs"
+# Update frontend .env.local
+VITE_API_URL=http://localhost:3001
+```
 
-# Push to remote (pre-push validation runs automatically)
-git push origin feat/new-feature
+### Build failures
+```bash
+# Clear build cache
+cd backend && rm -rf dist
+cd ../frontend && rm -rf dist
 
-# Open PR against main
-# CI/CD validates: lint, type-check, tests, coverage (80%+)
-# After PR merged, auto-deploy to production
+# Rebuild
+npm run build --workspaces
+```
+
+### Environment variables not loading
+```bash
+# Verify files exist
+ls backend/.env.local
+ls frontend/.env.local
+
+# Verify contents
+cat backend/.env.local
 ```
 
 ---
 
-## Debugging
+## Useful Commands
 
-### Pre-commit Hook Issues
-```bash
-npx husky install
-```
-
-### Pre-push Hook Blocked Push
-Fix the failing linter/test errors, then retry:
-```bash
-git push
-```
-
-Emergency override (production emergencies only):
-```bash
-git push --no-verify
-```
-
-### Environment Validation Errors
-If you see "Missing required environment variables":
-1. Copy template: `cp .env.example .env`
-2. Fill in actual values
-3. Restart the dev server
-
-### Backend Won't Start
-Check that `SUPABASE_SERVICE_KEY` is set in `.env`
-
-### Frontend Won't Load
-Check that `VITE_API_URL` points to running backend (default: http://localhost:3000)
+| Command | Purpose |
+|---------|---------|
+| `npm run validate --workspaces` | Run all checks (lint, build, test) |
+| `npm run build --workspaces` | Compile TypeScript both projects |
+| `npm run test --workspaces` | Run all tests |
+| `cd backend && npm run migrate` | Run database migrations |
+| `cd backend && npm run seed` | Seed database with test data |
+| `cd backend && npm run test:coverage` | Generate coverage report |
+| `git log --oneline` | View recent commits |
 
 ---
 
-## Performance & Quality
+## Database Setup (Optional)
 
-- **Test Coverage:** Enforced at 80%+ (pre-push hook checks this)
-- **Bundle Size:** No single dependency should exceed 15KB
-- **TypeScript:** Strict mode enforced (no `any` types allowed)
-- **API Performance:** /health endpoint should respond in <100ms
+If you need to run migrations locally:
+
+```bash
+cd backend
+npm run migrate
+npm run seed  # Add test data
+```
 
 ---
 
-**Last Updated:** August 1, 2026  
-**Phase:** Phase 0 Complete, Phase 1 Ready
+## Next Steps
+
+1. ✅ Development environment ready
+2. Read [CONTRIBUTING.md](CONTRIBUTING.md) for code style
+3. Check [FRAMEWORK.md](FRAMEWORK.md) for architectural decisions
+4. Start with an issue from the backlog
+
+---
+
+## Getting Help
+
+- **Code structure?** See [FRAMEWORK.md](FRAMEWORK.md)
+- **Compliance questions?** See [SUPABASE_INTEGRATION_COMPLETE.md](SUPABASE_INTEGRATION_COMPLETE.md)
+- **Architecture?** See [DECISION_MATRIX.md](DECISION_MATRIX.md)
+- **Tests?** Run `npm test` and check output
+
+---
+
+**Happy coding! 🚀**
