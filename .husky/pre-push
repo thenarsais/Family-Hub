@@ -24,6 +24,37 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
-echo "✅ All validations passed. Push allowed."
+echo "📦 Verifying production builds..."
+echo ""
+
+cd backend
+npm run build:prod
+BACKEND_BUILD=$?
+cd ..
+
+cd frontend
+npm run build:prod
+FRONTEND_BUILD=$?
+cd ..
+
+if [ $BACKEND_BUILD -ne 0 ] || [ $FRONTEND_BUILD -ne 0 ]; then
+  echo ""
+  echo "❌ PUSH BLOCKED: Production build verification failed"
+  echo ""
+  if [ $BACKEND_BUILD -ne 0 ]; then
+    echo "  • Backend build issues detected"
+  fi
+  if [ $FRONTEND_BUILD -ne 0 ]; then
+    echo "  • Frontend build issues detected"
+  fi
+  echo ""
+  echo "Review the build output above and fix issues."
+  echo ""
+  echo "EMERGENCY OVERRIDE: git push --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "✅ All validations and build checks passed. Push allowed."
 echo ""
 exit 0

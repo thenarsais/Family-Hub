@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon --exec ts-node --transpile-only src/server.ts",
     "build": "tsc",
+    "build:prod": "npm run build && npm run verify:build",
+    "verify:build": "node scripts/verify-build.js",
     "start": "node dist/server.js",
     "migrate": "ts-node --transpile-only src/runMigrationsV2.ts",
     "seed": "ts-node --transpile-only src/seed.ts",
