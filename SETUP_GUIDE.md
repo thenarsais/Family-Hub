@@ -48,18 +48,23 @@ cd ..
 ```env
 NODE_ENV=development
 PORT=3000
-SUPABASE_URL=https://kzxnlhwyzcxrnloamkck.supabase.co
-SUPABASE_ANON_KEY=[REDACTED_ANON_KEY]
-SUPABASE_SERVICE_KEY=[REDACTED_SERVICE_KEY]
-DATABASE_URL=postgresql://postgres:[REDACTED_PASSWORD]@db.kzxnlhwyzcxrnloamkck.supabase.co:5432/postgres
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_KEY=your-service-key-here
+DATABASE_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
 ```
 
 **Frontend** (`frontend/.env.local`):
 ```env
 VITE_API_URL=http://localhost:3000
-VITE_SUPABASE_URL=https://kzxnlhwyzcxrnloamkck.supabase.co
-VITE_SUPABASE_ANON_KEY=[REDACTED_ANON_KEY]
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
+
+**Note**: Get actual credentials from:
+- Supabase Dashboard → Settings → API
+- `.env.example` files in backend/frontend directories
+- Team vault or secure storage
 
 ### 3. Verify Build
 

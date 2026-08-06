@@ -83,14 +83,14 @@ NODE_ENV=development
 PORT=3000
 LOG_LEVEL=debug
 
-# Supabase Dev Project Configuration
-SUPABASE_URL=https://kzxnlhwyzcxrnloamkck.supabase.co
-SUPABASE_ANON_KEY=[REDACTED_ANON_KEY]
-SUPABASE_SERVICE_KEY=[REDACTED_SERVICE_KEY]
+# Supabase Configuration
+# Get these from your Supabase project dashboard
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-from-supabase
+SUPABASE_SERVICE_KEY=your-service-key-from-supabase
 
 # PostgreSQL Connection (for migrations)
-# ⚠️ UPDATE PASSWORD if connecting to Supabase directly
-DATABASE_URL=postgresql://postgres:[REDACTED_PASSWORD]@db.kzxnlhwyzcxrnloamkck.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
 
 # Optional Features
 SENTRY_DSN=
