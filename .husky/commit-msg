@@ -1,0 +1,36 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo ""
+echo "📝 Validating commit message format..."
+echo ""
+
+npx commitlint --edit $1
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ COMMIT REJECTED: Invalid message format"
+  echo ""
+  echo "Commit message format:"
+  echo "  <type>(<scope>): <subject>"
+  echo ""
+  echo "Types: feat, fix, docs, style, refactor, perf, test, chore, ci, revert"
+  echo ""
+  echo "Examples:"
+  echo "  feat(auth): add password reset functionality"
+  echo "  fix(dashboard): resolve layout issue on mobile"
+  echo "  docs(readme): update installation instructions"
+  echo "  test(api): add endpoint tests"
+  echo ""
+  echo "Rules:"
+  echo "  • Type must be lowercase"
+  echo "  • Subject must not end with period"
+  echo "  • Header max 72 characters"
+  echo "  • Scope is optional"
+  echo ""
+  exit 1
+fi
+
+echo ""
+echo "✅ Commit message format is valid"
+echo ""
