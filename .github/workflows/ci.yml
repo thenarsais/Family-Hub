@@ -233,15 +233,21 @@ jobs:
         run: echo ${{ steps.docker_build.outputs.digest }}
 
   # ================================================
-  # SECURITY SCANNING
+  # SECURITY SCANNING & DEPENDENCY AUDIT
   # ================================================
   security:
-    name: Security Scan
+    name: Security Scan & Audit
     runs-on: ubuntu-latest
     needs: build
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -257,9 +263,36 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-      - name: Check dependencies for vulnerabilities
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
+      - name: Check backend dependencies for vulnerabilities
+        run: |
+          cd backend
+          echo "🔍 Checking backend dependencies..."
+          npm audit --audit-level=high
+          echo "✅ Backend audit passed"
+
+      - name: Check frontend dependencies for vulnerabilities
+        run: |
+          cd frontend
+          echo "🔍 Checking frontend dependencies..."
+          npm audit --audit-level=high
+          echo "✅ Frontend audit passed"
+
+      - name: Generate audit report
+        if: always()
+        run: |
+          echo "## 🔒 Security Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Backend Audit" >> $GITHUB_STEP_SUMMARY
+          cd backend && npm audit --json > audit-backend.json 2>&1 || true
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          cat audit-backend.json | jq '.metadata.vulnerabilities' 2>/dev/null || echo "No JSON output" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Frontend Audit" >> $GITHUB_STEP_SUMMARY
+          cd ../frontend && npm audit --json > audit-frontend.json 2>&1 || true
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          cat audit-frontend.json | jq '.metadata.vulnerabilities' 2>/dev/null || echo "No JSON output" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   # ================================================
   # PERFORMANCE BASELINE
