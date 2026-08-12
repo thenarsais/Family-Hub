@@ -1,52 +1,46 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
-import { apiClient } from '@services/api';
-import { Wifi, BookOpen, CheckCircle, TrendingUp } from 'lucide-react';
+import {
+  useAnnouncements,
+  useReminders,
+  useActivityLog,
+  useCalendar,
+  useFamily,
+  useEnergy,
+} from '@hooks';
+import { Wifi, BookOpen, CheckCircle, TrendingUp, Bell, Calendar, Zap, Users } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Phase 2 Features: Real Data from APIs
+  const { announcements, loading: annLoading } = useAnnouncements();
+  const { upcomingReminders, loading: remLoading } = useReminders();
+  const { activity, loading: actLoading } = useActivityLog();
+  const { upcomingEvents, loading: calLoading } = useCalendar();
+  const { family, members, loading: famLoading } = useFamily();
+  const { currentMonth, goals, loading: enerLoading } = useEnergy();
+
+  // Phase 1 Features: Keep existing API calls
   const [userPoints, setUserPoints] = useState(0);
   const [totalBadges, setTotalBadges] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Mock data for Phase 1 features
-  const mockChores = [
-    { id: 1, title: 'Clean bedroom', points: 50, status: 'pending', dueDate: '2026-07-31' },
-    { id: 2, title: 'Wash dishes', points: 30, status: 'pending', dueDate: '2026-07-31' },
-    { id: 3, title: 'Do homework', points: 75, status: 'in_progress', dueDate: '2026-08-02' }
-  ];
-
-  const mockLearning = [
-    { id: 1, phase: 'Gujarati Alphabet', progress: 85, icon: '🔤' },
-    { id: 2, phase: 'Gujarati Numbers', progress: 60, icon: '🔢' },
-    { id: 3, phase: 'Gujarati Vocabulary', progress: 40, icon: '📚' }
-  ];
-
-  const mockLeaderboard = [
-    { name: 'Test Child', points: 450, rank: 1 },
-    { name: 'Emma', points: 380, rank: 2 },
-    { name: 'Test Parent', points: 250, rank: 3 }
-  ];
-
-  const mockRecentActivity = [
-    { action: 'Completed "Clean bedroom"', points: 50, time: '2 hours ago' },
-    { action: 'Earned "Quiz Master" badge', points: 0, time: '1 day ago' },
-    { action: 'Completed Gujarati lesson', points: 25, time: '2 days ago' }
-  ];
-
   useEffect(() => {
     const loadData = async () => {
       try {
         if (user?.id) {
-          const pointsData = await apiClient.getUserPoints(user.id);
-          const badgesData = await apiClient.getUserBadges(user.id);
-          setUserPoints(pointsData.data.total_points);
-          setTotalBadges(badgesData.meta.total_badges);
+          // TODO: Update to use Phase 1 hook when available
+          const pointsData = await fetch(`/api/points/user/${user.id}`).then((r) => r.json());
+          const badgesData = await fetch(`/api/badges/user/${user.id}`).then((r) => r.json());
+          setUserPoints(pointsData.data?.total_points || 0);
+          setTotalBadges(badgesData.data?.length || 0);
         }
       } catch (err) {
+        console.error('Failed to load dashboard data:', err);
         setError('Failed to load dashboard data');
       } finally {
         setIsLoading(false);
@@ -56,8 +50,17 @@ export default function Dashboard() {
     loadData();
   }, [user?.id]);
 
-  if (isLoading) {
-    return <div className="container py-8">Loading...</div>;
+  const pageLoading = isLoading || annLoading || remLoading || actLoading || calLoading || famLoading || enerLoading;
+
+  if (isLoading && pageLoading) {
+    return (
+      <div className="container py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -106,114 +109,277 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Phase 1 Modules */}
+      {/* Phase 2 Features: Announcements & Reminders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Chores Module */}
+        {/* Announcements Widget */}
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-            <h2 className="text-2xl font-bold">Chores</h2>
+            <Bell className="w-6 h-6 text-blue-600" />
+            <h2 className="text-2xl font-bold">Announcements</h2>
           </div>
-          <div className="space-y-3">
-            {mockChores.map((chore) => (
-              <div key={chore.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
-                <div>
-                  <p className="font-medium">{chore.title}</p>
-                  <p className="text-xs text-gray-500">Due: {chore.dueDate}</p>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {announcements && announcements.length > 0 ? (
+              announcements.slice(0, 5).map((announcement) => (
+                <div
+                  key={announcement.id}
+                  className={`p-3 rounded-lg cursor-pointer transition ${
+                    announcement.is_pinned
+                      ? 'bg-yellow-50 border-l-4 border-yellow-400'
+                      : 'bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm">{announcement.title}</p>
+                      <p className="text-xs text-gray-600 line-clamp-2">{announcement.message}</p>
+                    </div>
+                    {announcement.is_pinned && <span className="text-lg">📌</span>}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className={`text-xs px-2 py-1 rounded ${chore.status === 'pending' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {chore.status === 'pending' ? 'Pending' : 'In Progress'}
-                  </span>
-                  <p className="text-sm font-bold text-primary-600 mt-1">+{chore.points} pts</p>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm text-center py-4">No announcements yet</p>
+            )}
           </div>
-          <button className="btn btn-secondary w-full mt-4">View All Chores</button>
+          <button
+            onClick={() => navigate('/announcements')}
+            className="btn btn-secondary w-full mt-4 text-xs"
+          >
+            View All
+          </button>
         </div>
 
-        {/* Learning Module */}
+        {/* Upcoming Reminders Widget */}
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
-            <BookOpen className="w-6 h-6 text-blue-600" />
-            <h2 className="text-2xl font-bold">Learning Progress</h2>
+            <Calendar className="w-6 h-6 text-orange-600" />
+            <h2 className="text-2xl font-bold">Reminders</h2>
           </div>
-          <div className="space-y-3">
-            {mockLearning.map((lesson) => (
-              <div key={lesson.id} className="p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{lesson.icon} {lesson.phase}</span>
-                  <span className="text-sm font-bold text-primary-600">{lesson.progress}%</span>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {upcomingReminders && upcomingReminders.length > 0 ? (
+              upcomingReminders.slice(0, 5).map((reminder) => (
+                <div key={reminder.id} className="p-3 bg-orange-50 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{reminder.title}</p>
+                      <p className="text-xs text-gray-600">
+                        {new Date(reminder.scheduled_time).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <span className="text-xs bg-orange-200 px-2 py-1 rounded">
+                      {reminder.reminder_type}
+                    </span>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-primary-600 h-2 rounded-full" style={{ width: `${lesson.progress}%` }}></div>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm text-center py-4">No upcoming reminders</p>
+            )}
           </div>
-          <button className="btn btn-secondary w-full mt-4">Continue Learning</button>
+          <button
+            onClick={() => navigate('/reminders')}
+            className="btn btn-secondary w-full mt-4 text-xs"
+          >
+            View All
+          </button>
         </div>
       </div>
 
-      {/* Leaderboard & Activity */}
+      {/* Energy & Calendar Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Leaderboard */}
+        {/* Energy Usage Widget */}
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-6 h-6 text-purple-600" />
-            <h2 className="text-2xl font-bold">Leaderboard</h2>
+            <Zap className="w-6 h-6 text-yellow-600" />
+            <h2 className="text-2xl font-bold">Energy Usage</h2>
           </div>
-          <div className="space-y-2">
-            {mockLeaderboard.map((entry) => (
-              <div key={entry.rank} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-primary-600 w-8">#{entry.rank}</span>
-                  <span className="font-medium">{entry.name}</span>
-                </div>
-                <span className="text-sm font-bold text-gray-600">{entry.points} pts</span>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between mb-2">
+                <span className="text-sm font-medium">This Month</span>
+                <span className="text-lg font-bold text-yellow-600">{currentMonth.toFixed(1)} kWh</span>
               </div>
-            ))}
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full"
+                  style={{
+                    width: `${Math.min((currentMonth / (goals[0]?.target_kwh || 500)) * 100, 100)}%`,
+                  }}
+                ></div>
+              </div>
+              {goals.length > 0 && (
+                <p className="text-xs text-gray-600 mt-2">
+                  Goal: {goals[0].target_kwh} kWh
+                </p>
+              )}
+            </div>
           </div>
+          <button
+            onClick={() => navigate('/energy')}
+            className="btn btn-secondary w-full mt-4 text-xs"
+          >
+            View Details
+          </button>
         </div>
 
-        {/* Recent Activity */}
+        {/* Upcoming Events Widget */}
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-6 h-6 text-orange-600" />
+            <Calendar className="w-6 h-6 text-purple-600" />
+            <h2 className="text-2xl font-bold">Upcoming Events</h2>
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {upcomingEvents && upcomingEvents.length > 0 ? (
+              upcomingEvents.slice(0, 5).map((event) => (
+                <div key={event.id} className="p-3 bg-purple-50 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{event.event_title}</p>
+                      <p className="text-xs text-gray-600">{event.event_date}</p>
+                    </div>
+                    {event.event_type && (
+                      <span className="text-xs bg-purple-200 px-2 py-1 rounded">
+                        {event.event_type}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm text-center py-4">No upcoming events</p>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/calendar')}
+            className="btn btn-secondary w-full mt-4 text-xs"
+          >
+            View Calendar
+          </button>
+        </div>
+      </div>
+
+      {/* Family & Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Family Widget */}
+        <div className="card">
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-6 h-6 text-green-600" />
+            <h2 className="text-2xl font-bold">Family</h2>
+          </div>
+          <div className="space-y-2">
+            {family && (
+              <>
+                <p className="text-sm text-gray-600 mb-3">
+                  <span className="font-semibold">{family.name}</span> • {members.length} members
+                </p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {members && members.length > 0 ? (
+                    members.slice(0, 4).map((member) => (
+                      <div key={member.id} className="flex items-center justify-between p-2 bg-green-50 rounded">
+                        <span className="text-sm font-medium">{member.role}</span>
+                        <span className="text-xs bg-green-200 px-2 py-1 rounded capitalize">
+                          {member.role}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-xs">No family members yet</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/family')}
+            className="btn btn-secondary w-full mt-4 text-xs"
+          >
+            Manage Family
+          </button>
+        </div>
+
+        {/* Recent Activity Widget */}
+        <div className="card">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-6 h-6 text-green-600" />
             <h2 className="text-2xl font-bold">Recent Activity</h2>
           </div>
-          <div className="space-y-3">
-            {mockRecentActivity.map((activity, idx) => (
-              <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{activity.action}</p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {activity && activity.length > 0 ? (
+              activity.slice(0, 5).map((entry, idx) => (
+                <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{entry.action}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(entry.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  {entry.points_earned > 0 && (
+                    <span className="text-sm font-bold text-green-600">+{entry.points_earned}</span>
+                  )}
                 </div>
-                {activity.points > 0 && (
-                  <span className="text-sm font-bold text-green-600">+{activity.points}</span>
-                )}
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm text-center py-4">No activity yet</p>
+            )}
           </div>
+          <button
+            onClick={() => navigate('/activity')}
+            className="btn btn-secondary w-full mt-4 text-xs"
+          >
+            View All Activity
+          </button>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="card">
         <h2 className="text-2xl font-bold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button className="btn btn-primary">Start Activity</button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <button
+            onClick={() => navigate('/announcements')}
+            className="btn btn-primary flex items-center justify-center gap-2"
+          >
+            <Bell className="w-4 h-4" />
+            Announcements
+          </button>
+          <button
+            onClick={() => navigate('/reminders')}
             className="btn btn-secondary flex items-center justify-center gap-2"
+          >
+            <Calendar className="w-4 h-4" />
+            Reminders
+          </button>
+          <button
+            onClick={() => navigate('/calendar')}
+            className="btn btn-secondary flex items-center justify-center gap-2"
+          >
+            <Calendar className="w-4 h-4" />
+            Calendar
+          </button>
+          <button
+            onClick={() => navigate('/energy')}
+            className="btn btn-secondary flex items-center justify-center gap-2"
+          >
+            <Zap className="w-4 h-4" />
+            Energy
+          </button>
+          <button
             onClick={() => navigate('/smartthings')}
+            className="btn btn-secondary flex items-center justify-center gap-2"
           >
             <Wifi className="w-4 h-4" />
             Smart Home
           </button>
-          <button className="btn btn-secondary">View Badges</button>
-          <button className="btn btn-secondary">Check Leaderboard</button>
-          <button className="btn btn-secondary">Account Settings</button>
+          <button
+            onClick={() => navigate('/family')}
+            className="btn btn-secondary flex items-center justify-center gap-2"
+          >
+            <Users className="w-4 h-4" />
+            Family
+          </button>
         </div>
       </div>
     </div>

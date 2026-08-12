@@ -11,6 +11,12 @@ import externalApisRoutes from './routes/external-apis';
 import smartthingsRoutes from './routes/smartthings';
 import choresRoutes from './routes/chores';
 import learningRoutes from './routes/learning';
+import announcementsRoutes from './routes/announcements';
+import remindersRoutes from './routes/reminders';
+import energyRoutes from './routes/energy';
+import calendarRoutes from './routes/calendar';
+import familyRoutes from './routes/family';
+import activityLogRoutes from './routes/activity-log';
 import { responseFormatter } from './middleware/response-formatter';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/request-logger';
@@ -129,6 +135,28 @@ app.use('/api/chores', choresRoutes);
 
 // Learning endpoints: Lessons, quizzes, progress, stats
 app.use('/api/learning', learningRoutes);
+
+// ================================================
+// PHASE 2 FEATURES: Dashboard & Home Automation
+// ================================================
+
+// Announcements endpoints: Family messaging
+app.use('/api/announcements', announcementsRoutes);
+
+// Reminders endpoints: Notifications & scheduling
+app.use('/api/reminders', remindersRoutes);
+
+// Energy tracking endpoints: SmartThings power consumption
+app.use('/api/energy', energyRoutes);
+
+// Calendar endpoints: Family events & scheduling
+app.use('/api/calendar', calendarRoutes);
+
+// Family management endpoints: Members, roles, settings
+app.use('/api/family', familyRoutes);
+
+// Activity log endpoints: Dashboard activity feed
+app.use('/api/activity', activityLogRoutes);
 
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', externalApisRoutes);
