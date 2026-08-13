@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { getCalendarService } from '../services/calendar';
 import { getFamilyService } from '../services/family';
+import { getGoogleOAuthService } from '../services/google-oauth';
 
 const router = Router();
 const calendar = getCalendarService();
 const family = getFamilyService();
+const googleOAuth = getGoogleOAuthService();
 
 /**
  * GET /api/calendar/events
@@ -209,6 +211,140 @@ router.delete('/events/:id', async (req: Request, res: Response) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to delete event',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /auth/google
+ * Start Google OAuth flow
+ */
+router.get('/auth/google', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'User ID required',
+      });
+    }
+
+    const authUrl = googleOAuth.getAuthUrl(userId);
+    res.json({
+      status: 'success',
+      data: { authUrl },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Failed to get auth URL:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get auth URL',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /auth/google/callback
+ * Google OAuth callback
+ */
+router.get('/auth/google/callback', async (req: Request, res: Response) => {
+  try {
+    const { code, state } = req.query;
+
+    if (!code || !state) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Missing authorization code or state',
+      });
+    }
+
+    const userId = state as string;
+    const token = await googleOAuth.exchangeCodeForToken(code as string);
+    await googleOAuth.storeUserToken(userId, token);
+
+    res.json({
+      status: 'success',
+      message: 'Google Calendar connected successfully',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Failed to handle OAuth callback:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to connect Google Calendar',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /google/events
+ * Get user's Google Calendar events
+ */
+router.get('/google/events', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    const timeMin = req.query.timeMin as string | undefined;
+    const timeMax = req.query.timeMax as string | undefined;
+    const maxResults = parseInt(req.query.maxResults as string) || 10;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'User ID required',
+      });
+    }
+
+    const events = await googleOAuth.getCalendarEvents(userId, timeMin, timeMax, maxResults);
+
+    res.json({
+      status: 'success',
+      data: events,
+      count: events.length,
+      source: 'google_calendar',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Failed to fetch Google Calendar events:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch Google Calendar events',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /google/disconnect
+ * Disconnect Google Calendar
+ */
+router.post('/google/disconnect', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'User ID required',
+      });
+    }
+
+    await googleOAuth.disconnectCalendar(userId);
+
+    res.json({
+      status: 'success',
+      message: 'Google Calendar disconnected successfully',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Failed to disconnect Google Calendar:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to disconnect Google Calendar',
       error: error.message,
     });
   }
