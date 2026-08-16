@@ -49,20 +49,20 @@ export function useCalendar(): UseCalendarReturn {
       if (!user?.id) return;
 
       const [eventsResponse, upcomingResponse, googleEventsResponse] = await Promise.all([
-        apiClient.get('/calendar/events', {
+        apiClient.get('/api/calendar/events', {
           headers: { 'x-user-id': user.id },
-        }).catch(() => ({ data: [] })),
-        apiClient.get('/calendar/upcoming', {
+        }).catch(() => ({ data: { data: [] } })),
+        apiClient.get('/api/calendar/upcoming', {
           headers: { 'x-user-id': user.id },
-        }).catch(() => ({ data: [] })),
-        apiClient.get('/calendar/google/events', {
+        }).catch(() => ({ data: { data: [] } })),
+        apiClient.get('/api/calendar/google/events', {
           headers: { 'x-user-id': user.id },
-        }).catch(() => ({ data: [] })),
+        }).catch(() => ({ data: { data: [] } })),
       ]);
 
-      const localEvents = eventsResponse.data || [];
-      const localUpcoming = upcomingResponse.data || [];
-      const googleEvents = googleEventsResponse.data || [];
+      const localEvents = eventsResponse.data?.data || [];
+      const localUpcoming = upcomingResponse.data?.data || [];
+      const googleEvents = googleEventsResponse.data?.data || [];
 
       // Mark events with their source
       const localEventsWithSource = localEvents.map((e: any) => ({ ...e, source: 'local' }));
@@ -82,7 +82,7 @@ export function useCalendar(): UseCalendarReturn {
 
       setEvents(mergedEvents);
       setUpcomingEvents(upcomingMerged.length > 0 ? upcomingMerged : localUpcoming);
-      setGoogleConnected(googleEvents.length > 0 || googleEventsResponse.data?.length > 0);
+      setGoogleConnected(googleEvents.length > 0);
     } catch (err: any) {
       console.error('Failed to fetch calendar events:', err);
       setError(err.message || 'Failed to fetch calendar events');
@@ -100,7 +100,7 @@ export function useCalendar(): UseCalendarReturn {
       if (!user?.id) throw new Error('User not authenticated');
 
       const response = await apiClient.post(
-        '/calendar/events',
+        '/api/calendar/events',
         data,
         { headers: { 'x-user-id': user.id } },
       );
@@ -118,7 +118,7 @@ export function useCalendar(): UseCalendarReturn {
       if (!user?.id) throw new Error('User not authenticated');
 
       const response = await apiClient.patch(
-        `/calendar/events/${eventId}`,
+        `/api/calendar/events/${eventId}`,
         data,
         { headers: { 'x-user-id': user.id } },
       );
@@ -135,7 +135,7 @@ export function useCalendar(): UseCalendarReturn {
     try {
       if (!user?.id) throw new Error('User not authenticated');
 
-      await apiClient.delete(`/calendar/events/${eventId}`, {
+      await apiClient.delete(`/api/calendar/events/${eventId}`, {
         headers: { 'x-user-id': user.id },
       });
 
@@ -149,7 +149,7 @@ export function useCalendar(): UseCalendarReturn {
     try {
       if (!user?.id) throw new Error('User not authenticated');
 
-      const response = await apiClient.get('/calendar/auth/google', {
+      const response = await apiClient.get('/api/calendar/auth/google', {
         headers: { 'x-user-id': user.id },
       });
 
@@ -175,7 +175,7 @@ export function useCalendar(): UseCalendarReturn {
     try {
       if (!user?.id) throw new Error('User not authenticated');
 
-      await apiClient.post('/calendar/google/disconnect', {}, {
+      await apiClient.post('/api/calendar/google/disconnect', {}, {
         headers: { 'x-user-id': user.id },
       });
 
