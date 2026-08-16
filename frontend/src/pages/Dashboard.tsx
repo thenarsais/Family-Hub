@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 import {
   useAnnouncements,
   useReminders,
@@ -8,7 +8,7 @@ import {
   useCalendar,
   useFamily,
   useEnergy,
-} from '@hooks';
+} from '../hooks';
 import { Wifi, BookOpen, CheckCircle, TrendingUp, Bell, Calendar, Zap, Users } from 'lucide-react';
 
 export default function Dashboard() {
@@ -19,7 +19,7 @@ export default function Dashboard() {
   const { announcements, loading: annLoading } = useAnnouncements();
   const { upcomingReminders, loading: remLoading } = useReminders();
   const { activity, loading: actLoading } = useActivityLog();
-  const { upcomingEvents, loading: calLoading } = useCalendar();
+  const { upcomingEvents, loading: calLoading, googleConnected, connectGoogle } = useCalendar();
   const { family, members, loading: famLoading } = useFamily();
   const { currentMonth, goals, loading: enerLoading } = useEnergy();
 
@@ -227,24 +227,34 @@ export default function Dashboard() {
 
         {/* Upcoming Events Widget */}
         <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-6 h-6 text-purple-600" />
-            <h2 className="text-2xl font-bold">Upcoming Events</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-purple-600" />
+              <h2 className="text-2xl font-bold">Upcoming Events</h2>
+            </div>
+            {googleConnected && <span className="text-xs bg-green-200 px-2 py-1 rounded">Google Connected</span>}
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {upcomingEvents && upcomingEvents.length > 0 ? (
               upcomingEvents.slice(0, 5).map((event) => (
-                <div key={event.id} className="p-3 bg-purple-50 rounded-lg">
+                <div key={event.id} className={`p-3 rounded-lg ${event.source === 'google' ? 'bg-blue-50 border-l-4 border-blue-400' : 'bg-purple-50'}`}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-sm">{event.event_title}</p>
-                      <p className="text-xs text-gray-600">{event.event_date}</p>
+                      <p className="font-medium text-sm">{event.event_title || event.summary}</p>
+                      <p className="text-xs text-gray-600">
+                        {event.event_date || event.start?.dateTime || event.start?.date}
+                      </p>
                     </div>
-                    {event.event_type && (
-                      <span className="text-xs bg-purple-200 px-2 py-1 rounded">
-                        {event.event_type}
-                      </span>
-                    )}
+                    <div className="flex gap-1">
+                      {event.event_type && (
+                        <span className="text-xs bg-purple-200 px-2 py-1 rounded">
+                          {event.event_type}
+                        </span>
+                      )}
+                      {event.source === 'google' && (
+                        <span className="text-xs bg-blue-200 px-2 py-1 rounded">Google</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
@@ -252,12 +262,22 @@ export default function Dashboard() {
               <p className="text-gray-500 text-sm text-center py-4">No upcoming events</p>
             )}
           </div>
-          <button
-            onClick={() => navigate('/calendar')}
-            className="btn btn-secondary w-full mt-4 text-xs"
-          >
-            View Calendar
-          </button>
+          <div className="flex gap-2 mt-4">
+            {!googleConnected && (
+              <button
+                onClick={() => connectGoogle().catch((err) => console.error('Failed to connect Google:', err))}
+                className="btn btn-primary flex-1 text-xs"
+              >
+                Connect Google Calendar
+              </button>
+            )}
+            <button
+              onClick={() => navigate('/calendar')}
+              className={`btn btn-secondary ${!googleConnected ? 'flex-1' : 'w-full'} text-xs`}
+            >
+              View Calendar
+            </button>
+          </div>
         </div>
       </div>
 

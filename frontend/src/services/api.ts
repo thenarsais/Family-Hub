@@ -273,6 +273,27 @@ class ApiClient {
     const response = await this.client.post('/batch', { operations });
     return response.data;
   }
+
+  // ============ Generic HTTP Methods ============
+  async get(path: string, config?: any) {
+    return this.client.get(path, config);
+  }
+
+  async post(path: string, data?: any, config?: any) {
+    return this.client.post(path, data, config);
+  }
+
+  async patch(path: string, data?: any, config?: any) {
+    return this.client.patch(path, data, config);
+  }
+
+  async delete(path: string, config?: any) {
+    return this.client.delete(path, config);
+  }
+
+  async put(path: string, data?: any, config?: any) {
+    return this.client.put(path, data, config);
+  }
 }
 
 export const apiClient = new ApiClient();
