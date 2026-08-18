@@ -288,15 +288,25 @@ router.get('/auth/google/callback', async (req: Request, res: Response) => {
 router.get('/google/events', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
-    const timeMin = req.query.timeMin as string | undefined;
+    let timeMin = req.query.timeMin as string | undefined;
     const timeMax = req.query.timeMax as string | undefined;
-    const maxResults = parseInt(req.query.maxResults as string) || 10;
+    const maxResults = parseInt(req.query.maxResults as string) || 50;
 
     if (!userId) {
       return res.status(401).json({
         status: 'error',
         message: 'User ID required',
       });
+    }
+
+    // If no timeMin specified, use start of current week (Monday)
+    if (!timeMin) {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+      const weekStart = new Date(now.setDate(diff));
+      weekStart.setHours(0, 0, 0, 0);
+      timeMin = weekStart.toISOString();
     }
 
     const events = await googleOAuth.getCalendarEvents(userId, timeMin, timeMax, maxResults);
