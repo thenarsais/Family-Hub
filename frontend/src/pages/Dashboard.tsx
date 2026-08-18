@@ -10,8 +10,10 @@ import {
   useEnergy,
   useWeather,
   useShoppingList,
+  useMealPlanner,
+  useNightMode,
 } from '../hooks';
-import { Wifi, BookOpen, CheckCircle, TrendingUp, Bell, Calendar, Zap, Users, Cloud, Droplets, Wind, ShoppingCart, Check } from 'lucide-react';
+import { Wifi, BookOpen, CheckCircle, TrendingUp, Bell, Calendar, Zap, Users, Cloud, Droplets, Wind, ShoppingCart, Check, UtensilsCrossed, Moon, Sun } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -26,6 +28,8 @@ export default function Dashboard() {
   const { currentMonth, goals, loading: enerLoading } = useEnergy();
   const { weather, loading: weatherLoading } = useWeather();
   const { items: shoppingItems, loading: shoppingLoading } = useShoppingList();
+  const { meals, loading: mealsLoading } = useMealPlanner();
+  const { isNightMode, toggleNightMode } = useNightMode();
 
   // Phase 1 Features: Keep existing API calls
   const [userPoints, setUserPoints] = useState(0);
@@ -54,7 +58,7 @@ export default function Dashboard() {
     loadData();
   }, [user?.id]);
 
-  const pageLoading = isLoading || annLoading || remLoading || actLoading || calLoading || famLoading || enerLoading || weatherLoading || shoppingLoading;
+  const pageLoading = isLoading || annLoading || remLoading || actLoading || calLoading || famLoading || enerLoading || weatherLoading || shoppingLoading || mealsLoading;
 
   if (isLoading && pageLoading) {
     return (
@@ -69,10 +73,36 @@ export default function Dashboard() {
 
   return (
     <div className="container py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Welcome, {user?.name}!</h1>
-        <p className="text-gray-600">Here's your activity overview</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold mb-2">Welcome, {user?.name}!</h1>
+          <p className="text-gray-600">Here's your activity overview</p>
+        </div>
+        <button
+          onClick={toggleNightMode}
+          className="p-2 rounded-lg hover:bg-gray-100 transition"
+          title={isNightMode ? 'Disable night mode' : 'Enable night mode'}
+        >
+          {isNightMode ? (
+            <Sun className="w-6 h-6 text-yellow-500" />
+          ) : (
+            <Moon className="w-6 h-6 text-gray-600" />
+          )}
+        </button>
       </div>
+
+      {/* Family Announcement Banner */}
+      {announcements && announcements.length > 0 && announcements[0]?.is_pinned && (
+        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg p-4 mb-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">📢</span>
+            <div className="flex-1">
+              <h3 className="font-bold text-lg text-yellow-900">{announcements[0].title}</h3>
+              <p className="text-sm text-yellow-800 mt-1">{announcements[0].message}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
@@ -376,6 +406,46 @@ export default function Dashboard() {
           className="btn btn-secondary w-full mt-4 text-xs"
         >
           View Full List
+        </button>
+      </div>
+
+      {/* Meal Planner Widget */}
+      <div className="card mb-8 bg-gradient-to-br from-orange-50 to-amber-50">
+        <div className="flex items-center gap-2 mb-4">
+          <UtensilsCrossed className="w-6 h-6 text-orange-600" />
+          <h2 className="text-2xl font-bold">Weekly Meal Plan</h2>
+        </div>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {meals && meals.length > 0 ? (
+            meals.slice(0, 7).map((meal) => (
+              <div key={meal.day} className="p-3 rounded-lg bg-white border-l-4 border-orange-400">
+                <p className="font-semibold text-sm text-orange-700 mb-2">{meal.day}</p>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p className="text-gray-600 font-medium">Breakfast</p>
+                    <p className="text-gray-800">{meal.breakfast}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 font-medium">Lunch</p>
+                    <p className="text-gray-800">{meal.lunch}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 font-medium">Dinner</p>
+                    <p className="text-gray-800">{meal.dinner}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Planned by {meal.plannedBy}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500 text-sm text-center py-4">No meal plan yet</p>
+          )}
+        </div>
+        <button
+          onClick={() => navigate('/meal-planner')}
+          className="btn btn-secondary w-full mt-4 text-xs"
+        >
+          Edit Meal Plan
         </button>
       </div>
 
