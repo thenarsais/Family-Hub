@@ -222,7 +222,7 @@ router.delete('/events/:id', async (req: Request, res: Response) => {
  */
 router.get('/auth/google', async (req: Request, res: Response) => {
   try {
-    const userId = req.headers['x-user-id'] as string;
+    const userId = (req.headers['x-user-id'] || req.query.userId) as string;
 
     if (!userId) {
       return res.status(401).json({

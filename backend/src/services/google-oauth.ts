@@ -61,6 +61,9 @@ class GoogleOAuthService {
    */
   async storeUserToken(userId: string, token: GoogleAuthToken): Promise<void> {
     try {
+      const expiresInSeconds = token.expires_in || 3600;
+      const expiresAt = new Date(Date.now() + (expiresInSeconds * 1000));
+
       const { error } = await getSupabase()
         .from('user_integrations')
         .upsert({
@@ -68,7 +71,7 @@ class GoogleOAuthService {
           provider: 'google_calendar',
           access_token: token.access_token,
           refresh_token: token.refresh_token,
-          token_expires_at: new Date(Date.now() + (token.expires_in * 1000)).toISOString(),
+          token_expires_at: expiresAt.toISOString(),
           is_active: true,
         }, {
           onConflict: 'user_id,provider',

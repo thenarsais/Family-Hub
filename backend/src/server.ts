@@ -149,6 +149,11 @@ app.use('/api/reminders', remindersRoutes);
 // Energy tracking endpoints: SmartThings power consumption
 app.use('/api/energy', energyRoutes);
 
+// Google OAuth callback redirect (legacy path for OAuth compatibility)
+app.get('/auth/google/callback', (req, res) => {
+  res.redirect(`/api/calendar/auth/google/callback?${new URLSearchParams(req.query).toString()}`);
+});
+
 // Calendar endpoints: Family events & scheduling
 app.use('/api/calendar', calendarRoutes);
 
