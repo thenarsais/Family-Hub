@@ -156,35 +156,35 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
-              <p className="text-sm text-gray-600">Current</p>
-              <p className="text-3xl font-bold text-blue-600">{weather.current.temp}°F</p>
-              <p className="text-sm text-gray-600">{weather.current.condition}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Current</p>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-300">{weather.current.temp}°F</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{weather.current.condition}</p>
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <Droplets className="w-4 h-4 text-blue-500" />
-                <span className="text-sm text-gray-600">Humidity</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">Humidity</span>
               </div>
-              <p className="text-2xl font-bold">{weather.current.humidity}%</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{weather.current.humidity}%</p>
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <Wind className="w-4 h-4 text-blue-500" />
-                <span className="text-sm text-gray-600">Wind</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">Wind</span>
               </div>
-              <p className="text-2xl font-bold">{weather.current.windSpeed} mph</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">{weather.current.windSpeed} mph</p>
             </div>
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-gray-700 mb-3">5-Day Forecast</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">5-Day Forecast</p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
               {weather.forecast.map((day) => (
-                <div key={day.day} className="bg-white p-3 rounded-lg text-center">
-                  <p className="text-xs font-medium text-gray-600">{day.day}</p>
+                <div key={day.day} className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-300">{day.day}</p>
                   <p className="text-2xl my-2">{day.icon}</p>
-                  <p className="text-xs text-gray-600">{day.high}° / {day.low}°</p>
-                  <p className="text-xs text-gray-500">{day.condition}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300">{day.high}° / {day.low}°</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{day.condition}</p>
                 </div>
               ))}
             </div>
