@@ -75,7 +75,7 @@ export default function Dashboard() {
     <div className="container py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold mb-2 dark:text-gray-100">Welcome, {user?.name}!</h1>
+          <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Welcome, {user?.name}!</h1>
           <p className="text-gray-600 dark:text-gray-400">Here's your activity overview</p>
         </div>
         <button
@@ -97,7 +97,7 @@ export default function Dashboard() {
           <div className="flex items-start gap-3">
             <span className="text-2xl">📢</span>
             <div className="flex-1">
-              <h3 className="font-bold text-lg text-yellow-900">{announcements[0].title}</h3>
+              <h3 className="font-bold text-lg text-gray-900 dark:text-gray-800">{announcements[0].title}</h3>
               <p className="text-sm text-yellow-800 mt-1">{announcements[0].message}</p>
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Cloud className="w-6 h-6 text-blue-600" />
-              <h2 className="text-2xl font-bold">Weather</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Weather</h2>
             </div>
             <span className="text-4xl">{weather.current.icon}</span>
           </div>
