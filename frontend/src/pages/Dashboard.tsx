@@ -14,6 +14,7 @@ import {
   useNightMode,
 } from '../hooks';
 import { Wifi, BookOpen, CheckCircle, TrendingUp, Bell, Calendar, Zap, Users, Cloud, Droplets, Wind, ShoppingCart, Check, UtensilsCrossed, Moon, Sun } from 'lucide-react';
+import { WeekCalendar } from '../components/Calendar';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -109,6 +110,9 @@ export default function Dashboard() {
           {error}
         </div>
       )}
+
+      {/* Calendar Widget - Primary Focus */}
+      <WeekCalendar />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -307,62 +311,6 @@ export default function Dashboard() {
             View Details
           </button>
         </div>
-
-        {/* Upcoming Events Widget */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-purple-600" />
-              <h2 className="text-2xl font-bold">Upcoming Events</h2>
-            </div>
-            {googleConnected && <span className="text-xs bg-green-200 px-2 py-1 rounded">Google Connected</span>}
-          </div>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {upcomingEvents && upcomingEvents.length > 0 ? (
-              upcomingEvents.slice(0, 5).map((event) => (
-                <div key={event.id} className={`p-3 rounded-lg ${event.source === 'google' ? 'bg-blue-50 border-l-4 border-blue-400' : 'bg-purple-50'}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{event.event_title || event.summary}</p>
-                      <p className="text-xs text-gray-600">
-                        {event.event_date || event.start?.dateTime || event.start?.date}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      {event.event_type && (
-                        <span className="text-xs bg-purple-200 px-2 py-1 rounded">
-                          {event.event_type}
-                        </span>
-                      )}
-                      {event.source === 'google' && (
-                        <span className="text-xs bg-blue-200 px-2 py-1 rounded">Google</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-sm text-center py-4">No upcoming events</p>
-            )}
-          </div>
-          <div className="flex gap-2 mt-4">
-            {!googleConnected && (
-              <button
-                onClick={() => connectGoogle().catch((err) => console.error('Failed to connect Google:', err))}
-                className="btn btn-primary flex-1 text-xs"
-              >
-                Connect Google Calendar
-              </button>
-            )}
-            <button
-              onClick={() => navigate('/calendar')}
-              className={`btn btn-secondary ${!googleConnected ? 'flex-1' : 'w-full'} text-xs`}
-            >
-              View Calendar
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Shopping List Widget */}
       <div className="card mb-8 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900">
