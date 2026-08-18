@@ -35,10 +35,9 @@ function getEventColor(type: string): string {
 }
 
 export function WeekCalendar() {
-  const { upcomingEvents, loading, googleConnected, connectGoogle } = useCalendar();
+  const { upcomingEvents, loading } = useCalendar();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [connecting, setConnecting] = useState(false);
 
   // Get start of week (Monday)
   const getWeekStart = (date: Date) => {
@@ -65,17 +64,6 @@ export function WeekCalendar() {
     const d = new Date(currentDate);
     d.setDate(d.getDate() + 7);
     setCurrentDate(d);
-  };
-
-  const handleConnectGoogle = async () => {
-    try {
-      setConnecting(true);
-      await connectGoogle();
-    } catch (err) {
-      console.error('Failed to connect Google Calendar:', err);
-    } finally {
-      setConnecting(false);
-    }
   };
 
   const formatWeekRange = () => {
@@ -162,23 +150,12 @@ export function WeekCalendar() {
             {formatWeekRange()}
           </h2>
         </div>
-        <div className="flex items-center gap-2">
-          {!googleConnected && (
-            <button
-              onClick={handleConnectGoogle}
-              disabled={connecting}
-              className="btn btn-primary text-sm px-4 py-2"
-            >
-              {connecting ? 'Connecting...' : '📅 Connect Google Calendar'}
-            </button>
-          )}
-          <button
-            onClick={goToNextWeek}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        </div>
+        <button
+          onClick={goToNextWeek}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Simple Calendar Grid */}
