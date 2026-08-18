@@ -112,7 +112,7 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="card bg-gradient-to-br from-primary-50 to-primary-100">
+        <div className="card bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900 dark:to-primary-800">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Points</p>
@@ -122,7 +122,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-secondary-50 to-secondary-100">
+        <div className="card bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900 dark:to-secondary-800">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Badges Earned</p>
@@ -132,7 +132,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-yellow-50 to-yellow-100">
+        <div className="card bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900 dark:to-yellow-800">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-600 text-sm font-medium">Current Streak</p>
@@ -145,7 +145,7 @@ export default function Dashboard() {
 
       {/* Weather Card */}
       {weather && (
-        <div className="card mb-8 bg-gradient-to-br from-blue-50 to-cyan-50">
+        <div className="card mb-8 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900 dark:to-cyan-900">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Cloud className="w-6 h-6 text-blue-600" />
@@ -365,7 +365,7 @@ export default function Dashboard() {
       </div>
 
       {/* Shopping List Widget */}
-      <div className="card mb-8 bg-gradient-to-br from-green-50 to-emerald-50">
+      <div className="card mb-8 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900">
         <div className="flex items-center gap-2 mb-4">
           <ShoppingCart className="w-6 h-6 text-green-600" />
           <h2 className="text-2xl font-bold">Shopping List</h2>
@@ -377,8 +377,8 @@ export default function Dashboard() {
                 key={item.id}
                 className={`p-3 rounded-lg flex items-start gap-3 ${
                   item.completed
-                    ? 'bg-gray-100 opacity-60'
-                    : 'bg-white border-l-4 border-green-400'
+                    ? 'bg-gray-100 dark:bg-gray-700 opacity-60'
+                    : 'bg-white dark:bg-gray-700 border-l-4 border-green-400'
                 }`}
               >
                 <input
@@ -391,7 +391,7 @@ export default function Dashboard() {
                   <p className={`font-medium text-sm ${item.completed ? 'line-through text-gray-500' : ''}`}>
                     {item.name}
                   </p>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
                     {item.quantity} {item.unit} • {item.category} • Added by {item.addedBy}
                   </p>
                 </div>
@@ -410,7 +410,7 @@ export default function Dashboard() {
       </div>
 
       {/* Meal Planner Widget */}
-      <div className="card mb-8 bg-gradient-to-br from-orange-50 to-amber-50">
+      <div className="card mb-8 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900 dark:to-amber-900">
         <div className="flex items-center gap-2 mb-4">
           <UtensilsCrossed className="w-6 h-6 text-orange-600" />
           <h2 className="text-2xl font-bold">Weekly Meal Plan</h2>
@@ -418,23 +418,23 @@ export default function Dashboard() {
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {meals && meals.length > 0 ? (
             meals.slice(0, 7).map((meal) => (
-              <div key={meal.day} className="p-3 rounded-lg bg-white border-l-4 border-orange-400">
-                <p className="font-semibold text-sm text-orange-700 mb-2">{meal.day}</p>
+              <div key={meal.day} className="p-3 rounded-lg bg-white dark:bg-gray-700 border-l-4 border-orange-400">
+                <p className="font-semibold text-sm text-orange-700 dark:text-orange-400 mb-2">{meal.day}</p>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    <p className="text-gray-600 font-medium">Breakfast</p>
-                    <p className="text-gray-800">{meal.breakfast}</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">Breakfast</p>
+                    <p className="text-gray-800 dark:text-gray-200">{meal.breakfast}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600 font-medium">Lunch</p>
-                    <p className="text-gray-800">{meal.lunch}</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">Lunch</p>
+                    <p className="text-gray-800 dark:text-gray-200">{meal.lunch}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600 font-medium">Dinner</p>
-                    <p className="text-gray-800">{meal.dinner}</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">Dinner</p>
+                    <p className="text-gray-800 dark:text-gray-200">{meal.dinner}</p>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Planned by {meal.plannedBy}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Planned by {meal.plannedBy}</p>
               </div>
             ))
           ) : (
