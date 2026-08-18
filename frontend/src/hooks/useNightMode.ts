@@ -25,8 +25,10 @@ export function useNightMode(): UseNightModeReturn {
     localStorage.setItem('nightMode', JSON.stringify(isNightMode));
     if (isNightMode) {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
     }
   }, [isNightMode]);
 

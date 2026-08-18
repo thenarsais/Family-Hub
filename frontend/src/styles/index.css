@@ -116,3 +116,18 @@ body {
 .animate-slideUp {
   animation: slideUp 300ms ease-in-out;
 }
+
+/* Override media query dark mode when dark class is not present */
+@media (prefers-color-scheme: dark) {
+  html:not(.dark) {
+    color-scheme: light !important;
+  }
+
+  html:not(.dark) body {
+    @apply bg-gray-50 !important;
+  }
+
+  html:not(.dark) [class*="min-h-screen"] {
+    @apply bg-gray-50 !important;
+  }
+}
