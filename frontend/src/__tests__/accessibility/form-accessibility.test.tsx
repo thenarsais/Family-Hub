@@ -6,8 +6,17 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe, toHaveNoViolations } from 'jest-axe';
+import React from 'react';
 
 expect.extend(toHaveNoViolations);
+
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toHaveNoViolations(): R;
+    }
+  }
+}
 
 describe('Form Accessibility', () => {
   describe('Login Form Accessibility', () => {
@@ -260,5 +269,3 @@ describe('Form Accessibility', () => {
     });
   });
 });
-
-import React from 'react';

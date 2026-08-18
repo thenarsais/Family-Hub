@@ -18,7 +18,7 @@ async function runMigrations() {
     try {
         console.log('🔄 Running migrations...');
         // Create connection pool for raw SQL execution
-        pool = (0, pg_1.createPool)({
+        pool = new pg_1.Pool({
             connectionString: databaseUrl,
             max: 20,
             idleTimeoutMillis: 30000,

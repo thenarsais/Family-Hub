@@ -16,20 +16,39 @@ const external_apis_1 = __importDefault(require("./routes/external-apis"));
 const smartthings_1 = __importDefault(require("./routes/smartthings"));
 const chores_1 = __importDefault(require("./routes/chores"));
 const learning_1 = __importDefault(require("./routes/learning"));
+const announcements_1 = __importDefault(require("./routes/announcements"));
+const reminders_1 = __importDefault(require("./routes/reminders"));
+const energy_1 = __importDefault(require("./routes/energy"));
+const calendar_1 = __importDefault(require("./routes/calendar"));
+const family_1 = __importDefault(require("./routes/family"));
+const activity_log_1 = __importDefault(require("./routes/activity-log"));
 const response_formatter_1 = require("./middleware/response-formatter");
-const error_handler_1 = require("./middleware/error-handler");
+const errorHandler_1 = require("./middleware/errorHandler");
 const request_logger_1 = require("./middleware/request-logger");
 const rate_limiter_1 = require("./middleware/rate-limiter");
 const batch_operations_1 = require("./middleware/batch-operations");
 const compression_1 = require("./middleware/compression");
 const performance_1 = __importDefault(require("./routes/performance"));
 const deployment_1 = __importDefault(require("./routes/deployment"));
+const health_1 = __importDefault(require("./routes/health"));
+const env_1 = require("./config/env");
+const sentry_1 = require("./config/sentry");
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
 // When running locally with npm run dev, load from .env.local
 dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../.env.local') });
+// ================================================
+// PHASE 0 COMPLIANCE: VALIDATE ENVIRONMENT
+// ================================================
+// Fail-fast if required environment variables are missing
+(0, env_1.validateEnv)();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || process.env.API_PORT || 3000;
+// ================================================
+// PHASE 0 COMPLIANCE: INITIALIZE SENTRY MONITORING
+// ================================================
+// Error tracking (graceful degradation if SENTRY_DSN not set)
+(0, sentry_1.initSentry)();
 // ================================================
 // MIDDLEWARE
 // ================================================
@@ -74,8 +93,11 @@ function getSupabase() {
     return supabase;
 }
 // ================================================
-// HEALTH CHECK
+// HEALTH CHECK (PHASE 0 COMPLIANCE)
 // ================================================
+// Mount comprehensive health check endpoint
+app.use('/api', health_1.default);
+// Legacy health endpoint for backwards compatibility
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
@@ -100,6 +122,21 @@ app.use('/api/smartthings', smartthings_1.default);
 app.use('/api/chores', chores_1.default);
 // Learning endpoints: Lessons, quizzes, progress, stats
 app.use('/api/learning', learning_1.default);
+// ================================================
+// PHASE 2 FEATURES: Dashboard & Home Automation
+// ================================================
+// Announcements endpoints: Family messaging
+app.use('/api/announcements', announcements_1.default);
+// Reminders endpoints: Notifications & scheduling
+app.use('/api/reminders', reminders_1.default);
+// Energy tracking endpoints: SmartThings power consumption
+app.use('/api/energy', energy_1.default);
+// Calendar endpoints: Family events & scheduling
+app.use('/api/calendar', calendar_1.default);
+// Family management endpoints: Members, roles, settings
+app.use('/api/family', family_1.default);
+// Activity log endpoints: Dashboard activity feed
+app.use('/api/activity', activity_log_1.default);
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', external_apis_1.default);
 // Performance monitoring: Metrics, diagnostics, health
@@ -186,7 +223,8 @@ app.use((req, res) => {
 // ================================================
 // ERROR HANDLER (MUST BE LAST)
 // ================================================
-app.use((0, error_handler_1.errorHandler)());
+// Uses errorHandler with PII scrubbing (PHASE 0 COMPLIANCE - Decision 29: COPPA)
+app.use(errorHandler_1.errorHandler);
 // ================================================
 // START SERVER
 // ================================================

@@ -8,8 +8,10 @@ import {
   useCalendar,
   useFamily,
   useEnergy,
+  useWeather,
+  useShoppingList,
 } from '../hooks';
-import { Wifi, BookOpen, CheckCircle, TrendingUp, Bell, Calendar, Zap, Users } from 'lucide-react';
+import { Wifi, BookOpen, CheckCircle, TrendingUp, Bell, Calendar, Zap, Users, Cloud, Droplets, Wind, ShoppingCart, Check } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -22,6 +24,8 @@ export default function Dashboard() {
   const { upcomingEvents, loading: calLoading, googleConnected, connectGoogle } = useCalendar();
   const { family, members, loading: famLoading } = useFamily();
   const { currentMonth, goals, loading: enerLoading } = useEnergy();
+  const { weather, loading: weatherLoading } = useWeather();
+  const { items: shoppingItems, loading: shoppingLoading } = useShoppingList();
 
   // Phase 1 Features: Keep existing API calls
   const [userPoints, setUserPoints] = useState(0);
@@ -50,7 +54,7 @@ export default function Dashboard() {
     loadData();
   }, [user?.id]);
 
-  const pageLoading = isLoading || annLoading || remLoading || actLoading || calLoading || famLoading || enerLoading;
+  const pageLoading = isLoading || annLoading || remLoading || actLoading || calLoading || famLoading || enerLoading || weatherLoading || shoppingLoading;
 
   if (isLoading && pageLoading) {
     return (
@@ -108,6 +112,55 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Weather Card */}
+      {weather && (
+        <div className="card mb-8 bg-gradient-to-br from-blue-50 to-cyan-50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Cloud className="w-6 h-6 text-blue-600" />
+              <h2 className="text-2xl font-bold">Weather</h2>
+            </div>
+            <span className="text-4xl">{weather.current.icon}</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <p className="text-sm text-gray-600">Current</p>
+              <p className="text-3xl font-bold text-blue-600">{weather.current.temp}°F</p>
+              <p className="text-sm text-gray-600">{weather.current.condition}</p>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-blue-500" />
+                <span className="text-sm text-gray-600">Humidity</span>
+              </div>
+              <p className="text-2xl font-bold">{weather.current.humidity}%</p>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <Wind className="w-4 h-4 text-blue-500" />
+                <span className="text-sm text-gray-600">Wind</span>
+              </div>
+              <p className="text-2xl font-bold">{weather.current.windSpeed} mph</p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-3">5-Day Forecast</p>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {weather.forecast.map((day) => (
+                <div key={day.day} className="bg-white p-3 rounded-lg text-center">
+                  <p className="text-xs font-medium text-gray-600">{day.day}</p>
+                  <p className="text-2xl my-2">{day.icon}</p>
+                  <p className="text-xs text-gray-600">{day.high}° / {day.low}°</p>
+                  <p className="text-xs text-gray-500">{day.condition}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Phase 2 Features: Announcements & Reminders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -279,6 +332,51 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Shopping List Widget */}
+      <div className="card mb-8 bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="flex items-center gap-2 mb-4">
+          <ShoppingCart className="w-6 h-6 text-green-600" />
+          <h2 className="text-2xl font-bold">Shopping List</h2>
+        </div>
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {shoppingItems && shoppingItems.length > 0 ? (
+            shoppingItems.map((item) => (
+              <div
+                key={item.id}
+                className={`p-3 rounded-lg flex items-start gap-3 ${
+                  item.completed
+                    ? 'bg-gray-100 opacity-60'
+                    : 'bg-white border-l-4 border-green-400'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={item.completed}
+                  onChange={() => {}}
+                  className="mt-1 w-4 h-4 text-green-600 rounded"
+                />
+                <div className="flex-1">
+                  <p className={`font-medium text-sm ${item.completed ? 'line-through text-gray-500' : ''}`}>
+                    {item.name}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {item.quantity} {item.unit} • {item.category} • Added by {item.addedBy}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500 text-sm text-center py-4">No items on the list</p>
+          )}
+        </div>
+        <button
+          onClick={() => navigate('/shopping-list')}
+          className="btn btn-secondary w-full mt-4 text-xs"
+        >
+          View Full List
+        </button>
       </div>
 
       {/* Family & Recent Activity */}
