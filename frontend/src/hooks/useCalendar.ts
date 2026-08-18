@@ -147,10 +147,26 @@ export function useCalendar(): UseCalendarReturn {
 
   const connectGoogle = async (): Promise<string> => {
     try {
-      if (!user?.id) throw new Error('User not authenticated');
+      let userId = user?.id;
 
+      // Fallback: try to decode user ID from token
+      if (!userId) {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          try {
+            const decoded = JSON.parse(atob(token));
+            userId = decoded.sub || decoded.id;
+          } catch (e) {
+            // Not a demo token
+          }
+        }
+      }
+
+      if (!userId) throw new Error('User not authenticated');
+
+      console.log('Connecting to Google Calendar with user ID:', userId);
       const response = await apiClient.get('/api/calendar/auth/google', {
-        headers: { 'x-user-id': user.id },
+        headers: { 'x-user-id': userId },
       });
 
       const authUrl = response.data?.authUrl;
