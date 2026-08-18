@@ -115,8 +115,8 @@ export default function Dashboard() {
         <div className="card bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900 dark:to-primary-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium">Total Points</p>
-              <p className="text-4xl font-bold text-primary-600 mt-2">{userPoints}</p>
+              <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">Total Points</p>
+              <p className="text-4xl font-bold text-primary-600 dark:text-primary-300 mt-2">{userPoints}</p>
             </div>
             <span className="text-5xl">⭐</span>
           </div>
@@ -125,8 +125,8 @@ export default function Dashboard() {
         <div className="card bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900 dark:to-secondary-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium">Badges Earned</p>
-              <p className="text-4xl font-bold text-secondary-600 mt-2">{totalBadges}</p>
+              <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">Badges Earned</p>
+              <p className="text-4xl font-bold text-secondary-600 dark:text-secondary-300 mt-2">{totalBadges}</p>
             </div>
             <span className="text-5xl">🏆</span>
           </div>
@@ -135,8 +135,8 @@ export default function Dashboard() {
         <div className="card bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900 dark:to-yellow-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium">Current Streak</p>
-              <p className="text-4xl font-bold text-yellow-600 mt-2">7 days</p>
+              <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">Current Streak</p>
+              <p className="text-4xl font-bold text-yellow-600 dark:text-yellow-300 mt-2">7 days</p>
             </div>
             <span className="text-5xl">🔥</span>
           </div>
