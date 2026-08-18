@@ -1,43 +1,37 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Calendar } from 'lucide-react';
 import { useCalendar } from '@hooks/useCalendar';
 
 interface CalendarEvent {
   id: string;
   title: string;
   time?: string;
-  startTime?: number; // minutes from midnight
+  startTime?: number;
   endTime?: number;
   allDay: boolean;
   type: 'google' | 'family' | 'reminder';
   priority: boolean;
   location?: string;
   description?: string;
-}
-
-interface DayEvents {
-  allDay: CalendarEvent[];
-  timed: CalendarEvent[];
+  summary?: string;
+  event_title?: string;
+  start?: { dateTime?: string; date?: string };
+  end?: { dateTime?: string; date?: string };
 }
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8am to 9pm
 
 function getEventColor(type: string): string {
   switch (type) {
     case 'google':
-      return 'bg-blue-500 text-white';
+      return 'bg-blue-100 border-blue-400 text-blue-900';
     case 'family':
-      return 'bg-green-500 text-white';
+      return 'bg-green-100 border-green-400 text-green-900';
     case 'reminder':
-      return 'bg-yellow-500 text-gray-900';
+      return 'bg-yellow-100 border-yellow-400 text-yellow-900';
     default:
-      return 'bg-gray-500 text-white';
+      return 'bg-gray-100 border-gray-400 text-gray-900';
   }
-}
-
-function getDeadlineColor(): string {
-  return 'bg-red-500 text-white';
 }
 
 export function WeekCalendar() {
@@ -78,52 +72,49 @@ export function WeekCalendar() {
     return `Week of ${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
   };
 
-  const organizeEventsByDay = (): Map<string, DayEvents> => {
-    const eventMap = new Map<string, DayEvents>();
+  const organizeEventsByDay = (): Map<string, CalendarEvent[]> => {
+    const eventMap = new Map<string, CalendarEvent[]>();
 
     weekDays.forEach((day) => {
       const dateKey = day.toISOString().split('T')[0];
-      eventMap.set(dateKey, { allDay: [], timed: [] });
+      eventMap.set(dateKey, []);
     });
 
     if (upcomingEvents) {
       upcomingEvents.forEach((event: any) => {
-        const eventDate = new Date(event.startTime || event.date);
+        const eventStartDate = event.start?.dateTime || event.start?.date || event.event_date || event.startTime;
+        if (!eventStartDate) return;
+
+        const eventDate = new Date(eventStartDate);
         const dateKey = eventDate.toISOString().split('T')[0];
 
         if (eventMap.has(dateKey)) {
           const calEvent: CalendarEvent = {
             id: event.id,
-            title: event.title,
-            time: event.startTime
-              ? new Date(event.startTime).toLocaleTimeString('en-US', {
+            title: event.summary || event.event_title || event.title || 'Untitled Event',
+            time: event.start?.dateTime
+              ? new Date(event.start.dateTime).toLocaleTimeString('en-US', {
                   hour: '2-digit',
                   minute: '2-digit',
+                  hour12: true,
                 })
               : undefined,
-            allDay: !event.startTime,
-            type: 'google', // TODO: determine type from event source
+            allDay: !event.start?.dateTime && !!event.start?.date,
+            type: event.source === 'google' ? 'google' : 'family',
             priority: false,
             location: event.location,
-            description: event.description,
+            description: event.description || event.event_description,
+            ...event,
           };
 
-          if (calEvent.allDay) {
-            eventMap.get(dateKey)!.allDay.push(calEvent);
-          } else {
-            eventMap.get(dateKey)!.timed.push(calEvent);
-          }
+          eventMap.get(dateKey)!.push(calEvent);
         }
       });
     }
 
-    // Sort events: deadlines first, then starred, then others
-    eventMap.forEach((dayEvents) => {
-      dayEvents.allDay.sort((a, b) => {
-        if (a.priority !== b.priority) return b.priority ? 1 : -1;
-        return 0;
-      });
-      dayEvents.timed.sort((a, b) => {
+    // Sort events: starred first, then others
+    eventMap.forEach((events) => {
+      events.sort((a, b) => {
         if (a.priority !== b.priority) return b.priority ? 1 : -1;
         return 0;
       });
@@ -153,9 +144,12 @@ export function WeekCalendar() {
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {formatWeekRange()}
-        </h2>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-primary-600" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {formatWeekRange()}
+          </h2>
+        </div>
         <button
           onClick={goToNextWeek}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
@@ -164,130 +158,105 @@ export function WeekCalendar() {
         </button>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="overflow-x-auto">
-        <div className="grid grid-cols-7 gap-2 min-w-full">
-          {/* Day Headers */}
-          {weekDays.map((day, idx) => (
+      {/* Simple Calendar Grid */}
+      <div className="grid grid-cols-7 gap-3">
+        {weekDays.map((day, idx) => {
+          const dateKey = day.toISOString().split('T')[0];
+          const dayEvents = eventsByDay.get(dateKey) || [];
+          const isToday = new Date().toDateString() === day.toDateString();
+
+          return (
             <div
               key={idx}
-              className="text-center pb-2 border-b-2 border-gray-200 dark:border-gray-700"
+              className={`rounded-lg border-2 p-3 min-h-32 flex flex-col ${
+                isToday
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900 dark:border-primary-400'
+                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700'
+              }`}
             >
-              <div className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                {DAYS[idx]}
-              </div>
-              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                {day.getDate()}
-              </div>
-            </div>
-          ))}
-
-          {/* All-Day Events Row */}
-          {weekDays.map((day, idx) => {
-            const dateKey = day.toISOString().split('T')[0];
-            const dayEvents = eventsByDay.get(dateKey)!;
-
-            return (
-              <div key={`allday-${idx}`} className="min-h-20 bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                {dayEvents.allDay.map((event) => (
-                  <div
-                    key={event.id}
-                    onClick={() => setSelectedEvent(event)}
-                    className={`${getEventColor(
-                      event.type
-                    )} text-xs p-1 rounded mb-1 cursor-pointer truncate flex items-center gap-1`}
-                  >
-                    {event.priority && <Star className="w-3 h-3 fill-current" />}
-                    <span className="truncate">{event.title}</span>
-                  </div>
-                ))}
-              </div>
-            );
-          })}
-
-          {/* Time Slots */}
-          {HOURS.map((hour) => (
-            <div key={`hour-${hour}`} className="col-span-7 flex">
-              {/* Hour label */}
-              <div className="w-16 flex-shrink-0 text-xs font-semibold text-gray-600 dark:text-gray-400 py-2">
-                {hour > 12 ? hour - 12 : hour}
-                {hour >= 12 ? 'pm' : 'am'}
+              {/* Day Header */}
+              <div className="mb-3 pb-2 border-b border-gray-300 dark:border-gray-600">
+                <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  {DAYS[idx]}
+                </div>
+                <div className={`text-lg font-bold ${isToday ? 'text-primary-600 dark:text-primary-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                  {day.getDate()}
+                </div>
               </div>
 
-              {/* Hour slots for each day */}
-              {weekDays.map((day, idx) => {
-                const dateKey = day.toISOString().split('T')[0];
-                const dayEvents = eventsByDay.get(dateKey)!;
-                const hourEvents = dayEvents.timed.filter((event) => {
-                  // TODO: implement time-based filtering
-                  return true;
-                });
-
-                return (
-                  <div
-                    key={`slot-${idx}-${hour}`}
-                    className="flex-1 border-l border-gray-200 dark:border-gray-700 p-1 min-h-16"
-                  >
-                    {hourEvents.slice(0, 2).map((event) => (
-                      <div
-                        key={event.id}
-                        onClick={() => setSelectedEvent(event)}
-                        className={`${getEventColor(
-                          event.type
-                        )} text-xs p-1 rounded mb-1 cursor-pointer truncate flex items-center gap-1`}
-                      >
-                        {event.priority && <Star className="w-3 h-3 fill-current" />}
-                        <span className="truncate">{event.title}</span>
+              {/* Events */}
+              <div className="flex-1 space-y-2 overflow-y-auto">
+                {dayEvents.length === 0 ? (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">No events</p>
+                ) : (
+                  dayEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      onClick={() => setSelectedEvent(event)}
+                      className={`text-xs p-2 rounded border-l-3 cursor-pointer hover:shadow-md transition ${getEventColor(event.type)}`}
+                    >
+                      <div className="flex items-start gap-1">
+                        {event.priority && <Star className="w-3 h-3 flex-shrink-0 fill-current mt-0.5" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{event.title}</p>
+                          {event.time && <p className="text-xs opacity-75">{event.time}</p>}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                );
-              })}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
       {/* Event Detail Modal */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className={`w-4 h-4 rounded ${getEventColor(selectedEvent.type).split(' ')[0]}`}></div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {selectedEvent.title}
-                </h3>
+              <div className="flex items-center gap-2 flex-1">
+                <span className={`w-3 h-3 rounded-full flex-shrink-0 ${getEventColor(selectedEvent.type).split(' ')[0]}`}></span>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    {selectedEvent.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {selectedEvent.type === 'google' ? '📅 Google Calendar' : '👨‍👩‍👧 Family Event'}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
               >
                 ✕
               </button>
             </div>
 
             {selectedEvent.time && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                {selectedEvent.time}
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                🕐 {selectedEvent.time}
               </p>
             )}
 
             {selectedEvent.location && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                 📍 {selectedEvent.location}
               </p>
             )}
 
             {selectedEvent.description && (
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded">
                 {selectedEvent.description}
               </p>
             )}
 
-            <div className="flex gap-2">
-              <button className="flex-1 btn btn-primary text-sm">Details</button>
-              <button className="flex-1 btn btn-secondary text-sm">Edit</button>
+            <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button className="flex-1 btn btn-secondary text-sm" onClick={() => setSelectedEvent(null)}>
+                Close
+              </button>
             </div>
           </div>
         </div>
