@@ -75,12 +75,12 @@ export default function Dashboard() {
     <div className="container py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Welcome, {user?.name}!</h1>
-          <p className="text-gray-600">Here's your activity overview</p>
+          <h1 className="text-4xl font-bold mb-2 dark:text-gray-100">Welcome, {user?.name}!</h1>
+          <p className="text-gray-600 dark:text-gray-400">Here's your activity overview</p>
         </div>
         <button
           onClick={toggleNightMode}
-          className="p-2 rounded-lg hover:bg-gray-100 transition"
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
           title={isNightMode ? 'Disable night mode' : 'Enable night mode'}
         >
           {isNightMode ? (

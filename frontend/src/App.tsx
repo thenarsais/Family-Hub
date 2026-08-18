@@ -28,7 +28,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:text-gray-100">
         {isAuthenticated && <Navigation />}
 
         <Routes>
