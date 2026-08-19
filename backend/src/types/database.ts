@@ -375,6 +375,33 @@ export type Database = {
           },
         ]
       }
+      dismissed_events: {
+        Row: {
+          calendar_id: string | null
+          created_at: string
+          dismissed_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          calendar_id?: string | null
+          created_at?: string
+          dismissed_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          calendar_id?: string | null
+          created_at?: string
+          dismissed_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_events: {
         Row: {
           created_at: string | null
@@ -1873,6 +1900,45 @@ export type Database = {
           password_hash?: string | null
           role?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_integrations: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          provider: string
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          provider: string
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          provider?: string
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
