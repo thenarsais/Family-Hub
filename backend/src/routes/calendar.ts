@@ -44,6 +44,14 @@ router.get('/events', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Failed to fetch events:', error);
+    // Handle token refresh errors
+    if (error.status === 401 || error.code === 'TOKEN_REFRESH_FAILED' || error.code === 'NO_REFRESH_TOKEN') {
+      return res.status(401).json({
+        status: 'error',
+        code: error.code || 'TOKEN_REFRESH_FAILED',
+        message: error.message || 'Google Calendar authorization expired. Please re-authenticate.',
+      });
+    }
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch events',
@@ -86,6 +94,14 @@ router.get('/upcoming', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Failed to fetch upcoming events:', error);
+    // Handle token refresh errors
+    if (error.status === 401 || error.code === 'TOKEN_REFRESH_FAILED' || error.code === 'NO_REFRESH_TOKEN') {
+      return res.status(401).json({
+        status: 'error',
+        code: error.code || 'TOKEN_REFRESH_FAILED',
+        message: error.message || 'Google Calendar authorization expired. Please re-authenticate.',
+      });
+    }
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch upcoming events',

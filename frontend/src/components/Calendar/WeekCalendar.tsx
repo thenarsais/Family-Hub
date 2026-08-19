@@ -56,7 +56,7 @@ function getDateKeyWithTimezone(date: Date, timezone?: string): string {
 
 
 export function WeekCalendar() {
-  const { upcomingEvents, loading } = useCalendar();
+  const { upcomingEvents, loading, tokenExpired, connectGoogle } = useCalendar();
   const { user, isLoading: authLoading } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -221,6 +221,28 @@ export function WeekCalendar() {
 
   return (
     <div className="card mb-8 bg-white dark:bg-gray-800 p-6">
+      {/* Token Expiration Alert */}
+      {tokenExpired && (
+        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+                🔐 Google Calendar authorization expired
+              </p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                Please re-authorize to sync your Google Calendar events
+              </p>
+            </div>
+            <button
+              onClick={() => connectGoogle()}
+              className="ml-4 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded transition"
+            >
+              Re-authorize
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Week Navigation */}
       <div className="flex items-center justify-between mb-6">
         <button

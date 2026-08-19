@@ -125,13 +125,25 @@ class GoogleOAuthService {
   /**
    * Refresh access token using refresh token
    */
-  async refreshAccessToken(refreshToken: string): Promise<GoogleAuthToken> {
+  async refreshAccessToken(refreshToken: string, userId?: string): Promise<GoogleAuthToken> {
     try {
       this.oauth2Client.setCredentials({ refresh_token: refreshToken });
       const { credentials } = await this.oauth2Client.refreshAccessToken();
       return credentials;
     } catch (error) {
       console.error('Failed to refresh access token:', error);
+      // Mark integration as inactive if refresh fails (token revoked or expired)
+      if (userId) {
+        try {
+          await getSupabase()
+            .from('user_integrations')
+            .update({ is_active: false })
+            .eq('user_id', userId)
+            .eq('provider', 'google_calendar');
+        } catch (updateError) {
+          console.error('Failed to mark integration as inactive:', updateError);
+        }
+      }
       throw error;
     }
   }
@@ -149,11 +161,24 @@ class GoogleOAuthService {
 
       if (token.expires_in < 300) {
         if (token.refresh_token) {
-          const newToken = await this.refreshAccessToken(token.refresh_token);
-          await this.storeUserToken(userId, newToken);
-          token = newToken;
+          try {
+            const newToken = await this.refreshAccessToken(token.refresh_token, userId);
+            await this.storeUserToken(userId, newToken);
+            token = newToken;
+          } catch (refreshError) {
+            console.error(`Token refresh failed for user ${userId}:`, refreshError);
+            throw {
+              code: 'TOKEN_REFRESH_FAILED',
+              message: 'Google Calendar authorization expired. Please re-authenticate.',
+              status: 401,
+            };
+          }
         } else {
-          return [];
+          throw {
+            code: 'NO_REFRESH_TOKEN',
+            message: 'Google Calendar authorization expired. Please re-authenticate.',
+            status: 401,
+          };
         }
       }
 
@@ -186,12 +211,25 @@ class GoogleOAuthService {
 
       if (token.expires_in < 300) {
         if (token.refresh_token) {
-          const newToken = await this.refreshAccessToken(token.refresh_token);
-          await this.storeUserToken(userId, newToken);
-          token = newToken;
+          try {
+            const newToken = await this.refreshAccessToken(token.refresh_token, userId);
+            await this.storeUserToken(userId, newToken);
+            token = newToken;
+          } catch (refreshError) {
+            console.error(`Token refresh failed for user ${userId}:`, refreshError);
+            throw {
+              code: 'TOKEN_REFRESH_FAILED',
+              message: 'Google Calendar authorization expired. Please re-authenticate.',
+              status: 401,
+            };
+          }
         } else {
           console.warn(`Cannot refresh token for user ${userId}, no refresh token available`);
-          return [];
+          throw {
+            code: 'NO_REFRESH_TOKEN',
+            message: 'Google Calendar authorization expired. Please re-authenticate.',
+            status: 401,
+          };
         }
       }
 
