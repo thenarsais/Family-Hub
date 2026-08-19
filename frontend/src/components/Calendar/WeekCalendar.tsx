@@ -17,6 +17,9 @@ interface CalendarEvent {
   event_title?: string;
   start?: { dateTime?: string; date?: string };
   end?: { dateTime?: string; date?: string };
+  calendarId?: string;
+  calendarName?: string;
+  calendarColor?: string;
 }
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -197,6 +200,13 @@ export function WeekCalendar() {
                     >
                       <div className="flex items-start gap-1">
                         {event.priority && <Star className="w-3 h-3 flex-shrink-0 fill-current mt-0.5" />}
+                        {event.calendarColor && (
+                          <div
+                            className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
+                            style={{ backgroundColor: event.calendarColor }}
+                            title={event.calendarName}
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{event.title}</p>
                           {event.time && <p className="text-xs opacity-75">{event.time}</p>}
@@ -217,13 +227,16 @@ export function WeekCalendar() {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2 flex-1">
-                <span className={`w-3 h-3 rounded-full flex-shrink-0 ${getEventColor(selectedEvent.type).split(' ')[0]}`}></span>
+                <span
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: selectedEvent.calendarColor || '#3b82f6' }}
+                ></span>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {selectedEvent.title}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                    {selectedEvent.type === 'google' ? '📅 Google Calendar' : '👨‍👩‍👧 Family Event'}
+                    📅 {selectedEvent.calendarName || 'Google Calendar'}
                   </p>
                 </div>
               </div>

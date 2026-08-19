@@ -17,6 +17,18 @@ interface GoogleCalendarEvent {
   end?: { dateTime?: string | null; date?: string | null } | null;
   location?: string | null;
   attendees?: Array<{ email?: string }> | null;
+  calendarId?: string;
+  calendarName?: string;
+  calendarColor?: string;
+}
+
+interface GoogleCalendar {
+  id: string;
+  summary: string;
+  description?: string;
+  backgroundColor?: string;
+  foregroundColor?: string;
+  primary?: boolean;
 }
 
 class GoogleOAuthService {
@@ -125,13 +137,45 @@ class GoogleOAuthService {
   }
 
   /**
-   * Fetch user's Google Calendar events
+   * List all calendars for the user
+   */
+  async listCalendars(userId: string): Promise<GoogleCalendar[]> {
+    try {
+      let token = await this.getUserToken(userId);
+      if (!token) {
+        console.warn(`No Google Calendar token found for user ${userId}`);
+        return [];
+      }
+
+      if (token.expires_in < 300) {
+        if (token.refresh_token) {
+          const newToken = await this.refreshAccessToken(token.refresh_token);
+          await this.storeUserToken(userId, newToken);
+          token = newToken;
+        } else {
+          return [];
+        }
+      }
+
+      const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+      this.oauth2Client.setCredentials({ access_token: token.access_token });
+
+      const response = await calendar.calendarList.list();
+      return (response.data.items as GoogleCalendar[]) || [];
+    } catch (error) {
+      console.error(`Failed to list calendars for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch user's Google Calendar events from ALL calendars
    */
   async getCalendarEvents(
     userId: string,
     timeMin?: string,
     timeMax?: string,
-    maxResults: number = 10,
+    maxResults: number = 50,
   ): Promise<GoogleCalendarEvent[]> {
     try {
       let token = await this.getUserToken(userId);
@@ -140,7 +184,6 @@ class GoogleOAuthService {
         return [];
       }
 
-      // Check if token is expired and refresh if needed
       if (token.expires_in < 300) {
         if (token.refresh_token) {
           const newToken = await this.refreshAccessToken(token.refresh_token);
@@ -152,20 +195,48 @@ class GoogleOAuthService {
         }
       }
 
-      // Fetch events from Google Calendar API
       const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
       this.oauth2Client.setCredentials({ access_token: token.access_token });
 
-      const response = await calendar.events.list({
-        calendarId: 'primary',
-        timeMin: timeMin || new Date().toISOString(),
-        timeMax: timeMax,
-        maxResults,
-        singleEvents: true,
-        orderBy: 'startTime',
-      });
+      // Get all calendars
+      const calendarListResponse = await calendar.calendarList.list();
+      const calendars = (calendarListResponse.data.items as GoogleCalendar[]) || [];
 
-      return (response.data.items as GoogleCalendarEvent[]) || [];
+      // Fetch events from all calendars
+      const allEvents: GoogleCalendarEvent[] = [];
+
+      for (const cal of calendars) {
+        try {
+          const response = await calendar.events.list({
+            calendarId: cal.id,
+            timeMin: timeMin || new Date().toISOString(),
+            timeMax: timeMax,
+            maxResults: Math.floor(maxResults / calendars.length) || 10,
+            singleEvents: true,
+            orderBy: 'startTime',
+          });
+
+          const events = (response.data.items as GoogleCalendarEvent[]) || [];
+
+          // Add calendar metadata to each event
+          events.forEach(event => {
+            event.calendarId = cal.id;
+            event.calendarName = cal.summary;
+            event.calendarColor = cal.backgroundColor;
+          });
+
+          allEvents.push(...events);
+        } catch (err) {
+          console.warn(`Failed to fetch events from calendar ${cal.summary}:`, err);
+        }
+      }
+
+      // Sort by start time
+      return allEvents.sort((a, b) => {
+        const aTime = a.start?.dateTime || a.start?.date || '';
+        const bTime = b.start?.dateTime || b.start?.date || '';
+        return new Date(aTime).getTime() - new Date(bTime).getTime();
+      });
     } catch (error) {
       console.error(`Failed to fetch Google Calendar events for user ${userId}:`, error);
       throw error;
