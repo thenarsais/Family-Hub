@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Calendar, Ban } from 'lucide-react';
 import { useCalendar } from '@hooks/useCalendar';
 
 interface CalendarEvent {
@@ -41,6 +41,40 @@ export function WeekCalendar() {
   const { upcomingEvents, loading } = useCalendar();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [dismissedEventIds, setDismissedEventIds] = useState<Set<string>>(new Set());
+
+  const dismissEvent = async (eventId: string, calendarId?: string) => {
+    setDismissedEventIds(prev => new Set([...prev, eventId]));
+
+    try {
+      await fetch(`/api/calendar/events/${eventId}/dismiss`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': 'parent-001' },
+        body: JSON.stringify({ calendarId }),
+      });
+    } catch (error) {
+      console.error('Failed to dismiss event:', error);
+    }
+  };
+
+  // Load dismissed events on mount
+  useEffect(() => {
+    const loadDismissedEvents = async () => {
+      try {
+        const response = await fetch('/api/calendar/dismissed', {
+          headers: { 'x-user-id': 'parent-001' },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const ids = new Set(data.data?.map((d: any) => d.event_id) || []);
+          setDismissedEventIds(ids);
+        }
+      } catch (error) {
+        console.error('Failed to load dismissed events:', error);
+      }
+    };
+    loadDismissedEvents();
+  }, []);
 
   // Get start of week (Monday)
   const getWeekStart = (date: Date) => {
@@ -85,6 +119,8 @@ export function WeekCalendar() {
 
     if (upcomingEvents) {
       upcomingEvents.forEach((event: any) => {
+        if (dismissedEventIds.has(event.id)) return;
+
         const eventStartDate = event.start?.dateTime || event.start?.date || event.event_date || event.startTime;
         if (!eventStartDate) return;
 
@@ -195,8 +231,7 @@ export function WeekCalendar() {
                   dayEvents.map((event) => (
                     <div
                       key={event.id}
-                      onClick={() => setSelectedEvent(event)}
-                      className={`text-xs p-2 rounded border-l-3 cursor-pointer hover:shadow-md transition ${getEventColor(event.type)}`}
+                      className={`text-xs p-2 rounded border-l-3 hover:shadow-md transition group ${getEventColor(event.type)}`}
                     >
                       <div className="flex items-start gap-1">
                         {event.priority && <Star className="w-3 h-3 flex-shrink-0 fill-current mt-0.5" />}
@@ -207,10 +242,23 @@ export function WeekCalendar() {
                             title={event.calendarName}
                           />
                         )}
-                        <div className="flex-1 min-w-0">
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => setSelectedEvent(event)}
+                        >
                           <p className="font-medium truncate">{event.title}</p>
                           {event.time && <p className="text-xs opacity-75">{event.time}</p>}
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dismissEvent(event.id, event.calendarId);
+                          }}
+                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition hover:text-red-500"
+                          title="Dismiss event"
+                        >
+                          <Ban className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
                   ))

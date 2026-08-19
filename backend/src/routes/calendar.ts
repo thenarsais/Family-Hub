@@ -360,4 +360,94 @@ router.post('/google/disconnect', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/calendar/dismissed
+ * Get list of dismissed events for the user
+ */
+router.get('/dismissed', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'User ID required',
+      });
+    }
+
+    const { data, error } = await require('../services/supabase').getSupabase()
+      .from('dismissed_events')
+      .select('event_id, calendar_id, dismissed_at')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    res.json({
+      status: 'success',
+      data: data || [],
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Failed to fetch dismissed events:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch dismissed events',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * POST /api/calendar/events/:id/dismiss
+ * Dismiss/hide an event from the calendar
+ */
+router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    const { id } = req.params;
+    const { calendarId } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'User ID required',
+      });
+    }
+
+    if (!id) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Event ID required',
+      });
+    }
+
+    // Store dismissal in database
+    const { error } = await require('../services/supabase').getSupabase()
+      .from('dismissed_events')
+      .upsert({
+        user_id: userId,
+        event_id: id,
+        calendar_id: calendarId,
+        dismissed_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id,event_id',
+      });
+
+    if (error) throw error;
+
+    res.json({
+      status: 'success',
+      message: 'Event dismissed successfully',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('Failed to dismiss event:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to dismiss event',
+      error: error.message,
+    });
+  }
+});
+
 export default router;
