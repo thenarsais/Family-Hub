@@ -51,65 +51,50 @@ export function useCalendar(): UseCalendarReturn {
 
       if (!user?.id) return;
 
-      try {
-        const [eventsResponse, upcomingResponse] = await Promise.all([
-          apiClient.get('/api/calendar/events', {
-            headers: { 'x-user-id': user.id },
-          }),
-          apiClient.get('/api/calendar/upcoming', {
-            headers: { 'x-user-id': user.id },
-          }),
-        ]);
-
-        const localEvents = eventsResponse.data?.data || [];
-        const localUpcoming = upcomingResponse.data?.data || [];
-
-        // Try to fetch Google events, but don't fail if token is expired
-        let googleEvents: CalendarEvent[] = [];
-        try {
-          const googleEventsResponse = await apiClient.get('/api/calendar/google/events', {
-            headers: { 'x-user-id': user.id },
-          });
-          googleEvents = googleEventsResponse.data?.data || [];
-          setGoogleConnected(googleEvents.length > 0);
-        } catch (googleErr: any) {
-          if (googleErr.response?.status === 401) {
-            // Google token expired - set flag but continue showing local events
+      const [eventsResponse, upcomingResponse, googleEventsResponse] = await Promise.all([
+        apiClient.get('/api/calendar/events', {
+          headers: { 'x-user-id': user.id },
+        }).catch(() => ({ data: { data: [] } })),
+        apiClient.get('/api/calendar/upcoming', {
+          headers: { 'x-user-id': user.id },
+        }).catch(() => ({ data: { data: [] } })),
+        apiClient.get('/api/calendar/google/events', {
+          headers: { 'x-user-id': user.id },
+        }).catch((err) => {
+          // Handle Google token expiration specifically
+          if (err.response?.status === 401) {
             setTokenExpired(true);
             console.warn('Google Calendar token expired. Please re-authenticate.');
-            setGoogleConnected(false);
           } else {
-            // Other errors - just log and continue
-            console.warn('Failed to fetch Google events:', googleErr);
+            console.warn('Failed to fetch Google events:', err);
           }
-        }
+          return { data: { data: [] } };
+        }),
+      ]);
 
-        // Mark events with their source
-        const localEventsWithSource = localEvents.map((e: any) => ({ ...e, source: 'local' }));
-        const googleEventsWithSource = googleEvents.map((e: any) => ({ ...e, source: 'google' }));
+      const localEvents = eventsResponse.data?.data || [];
+      const localUpcoming = upcomingResponse.data?.data || [];
+      const googleEvents = googleEventsResponse.data?.data || [];
 
-        // Merge events (Google events first, then local)
-        const mergedEvents = [...googleEventsWithSource, ...localEventsWithSource];
+      // Mark events with their source
+      const localEventsWithSource = localEvents.map((e: any) => ({ ...e, source: 'local' }));
+      const googleEventsWithSource = googleEvents.map((e: any) => ({ ...e, source: 'google' }));
 
-        // Filter upcoming from merged events
-        const now = new Date();
-        const upcomingMerged = mergedEvents
-          .filter((e: any) => {
-            const eventDate = e.event_date || e.start?.dateTime || e.start?.date;
-            return eventDate && new Date(eventDate) >= now;
-          })
-          .slice(0, 10);
+      // Merge events (Google events first, then local)
+      const mergedEvents = [...googleEventsWithSource, ...localEventsWithSource];
 
-        setEvents(mergedEvents);
-        setUpcomingEvents(upcomingMerged.length > 0 ? upcomingMerged : localUpcoming);
-      } catch (err: any) {
-        if (err.response?.status === 401) {
-          setTokenExpired(true);
-          setError('Google Calendar authorization expired');
-        } else {
-          setError(err.message || 'Failed to fetch calendar events');
-        }
-      }
+      // Filter upcoming from merged events
+      const now = new Date();
+      const upcomingMerged = mergedEvents
+        .filter((e: any) => {
+          const eventDate = e.event_date || e.start?.dateTime || e.start?.date;
+          return eventDate && new Date(eventDate) >= now;
+        })
+        .slice(0, 10);
+
+      setEvents(mergedEvents);
+      setUpcomingEvents(upcomingMerged.length > 0 ? upcomingMerged : localUpcoming);
+      setGoogleConnected(googleEvents.length > 0);
     } catch (err: any) {
       console.error('Failed to fetch calendar events:', err);
       setError(err.message || 'Failed to fetch calendar events');
