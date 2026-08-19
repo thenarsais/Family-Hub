@@ -175,7 +175,7 @@ class GoogleOAuthService {
     userId: string,
     timeMin?: string,
     timeMax?: string,
-    maxResults: number = 50,
+    maxResults: number = 150,
   ): Promise<GoogleCalendarEvent[]> {
     try {
       let token = await this.getUserToken(userId);
