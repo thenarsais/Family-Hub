@@ -58,7 +58,7 @@ app.use(express.json());
 app.use(compression(compressionPresets.standard)); // Response compression
 app.use(responseFormatter()); // Standard response formatting
 app.use(requestLogger()); // Request logging
-app.use(rateLimit(rateLimitPresets.standard)); // Rate limiting
+app.use(rateLimit(rateLimitPresets.lenient)); // Rate limiting (lenient for dev)
 app.use(batchOperations()); // Batch operations support
 
 // Lazy-initialize Supabase

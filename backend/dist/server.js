@@ -131,6 +131,10 @@ app.use('/api/announcements', announcements_1.default);
 app.use('/api/reminders', reminders_1.default);
 // Energy tracking endpoints: SmartThings power consumption
 app.use('/api/energy', energy_1.default);
+// Google OAuth callback redirect (legacy path for OAuth compatibility)
+app.get('/auth/google/callback', (req, res) => {
+    res.redirect(`/api/calendar/auth/google/callback?${new URLSearchParams(req.query).toString()}`);
+});
 // Calendar endpoints: Family events & scheduling
 app.use('/api/calendar', calendar_1.default);
 // Family management endpoints: Members, roles, settings

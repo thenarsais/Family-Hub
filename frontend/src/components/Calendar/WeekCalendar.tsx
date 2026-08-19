@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Star, Calendar, Ban } from 'lucide-react';
 import { useCalendar } from '@hooks/useCalendar';
+import { useAuth } from '@hooks/useAuth';
 
 interface CalendarEvent {
   id: string;
@@ -39,30 +40,47 @@ function getEventColor(type: string): string {
 
 export function WeekCalendar() {
   const { upcomingEvents, loading } = useCalendar();
+  const { user, isLoading: authLoading } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [dismissedEventIds, setDismissedEventIds] = useState<Set<string>>(new Set());
 
   const dismissEvent = async (eventId: string, calendarId?: string) => {
+    if (!user?.id) {
+      console.error('User not authenticated');
+      return;
+    }
+
     setDismissedEventIds(prev => new Set([...prev, eventId]));
 
     try {
       await fetch(`/api/calendar/events/${eventId}/dismiss`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': 'parent-001' },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
         body: JSON.stringify({ calendarId }),
       });
     } catch (error) {
       console.error('Failed to dismiss event:', error);
+      // Revert UI state on error
+      setDismissedEventIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(eventId);
+        return newSet;
+      });
     }
   };
 
-  // Load dismissed events on mount
+  // Load dismissed events once user is authenticated
   useEffect(() => {
+    // Wait for auth to load and user to be available
+    if (authLoading || !user?.id) {
+      return;
+    }
+
     const loadDismissedEvents = async () => {
       try {
         const response = await fetch('/api/calendar/dismissed', {
-          headers: { 'x-user-id': 'parent-001' },
+          headers: { 'x-user-id': user.id },
         });
         if (response.ok) {
           const data = await response.json();
@@ -73,8 +91,9 @@ export function WeekCalendar() {
         console.error('Failed to load dismissed events:', error);
       }
     };
+
     loadDismissedEvents();
-  }, []);
+  }, [user?.id, authLoading]);
 
   // Get start of week (Monday)
   const getWeekStart = (date: Date) => {
