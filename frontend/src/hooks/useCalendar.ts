@@ -91,6 +91,32 @@ export function useCalendar(): UseCalendarReturn {
     }
   };
 
+  // Auto-connect Google Calendar on first load
+  useEffect(() => {
+    const autoConnectGoogle = async () => {
+      if (!user?.id) return;
+
+      try {
+        // Try to get OAuth URL - this will redirect to Google if needed
+        const authResponse = await apiClient.get('/api/calendar/auth/google', {
+          headers: { 'x-user-id': user.id },
+        });
+
+        if (authResponse.data?.data?.authUrl) {
+          // Redirect to Google OAuth
+          window.location.href = authResponse.data.data.authUrl;
+        } else if (authResponse.data?.data?.connected) {
+          // Already connected
+          setGoogleConnected(true);
+        }
+      } catch (err) {
+        console.warn('Failed to initiate Google Calendar OAuth:', err);
+      }
+    };
+
+    autoConnectGoogle();
+  }, [user?.id]);
+
   useEffect(() => {
     fetchEvents();
   }, [user?.id]);

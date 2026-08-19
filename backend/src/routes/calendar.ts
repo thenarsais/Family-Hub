@@ -218,7 +218,7 @@ router.delete('/events/:id', async (req: Request, res: Response) => {
 
 /**
  * GET /auth/google
- * Start Google OAuth flow
+ * Start Google OAuth flow or check if already connected
  */
 router.get('/auth/google', async (req: Request, res: Response) => {
   try {
@@ -231,10 +231,21 @@ router.get('/auth/google', async (req: Request, res: Response) => {
       });
     }
 
+    // Check if user already has a valid token
+    const existingToken = await googleOAuth.getUserToken(userId);
+    if (existingToken?.access_token) {
+      return res.json({
+        status: 'success',
+        data: { connected: true, authUrl: null },
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // No token exists, return OAuth URL
     const authUrl = googleOAuth.getAuthUrl(userId);
     res.json({
       status: 'success',
-      data: { authUrl },
+      data: { connected: false, authUrl },
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
@@ -266,18 +277,13 @@ router.get('/auth/google/callback', async (req: Request, res: Response) => {
     const token = await googleOAuth.exchangeCodeForToken(code as string);
     await googleOAuth.storeUserToken(userId, token);
 
-    res.json({
-      status: 'success',
-      message: 'Google Calendar connected successfully',
-      timestamp: new Date().toISOString(),
-    });
+    // Redirect back to dashboard with success parameter
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/dashboard?googleAuth=success`);
   } catch (error: any) {
     console.error('Failed to handle OAuth callback:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to connect Google Calendar',
-      error: error.message,
-    });
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/dashboard?googleAuth=error&message=${encodeURIComponent(error.message)}`);
   }
 });
 

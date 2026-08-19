@@ -38,6 +38,23 @@ function getEventColor(type: string): string {
   }
 }
 
+// Format date respecting timezone (fixes Issue #4: timezone bug)
+function getDateKeyWithTimezone(date: Date, timezone?: string): string {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone || undefined,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    return formatter.format(date);
+  } catch {
+    // Fallback to browser timezone if timezone is invalid
+    return date.toLocaleDateString('en-CA');
+  }
+}
+
+
 export function WeekCalendar() {
   const { upcomingEvents, loading } = useCalendar();
   const { user, isLoading: authLoading } = useAuth();
@@ -132,19 +149,29 @@ export function WeekCalendar() {
     const eventMap = new Map<string, CalendarEvent[]>();
 
     weekDays.forEach((day) => {
-      const dateKey = day.toISOString().split('T')[0];
+      const dateKey = getDateKeyWithTimezone(day);
       eventMap.set(dateKey, []);
     });
 
+    console.log('Organizing events. Total upcomingEvents:', upcomingEvents?.length || 0);
+
     if (upcomingEvents) {
       upcomingEvents.forEach((event: any) => {
-        if (dismissedEventIds.has(event.id)) return;
+        if (dismissedEventIds.has(event.id)) {
+          console.log('Event dismissed:', event.id);
+          return;
+        }
 
         const eventStartDate = event.start?.dateTime || event.start?.date || event.event_date || event.startTime;
-        if (!eventStartDate) return;
+        if (!eventStartDate) {
+          console.log('Event has no date:', event.id, event);
+          return;
+        }
 
         const eventDate = new Date(eventStartDate);
-        const dateKey = eventDate.toISOString().split('T')[0];
+        const dateKey = getDateKeyWithTimezone(eventDate, event.start?.timeZone);
+
+        console.log('Processing event:', event.summary || event.title, 'for date:', dateKey);
 
         if (eventMap.has(dateKey)) {
           const calEvent: CalendarEvent = {
@@ -219,7 +246,7 @@ export function WeekCalendar() {
       {/* Simple Calendar Grid */}
       <div className="grid grid-cols-7 gap-3">
         {weekDays.map((day, idx) => {
-          const dateKey = day.toISOString().split('T')[0];
+          const dateKey = getDateKeyWithTimezone(day);
           const dayEvents = eventsByDay.get(dateKey) || [];
           const isToday = new Date().toDateString() === day.toDateString();
 
@@ -263,7 +290,10 @@ export function WeekCalendar() {
                         )}
                         <div
                           className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() => setSelectedEvent(event)}
+                          onClick={() => {
+                            console.log('Event clicked:', event);
+                            setSelectedEvent(event);
+                          }}
                         >
                           <p className="font-medium truncate">{event.title}</p>
                           {event.time && <p className="text-xs opacity-75">{event.time}</p>}
@@ -290,7 +320,9 @@ export function WeekCalendar() {
 
       {/* Event Detail Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <>
+          {console.log('Modal rendering for event:', selectedEvent.title)}
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2 flex-1">
@@ -340,6 +372,7 @@ export function WeekCalendar() {
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   );
