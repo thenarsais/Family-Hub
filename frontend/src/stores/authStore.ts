@@ -22,23 +22,28 @@ interface AuthStore {
   loadCurrentUser: () => Promise<void>;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
+  initializeFromStorage: () => void;
 }
 
-// Initialize user from localStorage if available
-const initUser = (() => {
-  try {
-    const stored = localStorage.getItem('auth_user');
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-})();
-
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: initUser,
-  token: localStorage.getItem('auth_token') || null,
+export const useAuthStore = create<AuthStore>((set, get) => ({
+  user: null,
+  token: null,
   isLoading: false,
   error: null,
+
+  // Initialize store from localStorage
+  initializeFromStorage: () => {
+    try {
+      const storedToken = localStorage.getItem('auth_token');
+      const storedUser = localStorage.getItem('auth_user');
+      const user = storedUser ? JSON.parse(storedUser) : null;
+      console.log('[AUTH] Initializing from localStorage: token=', !!storedToken, 'user=', !!user);
+      set({ token: storedToken, user, isLoading: false });
+    } catch (error) {
+      console.error('[AUTH] Failed to initialize from localStorage:', error);
+      set({ token: null, user: null, isLoading: false });
+    }
+  },
 
   signup: async (email, password, name) => {
     set({ isLoading: true, error: null });

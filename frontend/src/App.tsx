@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { useAuthStore } from '@stores/authStore';
 
 // Pages (to be created)
 import Dashboard from '@pages/Dashboard';
@@ -15,6 +17,13 @@ import Navigation from '@components/Navigation';
 
 export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
+  const initializeFromStorage = useAuthStore((state) => state.initializeFromStorage);
+
+  // Initialize auth state from localStorage on app load
+  useEffect(() => {
+    console.log('[APP] Initializing auth state from localStorage');
+    initializeFromStorage();
+  }, [initializeFromStorage]);
 
   if (isLoading) {
     return (
