@@ -57,7 +57,7 @@ app.use(express_1.default.json());
 app.use((0, compression_1.compression)(compression_1.compressionPresets.standard)); // Response compression
 app.use((0, response_formatter_1.responseFormatter)()); // Standard response formatting
 app.use((0, request_logger_1.requestLogger)()); // Request logging
-app.use((0, rate_limiter_1.rateLimit)(rate_limiter_1.rateLimitPresets.standard)); // Rate limiting
+app.use((0, rate_limiter_1.rateLimit)(rate_limiter_1.rateLimitPresets.lenient)); // Rate limiting (lenient for dev)
 app.use((0, batch_operations_1.batchOperations)()); // Batch operations support
 // Lazy-initialize Supabase
 let supabase = null;

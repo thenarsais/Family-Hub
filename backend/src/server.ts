@@ -151,7 +151,7 @@ app.use('/api/energy', energyRoutes);
 
 // Google OAuth callback redirect (legacy path for OAuth compatibility)
 app.get('/auth/google/callback', (req, res) => {
-  res.redirect(`/api/calendar/auth/google/callback?${new URLSearchParams(req.query).toString()}`);
+  res.redirect(`/api/calendar/auth/google/callback?${new URLSearchParams(req.query as Record<string, string>).toString()}`);
 });
 
 // Calendar endpoints: Family events & scheduling
