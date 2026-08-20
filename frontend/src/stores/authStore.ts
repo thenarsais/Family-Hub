@@ -84,7 +84,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
       console.log('[AUTH] Token stored in localStorage');
       console.log('[AUTH] Verification - auth_token in storage:', !!localStorage.getItem('auth_token'));
       console.log('[AUTH] Verification - auth_user in storage:', !!localStorage.getItem('auth_user'));
+      console.log('[AUTH] About to call set() with token and user');
       set({ user, token, isLoading: false });
+      console.log('[AUTH] set() completed, store should have token now');
     } catch (error: any) {
       console.error('[AUTH] Login error:', error);
       set({
