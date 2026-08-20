@@ -22,15 +22,29 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   // Phase 2 Features: Real Data from APIs
-  const { announcements, loading: annLoading } = useAnnouncements();
-  const { upcomingReminders, loading: remLoading } = useReminders();
-  const { activity, loading: actLoading } = useActivityLog();
-  const { upcomingEvents, loading: calLoading, googleConnected, connectGoogle } = useCalendar();
-  const { family, members, loading: famLoading } = useFamily();
-  const { currentMonth, goals, loading: enerLoading } = useEnergy();
-  const { weather, loading: weatherLoading } = useWeather();
-  const { items: shoppingItems, loading: shoppingLoading } = useShoppingList();
-  const { meals, loading: mealsLoading } = useMealPlanner();
+  // TODO: Re-enable when backend endpoints are implemented
+  const announcements = [];
+  const annLoading = false;
+  const upcomingReminders = [];
+  const remLoading = false;
+  const activity = [];
+  const actLoading = false;
+  const upcomingEvents = [];
+  const calLoading = false;
+  const googleConnected = false;
+  const connectGoogle = () => {};
+  const family = null;
+  const members = [];
+  const famLoading = false;
+  const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const goals = [];
+  const enerLoading = false;
+  const weather = null;
+  const weatherLoading = false;
+  const shoppingItems = [];
+  const shoppingLoading = false;
+  const meals = [];
+  const mealsLoading = false;
   const { isNightMode, toggleNightMode } = useNightMode();
 
   // Phase 1 Features: Keep existing API calls
