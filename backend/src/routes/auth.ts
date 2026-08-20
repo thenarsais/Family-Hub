@@ -39,6 +39,62 @@ function getSupabase() {
   return supabase;
 }
 
+// Helper: Ensure user has a family (create if needed)
+async function ensureUserHasFamily(userId: string, userName: string) {
+  try {
+    // Check if user already has a family
+    const { data: existingMember } = await getSupabase()
+      .from('family_members')
+      .select('family_id')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .single();
+
+    if (existingMember) {
+      return; // User already has a family
+    }
+
+    // Create a new family for this user
+    const { data: family, error: familyError } = await getSupabase()
+      .from('families')
+      .insert({
+        name: `${userName}'s Family`,
+        description: `Family created for ${userName}`,
+        created_by_id: userId,
+        max_children: 5,
+        max_parents: 2
+      })
+      .select()
+      .single();
+
+    if (!familyError && family) {
+      // Add user as family member
+      await getSupabase()
+        .from('family_members')
+        .insert({
+          family_id: family.id,
+          user_id: userId,
+          role: 'admin',
+          invited_by_id: null
+        });
+
+      // Create default settings
+      await getSupabase()
+        .from('family_settings')
+        .insert({
+          family_id: family.id,
+          theme: 'light',
+          language: 'en',
+          timezone: 'America/New_York'
+        });
+
+      console.log(`✅ Created family for user ${userId}`);
+    }
+  } catch (err: any) {
+    console.warn(`⚠️ Failed to ensure family for user ${userId}:`, err.message);
+  }
+}
+
 // ================================================
 // SIGNUP ENDPOINT
 // ================================================
@@ -87,6 +143,50 @@ router.post('/signup', async (req: Request, res: Response) => {
       account_type: account_type || 'primary',
       password_hash: authData.user?.id || '' // Use auth ID as reference
     });
+
+    // Auto-create family for new users (especially parents)
+    try {
+      if (role === 'parent' || role === 'admin') {
+        const { data: family, error: familyError } = await getSupabase()
+          .from('families')
+          .insert({
+            name: `${name}'s Family`,
+            description: `Family created for ${name}`,
+            created_by_id: user.id,
+            max_children: 5,
+            max_parents: 2
+          })
+          .select()
+          .single();
+
+        if (!familyError && family) {
+          // Add user as family member
+          await getSupabase()
+            .from('family_members')
+            .insert({
+              family_id: family.id,
+              user_id: user.id,
+              role: 'admin',
+              invited_by_id: null
+            });
+
+          // Create default settings for family
+          await getSupabase()
+            .from('family_settings')
+            .insert({
+              family_id: family.id,
+              theme: 'light',
+              language: 'en',
+              timezone: 'America/New_York'
+            });
+
+          console.log(`✅ Auto-created family for user ${user.id}`);
+        }
+      }
+    } catch (familyError: any) {
+      console.warn('⚠️ Failed to auto-create family:', familyError.message);
+      // Don't fail signup if family creation fails
+    }
 
     res.status(201).json({
       message: 'User created successfully',
@@ -145,6 +245,9 @@ router.post('/login', async (req: Request, res: Response) => {
     const demoUser = demoUsers[email.toLowerCase()];
 
     if (demoUser && demoUser.password === password) {
+      // Ensure demo user has a family
+      await ensureUserHasFamily(demoUser.id, demoUser.name);
+
       // Generate mock JWT token
       const mockToken = Buffer.from(JSON.stringify({
         sub: demoUser.id,
@@ -187,8 +290,9 @@ router.post('/login', async (req: Request, res: Response) => {
       // Get user profile
       const user = await UserRepository.getUserByEmail(email);
 
-      // Update last login
+      // Ensure user has a family
       if (user) {
+        await ensureUserHasFamily(user.id, user.name);
         await UserRepository.updateLastLogin(user.id);
       }
 
