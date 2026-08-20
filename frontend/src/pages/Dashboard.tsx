@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { apiClient } from '../services/api';
 import {
   useAnnouncements,
   useReminders,
@@ -42,9 +43,9 @@ export default function Dashboard() {
     const loadData = async () => {
       try {
         if (user?.id) {
-          // TODO: Update to use Phase 1 hook when available
-          const pointsData = await fetch(`/api/points/user/${user.id}`).then((r) => r.json());
-          const badgesData = await fetch(`/api/badges/user/${user.id}`).then((r) => r.json());
+          // Use apiClient to include auth headers
+          const pointsData = await apiClient.getUserPoints(user.id);
+          const badgesData = await apiClient.getUserBadges(user.id);
           setUserPoints(pointsData.data?.total_points || 0);
           setTotalBadges(badgesData.data?.length || 0);
         }
