@@ -87,7 +87,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isLoading: true });
     try {
       const response = await apiClient.getCurrentUser();
-      set({ user: response.data, isLoading: false });
+      set({ user: response.data.user || response.data, isLoading: false });
     } catch (error: any) {
       localStorage.removeItem('auth_token');
       set({ user: null, token: null, isLoading: false });
