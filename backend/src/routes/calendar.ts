@@ -326,9 +326,11 @@ router.get('/google/events', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Failed to fetch Google Calendar events:', error);
-    res.status(500).json({
+    const statusCode = error.status || 500;
+    res.status(statusCode).json({
       status: 'error',
-      message: 'Failed to fetch Google Calendar events',
+      code: error.code,
+      message: error.message || 'Failed to fetch Google Calendar events',
       error: error.message,
     });
   }
