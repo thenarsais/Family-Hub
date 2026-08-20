@@ -18,6 +18,7 @@ import { Wifi, BookOpen, CheckCircle, TrendingUp, Bell, Calendar, Zap, Users, Cl
 import { WeekCalendar } from '../components/Calendar';
 
 export default function Dashboard() {
+  console.log('[DASHBOARD] *** COMPONENT MOUNTING ***');
   const { user } = useAuth();
   const navigate = useNavigate();
 

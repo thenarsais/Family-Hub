@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 
 export default function ProtectedRoute() {
+  console.log('[PROTECTED_ROUTE] *** COMPONENT MOUNTING ***');
   const { isAuthenticated, isLoading, token, user } = useAuth();
 
   console.log('[PROTECTED_ROUTE] Checking auth:', {
