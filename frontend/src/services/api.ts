@@ -38,8 +38,10 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
+        console.log('[API] Response error:', error.response?.status, error.config?.url);
         if (error.response?.status === 401) {
           // Token expired or invalid
+          console.log('[API] Got 401 error, clearing token and redirecting to login');
           localStorage.removeItem('auth_token');
           window.location.href = '/login';
         }
