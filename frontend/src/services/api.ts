@@ -41,12 +41,11 @@ class ApiClient {
         console.log('[API] Response error:', error.response?.status, error.config?.url);
         if (error.response?.status === 401) {
           // Token expired or invalid
-          console.log('[API] Got 401 error, clearing token and redirecting to login');
+          console.error('[API] Got 401 error from:', error.config?.url);
+          console.error('[API] Clearing token and redirecting to login');
           localStorage.removeItem('auth_token');
-          // Delay redirect to allow user to see console logs
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 3000);
+          localStorage.removeItem('auth_user');
+          window.location.href = '/login';
         }
         return Promise.reject(error);
       }
