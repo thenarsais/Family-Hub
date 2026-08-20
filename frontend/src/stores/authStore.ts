@@ -24,8 +24,18 @@ interface AuthStore {
   setToken: (token: string | null) => void;
 }
 
+// Initialize user from localStorage if available
+const initUser = (() => {
+  try {
+    const stored = localStorage.getItem('auth_user');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+})();
+
 export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
+  user: initUser,
   token: localStorage.getItem('auth_token') || null,
   isLoading: false,
   error: null,
@@ -42,6 +52,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       }
 
       localStorage.setItem('auth_token', token);
+      localStorage.setItem('auth_user', JSON.stringify(user));
       set({ user, token, isLoading: false });
     } catch (error: any) {
       set({
@@ -67,8 +78,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
         throw new Error('No token in response');
       }
 
+      console.log('[AUTH] About to store token:', token?.substring(0, 20) + '...');
       localStorage.setItem('auth_token', token);
+      localStorage.setItem('auth_user', JSON.stringify(user));
       console.log('[AUTH] Token stored in localStorage');
+      console.log('[AUTH] Verification - auth_token in storage:', !!localStorage.getItem('auth_token'));
+      console.log('[AUTH] Verification - auth_user in storage:', !!localStorage.getItem('auth_user'));
       set({ user, token, isLoading: false });
     } catch (error: any) {
       console.error('[AUTH] Login error:', error);
@@ -85,6 +100,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       await apiClient.logout();
     } finally {
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
       set({ user: null, token: null });
     }
   },
@@ -93,9 +109,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isLoading: true });
     try {
       const response = await apiClient.getCurrentUser();
-      set({ user: response.data.user || response.data, isLoading: false });
+      const user = response.data.user || response.data;
+      localStorage.setItem('auth_user', JSON.stringify(user));
+      set({ user, isLoading: false });
     } catch (error: any) {
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
       set({ user: null, token: null, isLoading: false });
     }
   },
