@@ -36,7 +36,7 @@ export default function Dashboard() {
   const family = null;
   const members = [];
   const famLoading = false;
-  const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const currentMonth = 0;
   const goals = [];
   const enerLoading = false;
   const weather = null;
