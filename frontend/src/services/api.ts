@@ -40,14 +40,21 @@ class ApiClient {
       (error) => {
         console.log('[API] Response error:', error.response?.status, error.config?.url);
         if (error.response?.status === 401) {
-          // Token expired or invalid
-          console.error('[API] *** CRITICAL: Got 401 error from:', error.config?.url);
-          console.error('[API] *** CRITICAL: Clearing token and doing HARD redirect to login');
-          console.error('[API] *** CRITICAL: This will reload the page');
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_user');
-          // Hard redirect causes full page reload - clears console logs!
-          window.location.href = '/login';
+          // Only redirect on auth endpoint failures, not on feature endpoints
+          const url = error.config?.url || '';
+          const isAuthEndpoint = url.includes('/auth/') || url.includes('/login');
+
+          if (isAuthEndpoint) {
+            console.error('[API] *** CRITICAL: Got 401 error from:', error.config?.url);
+            console.error('[API] *** CRITICAL: Clearing token and doing HARD redirect to login');
+            console.error('[API] *** CRITICAL: This will reload the page');
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            // Hard redirect causes full page reload - clears console logs!
+            window.location.href = '/login';
+          } else {
+            console.warn('[API] Got 401 from feature endpoint:', error.config?.url);
+          }
         }
         return Promise.reject(error);
       }

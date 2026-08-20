@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Wifi, Bell, Calendar, Zap, Users, ShoppingCart, UtensilsCrossed, TrendingUp, Cloud, Droplets, Wind } from 'lucide-react';
-// import { WeekCalendar } from '../components/Calendar';
+import { WeekCalendar } from '../components/Calendar';
 
 export default function Dashboard() {
   console.log('[DASHBOARD] *** COMPONENT MOUNTING ***');
@@ -109,10 +109,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Calendar Widget - Primary Focus - TEMPORARILY DISABLED */}
-      {/* <div className="mb-8">
+      {/* Calendar Widget - Primary Focus */}
+      <div className="mb-8">
         <WeekCalendar />
-      </div> */}
+      </div>
 
       {/* Announcements & Reminders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
