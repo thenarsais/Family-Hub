@@ -17,13 +17,12 @@ import Navigation from '@components/Navigation';
 
 export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
-  const initializeFromStorage = useAuthStore((state) => state.initializeFromStorage);
 
-  // Initialize auth state from localStorage on app load
+  // Initialize auth state from localStorage on app load (only once)
   useEffect(() => {
     console.log('[APP] Initializing auth state from localStorage');
-    initializeFromStorage();
-  }, [initializeFromStorage]);
+    useAuthStore.getState().initializeFromStorage();
+  }, []);
 
   if (isLoading) {
     return (
