@@ -38,14 +38,10 @@ export const useAuth = () => {
 
   const isAuthenticated = !!token && (!!user || !!decodedUser);
 
-  console.log('[USEAUTH] Checking auth:', {
-    token: !!token,
-    user: !!user,
-    decodedUser: !!decodedUser,
-    isAuthenticated,
-    tokenValue: token?.substring(0, 20) + '...',
-    userId: user?.id || decodedUser?.id,
-  });
+  console.log('[USEAUTH] token exists:', !!token, 'user exists:', !!user, 'decodedUser exists:', !!decodedUser, 'isAuthenticated:', isAuthenticated);
+  if (token) console.log('[USEAUTH] token:', token.substring(0, 30) + '...');
+  if (user) console.log('[USEAUTH] user:', user.id);
+  if (decodedUser) console.log('[USEAUTH] decodedUser:', decodedUser.id);
 
   useEffect(() => {
     // Load current user on mount if token exists
