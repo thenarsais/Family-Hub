@@ -106,6 +106,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   loadCurrentUser: async () => {
+    console.log('[AUTH] loadCurrentUser called');
     set({ isLoading: true });
     try {
       const response = await apiClient.getCurrentUser();
@@ -113,6 +114,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
       localStorage.setItem('auth_user', JSON.stringify(user));
       set({ user, isLoading: false });
     } catch (error: any) {
+      console.error('[AUTH] loadCurrentUser failed, clearing token:', error.message);
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
       set({ user: null, token: null, isLoading: false });
