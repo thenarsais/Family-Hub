@@ -56,16 +56,22 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.login(email, password);
+      console.log('[AUTH] Login response:', response);
       const token = response.session?.access_token || response.token;
       const user = response.user;
+
+      console.log('[AUTH] Extracted token:', token ? 'present' : 'missing');
+      console.log('[AUTH] Extracted user:', user);
 
       if (!token) {
         throw new Error('No token in response');
       }
 
       localStorage.setItem('auth_token', token);
+      console.log('[AUTH] Token stored in localStorage');
       set({ user, token, isLoading: false });
     } catch (error: any) {
+      console.error('[AUTH] Login error:', error);
       set({
         error: error.response?.data?.message || error.message || 'Login failed',
         isLoading: false

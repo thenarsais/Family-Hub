@@ -13,11 +13,23 @@ class ApiClient {
       },
     });
 
-    // Add auth token to requests
+    // Add auth token and user ID to requests
     this.client.interceptors.request.use((config) => {
       const token = localStorage.getItem('auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+
+        // Extract user ID from token (base64-encoded JSON)
+        try {
+          const decoded = JSON.parse(atob(token));
+          console.log('[API] Token decoded:', decoded);
+          if (decoded.sub) {
+            config.headers['x-user-id'] = decoded.sub;
+            console.log('[API] Set x-user-id header to:', decoded.sub);
+          }
+        } catch (e) {
+          console.error('[API] Failed to decode token:', e.message);
+        }
       }
       return config;
     });

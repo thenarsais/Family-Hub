@@ -13,13 +13,17 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[LOGIN] Form submitted with email:', email);
     setError('');
     setIsLoading(true);
 
     try {
+      console.log('[LOGIN] Calling login function...');
       await login(email, password);
+      console.log('[LOGIN] Login successful, navigating to dashboard');
       navigate('/dashboard');
     } catch (err: any) {
+      console.error('[LOGIN] Login failed with error:', err);
       setError(err.response?.data?.message || err.message || 'Login failed');
     } finally {
       setIsLoading(false);

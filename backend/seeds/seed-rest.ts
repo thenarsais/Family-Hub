@@ -112,7 +112,7 @@ async function seedData() {
 
     for (const event of testEvents) {
       try {
-        await api.post('/events', event, {
+        await api.post('/calendar_events', event, {
           headers: {
             'Prefer': 'return=minimal',
           },
