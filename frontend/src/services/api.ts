@@ -41,10 +41,12 @@ class ApiClient {
         console.log('[API] Response error:', error.response?.status, error.config?.url);
         if (error.response?.status === 401) {
           // Token expired or invalid
-          console.error('[API] Got 401 error from:', error.config?.url);
-          console.error('[API] Clearing token and redirecting to login');
+          console.error('[API] *** CRITICAL: Got 401 error from:', error.config?.url);
+          console.error('[API] *** CRITICAL: Clearing token and doing HARD redirect to login');
+          console.error('[API] *** CRITICAL: This will reload the page');
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_user');
+          // Hard redirect causes full page reload - clears console logs!
           window.location.href = '/login';
         }
         return Promise.reject(error);
