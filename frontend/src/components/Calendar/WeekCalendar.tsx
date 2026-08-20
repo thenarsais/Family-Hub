@@ -101,7 +101,7 @@ export function WeekCalendar() {
         });
         if (response.ok) {
           const data = await response.json();
-          const ids = new Set(data.data?.map((d: any) => d.event_id) || []);
+          const ids = new Set<string>(data.data?.map((d: any) => d.event_id) || []);
           setDismissedEventIds(ids);
         }
       } catch (error) {
