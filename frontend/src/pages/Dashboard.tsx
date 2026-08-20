@@ -21,6 +21,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  console.log('[DASHBOARD] Component mounted/rendering, user:', user?.name);
+
   // Phase 2 Features: Real Data from APIs
   // TODO: Re-enable when backend endpoints are implemented
   const announcements = [];
@@ -54,17 +56,20 @@ export default function Dashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    console.log('[DASHBOARD] useEffect running, user.id:', user?.id);
     const loadData = async () => {
       try {
         if (user?.id) {
+          console.log('[DASHBOARD] Loading user data...');
           // Use apiClient to include auth headers
           const pointsData = await apiClient.getUserPoints(user.id);
           const badgesData = await apiClient.getUserBadges(user.id);
           setUserPoints(pointsData.data?.total_points || 0);
           setTotalBadges(badgesData.data?.length || 0);
+          console.log('[DASHBOARD] User data loaded successfully');
         }
       } catch (err) {
-        console.error('Failed to load dashboard data:', err);
+        console.error('[DASHBOARD] Failed to load dashboard data:', err);
         setError('Failed to load dashboard data');
       } finally {
         setIsLoading(false);
