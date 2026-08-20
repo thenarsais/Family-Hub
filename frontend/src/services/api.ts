@@ -43,7 +43,10 @@ class ApiClient {
           // Token expired or invalid
           console.log('[API] Got 401 error, clearing token and redirecting to login');
           localStorage.removeItem('auth_token');
-          window.location.href = '/login';
+          // Delay redirect to allow user to see console logs
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 3000);
         }
         return Promise.reject(error);
       }
