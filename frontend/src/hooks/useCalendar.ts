@@ -207,7 +207,7 @@ export function useCalendar(): UseCalendarReturn {
         headers: { 'x-user-id': userId },
       });
 
-      const authUrl = response.data?.authUrl;
+      const authUrl = response.data?.data?.authUrl;
       if (!authUrl) throw new Error('Failed to get Google OAuth URL');
 
       // Open OAuth window
