@@ -70,21 +70,17 @@ export function useEnergy(): UseEnergyReturn {
     endDate: string,
     pointsReward?: number,
   ): Promise<EnergyGoal> => {
-    try {
-      if (!user?.id) throw new Error('User not authenticated');
+    if (!user?.id) throw new Error('User not authenticated');
 
-      const response = await apiClient.post(
-        '/energy/goals',
-        { goal_type: goalType, target_kwh: targetKwh, start_date: startDate, end_date: endDate, points_reward: pointsReward },
-        { headers: { 'x-user-id': user.id } },
-      );
+    const response = await apiClient.post(
+      '/energy/goals',
+      { goal_type: goalType, target_kwh: targetKwh, start_date: startDate, end_date: endDate, points_reward: pointsReward },
+      { headers: { 'x-user-id': user.id } },
+    );
 
-      const newGoal = response.data;
-      setGoals((prev) => [...prev, newGoal]);
-      return newGoal;
-    } catch (err: any) {
-      throw err;
-    }
+    const newGoal = response.data;
+    setGoals((prev) => [...prev, newGoal]);
+    return newGoal;
   };
 
   return {

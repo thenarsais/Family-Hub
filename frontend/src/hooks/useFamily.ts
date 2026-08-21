@@ -77,67 +77,51 @@ export function useFamily(): UseFamilyReturn {
   }, [user?.id]);
 
   const inviteMember = async (email: string, role: string): Promise<string> => {
-    try {
-      if (!user?.id) throw new Error('User not authenticated');
+    if (!user?.id) throw new Error('User not authenticated');
 
-      const response = await apiClient.post(
-        '/family/members/invite',
-        { email, role },
-        { headers: { 'x-user-id': user.id } },
-      );
+    const response = await apiClient.post(
+      '/family/members/invite',
+      { email, role },
+      { headers: { 'x-user-id': user.id } },
+    );
 
-      return response.data?.invite_token || '';
-    } catch (err: any) {
-      throw err;
-    }
+    return response.data?.invite_token || '';
   };
 
   const updateMemberRole = async (memberId: string, role: string): Promise<void> => {
-    try {
-      if (!user?.id) throw new Error('User not authenticated');
+    if (!user?.id) throw new Error('User not authenticated');
 
-      await apiClient.patch(
-        `/family/members/${memberId}/role`,
-        { role },
-        { headers: { 'x-user-id': user.id } },
-      );
+    await apiClient.patch(
+      `/family/members/${memberId}/role`,
+      { role },
+      { headers: { 'x-user-id': user.id } },
+    );
 
-      setMembers((prev) =>
-        prev.map((m) => (m.user_id === memberId ? { ...m, role } : m)),
-      );
-    } catch (err: any) {
-      throw err;
-    }
+    setMembers((prev) =>
+      prev.map((m) => (m.user_id === memberId ? { ...m, role } : m)),
+    );
   };
 
   const removeMember = async (memberId: string): Promise<void> => {
-    try {
-      if (!user?.id) throw new Error('User not authenticated');
+    if (!user?.id) throw new Error('User not authenticated');
 
-      await apiClient.delete(`/family/members/${memberId}`, {
-        headers: { 'x-user-id': user.id },
-      });
+    await apiClient.delete(`/family/members/${memberId}`, {
+      headers: { 'x-user-id': user.id },
+    });
 
-      setMembers((prev) => prev.filter((m) => m.user_id !== memberId));
-    } catch (err: any) {
-      throw err;
-    }
+    setMembers((prev) => prev.filter((m) => m.user_id !== memberId));
   };
 
   const updateSettings = async (newSettings: Partial<FamilySettings>): Promise<void> => {
-    try {
-      if (!user?.id) throw new Error('User not authenticated');
+    if (!user?.id) throw new Error('User not authenticated');
 
-      const response = await apiClient.patch(
-        '/family/settings',
-        newSettings,
-        { headers: { 'x-user-id': user.id } },
-      );
+    const response = await apiClient.patch(
+      '/family/settings',
+      newSettings,
+      { headers: { 'x-user-id': user.id } },
+    );
 
-      setSettings(response.data || null);
-    } catch (err: any) {
-      throw err;
-    }
+    setSettings(response.data || null);
   };
 
   return {

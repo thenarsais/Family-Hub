@@ -134,53 +134,41 @@ export function useCalendar(): UseCalendarReturn {
   }, [user?.id]);
 
   const createEvent = async (data: Partial<CalendarEvent>): Promise<CalendarEvent> => {
-    try {
-      if (!user?.id) throw new Error('User not authenticated');
+    if (!user?.id) throw new Error('User not authenticated');
 
-      const response = await apiClient.post(
-        '/api/calendar/events',
-        data,
-        { headers: { 'x-user-id': user.id } },
-      );
+    const response = await apiClient.post(
+      '/api/calendar/events',
+      data,
+      { headers: { 'x-user-id': user.id } },
+    );
 
-      const newEvent = response.data;
-      setEvents((prev) => [...prev, newEvent]);
-      return newEvent;
-    } catch (err: any) {
-      throw err;
-    }
+    const newEvent = response.data;
+    setEvents((prev) => [...prev, newEvent]);
+    return newEvent;
   };
 
   const updateEvent = async (eventId: string, data: Partial<CalendarEvent>): Promise<CalendarEvent> => {
-    try {
-      if (!user?.id) throw new Error('User not authenticated');
+    if (!user?.id) throw new Error('User not authenticated');
 
-      const response = await apiClient.patch(
-        `/api/calendar/events/${eventId}`,
-        data,
-        { headers: { 'x-user-id': user.id } },
-      );
+    const response = await apiClient.patch(
+      `/api/calendar/events/${eventId}`,
+      data,
+      { headers: { 'x-user-id': user.id } },
+    );
 
-      const updated = response.data;
-      setEvents((prev) => prev.map((e) => (e.id === eventId ? updated : e)));
-      return updated;
-    } catch (err: any) {
-      throw err;
-    }
+    const updated = response.data;
+    setEvents((prev) => prev.map((e) => (e.id === eventId ? updated : e)));
+    return updated;
   };
 
   const deleteEvent = async (eventId: string): Promise<void> => {
-    try {
-      if (!user?.id) throw new Error('User not authenticated');
+    if (!user?.id) throw new Error('User not authenticated');
 
-      await apiClient.delete(`/api/calendar/events/${eventId}`, {
-        headers: { 'x-user-id': user.id },
-      });
+    await apiClient.delete(`/api/calendar/events/${eventId}`, {
+      headers: { 'x-user-id': user.id },
+    });
 
-      setEvents((prev) => prev.filter((e) => e.id !== eventId));
-    } catch (err: any) {
-      throw err;
-    }
+    setEvents((prev) => prev.filter((e) => e.id !== eventId));
   };
 
   const connectGoogle = async (): Promise<string> => {
