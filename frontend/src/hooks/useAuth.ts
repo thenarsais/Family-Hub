@@ -6,15 +6,15 @@ export const useAuth = () => {
 
   // Demo users for testing
   const demoUsers: Record<string, any> = {
-    'parent-001': {
-      id: 'parent-001',
+    '00000000-0000-0000-0000-000000000001': {
+      id: '00000000-0000-0000-0000-000000000001',
       email: 'testparent@example.com',
       name: 'Test Parent',
       role: 'parent',
       created_at: new Date().toISOString()
     },
-    'child-001': {
-      id: 'child-001',
+    '00000000-0000-0000-0000-000000000002': {
+      id: '00000000-0000-0000-0000-000000000002',
       email: 'testchild@example.com',
       name: 'Test Child',
       role: 'child',
