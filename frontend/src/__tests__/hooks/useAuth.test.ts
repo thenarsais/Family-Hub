@@ -3,31 +3,40 @@
  * Tests authentication hook and state management
  */
 
+import { vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAuth } from '@/hooks/useAuth';
 
-// Mock the auth store
-jest.mock('@/stores/authStore', () => ({
+// Mock the auth store. Must match the real useAuthStore shape completely —
+// useAuth.ts destructures isLoading/error/loadCurrentUser/setUser too, and a
+// partial mock silently returns `undefined` for whatever's missing rather
+// than erroring, which is easy to miss (it only breaks the specific
+// assertions that check those exact fields, not the render itself).
+vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     user: { id: 'user-1', email: 'test@example.com' },
     token: 'mock-token',
-    login: jest.fn(),
-    logout: jest.fn(),
-    signup: jest.fn(),
+    isLoading: false,
+    error: null,
+    login: vi.fn(),
+    logout: vi.fn(),
+    signup: vi.fn(),
+    loadCurrentUser: vi.fn(),
+    setUser: vi.fn(),
   }),
 }));
 
 // Mock the API client
-jest.mock('@/services/api', () => ({
+vi.mock('@/services/api', () => ({
   apiClient: {
-    post: jest.fn(),
-    get: jest.fn(),
+    post: vi.fn(),
+    get: vi.fn(),
   },
 }));
 
 describe('useAuth Hook', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Initial State', () => {

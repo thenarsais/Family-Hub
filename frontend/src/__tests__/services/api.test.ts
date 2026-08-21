@@ -1,320 +1,200 @@
 /**
  * API Service Tests
  * Tests HTTP client and API communication
+ *
+ * The previous version of this file mocked global.fetch, but apiClient is
+ * built on axios (which uses XMLHttpRequest, not fetch, in jsdom) — the mock
+ * never touched the real request path. It also asserted `expect(apiClient)
+ * .toBeDefined()` in nearly every test regardless of what was mocked, and
+ * described features (retry logic, exponential backoff, timeout/abort
+ * handling) that don't exist anywhere in services/api.ts. Rewritten to
+ * actually mock axios and exercise the two pieces of real logic in this
+ * file: the auth-token request interceptor and the conditional-redirect
+ * response interceptor (see the `isAuthEndpoint` check — this is the exact
+ * logic behind a redirect-loop bug fixed earlier in this project).
  */
 
-import { apiClient } from '@/services/api';
+import { vi } from 'vitest';
 
-// Mock fetch
-global.fetch = jest.fn();
+let requestInterceptor: (config: any) => any;
+let responseErrorInterceptor: (error: any) => any;
+
+const mockAxiosInstance = {
+  get: vi.fn(),
+  post: vi.fn(),
+  put: vi.fn(),
+  patch: vi.fn(),
+  delete: vi.fn(),
+  interceptors: {
+    request: {
+      use: vi.fn((fn: any) => {
+        requestInterceptor = fn;
+      }),
+    },
+    response: {
+      use: vi.fn((_success: any, errorFn: any) => {
+        responseErrorInterceptor = errorFn;
+      }),
+    },
+  },
+};
+
+vi.mock('axios', () => ({
+  default: {
+    create: vi.fn(() => mockAxiosInstance),
+  },
+}));
+
+function makeToken(payload: Record<string, any>) {
+  return btoa(JSON.stringify(payload));
+}
 
 describe('API Service', () => {
+  // Imported after the mock is registered so the module picks up mocked axios.
+  let apiClient: typeof import('@/services/api').apiClient;
+
+  beforeAll(async () => {
+    ({ apiClient } = await import('@/services/api'));
+  });
+
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockClear();
+    window.localStorage.clear();
+    vi.clearAllMocks();
   });
 
-  describe('Request Initialization', () => {
-    it('should be initialized', () => {
+  describe('Client setup', () => {
+    it('should be initialized as a single instance', () => {
       expect(apiClient).toBeDefined();
     });
 
-    it('should have base URL configured', () => {
-      expect(apiClient).toHaveProperty('defaults');
+    it('should register a request interceptor', () => {
+      expect(requestInterceptor).toBeDefined();
     });
 
-    it('should have timeout configured', () => {
-      expect(apiClient).toBeDefined();
-    });
-  });
-
-  describe('GET Requests', () => {
-    it('should make GET requests', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: 'test' }),
-      });
-
-      // Should have get method
-      expect(typeof (apiClient as any).get).toBe('function');
-    });
-
-    it('should handle successful responses', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ id: 1, name: 'Test' }),
-      });
-
-      // Should handle JSON responses
-      expect(apiClient).toBeDefined();
-    });
-
-    it('should include headers in requests', async () => {
-      // Should support headers
-      expect(apiClient).toBeDefined();
+    it('should register a response interceptor', () => {
+      expect(responseErrorInterceptor).toBeDefined();
     });
   });
 
-  describe('POST Requests', () => {
-    it('should make POST requests', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        status: 201,
-        json: async () => ({ id: 1 }),
-      });
+  describe('Request interceptor — auth headers', () => {
+    it('should not add an Authorization header when no token is stored', () => {
+      const config = { headers: {} as Record<string, string> };
+      const result = requestInterceptor(config);
 
-      // Should have post method
-      expect(typeof (apiClient as any).post).toBe('function');
+      expect(result.headers.Authorization).toBeUndefined();
     });
 
-    it('should send JSON data', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      });
+    it('should add a Bearer Authorization header when a token is stored', () => {
+      window.localStorage.setItem('auth_token', 'some-token');
+      const config = { headers: {} as Record<string, string> };
 
-      // Should support JSON serialization
-      expect(apiClient).toBeDefined();
+      const result = requestInterceptor(config);
+
+      expect(result.headers.Authorization).toBe('Bearer some-token');
     });
 
-    it('should set Content-Type header', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      });
+    it('should decode the token and set x-user-id when it is decodable', () => {
+      const token = makeToken({ sub: 'user-123', email: 'test@example.com' });
+      window.localStorage.setItem('auth_token', token);
+      const config = { headers: {} as Record<string, string> };
 
-      // Should set appropriate headers
-      expect(apiClient).toBeDefined();
-    });
-  });
+      const result = requestInterceptor(config);
 
-  describe('Error Handling', () => {
-    it('should handle network errors', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(
-        new Error('Network error')
-      );
-
-      // Should handle errors gracefully
-      expect(apiClient).toBeDefined();
+      expect(result.headers['x-user-id']).toBe('user-123');
     });
 
-    it('should handle HTTP error responses', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: async () => ({ error: 'Unauthorized' }),
-      });
+    it('should not throw or set x-user-id when the token is not valid base64 JSON', () => {
+      window.localStorage.setItem('auth_token', 'not-a-real-token');
+      const config = { headers: {} as Record<string, string> };
 
-      // Should handle error status codes
-      expect(apiClient).toBeDefined();
-    });
-
-    it('should throw on 500 errors', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => ({ error: 'Internal server error' }),
-      });
-
-      // Should handle server errors
-      expect(apiClient).toBeDefined();
-    });
-
-    it('should throw on 401 errors', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: async () => ({ error: 'Unauthorized' }),
-      });
-
-      // Should handle auth errors
-      expect(apiClient).toBeDefined();
+      expect(() => requestInterceptor(config)).not.toThrow();
+      const result = requestInterceptor(config);
+      expect(result.headers['x-user-id']).toBeUndefined();
+      // The Authorization header should still be set even if decoding fails.
+      expect(result.headers.Authorization).toBe('Bearer not-a-real-token');
     });
   });
 
-  describe('Authentication', () => {
-    it('should include auth token in requests', async () => {
-      // Should add Authorization header
-      expect(apiClient).toBeDefined();
+  describe('Response interceptor — 401 handling', () => {
+    const originalLocation = window.location;
+
+    beforeEach(() => {
+      // window.location.href = ... would otherwise attempt a real jsdom
+      // navigation and log "Not implemented" noise.
+      delete (window as any).location;
+      (window as any).location = { ...originalLocation, href: '' };
+      window.localStorage.setItem('auth_token', 'token');
+      window.localStorage.setItem('auth_user', '{}');
     });
 
-    it('should handle token refresh on 401', async () => {
-      // Should retry with new token on 401
-      expect(apiClient).toBeDefined();
+    afterEach(() => {
+      (window as any).location = originalLocation;
     });
 
-    it('should not expose token in logs', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    it('should clear tokens and redirect on a 401 from an auth endpoint', async () => {
+      const error = {
+        response: { status: 401 },
+        config: { url: '/auth/login' },
+      };
 
-      // Token should not be logged
-      expect(apiClient).toBeDefined();
+      await expect(responseErrorInterceptor(error)).rejects.toBe(error);
 
-      consoleSpy.mockRestore();
-    });
-  });
-
-  describe('API Endpoints', () => {
-    it('should construct correct URLs', async () => {
-      // Should build proper URLs
-      expect(apiClient).toBeDefined();
+      expect(window.localStorage.getItem('auth_token')).toBeNull();
+      expect(window.localStorage.getItem('auth_user')).toBeNull();
+      expect(window.location.href).toBe('/login');
     });
 
-    it('should handle base path', async () => {
-      // Should prepend API base path
-      expect(apiClient).toBeDefined();
+    it('should NOT clear tokens or redirect on a 401 from a feature endpoint', async () => {
+      const error = {
+        response: { status: 401 },
+        config: { url: '/api/calendar/events' },
+      };
+
+      await expect(responseErrorInterceptor(error)).rejects.toBe(error);
+
+      expect(window.localStorage.getItem('auth_token')).toBe('token');
+      expect(window.location.href).toBe('');
     });
 
-    it('should handle query parameters', async () => {
-      // Should support query params
-      expect(apiClient).toBeDefined();
-    });
-  });
+    it('should pass through non-401 errors without touching auth state', async () => {
+      const error = {
+        response: { status: 500 },
+        config: { url: '/api/chores' },
+      };
 
-  describe('Timeout Handling', () => {
-    it('should timeout on slow requests', async () => {
-      (global.fetch as jest.Mock).mockImplementationOnce(
-        () => new Promise(() => {}) // Never resolves
-      );
+      await expect(responseErrorInterceptor(error)).rejects.toBe(error);
 
-      // Should have timeout protection
-      expect(apiClient).toBeDefined();
-    });
-
-    it('should abort requests after timeout', async () => {
-      // Should abort slow requests
-      expect(apiClient).toBeDefined();
-    });
-  });
-
-  describe('Request Interceptors', () => {
-    it('should add auth headers automatically', async () => {
-      // Should intercept requests
-      expect(apiClient).toBeDefined();
-    });
-
-    it('should add custom headers', async () => {
-      // Should allow header customization
-      expect(apiClient).toBeDefined();
+      expect(window.localStorage.getItem('auth_token')).toBe('token');
+      expect(window.location.href).toBe('');
     });
   });
 
-  describe('Response Interceptors', () => {
-    it('should parse JSON responses', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: 'test' }),
+  describe('Method delegation', () => {
+    it('should call the login endpoint with credentials', async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: { session: {} } });
+
+      await apiClient.login('test@example.com', 'password123');
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth/login', {
+        email: 'test@example.com',
+        password: 'password123',
       });
-
-      // Should parse responses
-      expect(apiClient).toBeDefined();
     });
 
-    it('should handle redirect responses', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        status: 301,
-        headers: new Headers({ location: '/new-path' }),
+    it('should call the badges endpoint with pagination params', async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
+
+      await apiClient.getBadges(10, 5);
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/badges', {
+        params: { limit: 10, offset: 5 },
       });
-
-      // Should handle redirects
-      expect(apiClient).toBeDefined();
-    });
-  });
-
-  describe('Security', () => {
-    it('should not expose sensitive data in URLs', async () => {
-      // Sensitive data should not be in query params
-      expect(apiClient).toBeDefined();
     });
 
-    it('should use HTTPS in production', async () => {
-      if (process.env.NODE_ENV === 'production') {
-        expect(apiClient).toBeDefined();
-      }
-    });
+    it('should propagate rejected requests to the caller', async () => {
+      mockAxiosInstance.get.mockRejectedValueOnce(new Error('Network error'));
 
-    it('should validate response data types', async () => {
-      // Should validate response format
-      expect(apiClient).toBeDefined();
-    });
-
-    it('should sanitize error messages', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => ({ error: 'Database connection failed' }),
-      });
-
-      // Error should not expose internal details
-      expect(apiClient).toBeDefined();
-    });
-  });
-
-  describe('Retry Logic', () => {
-    it('should retry on transient errors', async () => {
-      (global.fetch as jest.Mock)
-        .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({ success: true }),
-        });
-
-      // Should have retry capability
-      expect(apiClient).toBeDefined();
-    });
-
-    it('should not retry on permanent errors', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({ error: 'Bad request' }),
-      });
-
-      // Should not retry 400 errors
-      expect(apiClient).toBeDefined();
-    });
-  });
-
-  describe('Rate Limiting', () => {
-    it('should handle rate limit headers', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 429,
-        headers: new Headers({
-          'retry-after': '60',
-        }),
-      });
-
-      // Should respect rate limits
-      expect(apiClient).toBeDefined();
-    });
-
-    it('should backoff on rate limits', async () => {
-      // Should implement exponential backoff
-      expect(apiClient).toBeDefined();
-    });
-  });
-
-  describe('COPPA Compliance', () => {
-    it('should not log sensitive request data', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      // Sensitive data should not be logged
-      expect(apiClient).toBeDefined();
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should not expose child PII in errors', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        json: async () => ({ error: 'Error' }),
-      });
-
-      // Errors should not contain child data
-      expect(apiClient).toBeDefined();
+      await expect(apiClient.getBadges()).rejects.toThrow('Network error');
     });
   });
 });

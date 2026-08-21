@@ -8,7 +8,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./jest.setup.js'],
+    setupFiles: ['./vitest.setup.js'],
+    environmentOptions: {
+      // Without an explicit URL, jsdom treats the origin as opaque and
+      // localStorage/sessionStorage throw a SecurityError on access.
+      jsdom: { url: 'http://localhost:5173' },
+    },
   },
   resolve: {
     alias: {

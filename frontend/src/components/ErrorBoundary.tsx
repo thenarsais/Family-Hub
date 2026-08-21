@@ -29,6 +29,16 @@ export class ErrorBoundary extends React.Component<Props, State> {
     }
   }
 
+  componentDidUpdate(prevProps: Props) {
+    // Without this, a boundary that's caught an error stays stuck on the
+    // fallback UI forever, even after the parent re-renders with entirely
+    // different (valid) children — the only way out would be a full page
+    // reload. Reset once the children actually change.
+    if (this.state.hasError && prevProps.children !== this.props.children) {
+      this.setState({ hasError: false, error: undefined });
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       return (

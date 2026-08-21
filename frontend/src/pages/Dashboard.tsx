@@ -69,7 +69,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="container py-8">
+    <main className="container py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Welcome, {user?.name}!</h1>
@@ -271,6 +271,6 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

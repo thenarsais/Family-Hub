@@ -1,417 +1,188 @@
 /**
  * Authentication Pages Tests
  * Tests Login and Signup page components
+ *
+ * The previous version of this file never imported the real Login/Signup
+ * pages — it rendered inline `MockLoginPage`/`MockSignupPage` components
+ * that happened to have similar form fields, so it always passed regardless
+ * of what the real pages did. Rewritten against the real components,
+ * mocking useAuthStore (the only external dependency they call).
  */
 
-import React from 'react';
+import { vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
+import Login from '@/pages/Login';
+import Signup from '@/pages/Signup';
 
-// Mock components for testing
-const MockLoginPage: React.FC = () => {
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [error, setError] = React.useState('');
+const mockLogin = vi.fn();
+const mockSignup = vi.fn();
+const mockNavigate = vi.fn();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError('Email and password required');
-      return;
-    }
-    // Simulate login
+vi.mock('@stores/authStore', () => ({
+  useAuthStore: () => ({
+    login: mockLogin,
+    signup: mockSignup,
+  }),
+}));
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
   };
+});
 
-  return (
-    <div>
-      <h1>Login</h1>
-      {error && <div data-testid="error">{error}</div>}
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          data-testid="email-input"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          data-testid="password-input"
-        />
-        <button type="submit">Login</button>
-      </form>
-      <a href="/signup">Sign up</a>
-    </div>
-  );
-};
-
-const MockSignupPage: React.FC = () => {
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [name, setName] = React.useState('');
-  const [error, setError] = React.useState('');
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password || !name) {
-      setError('All fields required');
-      return;
-    }
-    if (password.length < 8) {
-      setError('Password must be 8+ characters');
-      return;
-    }
-  };
-
-  return (
-    <div>
-      <h1>Sign Up</h1>
-      {error && <div data-testid="error">{error}</div>}
-      <form onSubmit={handleSignup}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          data-testid="name-input"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          data-testid="email-input"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          data-testid="password-input"
-        />
-        <button type="submit">Sign Up</button>
-      </form>
-      <a href="/login">Already have an account?</a>
-    </div>
-  );
-};
+function renderWithRouter(ui: React.ReactElement) {
+  return render(<BrowserRouter>{ui}</BrowserRouter>);
+}
 
 describe('Authentication Pages', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('Login Page', () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
+    it('should render the login form', () => {
+      renderWithRouter(<Login />);
+
+      expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter your password')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
     });
 
-    it('should render login form', () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      expect(screen.getByRole('heading', { name: /login/i })).toBeInTheDocument();
+    it('should mask the password input', () => {
+      renderWithRouter(<Login />);
+      expect(screen.getByPlaceholderText('Enter your password')).toHaveAttribute('type', 'password');
     });
 
-    it('should have email input', () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      const emailInput = screen.getByTestId('email-input') as HTMLInputElement;
-      expect(emailInput).toBeInTheDocument();
-      expect(emailInput.type).toBe('email');
+    it('should have a link to signup', () => {
+      renderWithRouter(<Login />);
+      expect(screen.getByRole('link', { name: /sign up/i })).toHaveAttribute('href', '/signup');
     });
 
-    it('should have password input', () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
+    it('should call login with the entered credentials and navigate on success', async () => {
+      mockLogin.mockResolvedValueOnce(undefined);
+      const user = userEvent.setup();
 
-      const passwordInput = screen.getByTestId('password-input') as HTMLInputElement;
-      expect(passwordInput).toBeInTheDocument();
-      expect(passwordInput.type).toBe('password');
-    });
-
-    it('should have submit button', () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      const button = screen.getByRole('button', { name: /login/i });
-      expect(button).toBeInTheDocument();
-    });
-
-    it('should have link to signup', () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      const link = screen.getByRole('link', { name: /sign up/i });
-      expect(link).toBeInTheDocument();
-    });
-
-    it('should validate required fields', async () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      const button = screen.getByRole('button', { name: /login/i });
-      fireEvent.click(button);
+      renderWithRouter(<Login />);
+      await user.type(screen.getByPlaceholderText('Enter your email'), 'test@example.com');
+      await user.type(screen.getByPlaceholderText('Enter your password'), 'password123');
+      await user.click(screen.getByRole('button', { name: /sign in/i }));
 
       await waitFor(() => {
-        const error = screen.getByTestId('error');
-        expect(error).toHaveTextContent('Email and password required');
+        expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
       });
     });
 
-    it('should allow user input', async () => {
+    it('should show an error message and not navigate when login fails', async () => {
+      mockLogin.mockRejectedValueOnce(new Error('Invalid credentials'));
       const user = userEvent.setup();
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
 
-      const emailInput = screen.getByTestId('email-input') as HTMLInputElement;
-      const passwordInput = screen.getByTestId('password-input') as HTMLInputElement;
+      renderWithRouter(<Login />);
+      await user.type(screen.getByPlaceholderText('Enter your email'), 'test@example.com');
+      await user.type(screen.getByPlaceholderText('Enter your password'), 'wrong');
+      await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-      await user.type(emailInput, 'test@example.com');
-      await user.type(passwordInput, 'password123');
-
-      expect(emailInput.value).toBe('test@example.com');
-      expect(passwordInput.value).toBe('password123');
+      await waitFor(() => {
+        expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('should mask password input', () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
+    it('should require email and password before submitting', () => {
+      renderWithRouter(<Login />);
 
-      const passwordInput = screen.getByTestId('password-input') as HTMLInputElement;
-      expect(passwordInput.type).toBe('password');
+      expect(screen.getByPlaceholderText('Enter your email')).toBeRequired();
+      expect(screen.getByPlaceholderText('Enter your password')).toBeRequired();
     });
 
-    it('should handle form submission', async () => {
+    it('should disable the submit button while logging in', async () => {
+      let resolveLogin: () => void;
+      mockLogin.mockReturnValueOnce(new Promise<void>((resolve) => { resolveLogin = resolve; }));
       const user = userEvent.setup();
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
 
-      const emailInput = screen.getByTestId('email-input');
-      const passwordInput = screen.getByTestId('password-input');
-      const button = screen.getByRole('button', { name: /login/i });
+      renderWithRouter(<Login />);
+      await user.type(screen.getByPlaceholderText('Enter your email'), 'test@example.com');
+      await user.type(screen.getByPlaceholderText('Enter your password'), 'password123');
+      await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-      await user.type(emailInput, 'test@example.com');
-      await user.type(passwordInput, 'password123');
-      await user.click(button);
-
-      // Should handle submission
-      expect(button).toBeInTheDocument();
-    });
-
-    it('should not send password in clear text (form submission)', async () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      const passwordInput = screen.getByTestId('password-input') as HTMLInputElement;
-      expect(passwordInput.type).toBe('password');
+      expect(screen.getByRole('button', { name: /signing in/i })).toBeDisabled();
+      resolveLogin!();
     });
   });
 
   describe('Signup Page', () => {
-    it('should render signup form', () => {
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
+    it('should render the signup form', () => {
+      renderWithRouter(<Signup />);
 
-      expect(screen.getByRole('heading', { name: /sign up/i })).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter your full name')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Create a password')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Confirm your password')).toBeInTheDocument();
     });
 
-    it('should have name input', () => {
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
+    it('should call signup and navigate on success', async () => {
+      mockSignup.mockResolvedValueOnce(undefined);
+      const user = userEvent.setup();
 
-      const nameInput = screen.getByTestId('name-input');
-      expect(nameInput).toBeInTheDocument();
-    });
-
-    it('should have email input', () => {
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
-
-      const emailInput = screen.getByTestId('email-input') as HTMLInputElement;
-      expect(emailInput).toBeInTheDocument();
-      expect(emailInput.type).toBe('email');
-    });
-
-    it('should have password input', () => {
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
-
-      const passwordInput = screen.getByTestId('password-input') as HTMLInputElement;
-      expect(passwordInput).toBeInTheDocument();
-      expect(passwordInput.type).toBe('password');
-    });
-
-    it('should have submit button', () => {
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
-
-      const button = screen.getByRole('button', { name: /sign up/i });
-      expect(button).toBeInTheDocument();
-    });
-
-    it('should validate all fields required', async () => {
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
-
-      const button = screen.getByRole('button', { name: /sign up/i });
-      fireEvent.click(button);
+      renderWithRouter(<Signup />);
+      await user.type(screen.getByPlaceholderText('Enter your full name'), 'New User');
+      await user.type(screen.getByPlaceholderText('Enter your email'), 'newuser@example.com');
+      await user.type(screen.getByPlaceholderText('Create a password'), 'password123');
+      await user.type(screen.getByPlaceholderText('Confirm your password'), 'password123');
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
 
       await waitFor(() => {
-        const error = screen.getByTestId('error');
-        expect(error).toHaveTextContent('All fields required');
+        expect(mockSignup).toHaveBeenCalledWith('newuser@example.com', 'password123', 'New User');
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
       });
     });
 
-    it('should validate password length', async () => {
+    it('should reject mismatched passwords without calling signup', async () => {
       const user = userEvent.setup();
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
 
-      const nameInput = screen.getByTestId('name-input');
-      const emailInput = screen.getByTestId('email-input');
-      const passwordInput = screen.getByTestId('password-input');
-      const button = screen.getByRole('button', { name: /sign up/i });
+      renderWithRouter(<Signup />);
+      await user.type(screen.getByPlaceholderText('Enter your full name'), 'New User');
+      await user.type(screen.getByPlaceholderText('Enter your email'), 'newuser@example.com');
+      await user.type(screen.getByPlaceholderText('Create a password'), 'password123');
+      await user.type(screen.getByPlaceholderText('Confirm your password'), 'different');
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
 
-      await user.type(nameInput, 'Test User');
-      await user.type(emailInput, 'test@example.com');
-      await user.type(passwordInput, 'short');
-      await user.click(button);
+      expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
+      expect(mockSignup).not.toHaveBeenCalled();
+    });
+
+    it('should surface a signup failure as an error message', async () => {
+      mockSignup.mockRejectedValueOnce(new Error('fail'));
+      const user = userEvent.setup();
+
+      renderWithRouter(<Signup />);
+      await user.type(screen.getByPlaceholderText('Enter your full name'), 'User');
+      await user.type(screen.getByPlaceholderText('Enter your email'), 'user@example.com');
+      await user.type(screen.getByPlaceholderText('Create a password'), 'password123');
+      await user.type(screen.getByPlaceholderText('Confirm your password'), 'password123');
+      await user.click(screen.getByRole('button', { name: /sign up/i }));
 
       await waitFor(() => {
-        const error = screen.getByTestId('error');
-        expect(error).toHaveTextContent('Password must be 8+ characters');
+        expect(screen.getByText('Signup failed')).toBeInTheDocument();
       });
     });
 
-    it('should have link to login', () => {
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
-
-      const link = screen.getByRole('link', { name: /already have an account/i });
-      expect(link).toBeInTheDocument();
+    it('should have a link back to login', () => {
+      renderWithRouter(<Signup />);
+      expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
     });
 
-    it('should allow user input for all fields', async () => {
+    it('should not display the raw password value anywhere else on the page', async () => {
       const user = userEvent.setup();
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
+      renderWithRouter(<Signup />);
+      await user.type(screen.getByPlaceholderText('Create a password'), 'super-secret-pw');
 
-      const nameInput = screen.getByTestId('name-input') as HTMLInputElement;
-      const emailInput = screen.getByTestId('email-input') as HTMLInputElement;
-      const passwordInput = screen.getByTestId('password-input') as HTMLInputElement;
-
-      await user.type(nameInput, 'Test User');
-      await user.type(emailInput, 'test@example.com');
-      await user.type(passwordInput, 'password123');
-
-      expect(nameInput.value).toBe('Test User');
-      expect(emailInput.value).toBe('test@example.com');
-      expect(passwordInput.value).toBe('password123');
-    });
-  });
-
-  describe('Common Auth Features', () => {
-    it('login should handle COPPA compliance', () => {
-      render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      // Should not ask for unnecessary info
-      expect(screen.queryByText(/age/i)).not.toBeInTheDocument();
-    });
-
-    it('signup should handle COPPA compliance', () => {
-      render(
-        <BrowserRouter>
-          <MockSignupPage />
-        </BrowserRouter>
-      );
-
-      // Should not collect unnecessary child data
-      expect(screen.queryByText(/birth date/i)).not.toBeInTheDocument();
-    });
-
-    it('should have secure form handling', async () => {
-      const { container } = render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      const form = container.querySelector('form');
-      expect(form).toBeInTheDocument();
-    });
-
-    it('should be accessible', () => {
-      const { container } = render(
-        <BrowserRouter>
-          <MockLoginPage />
-        </BrowserRouter>
-      );
-
-      const headings = container.querySelectorAll('[role="heading"]');
-      expect(headings.length).toBeGreaterThan(0);
+      expect(screen.queryByText('super-secret-pw')).not.toBeInTheDocument();
     });
   });
 });

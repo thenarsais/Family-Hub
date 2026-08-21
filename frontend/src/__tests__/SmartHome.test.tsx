@@ -1,10 +1,11 @@
+import { vi, type Mock } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SmartHome } from '../components/SmartHome/SmartHome';
 import { DeviceCard } from '../components/SmartHome/DeviceCard';
 import * as deviceHook from '../hooks/useDevices';
 
 // Mock the useDevices hook
-jest.mock('../hooks/useDevices');
+vi.mock('../hooks/useDevices');
 
 const mockDevices = [
   {
@@ -32,17 +33,17 @@ const mockDevices = [
 
 describe('SmartHome Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render loading state initially', () => {
-    (deviceHook.useDevices as jest.Mock).mockReturnValue({
+    (deviceHook.useDevices as Mock).mockReturnValue({
       devices: [],
       loading: true,
       error: null,
       refreshing: false,
-      refreshDevices: jest.fn(),
-      controlDevice: jest.fn(),
+      refreshDevices: vi.fn(),
+      controlDevice: vi.fn(),
     });
 
     render(<SmartHome />);
@@ -50,13 +51,13 @@ describe('SmartHome Component', () => {
   });
 
   it('should display all devices when loaded', async () => {
-    (deviceHook.useDevices as jest.Mock).mockReturnValue({
+    (deviceHook.useDevices as Mock).mockReturnValue({
       devices: mockDevices,
       loading: false,
       error: null,
       refreshing: false,
-      refreshDevices: jest.fn(),
-      controlDevice: jest.fn(),
+      refreshDevices: vi.fn(),
+      controlDevice: vi.fn(),
     });
 
     render(<SmartHome />);
@@ -67,31 +68,34 @@ describe('SmartHome Component', () => {
   });
 
   it('should group devices by room', () => {
-    (deviceHook.useDevices as jest.Mock).mockReturnValue({
+    (deviceHook.useDevices as Mock).mockReturnValue({
       devices: mockDevices,
       loading: false,
       error: null,
       refreshing: false,
-      refreshDevices: jest.fn(),
-      controlDevice: jest.fn(),
+      refreshDevices: vi.fn(),
+      controlDevice: vi.fn(),
     });
 
     render(<SmartHome />);
 
-    expect(screen.getByText('Living Room')).toBeInTheDocument();
-    expect(screen.getByText('Entry')).toBeInTheDocument();
-    expect(screen.getByText('Hallway')).toBeInTheDocument();
+    // "Living Room" legitimately appears twice — once as the room-group
+    // heading, once as the device's own room label inside its card — so
+    // this one needs to target the heading specifically.
+    expect(screen.getByRole('heading', { name: 'Living Room' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Entry' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hallway' })).toBeInTheDocument();
   });
 
   it('should display error message when devices fail to load', () => {
     const errorMsg = 'Failed to load devices';
-    (deviceHook.useDevices as jest.Mock).mockReturnValue({
+    (deviceHook.useDevices as Mock).mockReturnValue({
       devices: [],
       loading: false,
       error: errorMsg,
       refreshing: false,
-      refreshDevices: jest.fn(),
-      controlDevice: jest.fn(),
+      refreshDevices: vi.fn(),
+      controlDevice: vi.fn(),
     });
 
     render(<SmartHome />);
@@ -101,13 +105,13 @@ describe('SmartHome Component', () => {
   });
 
   it('should show empty state when no devices', () => {
-    (deviceHook.useDevices as jest.Mock).mockReturnValue({
+    (deviceHook.useDevices as Mock).mockReturnValue({
       devices: [],
       loading: false,
       error: null,
       refreshing: false,
-      refreshDevices: jest.fn(),
-      controlDevice: jest.fn(),
+      refreshDevices: vi.fn(),
+      controlDevice: vi.fn(),
     });
 
     render(<SmartHome />);
@@ -117,13 +121,13 @@ describe('SmartHome Component', () => {
   });
 
   it('should display correct device count', () => {
-    (deviceHook.useDevices as jest.Mock).mockReturnValue({
+    (deviceHook.useDevices as Mock).mockReturnValue({
       devices: mockDevices,
       loading: false,
       error: null,
       refreshing: false,
-      refreshDevices: jest.fn(),
-      controlDevice: jest.fn(),
+      refreshDevices: vi.fn(),
+      controlDevice: vi.fn(),
     });
 
     render(<SmartHome />);
@@ -132,14 +136,14 @@ describe('SmartHome Component', () => {
   });
 
   it('should call refreshDevices when refresh button is clicked', () => {
-    const mockRefresh = jest.fn();
-    (deviceHook.useDevices as jest.Mock).mockReturnValue({
+    const mockRefresh = vi.fn();
+    (deviceHook.useDevices as Mock).mockReturnValue({
       devices: mockDevices,
       loading: false,
       error: null,
       refreshing: false,
       refreshDevices: mockRefresh,
-      controlDevice: jest.fn(),
+      controlDevice: vi.fn(),
     });
 
     render(<SmartHome />);
@@ -152,10 +156,10 @@ describe('SmartHome Component', () => {
 });
 
 describe('DeviceCard Component', () => {
-  const mockControl = jest.fn();
+  const mockControl = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render light device correctly', () => {
@@ -169,7 +173,10 @@ describe('DeviceCard Component', () => {
 
     expect(screen.getByText('Living Room Light')).toBeInTheDocument();
     expect(screen.getByText('Living Room')).toBeInTheDocument();
-    expect(screen.getByText('🟢 On')).toBeInTheDocument();
+    // Rendered as "Status: 🟢 On" in one paragraph — an exact match for
+    // just the status portion won't find a node whose own text is exactly
+    // that substring, since it's combined with the "Status: " prefix.
+    expect(screen.getByText(/🟢 On/)).toBeInTheDocument();
   });
 
   it('should render lock device status correctly', () => {
@@ -182,7 +189,7 @@ describe('DeviceCard Component', () => {
     );
 
     expect(screen.getByText('Front Door')).toBeInTheDocument();
-    expect(screen.getByText('🔒 Locked')).toBeInTheDocument();
+    expect(screen.getByText(/🔒 Locked/)).toBeInTheDocument();
   });
 
   it('should render thermostat temperature', () => {
@@ -195,7 +202,10 @@ describe('DeviceCard Component', () => {
     );
 
     expect(screen.getByText('Main Thermostat')).toBeInTheDocument();
-    expect(screen.getByText('72°F')).toBeInTheDocument();
+    // "72°F" legitimately appears twice — once in the status line, once in
+    // a "Set to 72°F" control label — so this checks presence, not a
+    // single unique match.
+    expect(screen.getAllByText(/72°F/).length).toBeGreaterThan(0);
   });
 
   it('should call onControl when toggle button is clicked', () => {

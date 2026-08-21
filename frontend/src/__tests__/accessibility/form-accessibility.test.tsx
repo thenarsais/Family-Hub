@@ -58,7 +58,7 @@ describe('Form Accessibility', () => {
 
     it('should have correct input types', () => {
       render(<LoginForm />);
-      const emailInput = screen.getByDisplayValue('') as HTMLInputElement;
+      const emailInput = screen.getByLabelText('Email Address:') as HTMLInputElement;
       expect(emailInput.type).toMatch(/email|text/);
     });
 
@@ -159,8 +159,9 @@ describe('Form Accessibility', () => {
       const submitButton = screen.getByRole('button', { name: /submit/i });
       await user.click(submitButton);
 
-      // Errors should be announced
-      expect(screen.getByRole('alert')).toBeInTheDocument();
+      // Both the email and password errors should be announced.
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts).toHaveLength(2);
     });
 
     it('should link errors to form fields', async () => {
@@ -170,7 +171,7 @@ describe('Form Accessibility', () => {
       const submitButton = screen.getByRole('button', { name: /submit/i });
       await user.click(submitButton);
 
-      const emailInput = screen.getByDisplayValue('') as HTMLInputElement;
+      const emailInput = screen.getByLabelText('Email:') as HTMLInputElement;
       expect(emailInput).toHaveAttribute('aria-invalid', 'true');
       expect(emailInput).toHaveAttribute('aria-describedby');
     });

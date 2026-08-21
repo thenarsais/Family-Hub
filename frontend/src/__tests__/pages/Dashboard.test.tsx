@@ -4,28 +4,32 @@
  */
 
 import React from 'react';
+import { vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
 
 // Mock the useAuth hook
-jest.mock('@/hooks/useAuth', () => ({
+vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
-    user: { id: 'user-1', email: 'test@example.com' },
+    user: { id: 'user-1', email: 'test@example.com', name: 'Test User' },
     isLoading: false,
   }),
 }));
 
 // Mock the useNavigate hook
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => jest.fn(),
-}));
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  };
+});
 
 // Mock the API client
-jest.mock('@/services/api', () => ({
+vi.mock('@/services/api', () => ({
   apiClient: {
-    get: jest.fn().mockResolvedValue({ data: {} }),
+    get: vi.fn().mockResolvedValue({ data: {} }),
   },
 }));
 
@@ -39,7 +43,7 @@ const renderDashboard = () => {
 
 describe('Dashboard Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Rendering', () => {
@@ -52,19 +56,16 @@ describe('Dashboard Page', () => {
       renderDashboard();
 
       await waitFor(() => {
-        // Should show some greeting or title
-        const heading = screen.queryByRole('heading');
-        expect(heading).toBeInTheDocument();
+        const headings = screen.getAllByRole('heading');
+        expect(headings.length).toBeGreaterThan(0);
       });
     });
 
-    it('should display user information', async () => {
+    it("should greet the user by name", async () => {
       renderDashboard();
 
-      // Should show user email or name
       await waitFor(() => {
-        const content = screen.getByText(/test@example.com|Activity Board/i);
-        expect(content).toBeInTheDocument();
+        expect(screen.getByText(/welcome, test user/i)).toBeInTheDocument();
       });
     });
   });
@@ -124,8 +125,8 @@ describe('Dashboard Page', () => {
   describe('Error Handling', () => {
     it('should handle missing user gracefully', async () => {
       // Mock useAuth to return no user
-      jest.resetModules();
-      jest.doMock('@/hooks/useAuth', () => ({
+      vi.resetModules();
+      vi.doMock('@/hooks/useAuth', () => ({
         useAuth: () => ({
           user: null,
           isLoading: false,
@@ -182,20 +183,16 @@ describe('Dashboard Page', () => {
   });
 
   describe('Navigation', () => {
-    it('should have navigation elements', async () => {
-      const { container } = renderDashboard();
+    // Dashboard itself doesn't render top-level nav/links — that's
+    // Navigation.tsx, a sibling of Dashboard under the route's Outlet (see
+    // App.tsx), not something Dashboard renders in isolation. What Dashboard
+    // does own is a set of quick-action buttons that call navigate(path)
+    // directly rather than rendering <a> tags.
+    it('should navigate to other pages via its quick-action buttons', async () => {
+      renderDashboard();
 
-      // Should have nav or navigation links
-      const nav = container.querySelector('nav');
-      expect(nav).toBeInTheDocument();
-    });
-
-    it('should be linkable to other pages', async () => {
-      const { container } = renderDashboard();
-
-      // Should have links
-      const links = container.querySelectorAll('a');
-      expect(links.length).toBeGreaterThan(0);
+      const familyButtons = screen.getAllByRole('button', { name: /family/i });
+      expect(familyButtons.length).toBeGreaterThan(0);
     });
   });
 

@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -19,11 +20,11 @@ const HealthyComponent: React.FC = () => {
 describe('ErrorBoundary Component', () => {
   // Suppress console.error during tests
   beforeEach(() => {
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Normal Operation', () => {
@@ -134,7 +135,7 @@ describe('ErrorBoundary Component', () => {
 
   describe('Error Logging', () => {
     it('should capture error information', () => {
-      const consoleSpy = jest.spyOn(console, 'error');
+      const consoleSpy = vi.spyOn(console, 'error');
 
       render(
         <ErrorBoundary>
@@ -147,7 +148,7 @@ describe('ErrorBoundary Component', () => {
     });
 
     it('should include error message in logs', () => {
-      const consoleSpy = jest.spyOn(console, 'error');
+      const consoleSpy = vi.spyOn(console, 'error');
 
       render(
         <ErrorBoundary>
@@ -195,7 +196,7 @@ describe('ErrorBoundary Component', () => {
 
   describe('Lifecycle Methods', () => {
     it('should call getDerivedStateFromError when error occurs', () => {
-      const spy = jest.spyOn(
+      const spy = vi.spyOn(
         ErrorBoundary,
         'getDerivedStateFromError'
       );
@@ -211,7 +212,7 @@ describe('ErrorBoundary Component', () => {
 
     it('should call componentDidCatch when error occurs', () => {
       const instance = new ErrorBoundary({ children: null });
-      const spy = jest.spyOn(instance, 'componentDidCatch');
+      const spy = vi.spyOn(instance, 'componentDidCatch');
 
       try {
         instance.componentDidCatch(new Error('Test'), {

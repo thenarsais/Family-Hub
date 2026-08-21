@@ -3,11 +3,13 @@
  * Ensures required Vite environment variables are available (fail-fast)
  */
 
+import { vi } from 'vitest';
+
 describe('Frontend Environment Validation', () => {
   const originalEnv = { ...import.meta.env };
 
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
   });
 
   afterEach(() => {
