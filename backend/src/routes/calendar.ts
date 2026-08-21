@@ -231,9 +231,14 @@ router.get('/auth/google', async (req: Request, res: Response) => {
       });
     }
 
-    // Check if user already has a valid token
+    // Only report "connected" if the token is still usable. An expired token
+    // with no refresh_token cannot be renewed, so the user must re-consent —
+    // reporting it as connected would leave them with no way to re-authorize.
     const existingToken = await googleOAuth.getUserToken(userId);
-    if (existingToken?.access_token) {
+    const isUsable = existingToken?.access_token
+      && (existingToken.expires_in > 300 || !!existingToken.refresh_token);
+
+    if (isUsable) {
       return res.json({
         status: 'success',
         data: { connected: true, authUrl: null },
