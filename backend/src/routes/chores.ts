@@ -53,7 +53,7 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    if (!name || !timeSlot || !pointsValue) {
+    if (!name || !timeSlot || pointsValue === undefined) {
       return res.status(400).json({
         status: 'error',
         message: 'Name, timeSlot, and pointsValue are required',

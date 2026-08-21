@@ -5,6 +5,44 @@
 
 import request from 'supertest';
 import express from 'express';
+
+// The routes below call getXService() once at module load time and hold the
+// result in a module-scoped constant. Reassigning getXService per-test (as
+// this file used to do via `require('../../services/chores').getChoreService
+// = jest.fn()...`) has no effect on that already-captured value — every
+// service call would silently hit the auto-mock's default `undefined` return
+// and 500. Instead, mock each module to always return the same shared
+// object, and configure that object's methods per test.
+const mockChoreService = {
+  getUserChores: jest.fn(),
+  createChore: jest.fn(),
+  completeChore: jest.fn(),
+  getChoreProgress: jest.fn(),
+  getPointsSummary: jest.fn(),
+  getTransactionHistory: jest.fn(),
+};
+const mockLearningService = {
+  completeLesson: jest.fn(),
+  getLearningStats: jest.fn(),
+  recordQuizAnswer: jest.fn(),
+  getPhaseProgress: jest.fn(),
+  getQuizPerformance: jest.fn(),
+  getRecentActivity: jest.fn(),
+};
+const mockSmartThingsService = {
+  listDevices: jest.fn(),
+  getDevice: jest.fn(),
+  setLight: jest.fn(),
+  setLightBrightness: jest.fn(),
+  setTemperature: jest.fn(),
+  setLock: jest.fn(),
+  discoverDevices: jest.fn(),
+};
+
+jest.mock('../../services/chores', () => ({ getChoreService: () => mockChoreService }));
+jest.mock('../../services/learning', () => ({ getLearningService: () => mockLearningService }));
+jest.mock('../../services/smartthings', () => ({ getSmartThingsService: () => mockSmartThingsService }));
+
 import choresRoutes from '../../routes/chores';
 import learningRoutes from '../../routes/learning';
 import smartthingsRoutes from '../../routes/smartthings';
@@ -15,10 +53,6 @@ app.use('/api/chores', choresRoutes);
 app.use('/api/learning', learningRoutes);
 app.use('/api/smartthings', smartthingsRoutes);
 
-jest.mock('../../services/chores');
-jest.mock('../../services/learning');
-jest.mock('../../services/smartthings');
-
 describe('Performance Tests', () => {
   const PERFORMANCE_THRESHOLDS = {
     fastEndpoint: 100, // ms - for simple endpoints
@@ -27,18 +61,16 @@ describe('Performance Tests', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // resetAllMocks (not clearAllMocks) so queued mockResolvedValueOnce/etc.
+    // from a previous test can't leak into the next one.
+    jest.resetAllMocks();
   });
 
   describe('Response Time Tests', () => {
     it('GET /chores should respond within 500ms', async () => {
-      const mockService = {
-        getUserChores: jest.fn().mockResolvedValue([
-          { id: 'chore-1', name: 'Test', userId: 'user-1', pointsValue: 50, timeSlot: 'morning', enabled: true },
-        ]),
-      };
-
-      require('../../services/chores').getChoreService = jest.fn().mockReturnValue(mockService);
+      mockChoreService.getUserChores.mockResolvedValueOnce([
+        { id: 'chore-1', name: 'Test', userId: 'user-1', pointsValue: 50, timeSlot: 'morning', enabled: true },
+      ]);
 
       const startTime = Date.now();
       await request(app)
@@ -50,20 +82,16 @@ describe('Performance Tests', () => {
     });
 
     it('POST /chores should respond within 500ms', async () => {
-      const mockService = {
-        createChore: jest.fn().mockResolvedValue({
-          id: 'chore-1',
-          name: 'Test',
-          userId: 'user-1',
-          pointsValue: 50,
-          timeSlot: 'morning',
-          enabled: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
-      };
-
-      require('../../services/chores').getChoreService = jest.fn().mockReturnValue(mockService);
+      mockChoreService.createChore.mockResolvedValueOnce({
+        id: 'chore-1',
+        name: 'Test',
+        userId: 'user-1',
+        pointsValue: 50,
+        timeSlot: 'morning',
+        enabled: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const startTime = Date.now();
       await request(app)
@@ -80,17 +108,13 @@ describe('Performance Tests', () => {
     });
 
     it('GET /learning/stats should respond within 500ms', async () => {
-      const mockService = {
-        getLearningStats: jest.fn().mockResolvedValue({
-          totalLessonsCompleted: 5,
-          totalPointsEarned: 50,
-          alphabet: { completed: 5, total: 47 },
-          numbers: { completed: 0, total: 10 },
-          vocabulary: { completed: 0, total: 120 },
-        }),
-      };
-
-      require('../../services/learning').getLearningService = jest.fn().mockReturnValue(mockService);
+      mockLearningService.getLearningStats.mockResolvedValueOnce({
+        totalLessonsCompleted: 5,
+        totalPointsEarned: 50,
+        alphabet: { completed: 5, total: 47 },
+        numbers: { completed: 0, total: 10 },
+        vocabulary: { completed: 0, total: 120 },
+      });
 
       const startTime = Date.now();
       await request(app)
@@ -102,13 +126,9 @@ describe('Performance Tests', () => {
     });
 
     it('GET /smartthings/devices should respond within 500ms', async () => {
-      const mockService = {
-        listDevices: jest.fn().mockResolvedValue([
-          { deviceId: 'light-1', name: 'Light', type: 'light', status: { switch: 'on' } },
-        ]),
-      };
-
-      require('../../services/smartthings').getSmartThingsService = jest.fn().mockReturnValue(mockService);
+      mockSmartThingsService.listDevices.mockResolvedValueOnce([
+        { deviceId: 'light-1', name: 'Light', type: 'light', status: { switch: 'on' } },
+      ]);
 
       const startTime = Date.now();
       await request(app)
@@ -122,22 +142,7 @@ describe('Performance Tests', () => {
 
   describe('Concurrent Request Tests', () => {
     it('should handle multiple concurrent requests', async () => {
-      const mockChoresService = {
-        getUserChores: jest.fn().mockResolvedValue([]),
-      };
-
-      const mockLearningService = {
-        getLearningStats: jest.fn().mockResolvedValue({
-          totalLessonsCompleted: 0,
-          totalPointsEarned: 0,
-          alphabet: { completed: 0, total: 47 },
-          numbers: { completed: 0, total: 10 },
-          vocabulary: { completed: 0, total: 120 },
-        }),
-      };
-
-      require('../../services/chores').getChoreService = jest.fn().mockReturnValue(mockChoresService);
-      require('../../services/learning').getLearningService = jest.fn().mockReturnValue(mockLearningService);
+      mockChoreService.getUserChores.mockResolvedValue([]);
 
       const requests = [];
 
@@ -172,11 +177,7 @@ describe('Performance Tests', () => {
         updatedAt: new Date(),
       }));
 
-      const mockService = {
-        getUserChores: jest.fn().mockResolvedValue(largeChoreList),
-      };
-
-      require('../../services/chores').getChoreService = jest.fn().mockReturnValue(mockService);
+      mockChoreService.getUserChores.mockResolvedValueOnce(largeChoreList);
 
       const res = await request(app)
         .get('/api/chores')
@@ -189,12 +190,16 @@ describe('Performance Tests', () => {
 
   describe('Memory Efficiency Tests', () => {
     it('should not leak memory on repeated requests', async () => {
-      const mockService = {
-        getUserChores: jest.fn().mockResolvedValue([]),
-      };
+      mockChoreService.getUserChores.mockResolvedValue([]);
 
-      require('../../services/chores').getChoreService = jest.fn().mockReturnValue(mockService);
+      // Warm up first — JIT compilation and first-request allocations
+      // (module init, route table, etc.) are one-time costs that would
+      // otherwise be misread as a per-request leak.
+      for (let i = 0; i < 10; i++) {
+        await request(app).get('/api/chores').set('x-user-id', 'user-1');
+      }
 
+      if (global.gc) global.gc();
       const initialMemory = process.memoryUsage().heapUsed;
 
       // Make 100 requests
@@ -204,6 +209,7 @@ describe('Performance Tests', () => {
           .set('x-user-id', 'user-1');
       }
 
+      if (global.gc) global.gc();
       const finalMemory = process.memoryUsage().heapUsed;
       const memoryIncrease = finalMemory - initialMemory;
 
@@ -214,19 +220,15 @@ describe('Performance Tests', () => {
 
   describe('Database Query Performance', () => {
     it('should handle queries with many results efficiently', async () => {
-      const mockService = {
-        getTransactionHistory: jest.fn().mockResolvedValue(
-          Array(100).fill({
-            user_id: 'user-1',
-            amount: 50,
-            source: 'chore',
-            description: 'Test',
-            created_at: new Date(),
-          })
-        ),
-      };
-
-      require('../../services/chores').getChoreService = jest.fn().mockReturnValue(mockService);
+      mockChoreService.getTransactionHistory.mockResolvedValueOnce(
+        Array(100).fill({
+          user_id: 'user-1',
+          amount: 50,
+          source: 'chore',
+          description: 'Test',
+          created_at: new Date(),
+        })
+      );
 
       const startTime = Date.now();
       await request(app)
@@ -240,11 +242,7 @@ describe('Performance Tests', () => {
 
   describe('Error Recovery Performance', () => {
     it('should handle errors gracefully without significant overhead', async () => {
-      const mockService = {
-        getUserChores: jest.fn().mockRejectedValue(new Error('Service error')),
-      };
-
-      require('../../services/chores').getChoreService = jest.fn().mockReturnValue(mockService);
+      mockChoreService.getUserChores.mockRejectedValueOnce(new Error('Service error'));
 
       const startTime = Date.now();
       await request(app)

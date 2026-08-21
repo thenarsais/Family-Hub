@@ -29,7 +29,10 @@ const SENSITIVE_KEYS = [
   'email',
   'email_address',
 
-  // Location (COPPA)
+  // Location (COPPA) — note: container keys like 'address'/'location' are
+  // deliberately NOT listed here; only their sensitive sub-fields are, so the
+  // scrubber recurses into the object and redacts street/postal_code/lat/long
+  // individually while preserving non-sensitive siblings like city.
   'latitude',
   'longitude',
   'gps_coordinates',
@@ -37,7 +40,6 @@ const SENSITIVE_KEYS = [
   'street_address',
   'postal_code',
   'zip_code',
-  'address',
 
   // Financial (PCI)
   'card_number',
@@ -89,12 +91,16 @@ function scrubRecursive(obj: any, visited: WeakSet<object>, depth = 0): any {
     const scrubbed: ErrorObject = {};
 
     for (const [key, value] of Object.entries(obj)) {
-      if (isSensitiveKey(key)) {
+      if (isSensitiveKey(key) && value !== null && value !== undefined) {
         scrubbed[key] = '[REDACTED]';
         // Log warning in development
         if (process.env.NODE_ENV !== 'production') {
           console.warn(`⚠️  PII Scrubbed: ${key}`);
         }
+      } else if (isSensitiveKey(key)) {
+        // Nothing to leak from a null/undefined value — preserve it as-is
+        // rather than masking the fact that the field was empty.
+        scrubbed[key] = value;
       } else if (value !== null && value !== undefined && typeof value === 'object') {
         scrubbed[key] = scrubRecursive(value, visited, depth + 1);
       } else {
@@ -110,12 +116,13 @@ function scrubRecursive(obj: any, visited: WeakSet<object>, depth = 0): any {
 
 function isSensitiveKey(key: string): boolean {
   const lowerKey = key.toLowerCase();
-  return SENSITIVE_KEYS.some(
-    (sensitiveKey) =>
-      lowerKey === sensitiveKey ||
-      lowerKey.includes(sensitiveKey) ||
-      sensitiveKey.includes(lowerKey)
-  );
+  // Only match when the field's own key name contains a sensitive term (e.g.
+  // "user_password" contains "password"). Matching the reverse direction too
+  // (a sensitive term containing the key) flags unrelated short keys like
+  // "data" or "name" as sensitive just because they're substrings of
+  // "database_url" or "child_name" — that wholesale-redacts entire nested
+  // objects instead of the specific fields that are actually sensitive.
+  return SENSITIVE_KEYS.some((sensitiveKey) => lowerKey.includes(sensitiveKey));
 }
 
 /**

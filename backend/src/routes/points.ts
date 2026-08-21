@@ -243,7 +243,7 @@ router.post('/users/:userId', verifyAuth, async (req: Request, res: Response) =>
     const userId = req.params.userId as string;
     const { points, activity_type, reason } = req.body;
 
-    if (!points || !activity_type) {
+    if (points === undefined || !activity_type) {
       return res.status(400).json({
         error: 'Missing required fields',
         required: ['points', 'activity_type']
@@ -296,7 +296,7 @@ router.post('/users/:userId/subtract', verifyAuth, async (req: Request, res: Res
     const userId = req.params.userId as string;
     const { points, reason } = req.body;
 
-    if (!points) {
+    if (points === undefined) {
       return res.status(400).json({
         error: 'Missing points parameter'
       });

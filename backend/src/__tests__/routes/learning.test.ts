@@ -1,13 +1,28 @@
 import request from 'supertest';
 import express from 'express';
+
+// routes/learning.ts calls getLearningService() once at module load time and
+// holds the result in a module-scoped constant. Reassigning getLearningService
+// per-test (as this file used to do via `(learningService.getLearningService as
+// jest.Mock).mockReturnValue(...)`) has no effect on that already-captured
+// value. Instead, mock the module to always return the same shared object,
+// and configure its methods per test.
+const mockLearningService = {
+  completeLesson: jest.fn(),
+  getLearningStats: jest.fn(),
+  recordQuizAnswer: jest.fn(),
+  getPhaseProgress: jest.fn(),
+  getQuizPerformance: jest.fn(),
+  getRecentActivity: jest.fn(),
+};
+
+jest.mock('../../services/learning', () => ({ getLearningService: () => mockLearningService }));
+
 import learningRoutes from '../../routes/learning';
-import * as learningService from '../../services/learning';
 
 const app = express();
 app.use(express.json());
 app.use('/api/learning', learningRoutes);
-
-jest.mock('../../services/learning');
 
 describe('Learning Routes', () => {
   const mockProgress = {
@@ -24,7 +39,9 @@ describe('Learning Routes', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // resetAllMocks (not clearAllMocks) so queued mockResolvedValueOnce/etc.
+    // from a previous test can't leak into the next one.
+    jest.resetAllMocks();
   });
 
   describe('POST /api/learning/lessons/:lessonId/complete', () => {
@@ -37,10 +54,8 @@ describe('Learning Routes', () => {
         vocabulary: { completed: 0, total: 120 },
       };
 
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        completeLesson: jest.fn().mockResolvedValue(mockProgress),
-        getLearningStats: jest.fn().mockResolvedValue(mockStats),
-      });
+      mockLearningService.completeLesson.mockResolvedValueOnce(mockProgress);
+      mockLearningService.getLearningStats.mockResolvedValueOnce(mockStats);
 
       const res = await request(app)
         .post('/api/learning/lessons/lesson-1/complete')
@@ -104,10 +119,8 @@ describe('Learning Routes', () => {
         vocabulary: { completed: 0, total: 120 },
       };
 
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        completeLesson: jest.fn().mockResolvedValue(mockProgress),
-        getLearningStats: jest.fn().mockResolvedValue(mockStats),
-      });
+      mockLearningService.completeLesson.mockResolvedValue(mockProgress);
+      mockLearningService.getLearningStats.mockResolvedValue(mockStats);
 
       const categories = ['alphabet', 'numbers', 'vocabulary'];
 
@@ -134,10 +147,8 @@ describe('Learning Routes', () => {
         vocabulary: { completed: 0, total: 120 },
       };
 
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        completeLesson: jest.fn().mockResolvedValue(mockProgress),
-        getLearningStats: jest.fn().mockResolvedValue(mockStats),
-      });
+      mockLearningService.completeLesson.mockResolvedValueOnce(mockProgress);
+      mockLearningService.getLearningStats.mockResolvedValueOnce(mockStats);
 
       const res = await request(app)
         .post('/api/learning/lessons/lesson-1/complete')
@@ -152,9 +163,7 @@ describe('Learning Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        completeLesson: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockLearningService.completeLesson.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .post('/api/learning/lessons/lesson-1/complete')
@@ -172,9 +181,7 @@ describe('Learning Routes', () => {
 
   describe('POST /api/learning/quiz/answer', () => {
     it('should record correct answer and award points', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        recordQuizAnswer: jest.fn().mockResolvedValue(undefined),
-      });
+      mockLearningService.recordQuizAnswer.mockResolvedValueOnce(undefined);
 
       const res = await request(app)
         .post('/api/learning/quiz/answer')
@@ -194,9 +201,7 @@ describe('Learning Routes', () => {
     });
 
     it('should record incorrect answer without awarding points', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        recordQuizAnswer: jest.fn().mockResolvedValue(undefined),
-      });
+      mockLearningService.recordQuizAnswer.mockResolvedValueOnce(undefined);
 
       const res = await request(app)
         .post('/api/learning/quiz/answer')
@@ -244,9 +249,7 @@ describe('Learning Routes', () => {
     });
 
     it('should use default pointsEarned if not provided', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        recordQuizAnswer: jest.fn().mockResolvedValue(undefined),
-      });
+      mockLearningService.recordQuizAnswer.mockResolvedValueOnce(undefined);
 
       const res = await request(app)
         .post('/api/learning/quiz/answer')
@@ -264,9 +267,7 @@ describe('Learning Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        recordQuizAnswer: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockLearningService.recordQuizAnswer.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .post('/api/learning/quiz/answer')
@@ -293,9 +294,7 @@ describe('Learning Routes', () => {
         pointsEarned: 150,
       };
 
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getPhaseProgress: jest.fn().mockResolvedValue(mockPhaseProgress),
-      });
+      mockLearningService.getPhaseProgress.mockResolvedValueOnce(mockPhaseProgress);
 
       const res = await request(app)
         .get('/api/learning/progress/phase_1_alphabet')
@@ -325,9 +324,7 @@ describe('Learning Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getPhaseProgress: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockLearningService.getPhaseProgress.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/learning/progress/phase_1_alphabet')
@@ -349,9 +346,7 @@ describe('Learning Routes', () => {
         vocabulary: { completed: 0, total: 120 },
       };
 
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getLearningStats: jest.fn().mockResolvedValue(mockStats),
-      });
+      mockLearningService.getLearningStats.mockResolvedValueOnce(mockStats);
 
       const res = await request(app)
         .get('/api/learning/stats')
@@ -374,9 +369,7 @@ describe('Learning Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getLearningStats: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockLearningService.getLearningStats.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/learning/stats')
@@ -397,9 +390,7 @@ describe('Learning Routes', () => {
         pointsEarned: 175,
       };
 
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getQuizPerformance: jest.fn().mockResolvedValue(mockPerformance),
-      });
+      mockLearningService.getQuizPerformance.mockResolvedValueOnce(mockPerformance);
 
       const res = await request(app)
         .get('/api/learning/quiz/performance')
@@ -422,9 +413,7 @@ describe('Learning Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getQuizPerformance: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockLearningService.getQuizPerformance.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/learning/quiz/performance')
@@ -443,9 +432,7 @@ describe('Learning Routes', () => {
         { type: 'quiz', subject: 'lesson-1:1', created_at: new Date(), points_earned: 5 },
       ];
 
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getRecentActivity: jest.fn().mockResolvedValue(mockActivity),
-      });
+      mockLearningService.getRecentActivity.mockResolvedValueOnce(mockActivity);
 
       const res = await request(app)
         .get('/api/learning/activity/recent')
@@ -466,9 +453,7 @@ describe('Learning Routes', () => {
         points_earned: 10,
       });
 
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getRecentActivity: jest.fn().mockResolvedValue(mockActivity),
-      });
+      mockLearningService.getRecentActivity.mockResolvedValueOnce(mockActivity);
 
       const res = await request(app)
         .get('/api/learning/activity/recent')
@@ -486,14 +471,10 @@ describe('Learning Routes', () => {
         points_earned: 10,
       });
 
-      const mockService = {
-        getRecentActivity: jest.fn().mockImplementation((userId, limit) => {
-          expect(limit).toBeLessThanOrEqual(100);
-          return Promise.resolve(mockActivity);
-        }),
-      };
-
-      (learningService.getLearningService as jest.Mock).mockReturnValue(mockService);
+      mockLearningService.getRecentActivity.mockImplementationOnce((userId: string, limit: number) => {
+        expect(limit).toBeLessThanOrEqual(100);
+        return Promise.resolve(mockActivity);
+      });
 
       const res = await request(app)
         .get('/api/learning/activity/recent?limit=200')
@@ -513,9 +494,7 @@ describe('Learning Routes', () => {
     });
 
     it('should return empty activity when no records', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getRecentActivity: jest.fn().mockResolvedValue([]),
-      });
+      mockLearningService.getRecentActivity.mockResolvedValueOnce([]);
 
       const res = await request(app)
         .get('/api/learning/activity/recent')
@@ -527,9 +506,7 @@ describe('Learning Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (learningService.getLearningService as jest.Mock).mockReturnValue({
-        getRecentActivity: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockLearningService.getRecentActivity.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/learning/activity/recent')

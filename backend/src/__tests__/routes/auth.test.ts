@@ -1,319 +1,362 @@
 /**
  * Auth Route Tests
  * Tests authentication endpoints and security
+ *
+ * This file previously didn't import routes/auth.ts at all — it built a
+ * fake Express app with hand-rolled handlers (checking a single hardcoded
+ * test@example.com/password123 pair) that bore no relation to the real
+ * route, which has a demo-credential bypass for two fixed accounts PLUS a
+ * real Supabase auth path, calls UserRepository, and side-effects a family
+ * creation on every login. None of that was ever exercised. Rewritten
+ * against the real router.
+ *
+ * getSupabase() lazily creates and caches a client on first use (module-
+ * scoped `let supabase`), so — unlike the getXService() singleton bug fixed
+ * elsewhere in this suite — mocking createClient() to always return the same
+ * object works fine here: the route calls getSupabase() fresh each request,
+ * it just happens to return the same mock every time.
  */
 
 import request from 'supertest';
 import express from 'express';
 
+const mockSupabaseClient: any = {
+  auth: {
+    admin: { createUser: jest.fn() },
+    signInWithPassword: jest.fn(),
+    signOut: jest.fn(),
+    getUser: jest.fn(),
+  },
+  from: jest.fn(),
+  select: jest.fn(),
+  eq: jest.fn(),
+  insert: jest.fn(),
+  single: jest.fn(),
+};
+// Chainable: from/select/eq/insert all return the same object so
+// .from(...).select(...).eq(...).eq(...).single() resolves however
+// .single() is configured for that call.
+mockSupabaseClient.from.mockReturnValue(mockSupabaseClient);
+mockSupabaseClient.select.mockReturnValue(mockSupabaseClient);
+mockSupabaseClient.eq.mockReturnValue(mockSupabaseClient);
+mockSupabaseClient.insert.mockReturnValue(mockSupabaseClient);
+
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => mockSupabaseClient),
+}));
+jest.mock('../../database/repositories/UserRepository');
+
+import * as UserRepository from '../../database/repositories/UserRepository';
+import authRoutes from '../../routes/auth';
+
+const app = express();
+app.use(express.json());
+app.use('/', authRoutes);
+
 describe('Auth Routes', () => {
-  let app: express.Application;
-
   beforeEach(() => {
-    app = express();
-    app.use(express.json());
+    jest.clearAllMocks();
+    // Default: ensureUserHasFamily's internal chain always finds "no
+    // existing member" and its own family-insert also comes back empty, so
+    // it quietly no-ops rather than erroring. Family creation itself is
+    // already covered by direct integration testing elsewhere — these tests
+    // are about what the auth endpoints themselves return.
+    mockSupabaseClient.single.mockResolvedValue({ data: null, error: null });
+    mockSupabaseClient.from.mockReturnValue(mockSupabaseClient);
+    mockSupabaseClient.select.mockReturnValue(mockSupabaseClient);
+    mockSupabaseClient.eq.mockReturnValue(mockSupabaseClient);
+    mockSupabaseClient.insert.mockReturnValue(mockSupabaseClient);
+  });
 
-    // Mock auth routes
-    app.post('/login', (req, res) => {
-      const { email, password } = req.body;
+  describe('POST /login — demo credentials', () => {
+    it('should log in with the demo parent account', async () => {
+      const res = await request(app)
+        .post('/login')
+        .send({ email: 'testparent@example.com', password: 'password123' });
 
-      if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password required' });
-      }
-
-      if (email === 'test@example.com' && password === 'password123') {
-        return res.status(200).json({
-          token: 'mock-jwt-token',
-          user: { id: 'user-1', email: 'test@example.com' },
-        });
-      }
-
-      res.status(401).json({ error: 'Invalid credentials' });
+      expect(res.status).toBe(200);
+      expect(res.body.demo_mode).toBe(true);
+      expect(res.body.user.email).toBe('testparent@example.com');
+      expect(res.body.user.role).toBe('parent');
+      expect(res.body.session.access_token).toBeDefined();
     });
 
-    app.post('/signup', (req, res) => {
-      const { email, password, name } = req.body;
+    it('should log in with the demo child account', async () => {
+      const res = await request(app)
+        .post('/login')
+        .send({ email: 'testchild@example.com', password: 'password123' });
 
-      if (!email || !password || !name) {
-        return res.status(400).json({ error: 'All fields required' });
-      }
+      expect(res.status).toBe(200);
+      expect(res.body.user.role).toBe('child');
+    });
 
-      if (!email.includes('@')) {
-        return res.status(400).json({ error: 'Invalid email' });
-      }
-
-      if (password.length < 8) {
-        return res.status(400).json({ error: 'Password must be 8+ chars' });
-      }
-
-      res.status(201).json({
-        token: 'mock-jwt-token',
-        user: { id: 'user-new', email, name },
+    it('should reject the demo email with the wrong password', async () => {
+      // Wrong password means it falls through to the real Supabase path,
+      // which isn't configured to succeed here — it must not silently log
+      // in as the demo user just because the email matched.
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Invalid login credentials' },
       });
+
+      const res = await request(app)
+        .post('/login')
+        .send({ email: 'testparent@example.com', password: 'wrong' });
+
+      expect(res.status).not.toBe(200);
     });
 
-    app.post('/logout', (req, res) => {
-      res.status(200).json({ message: 'Logged out' });
-    });
-
-    app.get('/me', (req, res) => {
-      const token = req.headers.authorization?.replace('Bearer ', '');
-      if (!token) {
-        return res.status(401).json({ error: 'No token' });
-      }
-
-      res.status(200).json({
-        id: 'user-1',
-        email: 'test@example.com',
+    it('should not reveal whether an email exists in the error message', async () => {
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Invalid login credentials' },
       });
+
+      const res = await request(app)
+        .post('/login')
+        .send({ email: 'nobody@example.com', password: 'wrong' });
+
+      expect(res.status).toBe(401);
+      expect(res.body.message).not.toContain('nobody@example.com');
     });
   });
 
-  describe('POST /login', () => {
-    it('should login with valid credentials', async () => {
+  describe('POST /login — real Supabase path', () => {
+    it('should log in a real user', async () => {
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValueOnce({
+        data: { session: { access_token: 'real-token', refresh_token: 'real-refresh', expires_in: 3600 } },
+        error: null,
+      });
+      (UserRepository.getUserByEmail as jest.Mock).mockResolvedValueOnce({
+        id: 'user-real-1',
+        email: 'real@example.com',
+        name: 'Real User',
+        role: 'parent',
+      });
+      (UserRepository.updateLastLogin as jest.Mock).mockResolvedValueOnce(undefined);
+
       const res = await request(app)
         .post('/login')
-        .send({
-          email: 'test@example.com',
-          password: 'password123',
-        });
+        .send({ email: 'real@example.com', password: 'realpassword' });
 
       expect(res.status).toBe(200);
-      expect(res.body.token).toBeDefined();
-      expect(res.body.user.email).toBe('test@example.com');
-    });
-
-    it('should reject missing email', async () => {
-      const res = await request(app)
-        .post('/login')
-        .send({ password: 'password123' });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject missing password', async () => {
-      const res = await request(app)
-        .post('/login')
-        .send({ email: 'test@example.com' });
-
-      expect(res.status).toBe(400);
+      expect(res.body.session.access_token).toBe('real-token');
+      expect(res.body.user.email).toBe('real@example.com');
+      expect(res.body.demo_mode).toBeUndefined();
     });
 
     it('should reject invalid credentials', async () => {
+      mockSupabaseClient.auth.signInWithPassword.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Invalid login credentials' },
+      });
+
       const res = await request(app)
         .post('/login')
-        .send({
-          email: 'wrong@example.com',
-          password: 'wrongpassword',
-        });
+        .send({ email: 'real@example.com', password: 'wrongpassword' });
 
       expect(res.status).toBe(401);
     });
 
-    it('should not expose database errors', async () => {
-      const res = await request(app)
-        .post('/login')
-        .send({
-          email: 'test@example.com',
-          password: 'wrong',
-        });
-
-      expect(res.body.error).not.toContain('database');
-      expect(res.body.error).not.toContain('connection');
-    });
-
-    it('should return JWT token on success', async () => {
-      const res = await request(app)
-        .post('/login')
-        .send({
-          email: 'test@example.com',
-          password: 'password123',
-        });
-
-      expect(res.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
+    it('should require email and password', async () => {
+      const res = await request(app).post('/login').send({ email: 'a@example.com' });
+      expect(res.status).toBe(400);
     });
   });
 
   describe('POST /signup', () => {
-    it('should signup with valid data', async () => {
+    it('should create a new user', async () => {
+      mockSupabaseClient.auth.admin.createUser.mockResolvedValueOnce({
+        data: { user: { id: 'auth-id-1' } },
+        error: null,
+      });
+      (UserRepository.createUser as jest.Mock).mockResolvedValueOnce({
+        id: 'user-new-1',
+        email: 'newuser@example.com',
+        name: 'New User',
+        role: 'parent',
+      });
+
       const res = await request(app)
         .post('/signup')
-        .send({
-          email: 'newuser@example.com',
-          password: 'password123',
-          name: 'New User',
-        });
+        .send({ email: 'newuser@example.com', password: 'password123', name: 'New User', role: 'parent' });
 
       expect(res.status).toBe(201);
-      expect(res.body.token).toBeDefined();
       expect(res.body.user.email).toBe('newuser@example.com');
+      expect(res.body.user).not.toHaveProperty('password');
     });
 
-    it('should reject invalid email', async () => {
-      const res = await request(app)
-        .post('/signup')
-        .send({
-          email: 'not-an-email',
-          password: 'password123',
-          name: 'User',
-        });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should reject short password', async () => {
-      const res = await request(app)
-        .post('/signup')
-        .send({
-          email: 'user@example.com',
-          password: 'short',
-          name: 'User',
-        });
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toContain('8');
-    });
-
-    it('should reject missing fields', async () => {
+    it('should require email, password, name, and role', async () => {
       const res = await request(app)
         .post('/signup')
         .send({ email: 'user@example.com' });
 
       expect(res.status).toBe(400);
+      expect(res.body.required).toEqual(['email', 'password', 'name', 'role']);
     });
 
-    it('should not store plain text password in response', async () => {
+    it('should reject a role that is not parent or child', async () => {
       const res = await request(app)
         .post('/signup')
-        .send({
-          email: 'user@example.com',
-          password: 'password123',
-          name: 'User',
-        });
+        .send({ email: 'user@example.com', password: 'password123', name: 'User', role: 'admin' });
 
-      expect(res.body).not.toHaveProperty('password');
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('parent or child');
+    });
+
+    it('should surface a Supabase signup failure without a 500', async () => {
+      mockSupabaseClient.auth.admin.createUser.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Email already registered' },
+      });
+
+      const res = await request(app)
+        .post('/signup')
+        .send({ email: 'existing@example.com', password: 'password123', name: 'User', role: 'parent' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('Signup failed');
+    });
+
+    it('should not include the password in the response', async () => {
+      mockSupabaseClient.auth.admin.createUser.mockResolvedValueOnce({
+        data: { user: { id: 'auth-id-2' } },
+        error: null,
+      });
+      (UserRepository.createUser as jest.Mock).mockResolvedValueOnce({
+        id: 'user-new-2',
+        email: 'user2@example.com',
+        name: 'User Two',
+        role: 'child',
+      });
+
+      const res = await request(app)
+        .post('/signup')
+        .send({ email: 'user2@example.com', password: 'password123', name: 'User Two', role: 'child' });
+
+      expect(JSON.stringify(res.body)).not.toContain('password123');
     });
   });
 
   describe('POST /logout', () => {
-    it('should logout successfully', async () => {
-      const res = await request(app).post('/logout');
+    it('should log out successfully', async () => {
+      mockSupabaseClient.auth.signOut.mockResolvedValueOnce({ error: null });
+
+      const res = await request(app)
+        .post('/logout')
+        .send({ access_token: 'some-token' });
 
       expect(res.status).toBe(200);
-      expect(res.body.message).toContain('Logged out');
+      expect(res.body.message).toBe('Logout successful');
+    });
+
+    it('should require an access_token', async () => {
+      const res = await request(app).post('/logout').send({});
+      expect(res.status).toBe(400);
     });
   });
 
-  describe('GET /me', () => {
-    it('should return current user with valid token', async () => {
+  describe('GET /me — demo token', () => {
+    it('should return the demo parent from a demo token', async () => {
+      const demoToken = Buffer.from(
+        JSON.stringify({ sub: '00000000-0000-0000-0000-000000000001', email: 'testparent@example.com' })
+      ).toString('base64');
+
       const res = await request(app)
         .get('/me')
-        .set('Authorization', 'Bearer mock-jwt-token');
+        .set('Authorization', `Bearer ${demoToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.email).toBe('test@example.com');
+      expect(res.body.demo_mode).toBe(true);
+      expect(res.body.user.email).toBe('testparent@example.com');
     });
 
-    it('should reject request without token', async () => {
+    it('should require an Authorization header', async () => {
       const res = await request(app).get('/me');
+      expect(res.status).toBe(401);
+    });
+
+    it('should reject a malformed Authorization header', async () => {
+      const res = await request(app)
+        .get('/me')
+        .set('Authorization', 'NotBearer sometoken');
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('GET /me — real Supabase token', () => {
+    it('should return the real user for a valid token', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
+        data: { user: { email: 'real@example.com' } },
+        error: null,
+      });
+      (UserRepository.getUserByEmail as jest.Mock).mockResolvedValueOnce({
+        id: 'user-real-1',
+        email: 'real@example.com',
+        name: 'Real User',
+        role: 'parent',
+        created_at: new Date(),
+      });
+
+      const res = await request(app)
+        .get('/me')
+        .set('Authorization', 'Bearer a-real-looking-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.user.email).toBe('real@example.com');
+    });
+
+    it('should reject an invalid or expired token', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: { message: 'Token expired' },
+      });
+
+      const res = await request(app)
+        .get('/me')
+        .set('Authorization', 'Bearer expired-token');
 
       expect(res.status).toBe(401);
     });
 
-    it('should not return sensitive fields', async () => {
+    it('should not return password or password hash fields', async () => {
+      mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
+        data: { user: { email: 'real@example.com' } },
+        error: null,
+      });
+      (UserRepository.getUserByEmail as jest.Mock).mockResolvedValueOnce({
+        id: 'user-real-1',
+        email: 'real@example.com',
+        name: 'Real User',
+        role: 'parent',
+        password_hash: 'should-never-appear',
+      });
+
       const res = await request(app)
         .get('/me')
-        .set('Authorization', 'Bearer mock-jwt-token');
+        .set('Authorization', 'Bearer a-real-looking-token');
 
-      expect(res.body).not.toHaveProperty('password');
-      expect(res.body).not.toHaveProperty('passwordHash');
+      expect(res.body.user).not.toHaveProperty('password');
+      expect(res.body.user).not.toHaveProperty('password_hash');
     });
   });
 
-  describe('Token Security', () => {
-    it('should not expose token in logs', async () => {
+  describe('Token security', () => {
+    it('should not log the raw token', async () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      mockSupabaseClient.auth.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: { message: 'invalid' },
+      });
 
       await request(app)
         .get('/me')
         .set('Authorization', 'Bearer super-secret-token-12345');
 
-      // Token should not be logged
-      const logs = consoleSpy.mock.calls.join();
+      const logs = consoleSpy.mock.calls.flat().join(' ');
       expect(logs).not.toContain('super-secret-token-12345');
-
       consoleSpy.mockRestore();
-    });
-
-    it('should accept Bearer token format', async () => {
-      const res = await request(app)
-        .get('/me')
-        .set('Authorization', 'Bearer valid-token');
-
-      // Should process the token
-      expect(res.status).toBe(200);
-    });
-
-    it('should reject malformed Authorization header', async () => {
-      const res = await request(app)
-        .get('/me')
-        .set('Authorization', 'InvalidFormat token');
-
-      expect(res.status).toBe(401);
-    });
-  });
-
-  describe('Password Security', () => {
-    it('should not accept empty password', async () => {
-      const res = await request(app)
-        .post('/login')
-        .send({
-          email: 'test@example.com',
-          password: '',
-        });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('should require minimum password length on signup', async () => {
-      const res = await request(app)
-        .post('/signup')
-        .send({
-          email: 'user@example.com',
-          password: 'pass',
-          name: 'User',
-        });
-
-      expect(res.status).toBe(400);
-    });
-  });
-
-  describe('COPPA Compliance', () => {
-    it('should not expose user data in error messages', async () => {
-      const res = await request(app)
-        .post('/login')
-        .send({
-          email: 'test@example.com',
-          password: 'wrong',
-        });
-
-      // Should not reveal if email exists
-      expect(res.body.error).toBe('Invalid credentials');
-    });
-
-    it('should handle parent email securely', async () => {
-      const res = await request(app)
-        .post('/signup')
-        .send({
-          email: 'parent@example.com',
-          password: 'password123',
-          name: 'Parent',
-        });
-
-      // Response should not contain the actual email
-      expect(res.body.user.email).toBe('parent@example.com');
-      // But no sensitive data should be exposed
-      expect(res.body).not.toHaveProperty('password');
     });
   });
 });

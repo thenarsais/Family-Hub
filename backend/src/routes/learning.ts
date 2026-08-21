@@ -78,6 +78,13 @@ router.post('/quiz/answer', async (req: Request, res: Response) => {
       });
     }
 
+    if (typeof questionNumber !== 'number') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'questionNumber must be a number',
+      });
+    }
+
     const isCorrect = selectedAnswer === correctAnswer;
 
     await learning.recordQuizAnswer(userId, lessonId, questionNumber, selectedAnswer, correctAnswer, pointsEarned);

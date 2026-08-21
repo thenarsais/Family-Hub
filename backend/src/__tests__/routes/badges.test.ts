@@ -1,280 +1,244 @@
 /**
  * Badges Route Tests
  * Tests badge management endpoints
+ *
+ * This file previously didn't import routes/badges.ts at all — it built a
+ * fake Express app with hand-rolled handlers at made-up paths (/badges,
+ * /badges/award) using an x-user-id header. The real route is mounted at
+ * root (no /api prefix — see server.ts), uses `Authorization: Bearer
+ * <token>` via verifyAuth (presence-only check, not validity — see the
+ * "fake auth" finding elsewhere), and none of that was ever exercised.
+ * Rewritten against the real router and BadgesRepository.
  */
 
 import request from 'supertest';
 import express from 'express';
 
+jest.mock('../../database/repositories/BadgesRepository');
+
+import * as BadgesRepository from '../../database/repositories/BadgesRepository';
+import badgesRoutes from '../../routes/badges';
+
+const app = express();
+app.use(express.json());
+app.use('/', badgesRoutes);
+
 describe('Badges Routes', () => {
-  let app: express.Application;
-
   beforeEach(() => {
-    app = express();
-    app.use(express.json());
+    jest.resetAllMocks();
+  });
 
-    // Mock user ID middleware
-    app.use((req, res, next) => {
-      (req as any).userId = req.headers['x-user-id'] || 'user-1';
-      next();
+  const mockBadge = {
+    id: 'badge-1',
+    title: 'Beginner Learner',
+    description: 'Completed your first lesson',
+    icon_emoji: '📚',
+    category: 'learning',
+    tier: 'bronze',
+    points_required: 10,
+    created_at: new Date(),
+  };
+
+  describe('GET /', () => {
+    it('should return all badges', async () => {
+      (BadgesRepository.getAllBadges as jest.Mock).mockResolvedValueOnce([mockBadge]);
+
+      const res = await request(app)
+        .get('/')
+        .set('Authorization', 'Bearer token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(1);
+      expect(res.body.badges[0].title).toBe('Beginner Learner');
     });
 
-    // Mock badges routes
-    app.get('/badges', (req, res) => {
-      const userId = (req as any).userId;
-      if (!userId) {
-        return res.status(401).json({ error: 'User ID required' });
-      }
-
-      res.status(200).json({
-        badges: [
-          { id: 'badge-1', name: 'First Steps', earned: true },
-          { id: 'badge-2', name: 'Learner', earned: false },
-        ],
-      });
+    it('should require an Authorization header', async () => {
+      const res = await request(app).get('/');
+      expect(res.status).toBe(401);
+      expect(res.body.error).toBe('Missing authorization header');
     });
 
-    app.post('/badges/:id/claim', (req, res) => {
-      const userId = (req as any).userId;
-      if (!userId) {
-        return res.status(401).json({ error: 'User ID required' });
-      }
+    it('should handle repository errors', async () => {
+      (BadgesRepository.getAllBadges as jest.Mock).mockRejectedValueOnce(new Error('DB error'));
 
-      const { id } = req.params;
-      if (!id) {
-        return res.status(400).json({ error: 'Badge ID required' });
-      }
+      const res = await request(app)
+        .get('/')
+        .set('Authorization', 'Bearer token');
 
-      res.status(200).json({
-        badge: { id, name: 'First Steps', earned: true },
-      });
-    });
-
-    app.get('/badges/stats', (req, res) => {
-      const userId = (req as any).userId;
-      if (!userId) {
-        return res.status(401).json({ error: 'User ID required' });
-      }
-
-      res.status(200).json({
-        totalBadges: 10,
-        earnedBadges: 3,
-        progress: 30,
-      });
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('Failed to get badges');
     });
   });
 
-  describe('GET /badges', () => {
-    it('should return user badges', async () => {
+  describe('GET /:id', () => {
+    it('should return a single badge', async () => {
+      (BadgesRepository.getBadgeById as jest.Mock).mockResolvedValueOnce(mockBadge);
+
       const res = await request(app)
-        .get('/badges')
-        .set('x-user-id', 'user-1');
+        .get('/badge-1')
+        .set('Authorization', 'Bearer token');
 
       expect(res.status).toBe(200);
-      expect(res.body.badges).toBeDefined();
-      expect(Array.isArray(res.body.badges)).toBe(true);
+      expect(res.body.badge.id).toBe('badge-1');
     });
 
-    it('should include badge properties', async () => {
+    it('should return 404 when the badge does not exist', async () => {
+      (BadgesRepository.getBadgeById as jest.Mock).mockResolvedValueOnce(null);
+
       const res = await request(app)
-        .get('/badges')
-        .set('x-user-id', 'user-1');
+        .get('/nonexistent')
+        .set('Authorization', 'Bearer token');
 
-      const badge = res.body.badges[0];
-      expect(badge).toHaveProperty('id');
-      expect(badge).toHaveProperty('name');
-      expect(badge).toHaveProperty('earned');
-    });
-
-    it('should require user ID', async () => {
-      const res = await request(app).get('/badges');
-
-      expect(res.status).toBe(401);
-    });
-
-    it('should only return user specific badges', async () => {
-      const res1 = await request(app)
-        .get('/badges')
-        .set('x-user-id', 'user-1');
-
-      const res2 = await request(app)
-        .get('/badges')
-        .set('x-user-id', 'user-2');
-
-      // Both should succeed but implicitly return user-specific data
-      expect(res1.status).toBe(200);
-      expect(res2.status).toBe(200);
-    });
-
-    it('should return consistent badge list', async () => {
-      const res1 = await request(app)
-        .get('/badges')
-        .set('x-user-id', 'user-1');
-
-      const res2 = await request(app)
-        .get('/badges')
-        .set('x-user-id', 'user-1');
-
-      expect(res1.body.badges.length).toBe(res2.body.badges.length);
+      expect(res.status).toBe(404);
+      expect(res.body.error).toBe('Badge not found');
     });
   });
 
-  describe('POST /badges/:id/claim', () => {
-    it('should claim badge successfully', async () => {
+  describe('GET /category/:category', () => {
+    it('should return badges in a category', async () => {
+      (BadgesRepository.getBadgesByCategory as jest.Mock).mockResolvedValueOnce([mockBadge]);
+
       const res = await request(app)
-        .post('/badges/badge-1/claim')
-        .set('x-user-id', 'user-1');
+        .get('/category/learning')
+        .set('Authorization', 'Bearer token');
 
       expect(res.status).toBe(200);
-      expect(res.body.badge.earned).toBe(true);
+      expect(res.body.category).toBe('learning');
+      expect(res.body.count).toBe(1);
     });
+  });
 
-    it('should include badge details in response', async () => {
+  describe('GET /users/:userId', () => {
+    it('should return badges earned by a user', async () => {
+      (BadgesRepository.getUserBadges as jest.Mock).mockResolvedValueOnce([
+        { id: 'ub-1', badge_id: 'badge-1', earned_at: new Date() },
+      ]);
+
       const res = await request(app)
-        .post('/badges/badge-1/claim')
-        .set('x-user-id', 'user-1');
+        .get('/users/user-1')
+        .set('Authorization', 'Bearer token');
 
-      expect(res.body.badge).toHaveProperty('id');
-      expect(res.body.badge).toHaveProperty('name');
-      expect(res.body.badge).toHaveProperty('earned');
+      expect(res.status).toBe(200);
+      expect(res.body.user_id).toBe('user-1');
+      expect(res.body.count).toBe(1);
+      expect(res.body.meta.total_badges).toBe(1);
     });
 
-    it('should require user ID', async () => {
-      const res = await request(app).post('/badges/badge-1/claim');
+    it('should fall back to demo data if the database is unavailable, not error', async () => {
+      // This endpoint deliberately swallows DB errors into a mock-data
+      // response rather than propagating them — see routes/badges.ts.
+      (BadgesRepository.getUserBadges as jest.Mock).mockRejectedValueOnce(new Error('DB down'));
 
+      const res = await request(app)
+        .get('/users/user-1')
+        .set('Authorization', 'Bearer token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.demo_mode).toBe(true);
+      expect(res.body.count).toBe(3);
+    });
+
+    it('should require an Authorization header', async () => {
+      const res = await request(app).get('/users/user-1');
       expect(res.status).toBe(401);
     });
+  });
 
-    it('should require badge ID', async () => {
+  describe('GET /users/:userId/detailed', () => {
+    it('should return badges with full details', async () => {
+      (BadgesRepository.getUserBadgesWithDetails as jest.Mock).mockResolvedValueOnce([
+        {
+          id: 'ub-1',
+          badge_id: 'badge-1',
+          title: 'Beginner Learner',
+          description: 'Completed your first lesson',
+          icon_emoji: '📚',
+          category: 'learning',
+          tier: 'bronze',
+          earned_at: new Date(),
+        },
+      ]);
+
       const res = await request(app)
-        .post('/badges//claim')
-        .set('x-user-id', 'user-1');
+        .get('/users/user-1/detailed')
+        .set('Authorization', 'Bearer token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.badges[0].badge.title).toBe('Beginner Learner');
+      expect(res.body.badges[0].earned_badge_id).toBe('ub-1');
+    });
+  });
+
+  describe('POST /users/:userId/badges/:badgeId', () => {
+    it('should award a badge', async () => {
+      (BadgesRepository.userHasBadge as jest.Mock).mockResolvedValueOnce(false);
+      (BadgesRepository.awardBadge as jest.Mock).mockResolvedValueOnce({
+        id: 'ub-1',
+        user_id: 'user-1',
+        badge_id: 'badge-1',
+        earned_at: new Date(),
+      });
+
+      const res = await request(app)
+        .post('/users/user-1/badges/badge-1')
+        .set('Authorization', 'Bearer token');
+
+      expect(res.status).toBe(201);
+      expect(res.body.badge.badge_id).toBe('badge-1');
+    });
+
+    it('should reject awarding a badge the user already has', async () => {
+      (BadgesRepository.userHasBadge as jest.Mock).mockResolvedValueOnce(true);
+
+      const res = await request(app)
+        .post('/users/user-1/badges/badge-1')
+        .set('Authorization', 'Bearer token');
 
       expect(res.status).toBe(400);
+      expect(res.body.error).toBe('User already has this badge');
+      expect(BadgesRepository.awardBadge).not.toHaveBeenCalled();
     });
 
-    it('should not allow claiming same badge twice', async () => {
-      // First claim
-      await request(app)
-        .post('/badges/badge-1/claim')
-        .set('x-user-id', 'user-1');
-
-      // Second claim should fail or be idempotent
-      const res = await request(app)
-        .post('/badges/badge-1/claim')
-        .set('x-user-id', 'user-1');
-
-      // Should succeed (idempotent) or return 409 (conflict)
-      expect([200, 409]).toContain(res.status);
-    });
-  });
-
-  describe('GET /badges/stats', () => {
-    it('should return badge statistics', async () => {
-      const res = await request(app)
-        .get('/badges/stats')
-        .set('x-user-id', 'user-1');
-
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('totalBadges');
-      expect(res.body).toHaveProperty('earnedBadges');
-      expect(res.body).toHaveProperty('progress');
-    });
-
-    it('should have valid progress percentage', async () => {
-      const res = await request(app)
-        .get('/badges/stats')
-        .set('x-user-id', 'user-1');
-
-      expect(res.body.progress).toBeGreaterThanOrEqual(0);
-      expect(res.body.progress).toBeLessThanOrEqual(100);
-    });
-
-    it('should have earned <= total badges', async () => {
-      const res = await request(app)
-        .get('/badges/stats')
-        .set('x-user-id', 'user-1');
-
-      expect(res.body.earnedBadges).toBeLessThanOrEqual(res.body.totalBadges);
-    });
-
-    it('should require user ID', async () => {
-      const res = await request(app).get('/badges/stats');
-
+    it('should require an Authorization header', async () => {
+      const res = await request(app).post('/users/user-1/badges/badge-1');
       expect(res.status).toBe(401);
     });
-
-    it('should calculate progress correctly', async () => {
-      const res = await request(app)
-        .get('/badges/stats')
-        .set('x-user-id', 'user-1');
-
-      const expectedProgress = (res.body.earnedBadges / res.body.totalBadges) * 100;
-      expect(res.body.progress).toBe(Math.round(expectedProgress));
-    });
   });
 
-  describe('Badge Unlocking Logic', () => {
-    it('should only unlock achievable badges', async () => {
+  describe('DELETE /users/:userId/badges/:badgeId', () => {
+    it('should revoke a badge', async () => {
+      (BadgesRepository.revokeBadge as jest.Mock).mockResolvedValueOnce(undefined);
+
       const res = await request(app)
-        .post('/badges/badge-1/claim')
-        .set('x-user-id', 'user-1');
+        .delete('/users/user-1/badges/badge-1')
+        .set('Authorization', 'Bearer token');
 
       expect(res.status).toBe(200);
-    });
-
-    it('should respect badge requirements', async () => {
-      // This would test if actual requirements are enforced
-      // E.g., can't unlock "Expert" without "Beginner" first
-      const res = await request(app)
-        .post('/badges/badge-expert/claim')
-        .set('x-user-id', 'user-1');
-
-      // Should either fail (401/400) or succeed
-      expect([200, 400, 409]).toContain(res.status);
+      expect(res.body.message).toBe('Badge revoked successfully');
     });
   });
 
-  describe('COPPA Compliance', () => {
-    it('should not expose sensitive user data with badges', async () => {
+  describe('GET /users/:userId/range', () => {
+    it('should return badges earned in a date range', async () => {
+      (BadgesRepository.getBadgesEarnedInRange as jest.Mock).mockResolvedValueOnce([
+        { id: 'ub-1', badge_id: 'badge-1', earned_at: new Date() },
+      ]);
+
       const res = await request(app)
-        .get('/badges')
-        .set('x-user-id', 'user-1');
+        .get('/users/user-1/range?start=2026-01-01&end=2026-01-31')
+        .set('Authorization', 'Bearer token');
 
-      expect(res.body).not.toHaveProperty('email');
-      expect(res.body).not.toHaveProperty('phone');
-      expect(res.body).not.toHaveProperty('address');
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(1);
     });
 
-    it('should not reveal achievement timing to other users', async () => {
-      const res1 = await request(app)
-        .get('/badges')
-        .set('x-user-id', 'user-1');
+    it('should require start and end query params', async () => {
+      const res = await request(app)
+        .get('/users/user-1/range')
+        .set('Authorization', 'Bearer token');
 
-      // Other user should not be able to see user-1's badges
-      // This would be enforced by middleware/authorization
-      expect(res1.status).toBe(200);
-    });
-  });
-
-  describe('Rate Limiting Readiness', () => {
-    it('should handle multiple badge claims gracefully', async () => {
-      const promises = [];
-
-      for (let i = 0; i < 5; i++) {
-        promises.push(
-          request(app)
-            .post('/badges/badge-1/claim')
-            .set('x-user-id', 'user-1')
-        );
-      }
-
-      const results = await Promise.all(promises);
-
-      // All should complete without server error
-      results.forEach((res) => {
-        expect([200, 409, 429]).toContain(res.status);
-      });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('start or end');
     });
   });
 });

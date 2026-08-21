@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 export const healthRoutes = Router();
 
 healthRoutes.get('/', (req: Request, res: Response) => {
+  res.set('Cache-Control', 'no-store');
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),

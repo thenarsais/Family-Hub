@@ -1,13 +1,29 @@
 import request from 'supertest';
 import express from 'express';
+
+// routes/chores.ts calls getChoreService() once at module load time and holds
+// the result in a module-scoped constant. Reassigning getChoreService per-test
+// (as this file used to do via `(choreService.getChoreService as jest.Mock)
+// .mockReturnValue(...)`) has no effect on that already-captured value — every
+// request would silently call methods on whatever the auto-mock returned at
+// import time. Instead, mock the module to always return the same shared
+// object, and configure that object's methods per test.
+const mockChoreService = {
+  getUserChores: jest.fn(),
+  createChore: jest.fn(),
+  completeChore: jest.fn(),
+  getChoreProgress: jest.fn(),
+  getPointsSummary: jest.fn(),
+  getTransactionHistory: jest.fn(),
+};
+
+jest.mock('../../services/chores', () => ({ getChoreService: () => mockChoreService }));
+
 import choresRoutes from '../../routes/chores';
-import * as choreService from '../../services/chores';
 
 const app = express();
 app.use(express.json());
 app.use('/api/chores', choresRoutes);
-
-jest.mock('../../services/chores');
 
 describe('Chores Routes', () => {
   const mockChore = {
@@ -38,14 +54,14 @@ describe('Chores Routes', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // resetAllMocks (not clearAllMocks) so queued mockResolvedValueOnce/etc.
+    // from a previous test can't leak into the next one.
+    jest.resetAllMocks();
   });
 
   describe('GET /api/chores', () => {
     it('should list all chores for user', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getUserChores: jest.fn().mockResolvedValue(mockChores),
-      });
+      mockChoreService.getUserChores.mockResolvedValueOnce(mockChores);
 
       const res = await request(app)
         .get('/api/chores')
@@ -59,9 +75,7 @@ describe('Chores Routes', () => {
     });
 
     it('should return empty array when no chores', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getUserChores: jest.fn().mockResolvedValue([]),
-      });
+      mockChoreService.getUserChores.mockResolvedValueOnce([]);
 
       const res = await request(app)
         .get('/api/chores')
@@ -82,9 +96,7 @@ describe('Chores Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getUserChores: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockChoreService.getUserChores.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/chores')
@@ -98,9 +110,7 @@ describe('Chores Routes', () => {
 
   describe('POST /api/chores', () => {
     it('should create a new chore', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        createChore: jest.fn().mockResolvedValue(mockChore),
-      });
+      mockChoreService.createChore.mockResolvedValueOnce(mockChore);
 
       const res = await request(app)
         .post('/api/chores')
@@ -176,9 +186,7 @@ describe('Chores Routes', () => {
     });
 
     it('should allow optional description', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        createChore: jest.fn().mockResolvedValue(mockChore),
-      });
+      mockChoreService.createChore.mockResolvedValueOnce(mockChore);
 
       const res = await request(app)
         .post('/api/chores')
@@ -194,9 +202,7 @@ describe('Chores Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        createChore: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockChoreService.createChore.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .post('/api/chores')
@@ -230,10 +236,8 @@ describe('Chores Routes', () => {
         pointsEarned: 50,
       };
 
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        completeChore: jest.fn().mockResolvedValue(mockCompletion),
-        getChoreProgress: jest.fn().mockResolvedValue(mockProgress),
-      });
+      mockChoreService.completeChore.mockResolvedValueOnce(mockCompletion);
+      mockChoreService.getChoreProgress.mockResolvedValueOnce(mockProgress);
 
       const res = await request(app)
         .post('/api/chores/chore-1/complete')
@@ -255,9 +259,7 @@ describe('Chores Routes', () => {
     });
 
     it('should return 404 when chore not found', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        completeChore: jest.fn().mockRejectedValue(new Error('Chore not found')),
-      });
+      mockChoreService.completeChore.mockRejectedValueOnce(new Error('Chore not found'));
 
       const res = await request(app)
         .post('/api/chores/invalid-id/complete')
@@ -269,9 +271,7 @@ describe('Chores Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        completeChore: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockChoreService.completeChore.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .post('/api/chores/chore-1/complete')
@@ -299,10 +299,8 @@ describe('Chores Routes', () => {
         monthlyPoints: 800,
       };
 
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getChoreProgress: jest.fn().mockResolvedValue(mockProgress),
-        getPointsSummary: jest.fn().mockResolvedValue(mockPointsSummary),
-      });
+      mockChoreService.getChoreProgress.mockResolvedValueOnce(mockProgress);
+      mockChoreService.getPointsSummary.mockResolvedValueOnce(mockPointsSummary);
 
       const res = await request(app)
         .get('/api/chores/progress/summary')
@@ -325,9 +323,7 @@ describe('Chores Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getChoreProgress: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockChoreService.getChoreProgress.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/chores/progress/summary')
@@ -348,9 +344,7 @@ describe('Chores Routes', () => {
         monthlyPoints: 800,
       };
 
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getPointsSummary: jest.fn().mockResolvedValue(mockPointsSummary),
-      });
+      mockChoreService.getPointsSummary.mockResolvedValueOnce(mockPointsSummary);
 
       const res = await request(app)
         .get('/api/chores/points/summary')
@@ -374,9 +368,7 @@ describe('Chores Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getPointsSummary: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockChoreService.getPointsSummary.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/chores/points/summary')
@@ -395,9 +387,7 @@ describe('Chores Routes', () => {
         { user_id: 'user-1', amount: 30, source: 'chore', description: 'Completed: chore-2', created_at: new Date() },
       ];
 
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getTransactionHistory: jest.fn().mockResolvedValue(mockHistory),
-      });
+      mockChoreService.getTransactionHistory.mockResolvedValueOnce(mockHistory);
 
       const res = await request(app)
         .get('/api/chores/points/history')
@@ -418,9 +408,7 @@ describe('Chores Routes', () => {
         created_at: new Date(),
       });
 
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getTransactionHistory: jest.fn().mockResolvedValue(mockHistory),
-      });
+      mockChoreService.getTransactionHistory.mockResolvedValueOnce(mockHistory);
 
       const res = await request(app)
         .get('/api/chores/points/history?limit=50')
@@ -431,15 +419,9 @@ describe('Chores Routes', () => {
     });
 
     it('should enforce max limit of 100', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getTransactionHistory: jest.fn().mockResolvedValue([]),
-      });
-
-      const mockService = (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getTransactionHistory: jest.fn().mockImplementation((userId, limit) => {
-          expect(limit).toBeLessThanOrEqual(100);
-          return Promise.resolve([]);
-        }),
+      mockChoreService.getTransactionHistory.mockImplementationOnce((userId: string, limit: number) => {
+        expect(limit).toBeLessThanOrEqual(100);
+        return Promise.resolve([]);
       });
 
       const res = await request(app)
@@ -460,9 +442,7 @@ describe('Chores Routes', () => {
     });
 
     it('should return empty history when no transactions', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getTransactionHistory: jest.fn().mockResolvedValue([]),
-      });
+      mockChoreService.getTransactionHistory.mockResolvedValueOnce([]);
 
       const res = await request(app)
         .get('/api/chores/points/history')
@@ -474,9 +454,7 @@ describe('Chores Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (choreService.getChoreService as jest.Mock).mockReturnValue({
-        getTransactionHistory: jest.fn().mockRejectedValue(new Error('Database error')),
-      });
+      mockChoreService.getTransactionHistory.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/chores/points/history')

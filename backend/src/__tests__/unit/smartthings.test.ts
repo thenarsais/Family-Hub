@@ -1,14 +1,30 @@
 import request from 'supertest';
 import express from 'express';
+
+// routes/smartthings.ts calls getSmartThingsService() once at module load time
+// and holds the result in a module-scoped constant. Reassigning
+// getSmartThingsService per-test (as this file used to do via
+// `(smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(...)`)
+// has no effect on that already-captured value. Instead, mock the module to
+// always return the same shared object, and configure its methods per test.
+const mockSmartThingsService = {
+  listDevices: jest.fn(),
+  getDevice: jest.fn(),
+  setLight: jest.fn(),
+  setLightBrightness: jest.fn(),
+  setTemperature: jest.fn(),
+  setLock: jest.fn(),
+  discoverDevices: jest.fn(),
+};
+
+jest.mock('../../services/smartthings', () => ({ getSmartThingsService: () => mockSmartThingsService }));
+jest.mock('../../database/connection');
+
 import smartthingsRoutes from '../../routes/smartthings';
-import * as smartthingsService from '../../services/smartthings';
 
 const app = express();
 app.use(express.json());
 app.use('/api/smartthings', smartthingsRoutes);
-
-jest.mock('../../services/smartthings');
-jest.mock('../../database/connection');
 
 describe('SmartThings Routes', () => {
   const mockDevices = [
@@ -36,14 +52,14 @@ describe('SmartThings Routes', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // resetAllMocks (not clearAllMocks) so queued mockResolvedValueOnce/etc.
+    // from a previous test can't leak into the next one.
+    jest.resetAllMocks();
   });
 
   describe('GET /api/smartthings/devices', () => {
     it('should list all devices successfully', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        listDevices: jest.fn().mockResolvedValue(mockDevices),
-      });
+      mockSmartThingsService.listDevices.mockResolvedValueOnce(mockDevices);
 
       const res = await request(app)
         .get('/api/smartthings/devices')
@@ -56,9 +72,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should return empty array when no devices found', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        listDevices: jest.fn().mockResolvedValue([]),
-      });
+      mockSmartThingsService.listDevices.mockResolvedValueOnce([]);
 
       const res = await request(app)
         .get('/api/smartthings/devices')
@@ -70,9 +84,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        listDevices: jest.fn().mockRejectedValue(new Error('Service error')),
-      });
+      mockSmartThingsService.listDevices.mockRejectedValueOnce(new Error('Service error'));
 
       const res = await request(app)
         .get('/api/smartthings/devices')
@@ -86,9 +98,7 @@ describe('SmartThings Routes', () => {
 
   describe('GET /api/smartthings/devices/:deviceId', () => {
     it('should get single device details', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        getDevice: jest.fn().mockResolvedValue(mockDevices[0]),
-      });
+      mockSmartThingsService.getDevice.mockResolvedValueOnce(mockDevices[0]);
 
       const res = await request(app)
         .get('/api/smartthings/devices/light-1')
@@ -100,9 +110,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should return 404 when device not found', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        getDevice: jest.fn().mockResolvedValue(null),
-      });
+      mockSmartThingsService.getDevice.mockResolvedValueOnce(null);
 
       const res = await request(app)
         .get('/api/smartthings/devices/invalid-id')
@@ -113,9 +121,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        getDevice: jest.fn().mockRejectedValue(new Error('Service error')),
-      });
+      mockSmartThingsService.getDevice.mockRejectedValueOnce(new Error('Service error'));
 
       const res = await request(app)
         .get('/api/smartthings/devices/light-1')
@@ -128,13 +134,10 @@ describe('SmartThings Routes', () => {
 
   describe('PUT /api/smartthings/devices/:deviceId', () => {
     it('should turn light on', async () => {
-      const mockService = {
-        getDevice: jest.fn()
-          .mockResolvedValueOnce(mockDevices[0])
-          .mockResolvedValueOnce({ ...mockDevices[0], status: { switch: 'on', level: 100 } }),
-        setLight: jest.fn().mockResolvedValue(true),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice
+        .mockResolvedValueOnce(mockDevices[0])
+        .mockResolvedValueOnce({ ...mockDevices[0], status: { switch: 'on', level: 100 } });
+      mockSmartThingsService.setLight.mockResolvedValueOnce(true);
 
       const res = await request(app)
         .put('/api/smartthings/devices/light-1')
@@ -144,17 +147,14 @@ describe('SmartThings Routes', () => {
       expect(res.body.status).toBe('success');
       expect(res.body.command).toBe('on');
       expect(res.body.device).toBeDefined();
-      expect(mockService.setLight).toHaveBeenCalledWith('light-1', true);
+      expect(mockSmartThingsService.setLight).toHaveBeenCalledWith('light-1', true);
     });
 
     it('should turn light off', async () => {
-      const mockService = {
-        getDevice: jest.fn()
-          .mockResolvedValueOnce(mockDevices[0])
-          .mockResolvedValueOnce({ ...mockDevices[0], status: { switch: 'off', level: 0 } }),
-        setLight: jest.fn().mockResolvedValue(true),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice
+        .mockResolvedValueOnce(mockDevices[0])
+        .mockResolvedValueOnce({ ...mockDevices[0], status: { switch: 'off', level: 0 } });
+      mockSmartThingsService.setLight.mockResolvedValueOnce(true);
 
       const res = await request(app)
         .put('/api/smartthings/devices/light-1')
@@ -163,17 +163,14 @@ describe('SmartThings Routes', () => {
 
       expect(res.body.status).toBe('success');
       expect(res.body.command).toBe('off');
-      expect(mockService.setLight).toHaveBeenCalledWith('light-1', false);
+      expect(mockSmartThingsService.setLight).toHaveBeenCalledWith('light-1', false);
     });
 
     it('should set brightness', async () => {
-      const mockService = {
-        getDevice: jest.fn()
-          .mockResolvedValueOnce(mockDevices[0])
-          .mockResolvedValueOnce({ ...mockDevices[0], status: { switch: 'on', level: 50 } }),
-        setLightBrightness: jest.fn().mockResolvedValue(true),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice
+        .mockResolvedValueOnce(mockDevices[0])
+        .mockResolvedValueOnce({ ...mockDevices[0], status: { switch: 'on', level: 50 } });
+      mockSmartThingsService.setLightBrightness.mockResolvedValueOnce(true);
 
       const res = await request(app)
         .put('/api/smartthings/devices/light-1')
@@ -181,14 +178,11 @@ describe('SmartThings Routes', () => {
         .expect(200);
 
       expect(res.body.status).toBe('success');
-      expect(mockService.setLightBrightness).toHaveBeenCalledWith('light-1', 50);
+      expect(mockSmartThingsService.setLightBrightness).toHaveBeenCalledWith('light-1', 50);
     });
 
     it('should require brightness argument', async () => {
-      const mockService = {
-        getDevice: jest.fn().mockResolvedValue(mockDevices[0]),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice.mockResolvedValueOnce(mockDevices[0]);
 
       const res = await request(app)
         .put('/api/smartthings/devices/light-1')
@@ -200,13 +194,10 @@ describe('SmartThings Routes', () => {
     });
 
     it('should set temperature', async () => {
-      const mockService = {
-        getDevice: jest.fn()
-          .mockResolvedValueOnce(mockDevices[2])
-          .mockResolvedValueOnce({ ...mockDevices[2], status: { temperature: 72 } }),
-        setTemperature: jest.fn().mockResolvedValue(true),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice
+        .mockResolvedValueOnce(mockDevices[2])
+        .mockResolvedValueOnce({ ...mockDevices[2], status: { temperature: 72 } });
+      mockSmartThingsService.setTemperature.mockResolvedValueOnce(true);
 
       const res = await request(app)
         .put('/api/smartthings/devices/thermostat-1')
@@ -214,14 +205,11 @@ describe('SmartThings Routes', () => {
         .expect(200);
 
       expect(res.body.status).toBe('success');
-      expect(mockService.setTemperature).toHaveBeenCalledWith('thermostat-1', 72);
+      expect(mockSmartThingsService.setTemperature).toHaveBeenCalledWith('thermostat-1', 72);
     });
 
     it('should require temperature argument', async () => {
-      const mockService = {
-        getDevice: jest.fn().mockResolvedValue(mockDevices[2]),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice.mockResolvedValueOnce(mockDevices[2]);
 
       const res = await request(app)
         .put('/api/smartthings/devices/thermostat-1')
@@ -233,13 +221,10 @@ describe('SmartThings Routes', () => {
     });
 
     it('should lock device', async () => {
-      const mockService = {
-        getDevice: jest.fn()
-          .mockResolvedValueOnce(mockDevices[1])
-          .mockResolvedValueOnce({ ...mockDevices[1], status: { lock: 'locked' } }),
-        setLock: jest.fn().mockResolvedValue(true),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice
+        .mockResolvedValueOnce(mockDevices[1])
+        .mockResolvedValueOnce({ ...mockDevices[1], status: { lock: 'locked' } });
+      mockSmartThingsService.setLock.mockResolvedValueOnce(true);
 
       const res = await request(app)
         .put('/api/smartthings/devices/lock-1')
@@ -247,17 +232,14 @@ describe('SmartThings Routes', () => {
         .expect(200);
 
       expect(res.body.status).toBe('success');
-      expect(mockService.setLock).toHaveBeenCalledWith('lock-1', true);
+      expect(mockSmartThingsService.setLock).toHaveBeenCalledWith('lock-1', true);
     });
 
     it('should unlock device', async () => {
-      const mockService = {
-        getDevice: jest.fn()
-          .mockResolvedValueOnce(mockDevices[1])
-          .mockResolvedValueOnce({ ...mockDevices[1], status: { lock: 'unlocked' } }),
-        setLock: jest.fn().mockResolvedValue(true),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice
+        .mockResolvedValueOnce(mockDevices[1])
+        .mockResolvedValueOnce({ ...mockDevices[1], status: { lock: 'unlocked' } });
+      mockSmartThingsService.setLock.mockResolvedValueOnce(true);
 
       const res = await request(app)
         .put('/api/smartthings/devices/lock-1')
@@ -265,7 +247,7 @@ describe('SmartThings Routes', () => {
         .expect(200);
 
       expect(res.body.status).toBe('success');
-      expect(mockService.setLock).toHaveBeenCalledWith('lock-1', false);
+      expect(mockSmartThingsService.setLock).toHaveBeenCalledWith('lock-1', false);
     });
 
     it('should require command field', async () => {
@@ -279,10 +261,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should return 404 for non-existent device', async () => {
-      const mockService = {
-        getDevice: jest.fn().mockResolvedValue(null),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice.mockResolvedValueOnce(null);
 
       const res = await request(app)
         .put('/api/smartthings/devices/invalid-id')
@@ -294,10 +273,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should reject unknown command', async () => {
-      const mockService = {
-        getDevice: jest.fn().mockResolvedValue(mockDevices[0]),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice.mockResolvedValueOnce(mockDevices[0]);
 
       const res = await request(app)
         .put('/api/smartthings/devices/light-1')
@@ -309,13 +285,10 @@ describe('SmartThings Routes', () => {
     });
 
     it('should handle case-insensitive commands', async () => {
-      const mockService = {
-        getDevice: jest.fn()
-          .mockResolvedValueOnce(mockDevices[0])
-          .mockResolvedValueOnce({ ...mockDevices[0], status: { switch: 'on', level: 100 } }),
-        setLight: jest.fn().mockResolvedValue(true),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice
+        .mockResolvedValueOnce(mockDevices[0])
+        .mockResolvedValueOnce({ ...mockDevices[0], status: { switch: 'on', level: 100 } });
+      mockSmartThingsService.setLight.mockResolvedValueOnce(true);
 
       const res = await request(app)
         .put('/api/smartthings/devices/light-1')
@@ -323,14 +296,11 @@ describe('SmartThings Routes', () => {
         .expect(200);
 
       expect(res.body.status).toBe('success');
-      expect(mockService.setLight).toHaveBeenCalledWith('light-1', true);
+      expect(mockSmartThingsService.setLight).toHaveBeenCalledWith('light-1', true);
     });
 
     it('should handle service errors', async () => {
-      const mockService = {
-        getDevice: jest.fn().mockRejectedValue(new Error('Service error')),
-      };
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue(mockService);
+      mockSmartThingsService.getDevice.mockRejectedValueOnce(new Error('Service error'));
 
       const res = await request(app)
         .put('/api/smartthings/devices/light-1')
@@ -344,9 +314,7 @@ describe('SmartThings Routes', () => {
 
   describe('GET /api/smartthings/status', () => {
     it('should return system status', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        listDevices: jest.fn().mockResolvedValue(mockDevices),
-      });
+      mockSmartThingsService.listDevices.mockResolvedValueOnce(mockDevices);
 
       const res = await request(app)
         .get('/api/smartthings/status')
@@ -368,9 +336,7 @@ describe('SmartThings Routes', () => {
         { ...mockDevices[0], type: 'light' },
         { ...mockDevices[1], type: 'lock' },
       ];
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        listDevices: jest.fn().mockResolvedValue(devices),
-      });
+      mockSmartThingsService.listDevices.mockResolvedValueOnce(devices);
 
       const res = await request(app)
         .get('/api/smartthings/status')
@@ -381,9 +347,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        listDevices: jest.fn().mockRejectedValue(new Error('Service error')),
-      });
+      mockSmartThingsService.listDevices.mockRejectedValueOnce(new Error('Service error'));
 
       const res = await request(app)
         .get('/api/smartthings/status')
@@ -396,9 +360,7 @@ describe('SmartThings Routes', () => {
 
   describe('POST /api/smartthings/discover', () => {
     it('should discover devices', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        discoverDevices: jest.fn().mockResolvedValue(mockDevices),
-      });
+      mockSmartThingsService.discoverDevices.mockResolvedValueOnce(mockDevices);
 
       const res = await request(app)
         .post('/api/smartthings/discover')
@@ -411,9 +373,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should return zero devices when none found', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        discoverDevices: jest.fn().mockResolvedValue([]),
-      });
+      mockSmartThingsService.discoverDevices.mockResolvedValueOnce([]);
 
       const res = await request(app)
         .post('/api/smartthings/discover')
@@ -425,9 +385,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        discoverDevices: jest.fn().mockRejectedValue(new Error('Service error')),
-      });
+      mockSmartThingsService.discoverDevices.mockRejectedValueOnce(new Error('Service error'));
 
       const res = await request(app)
         .post('/api/smartthings/discover')
@@ -438,9 +396,7 @@ describe('SmartThings Routes', () => {
     });
 
     it('should include duration metric', async () => {
-      (smartthingsService.getSmartThingsService as jest.Mock).mockReturnValue({
-        discoverDevices: jest.fn().mockResolvedValue(mockDevices),
-      });
+      mockSmartThingsService.discoverDevices.mockResolvedValueOnce(mockDevices);
 
       const res = await request(app)
         .post('/api/smartthings/discover')
@@ -456,10 +412,6 @@ describe('SmartThings Routes', () => {
         { id: 1, source: 'smartthings', description: 'light-1 turned on', created_at: new Date() },
         { id: 2, source: 'smartthings', description: 'light-1 turned off', created_at: new Date() },
       ];
-
-      jest.mock('../../database/connection', () => ({
-        query: jest.fn().mockResolvedValue({ rows: mockHistory }),
-      }));
 
       const { query } = require('../../database/connection');
       query.mockResolvedValue({ rows: mockHistory });
@@ -481,10 +433,6 @@ describe('SmartThings Routes', () => {
         created_at: new Date(),
       });
 
-      jest.mock('../../database/connection', () => ({
-        query: jest.fn().mockResolvedValue({ rows: mockHistory }),
-      }));
-
       const { query } = require('../../database/connection');
       query.mockResolvedValue({ rows: mockHistory });
 
@@ -496,10 +444,6 @@ describe('SmartThings Routes', () => {
     });
 
     it('should return empty history when no records', async () => {
-      jest.mock('../../database/connection', () => ({
-        query: jest.fn().mockResolvedValue({ rows: [] }),
-      }));
-
       const { query } = require('../../database/connection');
       query.mockResolvedValue({ rows: [] });
 
@@ -512,10 +456,6 @@ describe('SmartThings Routes', () => {
     });
 
     it('should handle database errors', async () => {
-      jest.mock('../../database/connection', () => ({
-        query: jest.fn().mockRejectedValue(new Error('Database error')),
-      }));
-
       const { query } = require('../../database/connection');
       query.mockRejectedValue(new Error('Database error'));
 

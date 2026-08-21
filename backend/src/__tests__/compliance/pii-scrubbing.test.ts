@@ -34,7 +34,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
 
       const scrubbed = scrubbedError(error);
       expect(scrubbed.extra.user.password).toBe('[REDACTED]');
-      expect(scrubbed.extra.user.email).toBe('user@example.com');
+      // 'email' is a deliberately-listed sensitive key (see SENSITIVE_KEYS) — it
+      // gets redacted just like password, not left as plaintext PII.
+      expect(scrubbed.extra.user.email).toBe('[REDACTED]');
     });
 
     it('should remove password_confirm', () => {

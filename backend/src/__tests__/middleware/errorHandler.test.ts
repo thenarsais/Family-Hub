@@ -224,7 +224,7 @@ describe('Error Handler Middleware (COPPA Compliance)', () => {
 
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Logged error'));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.anything(), expect.stringContaining('Logged error'));
       consoleSpy.mockRestore();
     });
 

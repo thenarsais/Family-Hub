@@ -134,7 +134,7 @@ describe('Health Endpoint (/api/health)', () => {
     it('should not expose internal error details', async () => {
       const response = await request(app).get('/health');
       expect(response.body.timestamp).not.toContain('Error');
-      expect(response.body.message).not.toContain('stack');
+      expect(response.body).not.toHaveProperty('stack');
     });
   });
 
