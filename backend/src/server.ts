@@ -38,7 +38,12 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 // PHASE 0 COMPLIANCE: VALIDATE ENVIRONMENT
 // ================================================
 // Fail-fast if required environment variables are missing
-validateEnv();
+try {
+  validateEnv();
+} catch (err: any) {
+  console.error(`\n❌ ${err.message}\n`);
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 3000;

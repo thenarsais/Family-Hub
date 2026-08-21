@@ -14,10 +14,19 @@ export function validateEnv(): void {
   const missing = requiredVars.filter((v) => !process.env[v]);
 
   if (missing.length > 0) {
-    console.error('\n❌ Missing required environment variables:\n');
-    missing.forEach((v) => console.error(`  • ${v}`));
-    console.error('\nSet these in .env file (copy from .env.example):\n');
-    console.error('  cp .env.example .env\n');
-    process.exit(1);
+    const message =
+      `Missing required environment variables: ${missing.join(', ')}\n` +
+      `Set these in .env file (copy from .env.example):\n` +
+      `  cp .env.example .env`;
+    throw new Error(message);
   }
 }
+
+export const config = {
+  nodeEnv: process.env.NODE_ENV,
+  port: Number(process.env.PORT),
+  supabaseUrl: process.env.SUPABASE_URL,
+  supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+  supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
+  databaseUrl: process.env.DATABASE_URL,
+};
