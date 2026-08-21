@@ -296,7 +296,7 @@ router.get('/google/events', async (req: Request, res: Response) => {
     const userId = req.headers['x-user-id'] as string;
     let timeMin = req.query.timeMin as string | undefined;
     const timeMax = req.query.timeMax as string | undefined;
-    const maxResults = parseInt(req.query.maxResults as string) || 50;
+    const maxResults = parseInt(req.query.maxResults as string) || 250;
 
     if (!userId) {
       return res.status(401).json({
