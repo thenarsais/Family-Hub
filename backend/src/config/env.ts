@@ -1,12 +1,17 @@
 // Fail-fast environment variable validation
 // Validates REQUIRED vars at startup; prevents silent failures
+//
+// Was requiring SUPABASE_ANON_KEY and SUPABASE_SERVICE_KEY, names no other
+// code in this app actually reads (everywhere else uses
+// SUPABASE_SERVICE_ROLE_KEY, and the anon key isn't used at all) — CI had
+// no reason to set either, so every server boot there failed this check
+// before the port ever opened.
 
 const requiredVars = [
   'NODE_ENV',
   'PORT',
   'SUPABASE_URL',
-  'SUPABASE_ANON_KEY',
-  'SUPABASE_SERVICE_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
   'DATABASE_URL',
 ];
 
@@ -26,7 +31,6 @@ export const config = {
   nodeEnv: process.env.NODE_ENV,
   port: Number(process.env.PORT),
   supabaseUrl: process.env.SUPABASE_URL,
-  supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-  supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   databaseUrl: process.env.DATABASE_URL,
 };

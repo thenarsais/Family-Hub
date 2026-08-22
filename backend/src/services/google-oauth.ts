@@ -285,25 +285,30 @@ class GoogleOAuthService {
    * Disconnect user's Google Calendar (revoke token)
    */
   async disconnectCalendar(userId: string): Promise<void> {
-    try {
-      // Revoke the token
-      const token = await this.getUserToken(userId);
-      if (token?.access_token) {
+    // Best-effort revoke: an already-expired or invalid token makes Google's
+    // revoke endpoint return 400, which must not block the user from actually
+    // disconnecting — the token is effectively dead either way, and failing
+    // here left the integration stuck "active" with no way to clear it.
+    const token = await this.getUserToken(userId);
+    if (token?.access_token) {
+      try {
         await axios.post('https://oauth2.googleapis.com/revoke', null, {
           params: { token: token.access_token },
         });
+      } catch (revokeError) {
+        console.warn(`Google token revoke failed for user ${userId} (continuing with local disconnect):`, revokeError);
       }
+    }
 
-      // Mark as inactive in database
-      const { error } = await getSupabase()
-        .from('user_integrations')
-        .update({ is_active: false })
-        .eq('user_id', userId)
-        .eq('provider', 'google_calendar');
+    // Mark as inactive in database
+    const { error } = await getSupabase()
+      .from('user_integrations')
+      .update({ is_active: false })
+      .eq('user_id', userId)
+      .eq('provider', 'google_calendar');
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Failed to disconnect Google Calendar:', error);
+    if (error) {
+      console.error('Failed to mark Google Calendar integration inactive:', error);
       throw error;
     }
   }

@@ -8,6 +8,7 @@
     "backend"
   ],
   "scripts": {
+    "start": "npm run start --workspace=backend",
     "dev": "npm run dev --workspaces",
     "build": "npm run build --workspaces",
     "validate": "npm run validate --workspaces",
