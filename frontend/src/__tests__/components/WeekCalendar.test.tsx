@@ -71,6 +71,7 @@ describe('WeekCalendar — timezone handling', () => {
       ],
       loading: false,
       tokenExpired: false,
+      googleConnected: true,
       connectGoogle: vi.fn(),
     });
 
@@ -91,6 +92,7 @@ describe('WeekCalendar — timezone handling', () => {
       ],
       loading: false,
       tokenExpired: false,
+      googleConnected: true,
       connectGoogle: vi.fn(),
     });
 
@@ -111,6 +113,7 @@ describe('WeekCalendar — timezone handling', () => {
       ],
       loading: false,
       tokenExpired: false,
+      googleConnected: true,
       connectGoogle: vi.fn(),
     });
 

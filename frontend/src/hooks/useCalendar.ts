@@ -103,30 +103,30 @@ export function useCalendar(): UseCalendarReturn {
     }
   };
 
-  // Auto-connect Google Calendar on first load
+  // Check Google Calendar connection status on load. This used to redirect
+  // the whole page straight to Google's consent screen the moment it saw no
+  // token -- meaning anyone landing on the dashboard (including right after
+  // signup, with zero clicks) got auto-navigated off the app into a real
+  // OAuth grant. It's now just a status check; connecting is always a
+  // user-initiated action via connectGoogle() (see the "not connected" banner
+  // in WeekCalendar), same as the existing re-authorize flow for expired
+  // tokens.
   useEffect(() => {
-    const autoConnectGoogle = async () => {
+    const checkGoogleConnection = async () => {
       if (!user?.id) return;
 
       try {
-        // Try to get OAuth URL - this will redirect to Google if needed
         const authResponse = await apiClient.get('/api/calendar/auth/google', {
           headers: { 'x-user-id': user.id },
         });
 
-        if (authResponse.data?.data?.authUrl) {
-          // Redirect to Google OAuth
-          window.location.href = authResponse.data.data.authUrl;
-        } else if (authResponse.data?.data?.connected) {
-          // Already connected
-          setGoogleConnected(true);
-        }
+        setGoogleConnected(!!authResponse.data?.data?.connected);
       } catch (err) {
-        console.warn('Failed to initiate Google Calendar OAuth:', err);
+        console.warn('Failed to check Google Calendar connection:', err);
       }
     };
 
-    autoConnectGoogle();
+    checkGoogleConnection();
   }, [user?.id]);
 
   useEffect(() => {

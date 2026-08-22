@@ -56,7 +56,7 @@ function getDateKeyWithTimezone(date: Date, timezone?: string): string {
 
 
 export function WeekCalendar() {
-  const { upcomingEvents, loading, tokenExpired, connectGoogle } = useCalendar();
+  const { upcomingEvents, loading, tokenExpired, googleConnected, connectGoogle } = useCalendar();
   const { user, isLoading: authLoading } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -248,6 +248,28 @@ export function WeekCalendar() {
               className="ml-4 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded transition"
             >
               Re-authorize
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Not Connected Prompt */}
+      {!tokenExpired && !googleConnected && (
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                📅 Google Calendar isn't connected
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                Connect it to see your Google events alongside your family calendar
+              </p>
+            </div>
+            <button
+              onClick={() => connectGoogle()}
+              className="ml-4 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition"
+            >
+              Connect Google Calendar
             </button>
           </div>
         </div>
