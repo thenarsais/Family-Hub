@@ -21,8 +21,7 @@ describe('Environment Validation', () => {
       process.env.NODE_ENV = 'test';
       process.env.PORT = '3000';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       // Should not throw
@@ -36,8 +35,7 @@ describe('Environment Validation', () => {
       delete process.env.NODE_ENV;
       process.env.PORT = '3000';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       expect(() => {
@@ -49,8 +47,7 @@ describe('Environment Validation', () => {
       process.env.NODE_ENV = 'test';
       delete process.env.PORT;
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       expect(() => {
@@ -62,8 +59,7 @@ describe('Environment Validation', () => {
       process.env.NODE_ENV = 'test';
       process.env.PORT = '3000';
       delete process.env.SUPABASE_URL;
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       expect(() => {
@@ -75,8 +71,7 @@ describe('Environment Validation', () => {
       process.env.NODE_ENV = 'test';
       delete process.env.PORT;
       delete process.env.SUPABASE_URL;
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       expect(() => {
@@ -90,8 +85,7 @@ describe('Environment Validation', () => {
       delete process.env.PORT;
       process.env.NODE_ENV = 'test';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       try {
@@ -104,10 +98,9 @@ describe('Environment Validation', () => {
 
     it('should list all missing variables in error', () => {
       delete process.env.PORT;
-      delete process.env.SUPABASE_SERVICE_KEY;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
       process.env.NODE_ENV = 'test';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       try {
@@ -115,7 +108,7 @@ describe('Environment Validation', () => {
         fail('Should have thrown');
       } catch (error: any) {
         expect(error.message).toContain('PORT');
-        expect(error.message).toContain('SUPABASE_SERVICE_KEY');
+        expect(error.message).toContain('SUPABASE_SERVICE_ROLE_KEY');
       }
     });
   });
@@ -125,8 +118,7 @@ describe('Environment Validation', () => {
       process.env.NODE_ENV = 'test';
       process.env.PORT = '3000';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       expect(() => {
@@ -141,8 +133,7 @@ describe('Environment Validation', () => {
         process.env.NODE_ENV = env;
         process.env.PORT = '3000';
         process.env.SUPABASE_URL = 'https://test.supabase.co';
-        process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-        process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+        process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
         process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
         expect(() => {
@@ -157,8 +148,7 @@ describe('Environment Validation', () => {
       process.env.NODE_ENV = 'test';
       process.env.PORT = '3000';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       const config = require('../../config/env').config;
@@ -166,8 +156,7 @@ describe('Environment Validation', () => {
       expect(config).toHaveProperty('nodeEnv');
       expect(config).toHaveProperty('port');
       expect(config).toHaveProperty('supabaseUrl');
-      expect(config).toHaveProperty('supabaseAnonKey');
-      expect(config).toHaveProperty('supabaseServiceKey');
+      expect(config).toHaveProperty('supabaseServiceRoleKey');
       expect(config).toHaveProperty('databaseUrl');
     });
 
@@ -175,8 +164,7 @@ describe('Environment Validation', () => {
       process.env.NODE_ENV = 'test';
       process.env.PORT = '3000';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       const config = require('../../config/env').config;
@@ -190,8 +178,7 @@ describe('Environment Validation', () => {
       delete process.env.PORT;
       process.env.NODE_ENV = 'test';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
-      process.env.SUPABASE_SERVICE_KEY = 'service-key-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       // Should throw immediately, not return promise
@@ -201,11 +188,10 @@ describe('Environment Validation', () => {
     });
 
     it('should prevent server start before validation', () => {
-      delete process.env.SUPABASE_SERVICE_KEY;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
       process.env.NODE_ENV = 'test';
       process.env.PORT = '3000';
       process.env.SUPABASE_URL = 'https://test.supabase.co';
-      process.env.SUPABASE_ANON_KEY = 'anon-key-123';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
       expect(() => {
