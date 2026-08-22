@@ -1,21 +1,29 @@
 # Multi-stage build for optimized image size
+#
+# This repo is an npm-workspaces monorepo (backend + frontend share one root
+# package-lock.json); there's no valid standalone lockfile scoped to just
+# `backend/`, so the build context has to be the repo root, not `./backend`.
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package manifests (root + every workspace, needed for npm to resolve
+# the workspace tree before any source is copied in, so this layer stays
+# cached across source-only changes)
 COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/package.json
+COPY frontend/package.json ./frontend/package.json
 
-# Install all dependencies (including dev for build)
+# Install all dependencies (including dev, for build) across the workspace
 RUN npm ci && \
     npm cache clean --force
 
-# Copy application code
-COPY src/ ./src/
-COPY tsconfig.json ./
+# Copy backend application code
+COPY backend/src ./backend/src
+COPY backend/tsconfig.json ./backend/tsconfig.json
 
 # Build TypeScript
-RUN npm run build
+RUN npm run build --workspace=backend
 
 # Production stage
 FROM node:18-alpine
@@ -29,10 +37,13 @@ RUN apk add --no-cache dumb-init
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy from builder
+# Copy from builder — hoisted workspace deps live in the root node_modules,
+# so both it and backend/node_modules (workspace-local overrides, if any)
+# are needed for `node dist/server.js` to resolve its imports.
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
-COPY --chown=nodejs:nodejs package.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/backend/node_modules ./backend/node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/backend/dist ./dist
+COPY --chown=nodejs:nodejs backend/package.json ./
 
 # Switch to non-root user
 USER nodejs
