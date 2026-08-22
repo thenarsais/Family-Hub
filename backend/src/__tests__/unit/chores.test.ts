@@ -1,7 +1,9 @@
 import { ChoreService } from '../../services/chores';
 import * as connection from '../../database/connection';
+import * as PointsRepository from '../../database/repositories/PointsRepository';
 
 jest.mock('../../database/connection');
+jest.mock('../../database/repositories/PointsRepository');
 
 describe('ChoreService', () => {
   let service: ChoreService;
@@ -109,12 +111,12 @@ describe('ChoreService', () => {
         .mockResolvedValueOnce(mockChoreDetails)
         .mockResolvedValueOnce(mockCompletion);
 
-      (connection.query as jest.Mock).mockResolvedValue({});
+      (PointsRepository.addPoints as jest.Mock).mockResolvedValue({});
 
       const result = await service.completeChore('user-1', 'chore-1');
 
       expect(result.pointsEarned).toBe(20);
-      expect(connection.query).toHaveBeenCalled();
+      expect(PointsRepository.addPoints).toHaveBeenCalledWith('user-1', 20, 'chore', expect.stringContaining('chore-1'));
     });
 
     it('should throw if chore not found', async () => {
@@ -156,15 +158,11 @@ describe('ChoreService', () => {
   });
 
   describe('getPointsSummary', () => {
-    it('should return points summary', async () => {
-      const mockPoints = {
-        total_points: 500,
-        daily_points: 50,
-        weekly_points: 200,
-        monthly_points: 400,
-      };
-
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockPoints);
+    it('should return points summary from the real points ledger (activity_points, via PointsRepository)', async () => {
+      (PointsRepository.getTotalPoints as jest.Mock).mockResolvedValueOnce(500);
+      (PointsRepository.getPointsToday as jest.Mock).mockResolvedValueOnce(50);
+      (PointsRepository.getPointsThisWeek as jest.Mock).mockResolvedValueOnce(200);
+      (PointsRepository.getPointsThisMonth as jest.Mock).mockResolvedValueOnce(400);
 
       const result = await service.getPointsSummary('user-1');
 
@@ -174,8 +172,11 @@ describe('ChoreService', () => {
       expect(result.monthlyPoints).toBe(400);
     });
 
-    it('should return zeros if user has no points record', async () => {
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(null);
+    it('should return zeros if user has no points recorded', async () => {
+      (PointsRepository.getTotalPoints as jest.Mock).mockResolvedValueOnce(0);
+      (PointsRepository.getPointsToday as jest.Mock).mockResolvedValueOnce(0);
+      (PointsRepository.getPointsThisWeek as jest.Mock).mockResolvedValueOnce(0);
+      (PointsRepository.getPointsThisMonth as jest.Mock).mockResolvedValueOnce(0);
 
       const result = await service.getPointsSummary('user-1');
 
@@ -187,31 +188,32 @@ describe('ChoreService', () => {
   });
 
   describe('getTransactionHistory', () => {
-    it('should return transaction history ordered by date', async () => {
+    it('should return transaction history from the real points ledger', async () => {
       const mockTransactions = [
         {
           user_id: 'user-1',
-          amount: 20,
-          source: 'chore',
-          description: 'Completed task',
+          activity_type: 'chore',
+          points: 20,
+          reason: 'Completed task',
           created_at: new Date(),
         },
         {
           user_id: 'user-1',
-          amount: 10,
-          source: 'trivia',
-          description: null,
+          activity_type: 'trivia',
+          points: 10,
+          reason: null,
           created_at: new Date(),
         },
       ];
 
-      (connection.query as jest.Mock).mockResolvedValueOnce({ rows: mockTransactions });
+      (PointsRepository.getPointsHistory as jest.Mock).mockResolvedValueOnce(mockTransactions);
 
       const result = await service.getTransactionHistory('user-1', 50);
 
+      expect(PointsRepository.getPointsHistory).toHaveBeenCalledWith('user-1', 50);
       expect(result).toHaveLength(2);
-      expect(result[0].source).toBe('chore');
-      expect(result[1].source).toBe('trivia');
+      expect(result[0].activity_type).toBe('chore');
+      expect(result[1].activity_type).toBe('trivia');
     });
   });
 });

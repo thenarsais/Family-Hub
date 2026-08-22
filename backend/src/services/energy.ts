@@ -1,6 +1,5 @@
-import { getSupabase } from './supabase'
+import { query, queryOne } from '../database/connection';
 import type { Database } from '../types/database';
-
 
 export type EnergyUsage = Database['public']['Tables']['energy_usage']['Row'];
 export type EnergyGoal = Database['public']['Tables']['energy_goals']['Row'];
@@ -15,20 +14,20 @@ class EnergyService {
   ): Promise<any[]> {
     try {
       const startDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
-
-      let query = getSupabase()
-        .from('energy_usage')
-        .select('*')
-        .gte('timestamp', startDate.toISOString());
+      const conditions = ['timestamp >= $1'];
+      const values: any[] = [startDate.toISOString()];
 
       if (deviceId) {
-        query = query.eq('device_id', deviceId);
+        values.push(deviceId);
+        conditions.push(`device_id = $${values.length}`);
       }
 
-      const { data, error } = await query.order('timestamp', { ascending: false });
+      const result = await query<EnergyUsage>(
+        `SELECT * FROM energy_usage WHERE ${conditions.join(' AND ')} ORDER BY timestamp DESC`,
+        values
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch energy usage:', error);
       throw error;
@@ -46,15 +45,14 @@ class EnergyService {
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - monthsBack);
 
-      const { data, error } = await getSupabase()
-        .from('energy_summary')
-        .select('*')
-        .eq('period', period)
-        .gte('period_start', startDate.toISOString().split('T')[0])
-        .order('period_start', { ascending: false });
+      const result = await query<any>(
+        `SELECT * FROM energy_summary
+         WHERE period = $1 AND period_start >= $2
+         ORDER BY period_start DESC`,
+        [period, startDate.toISOString().split('T')[0]]
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch energy summary:', error);
       throw error;
@@ -69,15 +67,12 @@ class EnergyService {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const { data, error } = await getSupabase()
-        .from('energy_usage')
-        .select('energy_kwh')
-        .gte('timestamp', startOfMonth.toISOString());
+      const result = await queryOne<{ total: string }>(
+        `SELECT COALESCE(SUM(energy_kwh), 0) as total FROM energy_usage WHERE timestamp >= $1`,
+        [startOfMonth.toISOString()]
+      );
 
-      if (error) throw error;
-
-      const total = (data || []).reduce((sum, row) => sum + (row.energy_kwh || 0), 0);
-      return total;
+      return result ? parseFloat(result.total) : 0;
     } catch (error) {
       console.error('Failed to get current month usage:', error);
       throw error;
@@ -98,20 +93,14 @@ class EnergyService {
     },
   ): Promise<any> {
     try {
-      const { data: goal, error } = await getSupabase()
-        .from('energy_goals')
-        .insert({
-          created_by_id: createdById,
-          goal_type: data.goal_type,
-          target_kwh: data.target_kwh,
-          start_date: data.start_date,
-          end_date: data.end_date,
-          points_reward: data.points_reward || 100,
-        })
-        .select()
-        .single();
+      const goal = await queryOne<EnergyGoal>(
+        `INSERT INTO energy_goals (created_by_id, goal_type, target_kwh, start_date, end_date, points_reward)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [createdById, data.goal_type, data.target_kwh, data.start_date, data.end_date, data.points_reward || 100]
+      );
 
-      if (error) throw error;
+      if (!goal) throw new Error('Failed to create energy goal');
       return goal;
     } catch (error) {
       console.error('Failed to create energy goal:', error);
@@ -124,15 +113,11 @@ class EnergyService {
    */
   async getEnergyGoals(userId: string): Promise<any[]> {
     try {
-      const { data, error } = await getSupabase()
-        .from('energy_goals')
-        .select('*')
-        .eq('created_by_id', userId)
-        .eq('status', 'active')
-        .order('start_date', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
+      const result = await query<EnergyGoal>(
+        `SELECT * FROM energy_goals WHERE created_by_id = $1 AND status = 'active' ORDER BY start_date DESC`,
+        [userId]
+      );
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch energy goals:', error);
       throw error;
@@ -150,21 +135,15 @@ class EnergyService {
     energyKwh: number,
   ): Promise<any> {
     try {
-      const { data, error } = await getSupabase()
-        .from('energy_usage')
-        .insert({
-          device_id: deviceId,
-          device_name: deviceName,
-          device_type: deviceType,
-          power_watts: powerWatts,
-          energy_kwh: energyKwh,
-          timestamp: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      const result = await queryOne<EnergyUsage>(
+        `INSERT INTO energy_usage (device_id, device_name, device_type, power_watts, energy_kwh, timestamp)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+         RETURNING *`,
+        [deviceId, deviceName, deviceType, powerWatts, energyKwh]
+      );
 
-      if (error) throw error;
-      return data;
+      if (!result) throw new Error('Failed to record energy usage');
+      return result;
     } catch (error) {
       console.error('Failed to record energy usage:', error);
       throw error;
@@ -178,15 +157,12 @@ class EnergyService {
     try {
       const startDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
 
-      const { data, error } = await getSupabase()
-        .from('energy_usage')
-        .select('*')
-        .eq('device_id', deviceId)
-        .gte('timestamp', startDate.toISOString())
-        .order('timestamp', { ascending: false });
+      const result = await query<EnergyUsage>(
+        `SELECT * FROM energy_usage WHERE device_id = $1 AND timestamp >= $2 ORDER BY timestamp DESC`,
+        [deviceId, startDate.toISOString()]
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch device energy usage:', error);
       throw error;
@@ -203,7 +179,3 @@ export function getEnergyService(): EnergyService {
   }
   return energyService;
 }
-
-
-
-

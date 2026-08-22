@@ -1,8 +1,15 @@
-import { getSupabase } from './supabase'
+import { query, queryOne } from '../database/connection';
 import type { Database } from '../types/database';
 
-
 export type CalendarEvent = Database['public']['Tables']['calendar_events']['Row'];
+
+// PATCH /api/calendar/events/:id passes req.body straight through with no
+// validation -- this whitelist is what stands between an arbitrary request
+// body and a raw SQL UPDATE statement.
+const UPDATABLE_EVENT_COLUMNS = [
+  'event_title', 'event_description', 'event_type', 'event_date',
+  'start_time', 'end_time', 'location', 'child_id',
+];
 
 class CalendarService {
   /**
@@ -14,23 +21,25 @@ class CalendarService {
     endDate?: string,
   ): Promise<any[]> {
     try {
-      let query = getSupabase()
-        .from('calendar_events')
-        .select('*')
-        .eq('family_id', familyId);
+      const conditions = ['family_id = $1'];
+      const values: any[] = [familyId];
 
       if (startDate) {
-        query = query.gte('event_date', startDate);
+        values.push(startDate);
+        conditions.push(`event_date >= $${values.length}`);
       }
 
       if (endDate) {
-        query = query.lte('event_date', endDate);
+        values.push(endDate);
+        conditions.push(`event_date <= $${values.length}`);
       }
 
-      const { data, error } = await query.order('event_date', { ascending: true });
+      const result = await query<CalendarEvent>(
+        `SELECT * FROM calendar_events WHERE ${conditions.join(' AND ')} ORDER BY event_date ASC`,
+        values
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch family events:', error);
       throw error;
@@ -45,17 +54,15 @@ class CalendarService {
       const today = new Date();
       const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const { data, error } = await getSupabase()
-        .from('calendar_events')
-        .select('*')
-        .eq('family_id', familyId)
-        .gte('event_date', today.toISOString().split('T')[0])
-        .lte('event_date', nextWeek.toISOString().split('T')[0])
-        .order('event_date', { ascending: true })
-        .limit(10);
+      const result = await query<CalendarEvent>(
+        `SELECT * FROM calendar_events
+         WHERE family_id = $1 AND event_date >= $2 AND event_date <= $3
+         ORDER BY event_date ASC
+         LIMIT 10`,
+        [familyId, today.toISOString().split('T')[0], nextWeek.toISOString().split('T')[0]]
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch upcoming events:', error);
       throw error;
@@ -79,23 +86,25 @@ class CalendarService {
     },
   ): Promise<any> {
     try {
-      const { data: event, error } = await getSupabase()
-        .from('calendar_events')
-        .insert({
-          family_id: familyId,
-          event_title: data.event_title,
-          event_description: data.event_description,
-          event_type: data.event_type,
-          event_date: data.event_date,
-          start_time: data.start_time,
-          end_time: data.end_time,
-          location: data.location,
-          created_by_id: createdById,
-        })
-        .select()
-        .single();
+      const event = await queryOne<CalendarEvent>(
+        `INSERT INTO calendar_events
+           (family_id, event_title, event_description, event_type, event_date, start_time, end_time, location, created_by_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING *`,
+        [
+          familyId,
+          data.event_title,
+          data.event_description || null,
+          data.event_type || null,
+          data.event_date,
+          data.start_time || null,
+          data.end_time || null,
+          data.location || null,
+          createdById,
+        ]
+      );
 
-      if (error) throw error;
+      if (!event) throw new Error('Failed to create event');
       return event;
     } catch (error) {
       console.error('Failed to create event:', error);
@@ -108,14 +117,23 @@ class CalendarService {
    */
   async updateEvent(id: string, updates: any): Promise<any> {
     try {
-      const { data: event, error } = await getSupabase()
-        .from('calendar_events')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_EVENT_COLUMNS.includes(k));
 
-      if (error) throw error;
+      if (columns.length === 0) {
+        return queryOne<CalendarEvent>(`SELECT * FROM calendar_events WHERE id = $1`, [id]);
+      }
+
+      const setClauses = columns.map((col, i) => `${col} = $${i + 2}`);
+      const values = columns.map((col) => updates[col]);
+
+      const event = await queryOne<CalendarEvent>(
+        `UPDATE calendar_events
+         SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1
+         RETURNING *`,
+        [id, ...values]
+      );
+
       return event;
     } catch (error) {
       console.error('Failed to update event:', error);
@@ -128,12 +146,7 @@ class CalendarService {
    */
   async deleteEvent(id: string): Promise<void> {
     try {
-      const { error } = await getSupabase()
-        .from('calendar_events')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await query(`DELETE FROM calendar_events WHERE id = $1`, [id]);
     } catch (error) {
       console.error('Failed to delete event:', error);
       throw error;
@@ -145,15 +158,11 @@ class CalendarService {
    */
   async getEventsByType(familyId: string, eventType: string): Promise<any[]> {
     try {
-      const { data, error } = await getSupabase()
-        .from('calendar_events')
-        .select('*')
-        .eq('family_id', familyId)
-        .eq('event_type', eventType)
-        .order('event_date', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
+      const result = await query<CalendarEvent>(
+        `SELECT * FROM calendar_events WHERE family_id = $1 AND event_type = $2 ORDER BY event_date ASC`,
+        [familyId, eventType]
+      );
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch events by type:', error);
       throw error;
@@ -170,7 +179,3 @@ export function getCalendarService(): CalendarService {
   }
   return calendarService;
 }
-
-
-
-

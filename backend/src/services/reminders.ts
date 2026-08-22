@@ -1,9 +1,17 @@
-import { getSupabase } from './supabase'
+import { query, queryOne } from '../database/connection';
 import type { Database } from '../types/database';
-
 
 export type Reminder = Database['public']['Tables']['reminders']['Row'];
 export type ReminderInsert = Database['public']['Tables']['reminders']['Insert'];
+
+// PATCH /api/reminders/:id passes req.body straight through with no runtime
+// validation (Partial<ReminderInsert> only checks at compile time) -- this
+// whitelist is what stands between an arbitrary request body and a raw SQL
+// UPDATE statement.
+const UPDATABLE_REMINDER_COLUMNS = [
+  'title', 'description', 'reminder_type', 'related_item_id', 'related_item_type',
+  'scheduled_time', 'remind_before_minutes', 'recurrence', 'recurrence_end_date',
+];
 
 class ReminderService {
   /**
@@ -11,21 +19,21 @@ class ReminderService {
    */
   async getRemindersForUser(userId: string, filter?: 'pending' | 'dismissed' | 'all'): Promise<any[]> {
     try {
-      let query = getSupabase()
-        .from('reminders')
-        .select('*')
-        .eq('user_id', userId);
+      const conditions = ['user_id = $1'];
+      const values: any[] = [userId];
 
       if (filter === 'pending') {
-        query = query.eq('is_dismissed', false);
+        conditions.push('is_dismissed = false');
       } else if (filter === 'dismissed') {
-        query = query.eq('is_dismissed', true);
+        conditions.push('is_dismissed = true');
       }
 
-      const { data, error } = await query.order('scheduled_time', { ascending: true });
+      const result = await query<Reminder>(
+        `SELECT * FROM reminders WHERE ${conditions.join(' AND ')} ORDER BY scheduled_time ASC`,
+        values
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch reminders:', error);
       throw error;
@@ -40,17 +48,15 @@ class ReminderService {
       const now = new Date();
       const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-      const { data, error } = await getSupabase()
-        .from('reminders')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_dismissed', false)
-        .gte('scheduled_time', now.toISOString())
-        .lte('scheduled_time', tomorrow.toISOString())
-        .order('scheduled_time', { ascending: true });
+      const result = await query<Reminder>(
+        `SELECT * FROM reminders
+         WHERE user_id = $1 AND is_dismissed = false
+           AND scheduled_time >= $2 AND scheduled_time <= $3
+         ORDER BY scheduled_time ASC`,
+        [userId, now.toISOString(), tomorrow.toISOString()]
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch upcoming reminders:', error);
       throw error;
@@ -75,24 +81,27 @@ class ReminderService {
     },
   ): Promise<any> {
     try {
-      const { data: reminder, error } = await getSupabase()
-        .from('reminders')
-        .insert({
-          user_id: userId,
-          title: data.title,
-          description: data.description,
-          reminder_type: data.reminder_type,
-          related_item_id: data.related_item_id,
-          related_item_type: data.related_item_type,
-          scheduled_time: data.scheduled_time,
-          remind_before_minutes: data.remind_before_minutes || 15,
-          recurrence: data.recurrence || 'once',
-          recurrence_end_date: data.recurrence_end_date,
-        })
-        .select()
-        .single();
+      const reminder = await queryOne<Reminder>(
+        `INSERT INTO reminders
+           (user_id, title, description, reminder_type, related_item_id, related_item_type,
+            scheduled_time, remind_before_minutes, recurrence, recurrence_end_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [
+          userId,
+          data.title,
+          data.description || null,
+          data.reminder_type,
+          data.related_item_id || null,
+          data.related_item_type || null,
+          data.scheduled_time,
+          data.remind_before_minutes ?? 15,
+          data.recurrence || 'once',
+          data.recurrence_end_date || null,
+        ]
+      );
 
-      if (error) throw error;
+      if (!reminder) throw new Error('Failed to create reminder');
       return reminder;
     } catch (error) {
       console.error('Failed to create reminder:', error);
@@ -105,14 +114,23 @@ class ReminderService {
    */
   async updateReminder(id: string, updates: Partial<ReminderInsert>): Promise<any> {
     try {
-      const { data: reminder, error } = await getSupabase()
-        .from('reminders')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_REMINDER_COLUMNS.includes(k));
 
-      if (error) throw error;
+      if (columns.length === 0) {
+        return queryOne<Reminder>(`SELECT * FROM reminders WHERE id = $1`, [id]);
+      }
+
+      const setClauses = columns.map((col, i) => `${col} = $${i + 2}`);
+      const values = columns.map((col) => (updates as any)[col]);
+
+      const reminder = await queryOne<Reminder>(
+        `UPDATE reminders
+         SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1
+         RETURNING *`,
+        [id, ...values]
+      );
+
       return reminder;
     } catch (error) {
       console.error('Failed to update reminder:', error);
@@ -125,15 +143,10 @@ class ReminderService {
    */
   async dismissReminder(id: string): Promise<void> {
     try {
-      const { error } = await getSupabase()
-        .from('reminders')
-        .update({
-          is_dismissed: true,
-          dismissed_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      await query(
+        `UPDATE reminders SET is_dismissed = true, dismissed_at = CURRENT_TIMESTAMP WHERE id = $1`,
+        [id]
+      );
     } catch (error) {
       console.error('Failed to dismiss reminder:', error);
       throw error;
@@ -145,12 +158,7 @@ class ReminderService {
    */
   async deleteReminder(id: string): Promise<void> {
     try {
-      const { error } = await getSupabase()
-        .from('reminders')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await query(`DELETE FROM reminders WHERE id = $1`, [id]);
     } catch (error) {
       console.error('Failed to delete reminder:', error);
       throw error;
@@ -162,15 +170,10 @@ class ReminderService {
    */
   async markNotificationSent(id: string): Promise<void> {
     try {
-      const { error } = await getSupabase()
-        .from('reminders')
-        .update({
-          notification_sent: true,
-          sent_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      await query(
+        `UPDATE reminders SET notification_sent = true, sent_at = CURRENT_TIMESTAMP WHERE id = $1`,
+        [id]
+      );
     } catch (error) {
       console.error('Failed to mark notification sent:', error);
       throw error;
@@ -183,15 +186,14 @@ class ReminderService {
    */
   async getRemindersNeedingNotification(): Promise<any[]> {
     try {
-      const { data, error } = await getSupabase()
-        .from('reminders')
-        .select('*')
-        .eq('notification_sent', false)
-        .eq('is_dismissed', false)
-        .lte('scheduled_time', new Date(Date.now() + 60 * 60 * 1000).toISOString());
+      const result = await query<Reminder>(
+        `SELECT * FROM reminders
+         WHERE notification_sent = false AND is_dismissed = false
+           AND scheduled_time <= $1`,
+        [new Date(Date.now() + 60 * 60 * 1000).toISOString()]
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch reminders needing notification:', error);
       throw error;
@@ -208,7 +210,3 @@ export function getReminderService(): ReminderService {
   }
   return reminderService;
 }
-
-
-
-

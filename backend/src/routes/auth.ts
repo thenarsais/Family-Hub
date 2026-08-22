@@ -6,6 +6,7 @@
 import express, { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import * as UserRepository from '../database/repositories/UserRepository';
+import { getFamilyService } from '../services/family';
 
 const router = Router();
 
@@ -40,56 +41,29 @@ function getSupabase() {
 }
 
 // Helper: Ensure user has a family (create if needed)
+//
+// This used to duplicate FamilyService.createFamily's logic inline via a
+// separate getSupabase() call instead of going through the service -- two
+// code paths writing the same families/family_members/family_settings
+// tables through two different DB connections. Now just calls the service
+// (raw Postgres, same as everywhere else that touches these tables).
 async function ensureUserHasFamily(userId: string, userName: string) {
   try {
-    // Check if user already has a family
-    const { data: existingMember } = await getSupabase()
-      .from('family_members')
-      .select('family_id')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .single();
+    const family = getFamilyService();
+    const existing = await family.getUserFamily(userId);
 
-    if (existingMember) {
+    if (existing) {
       return; // User already has a family
     }
 
-    // Create a new family for this user
-    const { data: family, error: familyError } = await getSupabase()
-      .from('families')
-      .insert({
-        name: `${userName}'s Family`,
-        description: `Family created for ${userName}`,
-        created_by_id: userId,
-        max_children: 5,
-        max_parents: 2
-      })
-      .select()
-      .single();
+    await family.createFamily(userId, {
+      name: `${userName}'s Family`,
+      description: `Family created for ${userName}`,
+      max_children: 5,
+      max_parents: 2,
+    });
 
-    if (!familyError && family) {
-      // Add user as family member
-      await getSupabase()
-        .from('family_members')
-        .insert({
-          family_id: family.id,
-          user_id: userId,
-          role: 'admin',
-          invited_by_id: null
-        });
-
-      // Create default settings
-      await getSupabase()
-        .from('family_settings')
-        .insert({
-          family_id: family.id,
-          theme: 'light',
-          language: 'en',
-          timezone: 'America/New_York'
-        });
-
-      console.log(`✅ Created family for user ${userId}`);
-    }
+    console.log(`✅ Created family for user ${userId}`);
   } catch (err: any) {
     console.warn(`⚠️ Failed to ensure family for user ${userId}:`, err.message);
   }
@@ -147,41 +121,14 @@ router.post('/signup', async (req: Request, res: Response) => {
     // Auto-create family for new users (especially parents)
     try {
       if (role === 'parent' || role === 'admin') {
-        const { data: family, error: familyError } = await getSupabase()
-          .from('families')
-          .insert({
-            name: `${name}'s Family`,
-            description: `Family created for ${name}`,
-            created_by_id: user.id,
-            max_children: 5,
-            max_parents: 2
-          })
-          .select()
-          .single();
+        await getFamilyService().createFamily(user.id, {
+          name: `${name}'s Family`,
+          description: `Family created for ${name}`,
+          max_children: 5,
+          max_parents: 2,
+        });
 
-        if (!familyError && family) {
-          // Add user as family member
-          await getSupabase()
-            .from('family_members')
-            .insert({
-              family_id: family.id,
-              user_id: user.id,
-              role: 'admin',
-              invited_by_id: null
-            });
-
-          // Create default settings for family
-          await getSupabase()
-            .from('family_settings')
-            .insert({
-              family_id: family.id,
-              theme: 'light',
-              language: 'en',
-              timezone: 'America/New_York'
-            });
-
-          console.log(`✅ Auto-created family for user ${user.id}`);
-        }
+        console.log(`✅ Auto-created family for user ${user.id}`);
       }
     } catch (familyError: any) {
       console.warn('⚠️ Failed to auto-create family:', familyError.message);
@@ -224,56 +171,6 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // Demo credentials for testing (when database is unavailable)
-    const demoUsers: Record<string, any> = {
-      'testparent@example.com': {
-        id: '00000000-0000-0000-0000-000000000001',
-        email: 'testparent@example.com',
-        name: 'Test Parent',
-        role: 'parent',
-        password: 'password123'
-      },
-      'testchild@example.com': {
-        id: '00000000-0000-0000-0000-000000000002',
-        email: 'testchild@example.com',
-        name: 'Test Child',
-        role: 'child',
-        password: 'password123'
-      }
-    };
-
-    const demoUser = demoUsers[email.toLowerCase()];
-
-    if (demoUser && demoUser.password === password) {
-      // Ensure demo user has a family
-      await ensureUserHasFamily(demoUser.id, demoUser.name);
-
-      // Generate mock JWT token
-      const mockToken = Buffer.from(JSON.stringify({
-        sub: demoUser.id,
-        email: demoUser.email,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 86400
-      })).toString('base64');
-
-      return res.json({
-        message: 'Login successful',
-        session: {
-          access_token: mockToken,
-          refresh_token: 'mock_refresh_token',
-          expires_in: 86400
-        },
-        user: {
-          id: demoUser.id,
-          email: demoUser.email,
-          name: demoUser.name,
-          role: demoUser.role
-        },
-        demo_mode: true
-      });
-    }
-
-    // Try real authentication if demo didn't match
     try {
       const { data, error } = await getSupabase().auth.signInWithPassword({
         email,
@@ -311,10 +208,9 @@ router.post('/login', async (req: Request, res: Response) => {
         }
       });
     } catch (dbError: any) {
-      // If database is unavailable and demo credentials don't match, return error
       res.status(401).json({
         error: 'Login failed',
-        message: 'Invalid credentials. Demo credentials: testparent@example.com / password123'
+        message: 'Invalid credentials'
       });
     }
   } catch (error: any) {
@@ -382,38 +278,6 @@ router.get('/me', async (req: Request, res: Response) => {
 
     const token = authHeader.substring(7);
 
-    // Demo credentials for testing
-    const demoUsers: Record<string, any> = {
-      '00000000-0000-0000-0000-000000000001': {
-        id: '00000000-0000-0000-0000-000000000001',
-        email: 'testparent@example.com',
-        name: 'Test Parent',
-        role: 'parent',
-        created_at: new Date()
-      },
-      '00000000-0000-0000-0000-000000000002': {
-        id: '00000000-0000-0000-0000-000000000002',
-        email: 'testchild@example.com',
-        name: 'Test Child',
-        role: 'child',
-        created_at: new Date()
-      }
-    };
-
-    // Check if token is a demo token
-    try {
-      const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
-      if (decoded.sub && demoUsers[decoded.sub]) {
-        const user = demoUsers[decoded.sub];
-        return res.json({
-          user,
-          demo_mode: true
-        });
-      }
-    } catch (e) {
-      // Not a demo token, continue with real auth
-    }
-
     // Try real authentication
     try {
       const { data, error } = await getSupabase().auth.getUser(token);
@@ -437,7 +301,6 @@ router.get('/me', async (req: Request, res: Response) => {
         }
       });
     } catch (dbError: any) {
-      // Database unavailable, but check demo users
       return res.status(401).json({
         error: 'Invalid or expired token'
       });

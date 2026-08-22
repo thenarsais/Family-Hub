@@ -1,6 +1,5 @@
-import { getSupabase } from './supabase'
+import { query } from '../database/connection';
 import type { Database } from '../types/database';
-
 
 export type ActivityLogEntry = Database['public']['Tables']['activity_log']['Row'];
 
@@ -10,15 +9,11 @@ class ActivityLogService {
    */
   async getUserActivity(userId: string, limit: number = 50): Promise<any[]> {
     try {
-      const { data, error } = await getSupabase()
-        .from('activity_log')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return data || [];
+      const result = await query<ActivityLogEntry>(
+        `SELECT * FROM activity_log WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
+        [userId, limit]
+      );
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch activity log:', error);
       throw error;
@@ -30,29 +25,23 @@ class ActivityLogService {
    */
   async getFamilyActivity(familyId: string, limit: number = 100): Promise<any[]> {
     try {
-      // Get family members
-      const { data: members } = await getSupabase()
-        .from('family_members')
-        .select('user_id')
-        .eq('family_id', familyId)
-        .eq('is_active', true);
+      const membersResult = await query<{ user_id: string }>(
+        `SELECT user_id FROM family_members WHERE family_id = $1 AND is_active = true`,
+        [familyId]
+      );
 
-      if (!members || members.length === 0) {
+      if (membersResult.rows.length === 0) {
         return [];
       }
 
-      const userIds = members.map((m) => m.user_id);
+      const userIds = membersResult.rows.map((m) => m.user_id);
 
-      // Get activity for all members
-      const { data, error } = await getSupabase()
-        .from('activity_log')
-        .select('*')
-        .in('user_id', userIds)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+      const result = await query<ActivityLogEntry>(
+        `SELECT * FROM activity_log WHERE user_id = ANY($1) ORDER BY created_at DESC LIMIT $2`,
+        [userIds, limit]
+      );
 
-      if (error) throw error;
-      return data || [];
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch family activity:', error);
       throw error;
@@ -75,22 +64,25 @@ class ActivityLogService {
     },
   ): Promise<any> {
     try {
-      const { data: entry, error } = await getSupabase()
-        .from('activity_log')
-        .insert({
-          user_id: userId,
-          activity_type: data.activity_type,
-          action: data.action,
-          points_earned: data.points_earned || 0,
-          achievement_title: data.achievement_title,
-          related_item_id: data.related_item_id,
-          related_item_type: data.related_item_type,
-          metadata: data.metadata,
-        })
-        .select()
-        .single();
+      const result = await query<ActivityLogEntry>(
+        `INSERT INTO activity_log
+           (user_id, activity_type, action, points_earned, achievement_title, related_item_id, related_item_type, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          userId,
+          data.activity_type,
+          data.action,
+          data.points_earned || 0,
+          data.achievement_title || null,
+          data.related_item_id || null,
+          data.related_item_type || null,
+          data.metadata ? JSON.stringify(data.metadata) : null,
+        ]
+      );
 
-      if (error) throw error;
+      const entry = result.rows[0];
+      if (!entry) throw new Error('Failed to log activity');
       return entry;
     } catch (error) {
       console.error('Failed to log activity:', error);
@@ -103,16 +95,11 @@ class ActivityLogService {
    */
   async getActivityByType(userId: string, activityType: string, limit: number = 50): Promise<any[]> {
     try {
-      const { data, error } = await getSupabase()
-        .from('activity_log')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('activity_type', activityType)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return data || [];
+      const result = await query<ActivityLogEntry>(
+        `SELECT * FROM activity_log WHERE user_id = $1 AND activity_type = $2 ORDER BY created_at DESC LIMIT $3`,
+        [userId, activityType, limit]
+      );
+      return result.rows;
     } catch (error) {
       console.error('Failed to fetch activity by type:', error);
       throw error;
@@ -126,17 +113,13 @@ class ActivityLogService {
     try {
       const startDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
 
-      const { data, error } = await getSupabase()
-        .from('activity_log')
-        .select('activity_type')
-        .eq('user_id', userId)
-        .gte('created_at', startDate.toISOString());
+      const result = await query<{ activity_type: string }>(
+        `SELECT activity_type FROM activity_log WHERE user_id = $1 AND created_at >= $2`,
+        [userId, startDate.toISOString()]
+      );
 
-      if (error) throw error;
-
-      // Count by type
       const stats: Record<string, number> = {};
-      (data || []).forEach((entry) => {
+      result.rows.forEach((entry) => {
         stats[entry.activity_type] = (stats[entry.activity_type] || 0) + 1;
       });
 
@@ -152,15 +135,11 @@ class ActivityLogService {
    */
   async getTotalPointsFromActivity(userId: string): Promise<number> {
     try {
-      const { data, error } = await getSupabase()
-        .from('activity_log')
-        .select('points_earned')
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      const total = (data || []).reduce((sum, entry) => sum + (entry.points_earned || 0), 0);
-      return total;
+      const result = await query<{ total: string }>(
+        `SELECT COALESCE(SUM(points_earned), 0) as total FROM activity_log WHERE user_id = $1`,
+        [userId]
+      );
+      return result.rows[0] ? parseInt(result.rows[0].total, 10) : 0;
     } catch (error) {
       console.error('Failed to get total points:', error);
       throw error;
@@ -177,7 +156,3 @@ export function getActivityLogService(): ActivityLogService {
   }
   return activityLogService;
 }
-
-
-
-
