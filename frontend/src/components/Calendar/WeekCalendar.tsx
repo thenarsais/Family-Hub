@@ -168,8 +168,18 @@ export function WeekCalendar() {
           return;
         }
 
-        const eventDate = new Date(eventStartDate);
-        const dateKey = getDateKeyWithTimezone(eventDate, event.start?.timeZone);
+        // Google all-day events (start.date) and local family events
+        // (event_date, a Postgres DATE column) are plain "YYYY-MM-DD"
+        // strings with no time component. `new Date('2026-08-22')` parses
+        // that as UTC midnight, so formatting it back in any timezone west
+        // of UTC (e.g. this app's own America/New_York default) lands on
+        // the previous day. A bare calendar date has no timezone to
+        // convert — use it as the key directly instead of round-tripping
+        // through Date/Intl.
+        const isDateOnly = typeof eventStartDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(eventStartDate);
+        const dateKey = isDateOnly
+          ? eventStartDate
+          : getDateKeyWithTimezone(new Date(eventStartDate), event.start?.timeZone);
 
         console.log('Processing event:', event.summary || event.title, 'for date:', dateKey);
 
@@ -184,7 +194,7 @@ export function WeekCalendar() {
                   hour12: true,
                 })
               : undefined,
-            allDay: !event.start?.dateTime && !!event.start?.date,
+            allDay: isDateOnly,
             type: event.source === 'google' ? 'google' : 'family',
             priority: false,
             location: event.location,
@@ -275,6 +285,7 @@ export function WeekCalendar() {
           return (
             <div
               key={idx}
+              data-testid={`day-cell-${dateKey}`}
               className={`rounded-lg border-2 p-3 min-h-32 flex flex-col ${
                 isToday
                   ? 'border-primary-500 bg-primary-50 dark:bg-primary-900 dark:border-primary-400'
