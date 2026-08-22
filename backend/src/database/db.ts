@@ -4,6 +4,17 @@
  */
 
 import { Pool, PoolClient, QueryResult } from 'pg';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// This module is imported transitively (via UserRepository) by routes that
+// server.ts pulls in at the top of the file, ahead of server.ts's own
+// dotenv.config() call -- imports run depth-first before the rest of that
+// file executes, so relying on server.ts to load the env first left this
+// pool built with an undefined DATABASE_URL (falling back to localhost,
+// which fails as an AggregateError). Load it here directly instead, same as
+// connection.ts does.
+dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
 // ================================================
 // CONNECTION POOL CONFIGURATION

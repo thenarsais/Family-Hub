@@ -68,45 +68,12 @@ describe('Auth Routes', () => {
     mockSupabaseClient.insert.mockReturnValue(mockSupabaseClient);
   });
 
-  describe('POST /login — demo credentials', () => {
-    it('should log in with the demo parent account', async () => {
-      const res = await request(app)
-        .post('/login')
-        .send({ email: 'testparent@example.com', password: 'password123' });
-
-      expect(res.status).toBe(200);
-      expect(res.body.demo_mode).toBe(true);
-      expect(res.body.user.email).toBe('testparent@example.com');
-      expect(res.body.user.role).toBe('parent');
-      expect(res.body.session.access_token).toBeDefined();
-    });
-
-    it('should log in with the demo child account', async () => {
-      const res = await request(app)
-        .post('/login')
-        .send({ email: 'testchild@example.com', password: 'password123' });
-
-      expect(res.status).toBe(200);
-      expect(res.body.user.role).toBe('child');
-    });
-
-    it('should reject the demo email with the wrong password', async () => {
-      // Wrong password means it falls through to the real Supabase path,
-      // which isn't configured to succeed here — it must not silently log
-      // in as the demo user just because the email matched.
-      mockSupabaseClient.auth.signInWithPassword.mockResolvedValueOnce({
-        data: null,
-        error: { message: 'Invalid login credentials' },
-      });
-
-      const res = await request(app)
-        .post('/login')
-        .send({ email: 'testparent@example.com', password: 'wrong' });
-
-      expect(res.status).not.toBe(200);
-    });
-
-    it('should not reveal whether an email exists in the error message', async () => {
+  describe('POST /login — security', () => {
+    // The demo-credential bypass (testparent@example.com/password123 always
+    // succeeding) was removed 2026-08-22 -- every login now goes through
+    // real Supabase Auth, no exceptions. These two tests are what's left of
+    // this describe block; they never depended on the bypass existing.
+    it('should reject an unregistered email without revealing whether it exists', async () => {
       mockSupabaseClient.auth.signInWithPassword.mockResolvedValueOnce({
         data: null,
         error: { message: 'Invalid login credentials' },
@@ -256,21 +223,10 @@ describe('Auth Routes', () => {
     });
   });
 
-  describe('GET /me — demo token', () => {
-    it('should return the demo parent from a demo token', async () => {
-      const demoToken = Buffer.from(
-        JSON.stringify({ sub: '00000000-0000-0000-0000-000000000001', email: 'testparent@example.com' })
-      ).toString('base64');
-
-      const res = await request(app)
-        .get('/me')
-        .set('Authorization', `Bearer ${demoToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.demo_mode).toBe(true);
-      expect(res.body.user.email).toBe('testparent@example.com');
-    });
-
+  describe('GET /me', () => {
+    // The demo-token shortcut (any base64 JSON with a matching sub bypassing
+    // real token verification) was removed 2026-08-22 alongside the login
+    // bypass -- every token now goes through getSupabase().auth.getUser().
     it('should require an Authorization header', async () => {
       const res = await request(app).get('/me');
       expect(res.status).toBe(401);

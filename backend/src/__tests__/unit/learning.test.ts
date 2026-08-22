@@ -1,7 +1,9 @@
 import { LearningService } from '../../services/learning';
 import * as connection from '../../database/connection';
+import * as PointsRepository from '../../database/repositories/PointsRepository';
 
 jest.mock('../../database/connection');
+jest.mock('../../database/repositories/PointsRepository');
 
 describe('LearningService', () => {
   let service: LearningService;
@@ -9,6 +11,7 @@ describe('LearningService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new LearningService();
+    (PointsRepository.addPoints as jest.Mock).mockResolvedValue({});
   });
 
   describe('completeLesson', () => {
@@ -27,7 +30,6 @@ describe('LearningService', () => {
       };
 
       (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockResult);
-      (connection.query as jest.Mock).mockResolvedValue({});
 
       const result = await service.completeLesson(
         'user-1',
@@ -39,7 +41,7 @@ describe('LearningService', () => {
 
       expect(result.completed).toBe(true);
       expect(result.pointsEarned).toBe(10);
-      expect(connection.query).toHaveBeenCalled();
+      expect(PointsRepository.addPoints).toHaveBeenCalled();
     });
 
     it('should award points for lesson completion', async () => {
@@ -57,13 +59,14 @@ describe('LearningService', () => {
       };
 
       (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockResult);
-      (connection.query as jest.Mock).mockResolvedValue({});
 
       await service.completeLesson('user-1', 'lesson-a', 'alphabet', 'phase_1_alphabet', 15);
 
-      expect(connection.query).toHaveBeenCalledWith(
-        expect.stringContaining('point_transactions'),
-        expect.arrayContaining(['user-1', 15, 'Completed lesson: lesson-a'])
+      expect(PointsRepository.addPoints).toHaveBeenCalledWith(
+        'user-1',
+        15,
+        'learning',
+        expect.stringContaining('lesson-a')
       );
     });
   });
@@ -74,7 +77,8 @@ describe('LearningService', () => {
 
       await service.recordQuizAnswer('user-1', 'lesson-a', 1, 2, 2, 10);
 
-      expect(connection.query).toHaveBeenCalledTimes(2); // Insert answer + award points
+      expect(connection.query).toHaveBeenCalledTimes(1); // Insert answer
+      expect(PointsRepository.addPoints).toHaveBeenCalledWith('user-1', 10, 'learning', expect.stringContaining('lesson-a:1'));
     });
 
     it('should record incorrect answer without points', async () => {
@@ -84,6 +88,7 @@ describe('LearningService', () => {
 
       // Should still record answer but not award points
       expect(connection.query).toHaveBeenCalled();
+      expect(PointsRepository.addPoints).not.toHaveBeenCalled();
     });
   });
 

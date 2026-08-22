@@ -1,4 +1,5 @@
 import { query, queryOne } from '../database/connection';
+import * as PointsRepository from '../database/repositories/PointsRepository';
 
 export interface Chore {
   id: string;
@@ -78,8 +79,9 @@ export class ChoreService {
 
     if (!completion) throw new Error('Failed to record chore completion');
 
-    // Award points
-    await this.awardPoints(userId, chore.points_value, 'chore', `Completed: ${choreId}`);
+    // Award points via the one real points ledger (activity_points), not a
+    // separate chores-only ledger -- see 002_chores_and_learning_schema.sql.
+    await PointsRepository.addPoints(userId, chore.points_value, 'chore', `Completed: ${choreId}`);
 
     return {
       id: completion.id,
@@ -118,52 +120,10 @@ export class ChoreService {
   }
 
   /**
-   * Award points to user
-   */
-  async awardPoints(
-    userId: string,
-    amount: number,
-    source: string,
-    description?: string
-  ): Promise<void> {
-    // Record transaction
-    await query(
-      `INSERT INTO point_transactions (user_id, amount, source, description)
-       VALUES ($1, $2, $3, $4)`,
-      [userId, amount, source, description || null]
-    );
-
-    // Update user points totals
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-
-    await query(
-      `INSERT INTO user_points (user_id, total_points, daily_points, weekly_points, monthly_points)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (user_id) DO UPDATE SET
-       total_points = user_points.total_points + $2,
-       daily_points = CASE
-         WHEN last_reset_daily = CURRENT_DATE THEN user_points.daily_points + $2
-         ELSE $2
-       END,
-       weekly_points = CASE
-         WHEN last_reset_weekly >= CURRENT_DATE - INTERVAL '7 days' THEN user_points.weekly_points + $2
-         ELSE $2
-       END,
-       monthly_points = CASE
-         WHEN last_reset_monthly >= CURRENT_DATE - INTERVAL '30 days' THEN user_points.monthly_points + $2
-         ELSE $2
-       END,
-       last_reset_daily = CASE WHEN last_reset_daily != CURRENT_DATE THEN CURRENT_DATE ELSE last_reset_daily END,
-       last_reset_weekly = CASE WHEN last_reset_weekly < CURRENT_DATE - INTERVAL '7 days' THEN CURRENT_DATE ELSE last_reset_weekly END,
-       last_reset_monthly = CASE WHEN last_reset_monthly < CURRENT_DATE - INTERVAL '30 days' THEN CURRENT_DATE ELSE last_reset_monthly END,
-       updated_at = CURRENT_TIMESTAMP`,
-      [userId, amount, amount, amount, amount]
-    );
-  }
-
-  /**
-   * Get user's points summary
+   * Get user's points summary (delegates to the one real points ledger,
+   * activity_points, via PointsRepository -- see
+   * 002_chores_and_learning_schema.sql for why this used to be a separate,
+   * disconnected ledger that never showed up anywhere real)
    */
   async getPointsSummary(userId: string): Promise<{
     totalPoints: number;
@@ -171,48 +131,21 @@ export class ChoreService {
     weeklyPoints: number;
     monthlyPoints: number;
   }> {
-    const result = await queryOne<any>(
-      `SELECT total_points, daily_points, weekly_points, monthly_points
-       FROM user_points WHERE user_id = $1`,
-      [userId]
-    );
+    const [totalPoints, dailyPoints, weeklyPoints, monthlyPoints] = await Promise.all([
+      PointsRepository.getTotalPoints(userId),
+      PointsRepository.getPointsToday(userId),
+      PointsRepository.getPointsThisWeek(userId),
+      PointsRepository.getPointsThisMonth(userId),
+    ]);
 
-    if (!result) {
-      return { totalPoints: 0, dailyPoints: 0, weeklyPoints: 0, monthlyPoints: 0 };
-    }
-
-    return {
-      totalPoints: result.total_points || 0,
-      dailyPoints: result.daily_points || 0,
-      weeklyPoints: result.weekly_points || 0,
-      monthlyPoints: result.monthly_points || 0,
-    };
-  }
-
-  /**
-   * Reset daily points (called at 6 AM)
-   */
-  async resetDailyPoints(userId: string): Promise<void> {
-    await query(
-      `UPDATE user_points
-       SET daily_points = 0, last_reset_daily = CURRENT_DATE
-       WHERE user_id = $1`,
-      [userId]
-    );
+    return { totalPoints, dailyPoints, weeklyPoints, monthlyPoints };
   }
 
   /**
    * Get point transaction history
    */
   async getTransactionHistory(userId: string, limit: number = 50): Promise<any[]> {
-    const results = await query<any>(
-      `SELECT user_id, amount, source, description, created_at
-       FROM point_transactions WHERE user_id = $1
-       ORDER BY created_at DESC LIMIT $2`,
-      [userId, limit]
-    );
-
-    return results.rows;
+    return PointsRepository.getPointsHistory(userId, limit);
   }
 
   private mapChore(row: any): Chore {

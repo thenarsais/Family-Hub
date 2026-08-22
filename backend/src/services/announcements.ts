@@ -1,4 +1,4 @@
-import { getSupabase } from './supabase'
+import { query, queryOne } from '../database/connection';
 import type { Database } from '../types/database';
 
 type Announcement = Database['public']['Tables']['announcements']['Row'];
@@ -9,66 +9,52 @@ interface AnnouncementWithReadStatus extends Announcement {
   reader_count: number;
 }
 
+// PATCH /api/announcements/:id passes req.body straight through with no runtime
+// validation (the Partial<AnnouncementInsert> type only checks at compile time) --
+// this whitelist is what stands between an arbitrary request body and a raw SQL
+// UPDATE statement.
+const UPDATABLE_ANNOUNCEMENT_COLUMNS = [
+  'title', 'message', 'announcement_type', 'priority',
+  'target_audience', 'target_user_ids', 'is_pinned', 'expires_at',
+];
+
 class AnnouncementService {
   /**
    * Get all active announcements for a user
    */
   async getAnnouncementsForUser(userId: string): Promise<AnnouncementWithReadStatus[]> {
     try {
-      // Get user's family ID first
-      const { data: familyMember } = await getSupabase()
-        .from('family_members')
-        .select('family_id')
-        .eq('user_id', userId)
-        .single();
+      const familyMember = await queryOne<{ family_id: string }>(
+        `SELECT family_id FROM family_members WHERE user_id = $1 LIMIT 1`,
+        [userId]
+      );
 
       if (!familyMember) {
         return [];
       }
 
-      // Get all active announcements for family
-      const { data: announcements, error } = await getSupabase()
-        .from('announcements')
-        .select(
-          `
-          id,
-          family_id,
-          created_by_id,
-          title,
-          message,
-          announcement_type,
-          priority,
-          target_audience,
-          target_user_ids,
-          is_pinned,
-          expires_at,
-          created_at,
-          updated_at
-        `,
-        )
-        .eq('family_id', familyMember.family_id)
-        .or(
-          `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`,
-        )
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
+      const announcementsResult = await query<Announcement>(
+        `SELECT id, family_id, created_by_id, title, message, announcement_type, priority,
+                target_audience, target_user_ids, is_pinned, expires_at, created_at, updated_at
+         FROM announcements
+         WHERE family_id = $1 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+         ORDER BY is_pinned DESC, created_at DESC`,
+        [familyMember.family_id]
+      );
 
-      if (error) throw error;
+      const readsResult = await query<{ announcement_id: string }>(
+        `SELECT announcement_id FROM announcement_reads WHERE user_id = $1`,
+        [userId]
+      );
 
-      // Check read status for each announcement
-      const { data: reads } = await getSupabase()
-        .from('announcement_reads')
-        .select('announcement_id')
-        .eq('user_id', userId);
-
-      const readIds = new Set(reads?.map((r) => r.announcement_id) || []);
+      const readIds = new Set(readsResult.rows.map((r) => r.announcement_id));
 
       // Filter by target audience and add read status
-      const filtered = (announcements || [])
+      const filtered = announcementsResult.rows
         .filter((announcement) => {
           if (announcement.target_audience === 'all') return true;
           if (announcement.target_audience === 'specific') {
-            return announcement.target_user_ids?.includes(userId);
+            return (announcement.target_user_ids as unknown as string[] | null)?.includes(userId);
           }
           // Check user role for children/parents filtering
           // TODO: Implement role-based filtering
@@ -105,24 +91,26 @@ class AnnouncementService {
     },
   ): Promise<any> {
     try {
-      const { data: announcement, error } = await getSupabase()
-        .from('announcements')
-        .insert({
-          created_by_id: createdById,
-          title: data.title,
-          message: data.message,
-          family_id: data.family_id,
-          announcement_type: data.announcement_type || 'general',
-          priority: data.priority || 'normal',
-          target_audience: data.target_audience || 'all',
-          target_user_ids: data.target_user_ids || [],
-          is_pinned: data.is_pinned || false,
-          expires_at: data.expires_at,
-        })
-        .select()
-        .single();
+      const announcement = await queryOne<Announcement>(
+        `INSERT INTO announcements
+           (created_by_id, title, message, family_id, announcement_type, priority, target_audience, target_user_ids, is_pinned, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [
+          createdById,
+          data.title,
+          data.message,
+          data.family_id,
+          data.announcement_type || 'general',
+          data.priority || 'normal',
+          data.target_audience || 'all',
+          data.target_user_ids || [],
+          data.is_pinned || false,
+          data.expires_at || null,
+        ]
+      );
 
-      if (error) throw error;
+      if (!announcement) throw new Error('Failed to create announcement');
       return announcement;
     } catch (error) {
       console.error('Failed to create announcement:', error);
@@ -135,17 +123,15 @@ class AnnouncementService {
    */
   async markAsRead(announcementId: string, userId: string): Promise<void> {
     try {
-      const { error } = await getSupabase()
-        .from('announcement_reads')
-        .insert({
-          announcement_id: announcementId,
-          user_id: userId,
-        });
-
-      // Ignore conflict error (already read)
-      if (error && error.code !== '23505') {
-        throw error;
-      }
+      // ON CONFLICT DO NOTHING: silently ignore if already read (same UNIQUE
+      // (announcement_id, user_id) constraint the old Supabase-error-code check
+      // against '23505' was working around)
+      await query(
+        `INSERT INTO announcement_reads (announcement_id, user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (announcement_id, user_id) DO NOTHING`,
+        [announcementId, userId]
+      );
     } catch (error) {
       console.error('Failed to mark announcement as read:', error);
       throw error;
@@ -160,14 +146,23 @@ class AnnouncementService {
     updates: Partial<AnnouncementInsert>,
   ): Promise<any> {
     try {
-      const { data: announcement, error } = await getSupabase()
-        .from('announcements')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_ANNOUNCEMENT_COLUMNS.includes(k));
 
-      if (error) throw error;
+      if (columns.length === 0) {
+        return queryOne<Announcement>(`SELECT * FROM announcements WHERE id = $1`, [id]);
+      }
+
+      const setClauses = columns.map((col, i) => `${col} = $${i + 2}`);
+      const values = columns.map((col) => (updates as any)[col]);
+
+      const announcement = await queryOne<Announcement>(
+        `UPDATE announcements
+         SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1
+         RETURNING *`,
+        [id, ...values]
+      );
+
       return announcement;
     } catch (error) {
       console.error('Failed to update announcement:', error);
@@ -180,12 +175,7 @@ class AnnouncementService {
    */
   async deleteAnnouncement(id: string): Promise<void> {
     try {
-      const { error } = await getSupabase()
-        .from('announcements')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await query(`DELETE FROM announcements WHERE id = $1`, [id]);
     } catch (error) {
       console.error('Failed to delete announcement:', error);
       throw error;
@@ -197,13 +187,11 @@ class AnnouncementService {
    */
   async getReadCount(announcementId: string): Promise<number> {
     try {
-      const { count, error } = await getSupabase()
-        .from('announcement_reads')
-        .select('*', { count: 'exact' })
-        .eq('announcement_id', announcementId);
-
-      if (error) throw error;
-      return count || 0;
+      const result = await queryOne<{ count: string }>(
+        `SELECT COUNT(*) as count FROM announcement_reads WHERE announcement_id = $1`,
+        [announcementId]
+      );
+      return result ? parseInt(result.count, 10) : 0;
     } catch (error) {
       console.error('Failed to get read count:', error);
       throw error;
@@ -220,7 +208,3 @@ export function getAnnouncementService(): AnnouncementService {
   }
   return announcementService;
 }
-
-
-
-

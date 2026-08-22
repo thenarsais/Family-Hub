@@ -1,4 +1,4 @@
-import { getSupabase } from './supabase'
+import { query, queryOne } from '../database/connection';
 import type { Database } from '../types/database';
 
 import crypto from 'crypto';
@@ -12,46 +12,50 @@ interface FamilyWithMembers extends Family {
   members: FamilyMember[];
 }
 
+// Only these columns may be updated via PATCH /api/family/settings -- the route
+// passes req.body straight through with no validation, so this whitelist is what
+// stands between an arbitrary request body and a raw SQL UPDATE statement.
+const UPDATABLE_SETTINGS_COLUMNS = [
+  'theme', 'language', 'timezone', 'notifications_enabled', 'sound_notifications',
+  'email_digest_frequency', 'parental_controls_enabled', 'require_age_verification',
+  'max_screen_time_minutes', 'bedtime_enabled', 'bedtime_start', 'bedtime_end',
+  'enable_smart_home_control', 'points_system_enabled', 'badges_system_enabled',
+  'leaderboard_enabled', 'privacy_mode', 'allow_google_calendar_sync',
+];
+
 class FamilyService {
   /**
    * Get user's family
    */
   async getUserFamily(userId: string): Promise<FamilyWithMembers | null> {
     try {
-      // Get user's family
-      const { data: familyMember } = await getSupabase()
-        .from('family_members')
-        .select('family_id')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .single();
+      const familyMember = await queryOne<{ family_id: string }>(
+        `SELECT family_id FROM family_members WHERE user_id = $1 AND is_active = true LIMIT 1`,
+        [userId]
+      );
 
       if (!familyMember) {
         return null;
       }
 
-      // Get family details
-      const { data: family } = await getSupabase()
-        .from('families')
-        .select('*')
-        .eq('id', familyMember.family_id)
-        .single();
+      const family = await queryOne<Family>(
+        `SELECT * FROM families WHERE id = $1 LIMIT 1`,
+        [familyMember.family_id]
+      );
 
       if (!family) {
         return null;
       }
 
-      // Get all family members
-      const { data: members } = await getSupabase()
-        .from('family_members')
-        .select('*')
-        .eq('family_id', family.id)
-        .eq('is_active', true);
+      const membersResult = await query<FamilyMember>(
+        `SELECT * FROM family_members WHERE family_id = $1 AND is_active = true`,
+        [family.id]
+      );
 
       return {
         ...family,
-        member_count: members?.length || 0,
-        members: members || [],
+        member_count: membersResult.rows.length,
+        members: membersResult.rows,
       };
     } catch (error) {
       console.error('Failed to get user family:', error);
@@ -72,39 +76,28 @@ class FamilyService {
     },
   ): Promise<any> {
     try {
-      const { data: family, error } = await getSupabase()
-        .from('families')
-        .insert({
-          name: data.name,
-          description: data.description,
-          created_by_id: createdById,
-          max_children: data.max_children || 5,
-          max_parents: data.max_parents || 2,
-        })
-        .select()
-        .single();
+      const family = await queryOne<Family>(
+        `INSERT INTO families (name, description, created_by_id, max_children, max_parents)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [data.name, data.description || null, createdById, data.max_children || 5, data.max_parents || 2]
+      );
 
-      if (error) throw error;
+      if (!family) throw new Error('Failed to create family');
 
       // Add creator as admin member
-      await getSupabase()
-        .from('family_members')
-        .insert({
-          family_id: family.id,
-          user_id: createdById,
-          role: 'admin',
-          invited_by_id: null,
-        });
+      await query(
+        `INSERT INTO family_members (family_id, user_id, role, invited_by_id)
+         VALUES ($1, $2, 'admin', NULL)`,
+        [family.id, createdById]
+      );
 
       // Create default settings for family
-      await getSupabase()
-        .from('family_settings')
-        .insert({
-          family_id: family.id,
-          theme: 'light',
-          language: 'en',
-          timezone: 'America/New_York',
-        });
+      await query(
+        `INSERT INTO family_settings (family_id, theme, language, timezone)
+         VALUES ($1, 'light', 'en', 'America/New_York')`,
+        [family.id]
+      );
 
       return family;
     } catch (error) {
@@ -118,15 +111,11 @@ class FamilyService {
    */
   async getFamilyMembers(familyId: string): Promise<any[]> {
     try {
-      const { data, error } = await getSupabase()
-        .from('family_members')
-        .select('*')
-        .eq('family_id', familyId)
-        .eq('is_active', true)
-        .order('role', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
+      const result = await query<FamilyMember>(
+        `SELECT * FROM family_members WHERE family_id = $1 AND is_active = true ORDER BY role ASC`,
+        [familyId]
+      );
+      return result.rows;
     } catch (error) {
       console.error('Failed to get family members:', error);
       throw error;
@@ -143,26 +132,19 @@ class FamilyService {
     role: 'admin' | 'parent' | 'child' | 'guardian',
   ): Promise<string> {
     try {
-      // Generate unique invite token
       const inviteToken = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-      const { data, error } = await getSupabase()
-        .from('family_invitations')
-        .insert({
-          family_id: familyId,
-          invited_email: email,
-          inviting_parent_id: invitedByUserId,
-          role,
-          invite_token: inviteToken,
-          expires_at: expiresAt.toISOString(),
-        })
-        .select('invite_token')
-        .single();
+      const result = await queryOne<{ invite_token: string }>(
+        `INSERT INTO family_invitations (family_id, invited_email, inviting_parent_id, role, invite_token, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING invite_token`,
+        [familyId, email, invitedByUserId, role, inviteToken, expiresAt.toISOString()]
+      );
 
-      if (error) throw error;
+      if (!result) throw new Error('Failed to create invitation');
 
-      return inviteToken;
+      return result.invite_token;
     } catch (error) {
       console.error('Failed to invite family member:', error);
       throw error;
@@ -174,14 +156,10 @@ class FamilyService {
    */
   async acceptInvitation(inviteToken: string, userId: string): Promise<any> {
     try {
-      // Get invitation
-      const { data: invitation, error: inviteError } = await getSupabase()
-        .from('family_invitations')
-        .select('*')
-        .eq('invite_token', inviteToken)
-        .single();
-
-      if (inviteError) throw inviteError;
+      const invitation = await queryOne<any>(
+        `SELECT * FROM family_invitations WHERE invite_token = $1 LIMIT 1`,
+        [inviteToken]
+      );
 
       if (!invitation) {
         throw new Error('Invalid or expired invitation');
@@ -191,25 +169,19 @@ class FamilyService {
         throw new Error('Invitation expired');
       }
 
-      // Add member to family
-      const { data: member, error: memberError } = await getSupabase()
-        .from('family_members')
-        .insert({
-          family_id: invitation.family_id,
-          user_id: userId,
-          role: invitation.role,
-          invited_by_id: invitation.inviting_parent_id,
-        })
-        .select()
-        .single();
+      const member = await queryOne<FamilyMember>(
+        `INSERT INTO family_members (family_id, user_id, role, invited_by_id)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [invitation.family_id, userId, invitation.role, invitation.inviting_parent_id]
+      );
 
-      if (memberError) throw memberError;
+      if (!member) throw new Error('Failed to add family member');
 
-      // Mark invitation as accepted
-      await getSupabase()
-        .from('family_invitations')
-        .update({ accepted_at: new Date().toISOString() })
-        .eq('invite_token', inviteToken);
+      await query(
+        `UPDATE family_invitations SET accepted_at = CURRENT_TIMESTAMP WHERE invite_token = $1`,
+        [inviteToken]
+      );
 
       return member;
     } catch (error) {
@@ -227,16 +199,13 @@ class FamilyService {
     newRole: string,
   ): Promise<any> {
     try {
-      const { data, error } = await getSupabase()
-        .from('family_members')
-        .update({ role: newRole })
-        .eq('family_id', familyId)
-        .eq('user_id', memberId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const result = await queryOne<FamilyMember>(
+        `UPDATE family_members SET role = $1, updated_at = CURRENT_TIMESTAMP
+         WHERE family_id = $2 AND user_id = $3
+         RETURNING *`,
+        [newRole, familyId, memberId]
+      );
+      return result;
     } catch (error) {
       console.error('Failed to update member role:', error);
       throw error;
@@ -248,13 +217,11 @@ class FamilyService {
    */
   async removeMember(familyId: string, memberId: string): Promise<void> {
     try {
-      const { error } = await getSupabase()
-        .from('family_members')
-        .update({ is_active: false })
-        .eq('family_id', familyId)
-        .eq('user_id', memberId);
-
-      if (error) throw error;
+      await query(
+        `UPDATE family_members SET is_active = false, updated_at = CURRENT_TIMESTAMP
+         WHERE family_id = $1 AND user_id = $2`,
+        [familyId, memberId]
+      );
     } catch (error) {
       console.error('Failed to remove member:', error);
       throw error;
@@ -266,14 +233,10 @@ class FamilyService {
    */
   async getFamilySettings(familyId: string): Promise<FamilySettings | null> {
     try {
-      const { data, error } = await getSupabase()
-        .from('family_settings')
-        .select('*')
-        .eq('family_id', familyId)
-        .single();
-
-      if (error) throw error;
-      return data;
+      return await queryOne<FamilySettings>(
+        `SELECT * FROM family_settings WHERE family_id = $1 LIMIT 1`,
+        [familyId]
+      );
     } catch (error) {
       console.error('Failed to get family settings:', error);
       throw error;
@@ -285,15 +248,24 @@ class FamilyService {
    */
   async updateFamilySettings(familyId: string, updates: any): Promise<any> {
     try {
-      const { data, error } = await getSupabase()
-        .from('family_settings')
-        .update(updates)
-        .eq('family_id', familyId)
-        .select()
-        .single();
+      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_SETTINGS_COLUMNS.includes(k));
 
-      if (error) throw error;
-      return data;
+      if (columns.length === 0) {
+        return this.getFamilySettings(familyId);
+      }
+
+      const setClauses = columns.map((col, i) => `${col} = $${i + 2}`);
+      const values = columns.map((col) => updates[col]);
+
+      const result = await queryOne<FamilySettings>(
+        `UPDATE family_settings
+         SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP
+         WHERE family_id = $1
+         RETURNING *`,
+        [familyId, ...values]
+      );
+
+      return result;
     } catch (error) {
       console.error('Failed to update family settings:', error);
       throw error;
@@ -310,7 +282,3 @@ export function getFamilyService(): FamilyService {
   }
   return familyService;
 }
-
-
-
-

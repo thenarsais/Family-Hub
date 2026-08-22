@@ -1,4 +1,5 @@
 import { query, queryOne } from '../database/connection';
+import * as PointsRepository from '../database/repositories/PointsRepository';
 
 export interface LearningProgress {
   id: string;
@@ -38,12 +39,9 @@ export class LearningService {
 
     if (!result) throw new Error('Failed to record lesson completion');
 
-    // Award points
-    await query(
-      `INSERT INTO point_transactions (user_id, amount, source, description)
-       VALUES ($1, $2, 'learning', $3)`,
-      [userId, pointsValue, `Completed lesson: ${lessonId}`]
-    );
+    // Award points via the one real points ledger (activity_points), not a
+    // separate learning-only ledger -- see 002_chores_and_learning_schema.sql.
+    await PointsRepository.addPoints(userId, pointsValue, 'learning', `Completed lesson: ${lessonId}`);
 
     return this.mapProgress(result);
   }
@@ -68,11 +66,7 @@ export class LearningService {
     );
 
     if (isCorrect) {
-      await query(
-        `INSERT INTO point_transactions (user_id, amount, source, description)
-         VALUES ($1, $2, 'learning', $3)`,
-        [userId, pointsEarned, `Quiz question: ${lessonId}:${questionNumber}`]
-      );
+      await PointsRepository.addPoints(userId, pointsEarned, 'learning', `Quiz question: ${lessonId}:${questionNumber}`);
     }
   }
 
