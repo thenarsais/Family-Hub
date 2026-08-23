@@ -228,10 +228,22 @@ This document defines the complete architectural framework for Family Hub—a cr
 **Implication:** Discipline on secrets; automated CI/CD secrets manager
 
 ### 31. API Versioning
-**Decision:** Strict URL versioning (/api/v1/, /api/v2/)  
-**Details:** Separate /routes/v1 and /routes/v2; support 2 concurrent versions; additive-only changes  
-**Why:** Future-proof for external clients/integrations  
-**Implication:** More folders to manage; but clear migration path
+**Decision:** Deferred — no URL versioning until a second real consumer exists  
+**Revised:** 2026-08-23 (see `sdlc-alignment-decisions.md` item #7). Originally: strict URL
+versioning (/api/v1/, /api/v2/), separate /routes/v1 and /routes/v2, 2 concurrent versions
+supported. Never implemented — routes remain unversioned and inconsistently prefixed
+(`/auth`, `/points`, `/api/calendar`, etc.).  
+**Why the change:** versioning exists to protect *independently-deployed external* consumers
+from breaking changes. This API has exactly one consumer — its own frontend, deployed in the
+same commit. Building the version-negotiation contract now means guessing its shape without a
+real second consumer to design against; it would likely need to be redesigned anyway once the
+Phase 9 mobile app's actual requirements are known, making the "future-proofing" wasted effort
+rather than saved effort.  
+**Revisit when:** a second real, independently-deployed API consumer exists (e.g. the Phase 9
+mobile app, or a third-party integration) — design the versioning scheme against its actual
+needs at that point, not speculatively now.  
+**Implication:** routes stay unversioned for now; `docs/API.md` (see Decision on API
+documentation) tracks the current unversioned surface.
 
 ---
 
@@ -332,7 +344,8 @@ When conflicts arise, resolve in this order:
 | Core Architecture | 1-14 | ✅ Locked |
 | Development & Quality | 15-20 | ✅ Locked |
 | Operations & Deployment | 21-28 | ✅ Locked |
-| Security & Privacy | 29-31 | ✅ Locked |
+| Security & Privacy | 29-30 | ✅ Locked |
+| Security & Privacy | 31 | 🔁 Revised 2026-08-23 (deferred) |
 | Features & Analytics | 32-33 | ✅ Locked |
 | Architectural Addendums | 34-36 | ✅ Locked |
 
@@ -366,6 +379,7 @@ When conflicts arise, resolve in this order:
 | Version | Date | Changes |
 |---|---|---|
 | 1.0 | July 31, 2026 | Initial framework complete; 36 decisions locked |
+| 1.1 | August 23, 2026 | Decision #31 (API Versioning) revised from "strict URL versioning now" to "deferred until a second real API consumer exists" — see `sdlc-alignment-decisions.md`. Also: a full drift audit against live code found Decisions #15 (80% coverage), #29 (COPPA schema), and #35 (dual Supabase project) documented but not implemented; all three scheduled for implementation, not revision, per that same review. |
 
 ---
 

@@ -63,5 +63,37 @@ Future documents should be archived when:
 
 ---
 
-**Last Updated:** July 31, 2026  
-**Archive Version:** 1.0
+## 2026-08-23 Addition: Home Assistant Era + Phase 1/2 Completion Snapshots
+
+A second wave, archived during the SDLC-alignment review (see the project's own decision log,
+`sdlc-alignment-decisions.md`, for full context):
+
+**Home Assistant / mini-PC era** — `docs/roadmap.md` (renamed `roadmap.md` here) and its direct
+companions describe an entirely different product generation (Home Assistant + dedicated mini PC
++ Nest/VoIP + moon-phase cards) that predates and has no relation to the current React +
+Express + Supabase rebuild:
+- `roadmap.md`, `features-home-assistant-era.md` (was `docs/features.md`), `hardware-setup.md`,
+  `software-setup.md`, `session-log.md`, `known-issues.md`, `getting-started.md`
+
+**Phase 1/2 completion snapshots** — point-in-time "✅ Complete" reports from the SDLC process
+that ran before the 2026-08-22/23 rebuild. Their "Complete" status should not be trusted as
+current — the rebuild found real bugs (disconnected points ledger, RLS/GRANT gaps, demo-auth
+backdoor, migration drift) in code these reports had marked done:
+- `PHASE_1_COMPLETION.md`, `PHASE_1_TESTING_GUIDE.md`, `PHASE1_EXECUTION_PLAN.md`,
+  `PHASE_2_BACKEND_COMPLETE.md`, `PHASE_2_COMPLETE_SUMMARY.md`, `PHASE_2_DATABASE_SUMMARY.md`,
+  `PHASE_2_FRONTEND_INTEGRATION.md`, `PHASE_2_IMPLEMENTATION_PLAN.md`,
+  `SUPABASE_INTEGRATION_COMPLETE.md`, `SUPABASE_STATUS.md`, `TESTING_STATUS.md`,
+  `SESSION_SUMMARY_2026-07-31.md`, `ACCESSIBILITY_GUIDELINES.md`, `COPPA_COMPLIANCE_TEST.md`,
+  `DISASTER_RECOVERY.md`, `E2E_CICD_VALIDATION.md`, `HEALTH_ENDPOINT_TEST.md`, `LIGHTHOUSE_CI.md`,
+  `PRODUCTION_BUILD_VERIFICATION.md`, `SENTRY_SETUP_GUIDE.md`, `SUPABASE_SETUP_GUIDE.md`,
+  `DASHBOARD_REVIEW.md`, `DASHBOARD_UPDATE_COMPLETE.md`
+
+**Kept at root, not archived** despite dated "Phase 1 Item N" headers, because their content is
+still accurate day-to-day reference: `FRAMEWORK.md`, `DECISION_MATRIX.md`,
+`REQUIREMENTS-VALIDATION-FRAMEWORK.md`, `PHASE0_AUDIT.md`, `COMMIT_GUIDELINES.md`,
+`SETUP_GUIDE.md`, `GOOGLE_CALENDAR_SETUP.md`.
+
+---
+
+**Last Updated:** July 31, 2026 (original) / 2026-08-23 (this addition)
+**Archive Version:** 1.1
