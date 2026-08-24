@@ -3,9 +3,10 @@
  * Handles badge management and user badge earning
  */
 
-import express, { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import * as BadgesRepository from '../database/repositories/BadgesRepository';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 
 // Middleware to verify auth header
@@ -31,7 +32,7 @@ router.get('/', verifyAuth, async (req: Request, res: Response) => {
 
     res.json({
       count: badges.length,
-      badges: badges.map((badge: any) => ({
+      badges: badges.map((badge) => ({
         id: badge.id,
         title: badge.title,
         description: badge.description,
@@ -42,11 +43,11 @@ router.get('/', verifyAuth, async (req: Request, res: Response) => {
         created_at: badge.created_at
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get all badges error:', error);
     res.status(500).json({
       error: 'Failed to get badges',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -80,11 +81,11 @@ router.get('/:id', verifyAuth, async (req: Request, res: Response) => {
         created_at: badge.created_at
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get badge error:', error);
     res.status(500).json({
       error: 'Failed to get badge',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -105,7 +106,7 @@ router.get('/category/:category', verifyAuth, async (req: Request, res: Response
     res.json({
       category,
       count: badges.length,
-      badges: badges.map((badge: any) => ({
+      badges: badges.map((badge) => ({
         id: badge.id,
         title: badge.title,
         icon_emoji: badge.icon_emoji,
@@ -113,11 +114,11 @@ router.get('/category/:category', verifyAuth, async (req: Request, res: Response
         points_required: badge.points_required
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get badges by category error:', error);
     res.status(500).json({
       error: 'Failed to get badges by category',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -142,13 +143,13 @@ router.get('/users/:userId', verifyAuth, async (req: Request, res: Response) => 
         meta: {
           total_badges: badges.length
         },
-        badges: badges.map((badge: any) => ({
+        badges: badges.map((badge) => ({
           id: badge.id,
           badge_id: badge.badge_id,
           earned_at: badge.earned_at
         }))
       });
-    } catch (dbError) {
+    } catch {
       // Database unavailable - return mock data for demo
       console.warn('Database unavailable, using mock badges data');
       return res.json({
@@ -177,11 +178,11 @@ router.get('/users/:userId', verifyAuth, async (req: Request, res: Response) => 
         demo_mode: true
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get user badges error:', error);
     res.status(500).json({
       error: 'Failed to get user badges',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -202,7 +203,7 @@ router.get('/users/:userId/detailed', verifyAuth, async (req: Request, res: Resp
     res.json({
       user_id: userId,
       count: badges.length,
-      badges: badges.map((earned: any) => ({
+      badges: badges.map((earned) => ({
         earned_badge_id: earned.id,
         badge: {
           id: earned.badge_id,
@@ -215,11 +216,11 @@ router.get('/users/:userId/detailed', verifyAuth, async (req: Request, res: Resp
         earned_at: earned.earned_at
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get user badges detailed error:', error);
     res.status(500).json({
       error: 'Failed to get user badge details',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -257,11 +258,11 @@ router.post('/users/:userId/badges/:badgeId', verifyAuth, async (req: Request, r
         earned_at: userBadge.earned_at
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Award badge error:', error);
     res.status(500).json({
       error: 'Failed to award badge',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -284,11 +285,11 @@ router.delete('/users/:userId/badges/:badgeId', verifyAuth, async (req: Request,
     res.json({
       message: 'Badge revoked successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Revoke badge error:', error);
     res.status(500).json({
       error: 'Failed to revoke badge',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -322,17 +323,17 @@ router.get('/users/:userId/range', verifyAuth, async (req: Request, res: Respons
       user_id: userId,
       date_range: { start, end },
       count: badges.length,
-      badges: badges.map((badge: any) => ({
+      badges: badges.map((badge) => ({
         id: badge.id,
         badge_id: badge.badge_id,
         earned_at: badge.earned_at
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get badges in range error:', error);
     res.status(500).json({
       error: 'Failed to get badges in range',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });

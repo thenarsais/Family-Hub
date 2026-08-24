@@ -6,6 +6,8 @@ import crypto from 'crypto';
 export type Family = Database['public']['Tables']['families']['Row'];
 export type FamilyMember = Database['public']['Tables']['family_members']['Row'];
 export type FamilySettings = Database['public']['Tables']['family_settings']['Row'];
+type FamilySettingsInsert = Database['public']['Tables']['family_settings']['Insert'];
+type FamilyInvitation = Database['public']['Tables']['family_invitations']['Row'];
 
 interface FamilyWithMembers extends Family {
   member_count: number;
@@ -74,7 +76,7 @@ class FamilyService {
       max_children?: number;
       max_parents?: number;
     },
-  ): Promise<any> {
+  ): Promise<Family> {
     try {
       const family = await queryOne<Family>(
         `INSERT INTO families (name, description, created_by_id, max_children, max_parents)
@@ -109,7 +111,7 @@ class FamilyService {
   /**
    * Get family members
    */
-  async getFamilyMembers(familyId: string): Promise<any[]> {
+  async getFamilyMembers(familyId: string): Promise<FamilyMember[]> {
     try {
       const result = await query<FamilyMember>(
         `SELECT * FROM family_members WHERE family_id = $1 AND is_active = true ORDER BY role ASC`,
@@ -154,9 +156,9 @@ class FamilyService {
   /**
    * Accept family invitation
    */
-  async acceptInvitation(inviteToken: string, userId: string): Promise<any> {
+  async acceptInvitation(inviteToken: string, userId: string): Promise<FamilyMember> {
     try {
-      const invitation = await queryOne<any>(
+      const invitation = await queryOne<FamilyInvitation>(
         `SELECT * FROM family_invitations WHERE invite_token = $1 LIMIT 1`,
         [inviteToken]
       );
@@ -197,7 +199,7 @@ class FamilyService {
     familyId: string,
     memberId: string,
     newRole: string,
-  ): Promise<any> {
+  ): Promise<FamilyMember | null> {
     try {
       const result = await queryOne<FamilyMember>(
         `UPDATE family_members SET role = $1, updated_at = CURRENT_TIMESTAMP
@@ -246,9 +248,9 @@ class FamilyService {
   /**
    * Update family settings
    */
-  async updateFamilySettings(familyId: string, updates: any): Promise<any> {
+  async updateFamilySettings(familyId: string, updates: Partial<FamilySettingsInsert>): Promise<FamilySettings | null> {
     try {
-      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_SETTINGS_COLUMNS.includes(k));
+      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_SETTINGS_COLUMNS.includes(k)) as (keyof FamilySettingsInsert)[];
 
       if (columns.length === 0) {
         return this.getFamilySettings(familyId);

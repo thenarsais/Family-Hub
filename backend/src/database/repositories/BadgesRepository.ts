@@ -3,8 +3,8 @@
  * Database queries for badges and user_badges tables
  */
 
-import { query, queryOne, queryAll, queryCount, transaction } from '../db';
-import { getOrSet, del, delPattern } from '../cache';
+import { query, queryOne, queryAll, queryCount } from '../db';
+import { getOrSet, del } from '../cache';
 
 // ================================================
 // TYPE DEFINITIONS

@@ -3,6 +3,7 @@ import { getCalendarService } from '../services/calendar';
 import { getFamilyService } from '../services/family';
 import { getGoogleOAuthService } from '../services/google-oauth';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const calendar = getCalendarService();
 const family = getFamilyService();
@@ -42,12 +43,12 @@ router.get('/events', async (req: Request, res: Response) => {
       count: events.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch events:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch events',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -84,12 +85,12 @@ router.get('/upcoming', async (req: Request, res: Response) => {
       count: events.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch upcoming events:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch upcoming events',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -141,12 +142,12 @@ router.post('/events', async (req: Request, res: Response) => {
       data: event,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create event:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create event',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -174,12 +175,12 @@ router.patch('/events/:id', async (req: Request, res: Response) => {
       data: event,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to update event:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update event',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -206,12 +207,12 @@ router.delete('/events/:id', async (req: Request, res: Response) => {
       message: 'Event deleted',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to delete event:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to delete event',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -253,12 +254,12 @@ router.get('/auth/google', async (req: Request, res: Response) => {
       data: { connected: false, authUrl },
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get auth URL:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get auth URL',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -285,10 +286,10 @@ router.get('/auth/google/callback', async (req: Request, res: Response) => {
     // Redirect back to dashboard with success parameter
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     res.redirect(`${frontendUrl}/dashboard?googleAuth=success`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to handle OAuth callback:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.redirect(`${frontendUrl}/dashboard?googleAuth=error&message=${encodeURIComponent(error.message)}`);
+    res.redirect(`${frontendUrl}/dashboard?googleAuth=error&message=${encodeURIComponent(getErrorMessage(error))}`);
   }
 });
 
@@ -329,14 +330,15 @@ router.get('/google/events', async (req: Request, res: Response) => {
       source: 'google_calendar',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch Google Calendar events:', error);
-    const statusCode = error.status || 500;
+    const errorObj = error as { status?: number; code?: unknown };
+    const statusCode = errorObj?.status || 500;
     res.status(statusCode).json({
       status: 'error',
-      code: error.code,
-      message: error.message || 'Failed to fetch Google Calendar events',
-      error: error.message,
+      code: errorObj?.code,
+      message: getErrorMessage(error) || 'Failed to fetch Google Calendar events',
+      error: getErrorMessage(error),
     });
   }
 });
@@ -363,12 +365,12 @@ router.post('/google/disconnect', async (req: Request, res: Response) => {
       message: 'Google Calendar disconnected successfully',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to disconnect Google Calendar:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to disconnect Google Calendar',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -400,12 +402,12 @@ router.get('/dismissed', async (req: Request, res: Response) => {
       data: data || [],
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch dismissed events:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch dismissed events',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -453,12 +455,12 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
       message: 'Event dismissed successfully',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to dismiss event:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to dismiss event',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

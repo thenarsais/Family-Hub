@@ -317,7 +317,7 @@ describe('Learning Routes', () => {
     });
 
     it('should require phase parameter', async () => {
-      const res = await request(app)
+      await request(app)
         .get('/api/learning/progress/')
         .set('x-user-id', 'user-1')
         .expect(404);

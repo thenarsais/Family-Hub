@@ -6,13 +6,28 @@ interface SmartThingsDevice {
   name: string;
   type: string;
   room?: string;
-  status: Record<string, any>;
+  status: Record<string, unknown>;
 }
 
 interface DeviceCommand {
   capability: string;
   command: string;
-  arguments?: any[];
+  arguments?: unknown[];
+}
+
+interface SmartThingsDeviceRow {
+  device_id: string;
+  name: string;
+  type: string;
+  room: string | null;
+  status: Record<string, unknown> | null;
+}
+
+interface SmartThingsApiDevice {
+  deviceId: string;
+  label: string;
+  deviceTypeName?: string;
+  room?: { name?: string };
 }
 
 export class SmartThingsService {
@@ -46,7 +61,7 @@ export class SmartThingsService {
       const response = await this.client.get('/devices');
       const devices: SmartThingsDevice[] = [];
 
-      for (const device of response.data.devices) {
+      for (const device of response.data.devices as SmartThingsApiDevice[]) {
         const dbDevice = await this.saveDevice({
           deviceId: device.deviceId,
           name: device.label,
@@ -67,7 +82,7 @@ export class SmartThingsService {
   /**
    * Get device status
    */
-  async getDeviceStatus(deviceId: string): Promise<Record<string, any>> {
+  async getDeviceStatus(deviceId: string): Promise<Record<string, unknown>> {
     try {
       if (!this.token) {
         return { status: 'mock', online: true };
@@ -180,7 +195,7 @@ export class SmartThingsService {
    * Get device from database
    */
   async getDevice(deviceId: string): Promise<SmartThingsDevice | null> {
-    const result = await queryOne<any>(
+    const result = await queryOne<SmartThingsDeviceRow>(
       'SELECT device_id, name, type, room, status FROM smartthings_devices WHERE device_id = $1',
       [deviceId]
     );
@@ -191,7 +206,7 @@ export class SmartThingsService {
       deviceId: result.device_id,
       name: result.name,
       type: result.type,
-      room: result.room,
+      room: result.room ?? undefined,
       status: result.status || {},
     };
   }
@@ -200,7 +215,7 @@ export class SmartThingsService {
    * List all devices
    */
   async listDevices(): Promise<SmartThingsDevice[]> {
-    const results = await query<any>(
+    const results = await query<SmartThingsDeviceRow>(
       'SELECT device_id, name, type, room, status FROM smartthings_devices ORDER BY name'
     );
 
@@ -208,7 +223,7 @@ export class SmartThingsService {
       deviceId: r.device_id,
       name: r.name,
       type: r.type,
-      room: r.room,
+      room: r.room ?? undefined,
       status: r.status || {},
     }));
   }
@@ -216,7 +231,7 @@ export class SmartThingsService {
   /**
    * Map SmartThings device types to our types
    */
-  private mapDeviceType(device: any): string {
+  private mapDeviceType(device: SmartThingsApiDevice): string {
     const capabilities = device.deviceTypeName || '';
 
     if (capabilities.includes('Light')) return 'light';

@@ -23,11 +23,11 @@ describe('Error Handler Middleware (COPPA Compliance)', () => {
       path: '/api/test',
       method: 'POST',
       headers: {},
-    } as any;
+    };
 
     mockRes = {
-      status: statusSpy,
-    } as any;
+      status: statusSpy as unknown as Response['status'],
+    };
 
     mockNext = jest.fn();
   });
@@ -68,7 +68,7 @@ describe('Error Handler Middleware (COPPA Compliance)', () => {
   describe('Request Information', () => {
     it('should include request path', () => {
       const error = new Error('Test error');
-      (mockReq as any).path = '/api/users';
+      (mockReq as { path: string }).path = '/api/users';
 
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
@@ -86,7 +86,7 @@ describe('Error Handler Middleware (COPPA Compliance)', () => {
 
     it('should include request ID if available', () => {
       const error = new Error('Test error');
-      (mockReq as any).id = 'req-123';
+      mockReq.id = 'req-123';
 
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
@@ -162,7 +162,7 @@ describe('Error Handler Middleware (COPPA Compliance)', () => {
     });
 
     it('should handle errors with properties', () => {
-      const error: any = new Error('Error with extra');
+      const error: Error & { code?: string } = new Error('Error with extra');
       error.code = 'DB_ERROR';
 
       expect(() => {
@@ -171,7 +171,10 @@ describe('Error Handler Middleware (COPPA Compliance)', () => {
     });
 
     it('should handle non-Error objects', () => {
-      const error = 'String error' as any;
+      // Deliberately wrong type -- Express error middleware can be handed
+      // anything via next(err), and this test verifies the handler doesn't
+      // throw when it isn't a real Error.
+      const error = 'String error' as unknown as Error;
 
       expect(() => {
         errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
@@ -261,7 +264,7 @@ describe('Error Handler Middleware (COPPA Compliance)', () => {
   describe('Request Context', () => {
     it('should capture request path', () => {
       const error = new Error('Error');
-      (mockReq as any).path = '/api/users/create';
+      (mockReq as { path: string }).path = '/api/users/create';
 
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
@@ -279,7 +282,7 @@ describe('Error Handler Middleware (COPPA Compliance)', () => {
 
     it('should not capture request body (could have PII)', () => {
       const error = new Error('Error');
-      (mockReq as any).body = { password: 'secret' };
+      mockReq.body = { password: 'secret' };
 
       errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 

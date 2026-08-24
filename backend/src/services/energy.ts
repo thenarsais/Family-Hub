@@ -3,6 +3,7 @@ import type { Database } from '../types/database';
 
 export type EnergyUsage = Database['public']['Tables']['energy_usage']['Row'];
 export type EnergyGoal = Database['public']['Tables']['energy_goals']['Row'];
+export type EnergySummary = Database['public']['Tables']['energy_summary']['Row'];
 
 class EnergyService {
   /**
@@ -11,11 +12,11 @@ class EnergyService {
   async getEnergyUsage(
     daysBack: number = 30,
     deviceId?: string,
-  ): Promise<any[]> {
+  ): Promise<EnergyUsage[]> {
     try {
       const startDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
       const conditions = ['timestamp >= $1'];
-      const values: any[] = [startDate.toISOString()];
+      const values: unknown[] = [startDate.toISOString()];
 
       if (deviceId) {
         values.push(deviceId);
@@ -40,12 +41,12 @@ class EnergyService {
   async getEnergySummary(
     period: 'daily' | 'weekly' | 'monthly',
     monthsBack: number = 12,
-  ): Promise<any[]> {
+  ): Promise<EnergySummary[]> {
     try {
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - monthsBack);
 
-      const result = await query<any>(
+      const result = await query<EnergySummary>(
         `SELECT * FROM energy_summary
          WHERE period = $1 AND period_start >= $2
          ORDER BY period_start DESC`,
@@ -91,7 +92,7 @@ class EnergyService {
       end_date: string;
       points_reward?: number;
     },
-  ): Promise<any> {
+  ): Promise<EnergyGoal> {
     try {
       const goal = await queryOne<EnergyGoal>(
         `INSERT INTO energy_goals (created_by_id, goal_type, target_kwh, start_date, end_date, points_reward)
@@ -111,7 +112,7 @@ class EnergyService {
   /**
    * Get energy goals for user
    */
-  async getEnergyGoals(userId: string): Promise<any[]> {
+  async getEnergyGoals(userId: string): Promise<EnergyGoal[]> {
     try {
       const result = await query<EnergyGoal>(
         `SELECT * FROM energy_goals WHERE created_by_id = $1 AND status = 'active' ORDER BY start_date DESC`,
@@ -133,7 +134,7 @@ class EnergyService {
     deviceType: string,
     powerWatts: number,
     energyKwh: number,
-  ): Promise<any> {
+  ): Promise<EnergyUsage> {
     try {
       const result = await queryOne<EnergyUsage>(
         `INSERT INTO energy_usage (device_id, device_name, device_type, power_watts, energy_kwh, timestamp)
@@ -153,7 +154,7 @@ class EnergyService {
   /**
    * Get device-level energy usage
    */
-  async getDeviceEnergyUsage(deviceId: string, daysBack: number = 30): Promise<any[]> {
+  async getDeviceEnergyUsage(deviceId: string, daysBack: number = 30): Promise<EnergyUsage[]> {
     try {
       const startDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000);
 

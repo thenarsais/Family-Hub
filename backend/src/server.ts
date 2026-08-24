@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import badgeRoutes from './routes/badges';
@@ -30,6 +30,7 @@ import healthRoutes from './routes/health';
 import { validateEnv } from './config/env';
 import { initSentry } from './config/sentry';
 
+import { getErrorMessage, getErrorCode } from './utils/errors';
 // Load environment variables
 // When running in Docker, these come from env_file in docker-compose.yml
 // When running locally with npm run dev, load from .env.local
@@ -41,8 +42,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 // Fail-fast if required environment variables are missing
 try {
   validateEnv();
-} catch (err: any) {
-  console.error(`\n❌ ${err.message}\n`);
+} catch (err: unknown) {
+  console.error(`\n❌ ${getErrorMessage(err)}\n`);
   process.exit(1);
 }
 
@@ -69,7 +70,7 @@ app.use(rateLimit(rateLimitPresets.lenient)); // Rate limiting (lenient for dev)
 app.use(batchOperations()); // Batch operations support
 
 // Lazy-initialize Supabase
-let supabase: any = null;
+let supabase: SupabaseClient | null = null;
 
 function getSupabase() {
   if (!supabase) {
@@ -78,25 +79,27 @@ function getSupabase() {
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
       // For Node.js 18, provide ws transport for realtime
-      let clientOptions: any = {};
+      let clientOptions: Parameters<typeof createClient>[2] = {};
       try {
         if (process.version.startsWith('v16') || process.version.startsWith('v18')) {
           const WebSocket = require('ws');
           clientOptions = {
             global: {
-              fetch: fetch,
-              WebSocket: WebSocket
+              fetch: fetch
+            },
+            realtime: {
+              transport: WebSocket
             }
           };
         }
-      } catch (e) {
+      } catch {
         // ws not available, continue without it
       }
 
       supabase = createClient(supabaseUrl, supabaseKey, clientOptions);
       console.log('✅ Supabase client initialized');
-    } catch (error: any) {
-      console.error('❌ Supabase initialization failed:', error.message);
+    } catch (error: unknown) {
+      console.error('❌ Supabase initialization failed:', getErrorMessage(error));
       throw error;
     }
   }
@@ -197,10 +200,10 @@ app.get('/test-db', async (req, res) => {
       status: 'Database connected!',
       data
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       error: 'Database connection failed',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -239,9 +242,9 @@ app.post('/init-db', async (req, res) => {
       status: 'Database initialized successfully',
       message: 'All tables and indexes created'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Check if error is about already existing objects
-    if (error.message.includes('already exists') || error.code === '42P07' || error.code === '42710') {
+    if (getErrorMessage(error).includes('already exists') || getErrorCode(error) === '42P07' || getErrorCode(error) === '42710') {
       console.warn('⚠️  Tables already exist, skipping initialization');
       return res.json({
         status: 'Database already initialized',
@@ -249,10 +252,10 @@ app.post('/init-db', async (req, res) => {
       });
     }
 
-    console.error('❌ Database initialization failed:', error.message);
+    console.error('❌ Database initialization failed:', getErrorMessage(error));
     res.status(500).json({
       error: 'Database initialization failed',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });

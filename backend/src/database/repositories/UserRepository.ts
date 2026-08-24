@@ -3,7 +3,7 @@
  * Database queries for users table
  */
 
-import { query, queryOne, queryAll, transaction } from '../db';
+import { query, queryOne, queryAll } from '../db';
 import { getOrSet, del } from '../cache';
 
 // ================================================
@@ -131,7 +131,7 @@ export async function updateUser(
   data: Partial<User>
 ): Promise<User> {
   const updates: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
   let paramCount = 1;
 
   if (data.name !== undefined) {

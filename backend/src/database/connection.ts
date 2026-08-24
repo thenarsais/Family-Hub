@@ -37,9 +37,9 @@ pool.on('remove', () => {
 /**
  * Execute a query with automatic connection handling
  */
-export async function query<T = any>(
+export async function query<T = Record<string, unknown>>(
   text: string,
-  values?: any[]
+  values?: unknown[]
 ): Promise<{ rows: T[]; rowCount: number }> {
   const start = Date.now();
   try {
@@ -63,9 +63,9 @@ export async function query<T = any>(
 /**
  * Execute a query that returns a single row
  */
-export async function queryOne<T = any>(
+export async function queryOne<T = Record<string, unknown>>(
   text: string,
-  values?: any[]
+  values?: unknown[]
 ): Promise<T | null> {
   const result = await query<T>(text, values);
   return result.rows[0] || null;

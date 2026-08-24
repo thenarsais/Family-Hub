@@ -136,7 +136,6 @@ export async function getStats(): Promise<{
   if (!isEnabled()) return null;
 
   try {
-    const info = await redisClient!.info('keyspace');
     const keys = await redisClient!.dbSize();
     return {
       connected: true,

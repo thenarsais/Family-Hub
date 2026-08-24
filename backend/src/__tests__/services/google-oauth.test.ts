@@ -14,12 +14,22 @@
 process.env.SUPABASE_URL = 'https://test.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
 
-const mockChain: any = {
+interface MockChain {
+  from: jest.Mock;
+  select: jest.Mock;
+  update: jest.Mock;
+  eq: jest.Mock;
+  single: jest.Mock;
+  then: (resolve: (value: { error: unknown }) => void) => void;
+}
+
+const mockChain: MockChain = {
   from: jest.fn(),
   select: jest.fn(),
   update: jest.fn(),
   eq: jest.fn(),
   single: jest.fn(),
+  then: () => {},
 };
 mockChain.from.mockReturnValue(mockChain);
 mockChain.select.mockReturnValue(mockChain);
@@ -27,8 +37,8 @@ mockChain.update.mockReturnValue(mockChain);
 mockChain.eq.mockReturnValue(mockChain);
 // The update path never calls .single() — supabase-js query builders are
 // themselves thenable, so `await ...eq().eq()` resolves via this.
-let updateResolution: any = { error: null };
-mockChain.then = (resolve: any) => resolve(updateResolution);
+let updateResolution: { error: unknown } = { error: null };
+mockChain.then = (resolve) => resolve(updateResolution);
 
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => mockChain),

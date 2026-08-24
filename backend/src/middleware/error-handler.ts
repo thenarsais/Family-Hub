@@ -10,7 +10,7 @@ export class ApiError extends Error {
     public statusCode: number,
     public message: string,
     public code?: string,
-    public details?: any
+    public details?: unknown
   ) {
     super(message);
     Error.captureStackTrace(this, this.constructor);
@@ -18,7 +18,7 @@ export class ApiError extends Error {
 }
 
 export class ValidationError extends ApiError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: unknown) {
     super(400, message, 'VALIDATION_ERROR', details);
   }
 }
@@ -42,13 +42,13 @@ export class ForbiddenError extends ApiError {
 }
 
 export class ConflictError extends ApiError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: unknown) {
     super(409, message, 'CONFLICT', details);
   }
 }
 
 export class InternalServerError extends ApiError {
-  constructor(message: string = 'Internal Server Error', details?: any) {
+  constructor(message: string = 'Internal Server Error', details?: unknown) {
     super(500, message, 'INTERNAL_SERVER_ERROR', details);
   }
 }
@@ -61,18 +61,31 @@ interface ErrorResponse {
     code: string;
     message: string;
     statusCode: number;
-    details?: any;
+    details?: unknown;
     timestamp: string;
     path: string;
     method: string;
   };
 }
 
+// Express hands the error middleware whatever was thrown or passed to
+// next(err) -- genuinely unknown shape. This describes the optional fields
+// this handler actually reads off it (thrown errors, express-validator
+// errors, etc. all vary in which of these they set).
+interface ErrorLike {
+  message?: string;
+  code?: string;
+  statusCode?: number;
+  stack?: string;
+  array?: () => unknown[];
+}
+
 /**
  * Error handler middleware
  */
 export function errorHandler() {
-  return (err: any, req: Request, res: Response, next: NextFunction) => {
+  return (rawErr: unknown, req: Request, res: Response, _next: NextFunction) => {
+    const err = rawErr as ErrorLike;
     console.error('Error:', {
       message: err.message,
       code: err.code,
@@ -81,24 +94,24 @@ export function errorHandler() {
     });
 
     // Handle ApiError
-    if (err instanceof ApiError) {
+    if (rawErr instanceof ApiError) {
       const response: ErrorResponse = {
         error: {
-          code: err.code || 'ERROR',
-          message: err.message,
-          statusCode: err.statusCode,
-          details: err.details,
+          code: rawErr.code || 'ERROR',
+          message: rawErr.message,
+          statusCode: rawErr.statusCode,
+          details: rawErr.details,
           timestamp: new Date().toISOString(),
           path: req.path,
           method: req.method
         }
       };
 
-      return res.status(err.statusCode).json(response);
+      return res.status(rawErr.statusCode).json(response);
     }
 
     // Handle JSON parse errors
-    if (err instanceof SyntaxError && 'body' in err) {
+    if (rawErr instanceof SyntaxError && 'body' in rawErr) {
       const response: ErrorResponse = {
         error: {
           code: 'INVALID_JSON',

@@ -3,15 +3,16 @@
  * Handles user signup, login, logout, and profile management
  */
 
-import express, { Router, Request, Response } from 'express';
-import { createClient } from '@supabase/supabase-js';
+import { Router, Request, Response } from 'express';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as UserRepository from '../database/repositories/UserRepository';
 import { getFamilyService } from '../services/family';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 
 // Lazy-initialize Supabase client
-let supabase: any = null;
+let supabase: SupabaseClient | null = null;
 
 function getSupabase() {
   if (!supabase) {
@@ -19,19 +20,21 @@ function getSupabase() {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
     // For Node.js 18, provide ws transport for realtime
-    let clientOptions: any = {};
+    let clientOptions: Parameters<typeof createClient>[2] = {};
     try {
       // Only for Node 18/16 - they don't have native WebSocket
       if (process.version.startsWith('v16') || process.version.startsWith('v18')) {
         const WebSocket = require('ws');
         clientOptions = {
           global: {
-            fetch: fetch,
-            WebSocket: WebSocket
+            fetch: fetch
+          },
+          realtime: {
+            transport: WebSocket
           }
         };
       }
-    } catch (e) {
+    } catch {
       // ws not available, continue without it
     }
 
@@ -64,8 +67,8 @@ async function ensureUserHasFamily(userId: string, userName: string) {
     });
 
     console.log(`✅ Created family for user ${userId}`);
-  } catch (err: any) {
-    console.warn(`⚠️ Failed to ensure family for user ${userId}:`, err.message);
+  } catch (err: unknown) {
+    console.warn(`⚠️ Failed to ensure family for user ${userId}:`, getErrorMessage(err));
   }
 }
 
@@ -130,8 +133,8 @@ router.post('/signup', async (req: Request, res: Response) => {
 
         console.log(`✅ Auto-created family for user ${user.id}`);
       }
-    } catch (familyError: any) {
-      console.warn('⚠️ Failed to auto-create family:', familyError.message);
+    } catch (familyError: unknown) {
+      console.warn('⚠️ Failed to auto-create family:', getErrorMessage(familyError));
       // Don't fail signup if family creation fails
     }
 
@@ -144,11 +147,11 @@ router.post('/signup', async (req: Request, res: Response) => {
         role: user.role
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Signup error:', error);
     res.status(500).json({
       error: 'Signup failed',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -180,7 +183,7 @@ router.post('/login', async (req: Request, res: Response) => {
       if (error) {
         return res.status(401).json({
           error: 'Login failed',
-          message: error.message
+          message: getErrorMessage(error)
         });
       }
 
@@ -207,17 +210,17 @@ router.post('/login', async (req: Request, res: Response) => {
           role: user?.role
         }
       });
-    } catch (dbError: any) {
+    } catch {
       res.status(401).json({
         error: 'Login failed',
         message: 'Invalid credentials'
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error);
     res.status(500).json({
       error: 'Login failed',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -244,17 +247,17 @@ router.post('/logout', async (req: Request, res: Response) => {
     const { error } = await getSupabase().auth.signOut();
 
     if (error) {
-      console.warn('Logout warning:', error.message);
+      console.warn('Logout warning:', getErrorMessage(error));
     }
 
     res.json({
       message: 'Logout successful'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Logout error:', error);
     res.status(500).json({
       error: 'Logout failed',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -300,16 +303,16 @@ router.get('/me', async (req: Request, res: Response) => {
           created_at: user?.created_at
         }
       });
-    } catch (dbError: any) {
+    } catch {
       return res.status(401).json({
         error: 'Invalid or expired token'
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get current user error:', error);
     res.status(500).json({
       error: 'Failed to get user',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });

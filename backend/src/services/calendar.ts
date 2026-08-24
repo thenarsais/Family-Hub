@@ -2,6 +2,7 @@ import { query, queryOne } from '../database/connection';
 import type { Database } from '../types/database';
 
 export type CalendarEvent = Database['public']['Tables']['calendar_events']['Row'];
+type CalendarEventInsert = Database['public']['Tables']['calendar_events']['Insert'];
 
 // PATCH /api/calendar/events/:id passes req.body straight through with no
 // validation -- this whitelist is what stands between an arbitrary request
@@ -19,10 +20,10 @@ class CalendarService {
     familyId: string,
     startDate?: string,
     endDate?: string,
-  ): Promise<any[]> {
+  ): Promise<CalendarEvent[]> {
     try {
       const conditions = ['family_id = $1'];
-      const values: any[] = [familyId];
+      const values: unknown[] = [familyId];
 
       if (startDate) {
         values.push(startDate);
@@ -49,7 +50,7 @@ class CalendarService {
   /**
    * Get upcoming events (next 7 days)
    */
-  async getUpcomingEvents(familyId: string): Promise<any[]> {
+  async getUpcomingEvents(familyId: string): Promise<CalendarEvent[]> {
     try {
       const today = new Date();
       const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -84,7 +85,7 @@ class CalendarService {
       end_time?: string;
       location?: string;
     },
-  ): Promise<any> {
+  ): Promise<CalendarEvent> {
     try {
       const event = await queryOne<CalendarEvent>(
         `INSERT INTO calendar_events
@@ -115,9 +116,9 @@ class CalendarService {
   /**
    * Update calendar event
    */
-  async updateEvent(id: string, updates: any): Promise<any> {
+  async updateEvent(id: string, updates: Partial<CalendarEventInsert>): Promise<CalendarEvent | null> {
     try {
-      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_EVENT_COLUMNS.includes(k));
+      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_EVENT_COLUMNS.includes(k)) as (keyof CalendarEventInsert)[];
 
       if (columns.length === 0) {
         return queryOne<CalendarEvent>(`SELECT * FROM calendar_events WHERE id = $1`, [id]);
@@ -156,7 +157,7 @@ class CalendarService {
   /**
    * Get events by type (chore, assignment, family_event, etc.)
    */
-  async getEventsByType(familyId: string, eventType: string): Promise<any[]> {
+  async getEventsByType(familyId: string, eventType: string): Promise<CalendarEvent[]> {
     try {
       const result = await query<CalendarEvent>(
         `SELECT * FROM calendar_events WHERE family_id = $1 AND event_type = $2 ORDER BY event_date ASC`,

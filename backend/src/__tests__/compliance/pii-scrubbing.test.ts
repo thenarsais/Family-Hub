@@ -16,7 +16,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        context: { password: string; username: string };
+      };
       expect(scrubbed.context.password).toBe('[REDACTED]');
       expect(scrubbed.context.username).toBe('john@example.com');
     });
@@ -32,7 +34,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        extra: { user: { password: string; email: string } };
+      };
       expect(scrubbed.extra.user.password).toBe('[REDACTED]');
       // 'email' is a deliberately-listed sensitive key (see SENSITIVE_KEYS) — it
       // gets redacted just like password, not left as plaintext PII.
@@ -48,7 +52,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        data: { password: string; password_confirm: string };
+      };
       expect(scrubbed.data.password).toBe('[REDACTED]');
       expect(scrubbed.data.password_confirm).toBe('[REDACTED]');
     });
@@ -64,7 +70,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        headers: { authorization: string; 'content-type': string };
+      };
       expect(scrubbed.headers.authorization).toBe('[REDACTED]');
       expect(scrubbed.headers['content-type']).toBe('application/json');
     });
@@ -78,7 +86,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        cookies: { session_token: string; user_id: string };
+      };
       expect(scrubbed.cookies.session_token).toBe('[REDACTED]');
       expect(scrubbed.cookies.user_id).toBe('user-123');
     });
@@ -93,7 +103,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        context: { access_token: string; refresh_token: string; api_key: string };
+      };
       expect(scrubbed.context.access_token).toBe('[REDACTED]');
       expect(scrubbed.context.refresh_token).toBe('[REDACTED]');
       expect(scrubbed.context.api_key).toBe('[REDACTED]');
@@ -110,7 +122,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        data: { child_name: string; child_id: string };
+      };
       expect(scrubbed.data.child_name).toBe('[REDACTED]');
       expect(scrubbed.data.child_id).toBe('child-123');
     });
@@ -124,7 +138,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        context: { birth_date: string; age_verification: string };
+      };
       expect(scrubbed.context.birth_date).toBe('[REDACTED]');
       expect(scrubbed.context.age_verification).toBe('failed');
     });
@@ -138,7 +154,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        data: { parent_email: string; verification_code: string };
+      };
       expect(scrubbed.data.parent_email).toBe('[REDACTED]');
       expect(scrubbed.data.verification_code).toBe('12345');
     });
@@ -155,7 +173,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        location: { latitude: string; longitude: string; city: string };
+      };
       expect(scrubbed.location.latitude).toBe('[REDACTED]');
       expect(scrubbed.location.longitude).toBe('[REDACTED]');
       expect(scrubbed.location.city).toBe('San Francisco');
@@ -171,7 +191,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        address: { street: string; city: string; postal_code: string };
+      };
       expect(scrubbed.address.street).toBe('[REDACTED]');
       expect(scrubbed.address.city).toBe('Springfield');
       expect(scrubbed.address.postal_code).toBe('[REDACTED]');
@@ -188,7 +210,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        data: { phone: string; email: string };
+      };
       expect(scrubbed.data.phone).toBe('[REDACTED]');
       expect(scrubbed.data.email).toBe('[REDACTED]');
     });
@@ -203,7 +227,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        payment: { card_number: string; cvv: string; cardholder: string };
+      };
       expect(scrubbed.payment.card_number).toBe('[REDACTED]');
       expect(scrubbed.payment.cvv).toBe('[REDACTED]');
       expect(scrubbed.payment.cardholder).toBe('[REDACTED]');
@@ -218,7 +244,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        verification: { ssn: string; verified: boolean };
+      };
       expect(scrubbed.verification.ssn).toBe('[REDACTED]');
       expect(scrubbed.verification.verified).toBe(false);
     });
@@ -242,7 +270,14 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        user: {
+          profile: {
+            credentials: { password: string; api_key: string };
+            contact: { phone: string; email: string };
+          };
+        };
+      };
       expect(scrubbed.user.profile.credentials.password).toBe('[REDACTED]');
       expect(scrubbed.user.profile.credentials.api_key).toBe('[REDACTED]');
       expect(scrubbed.user.profile.contact.phone).toBe('[REDACTED]');
@@ -260,7 +295,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         ],
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        users: { name: string; password: string }[];
+      };
       expect(scrubbed.users[0].password).toBe('[REDACTED]');
       expect(scrubbed.users[1].password).toBe('[REDACTED]');
       expect(scrubbed.users[0].name).toBe('Alice');
@@ -279,7 +316,9 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
         },
       };
 
-      const scrubbed = scrubbedError(error);
+      const scrubbed = scrubbedError(error) as {
+        data: { password: null; api_key: undefined; value: string };
+      };
       expect(scrubbed.data.password).toBe(null);
       expect(scrubbed.data.api_key).toBe(undefined);
       expect(scrubbed.data.value).toBe('something');
@@ -296,14 +335,12 @@ describe('PII Scrubbing - COPPA Compliance (Decision 29)', () => {
     });
 
     it('should handle circular references gracefully', () => {
-      const error: any = {
-        message: 'Error',
-        data: {
-          password: 'secret',
-          value: 'test',
-        },
+      const data: Record<string, unknown> = {
+        password: 'secret',
+        value: 'test',
       };
-      error.data.self = error.data; // Create circular ref
+      const error = { message: 'Error', data };
+      data.self = data; // Create circular ref
 
       expect(() => scrubbedError(error)).not.toThrow();
     });

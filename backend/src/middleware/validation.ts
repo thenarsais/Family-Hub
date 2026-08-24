@@ -12,7 +12,7 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   pattern?: RegExp;
-  custom?: (value: any) => boolean | Promise<boolean>;
+  custom?: (value: unknown) => boolean | Promise<boolean>;
   message?: string;
 }
 
@@ -65,7 +65,7 @@ function sanitizeString(str: string): string {
  * Validate a single field against a rule
  */
 async function validateField(
-  value: any,
+  value: unknown,
   rule: ValidationRule
 ): Promise<{ valid: boolean; error?: string }> {
   // Check required
@@ -137,19 +137,19 @@ async function validateField(
       break;
 
     case 'email':
-      if (!isValidEmail(value)) {
+      if (typeof value !== 'string' || !isValidEmail(value)) {
         return { valid: false, error: rule.message || `${rule.field} must be a valid email` };
       }
       break;
 
     case 'uuid':
-      if (!isValidUUID(value)) {
+      if (typeof value !== 'string' || !isValidUUID(value)) {
         return { valid: false, error: rule.message || `${rule.field} must be a valid UUID` };
       }
       break;
 
     case 'date':
-      if (!isValidDate(value)) {
+      if (typeof value !== 'string' || !isValidDate(value)) {
         return { valid: false, error: rule.message || `${rule.field} must be a valid ISO date` };
       }
       break;
@@ -194,7 +194,7 @@ async function validateField(
 export function validate(schema: ValidationSchema) {
   return async (req: Request, res: Response, next: NextFunction) => {
     const errors: Record<string, string> = {};
-    const sanitized: any = {};
+    const sanitized: Record<string, unknown> = {};
 
     // Validate each field in schema
     for (const [field, rule] of Object.entries(schema)) {
@@ -232,11 +232,11 @@ export function validate(schema: ValidationSchema) {
  * Quick validation for a single request
  */
 export async function validateRequest(
-  data: any,
+  data: Record<string, unknown>,
   schema: ValidationSchema
-): Promise<{ valid: boolean; errors?: Record<string, string>; data?: any }> {
+): Promise<{ valid: boolean; errors?: Record<string, string>; data?: Record<string, unknown> }> {
   const errors: Record<string, string> = {};
-  const sanitized: any = {};
+  const sanitized: Record<string, unknown> = {};
 
   for (const [field, rule] of Object.entries(schema)) {
     const value = data[field];

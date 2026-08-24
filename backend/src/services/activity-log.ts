@@ -7,7 +7,7 @@ class ActivityLogService {
   /**
    * Get activity log for user
    */
-  async getUserActivity(userId: string, limit: number = 50): Promise<any[]> {
+  async getUserActivity(userId: string, limit: number = 50): Promise<ActivityLogEntry[]> {
     try {
       const result = await query<ActivityLogEntry>(
         `SELECT * FROM activity_log WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
@@ -23,7 +23,7 @@ class ActivityLogService {
   /**
    * Get family activity log
    */
-  async getFamilyActivity(familyId: string, limit: number = 100): Promise<any[]> {
+  async getFamilyActivity(familyId: string, limit: number = 100): Promise<ActivityLogEntry[]> {
     try {
       const membersResult = await query<{ user_id: string }>(
         `SELECT user_id FROM family_members WHERE family_id = $1 AND is_active = true`,
@@ -60,9 +60,9 @@ class ActivityLogService {
       achievement_title?: string;
       related_item_id?: string;
       related_item_type?: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     },
-  ): Promise<any> {
+  ): Promise<ActivityLogEntry> {
     try {
       const result = await query<ActivityLogEntry>(
         `INSERT INTO activity_log
@@ -93,7 +93,7 @@ class ActivityLogService {
   /**
    * Get activity by type
    */
-  async getActivityByType(userId: string, activityType: string, limit: number = 50): Promise<any[]> {
+  async getActivityByType(userId: string, activityType: string, limit: number = 50): Promise<ActivityLogEntry[]> {
     try {
       const result = await query<ActivityLogEntry>(
         `SELECT * FROM activity_log WHERE user_id = $1 AND activity_type = $2 ORDER BY created_at DESC LIMIT $3`,

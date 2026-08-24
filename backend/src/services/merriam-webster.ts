@@ -23,6 +23,27 @@ interface WordResponse {
   audioUrl?: string;
 }
 
+// Merriam-Webster's "player" endpoint is undocumented/unofficial -- this is
+// the minimal shape this file actually reads out of it, not a full spec.
+// `def`/`sseq` is MW's own deeply-nested array-of-tuples format for sense
+// sequences; left loosely typed rather than fully modeled.
+interface MWApiResult {
+  word?: string;
+  fl?: string;
+  shortDefinitions?: string[];
+  pronunciations?: Array<{ mw?: string }>;
+  hwi?: { hw?: { prs?: Array<{ sound?: { audio?: string } }> } };
+  def?: unknown[];
+}
+
+interface MWApiResponse {
+  results?: MWApiResult[];
+}
+
+interface MWSearchResponse {
+  results?: Array<{ word: string }>;
+}
+
 /**
  * Get word definition from Merriam-Webster
  */
@@ -48,7 +69,7 @@ export async function getWordDefinition(word: string): Promise<WordResponse | nu
       return null;
     }
 
-    const data: any = await response.json();
+    const data = await response.json() as MWApiResponse;
 
     if (!data || !data.results || data.results.length === 0) {
       return null;
@@ -76,14 +97,12 @@ export async function getWordDefinition(word: string): Promise<WordResponse | nu
 /**
  * Extract definitions from API response
  */
-function extractDefinitions(result: any): WordDefinition[] {
+function extractDefinitions(result: MWApiResult): WordDefinition[] {
   const definitions: WordDefinition[] = [];
 
   if (!result.shortDefinitions || result.shortDefinitions.length === 0) {
     return definitions;
   }
-
-  const definitions_array = result.def?.[0]?.sseq || [];
 
   result.shortDefinitions.forEach((def: string, index: number) => {
     // Get part of speech
@@ -91,7 +110,7 @@ function extractDefinitions(result: any): WordDefinition[] {
     const partOfSpeech = posParts[0]?.trim() || 'noun';
 
     definitions.push({
-      word: result.word,
+      word: result.word || '',
       partOfSpeech,
       definition: def,
       example: extractExample(result, index),
@@ -105,13 +124,15 @@ function extractDefinitions(result: any): WordDefinition[] {
 /**
  * Extract example sentence
  */
-function extractExample(result: any, index: number): string | undefined {
+function extractExample(result: MWApiResult, index: number): string | undefined {
   try {
-    const example = result.def?.[0]?.sseq?.[index]?.[0]?.[1]?.vis?.[0]?.t;
+    const def = result.def as { sseq?: unknown[][] }[] | undefined;
+    const entry = def?.[0]?.sseq?.[index] as [unknown, { vis?: Array<{ t?: string }> }][] | undefined;
+    const example = entry?.[0]?.[1]?.vis?.[0]?.t;
     if (example) {
       return example.replace(/<[^>]*>/g, ''); // Remove XML tags
     }
-  } catch (e) {
+  } catch {
     // Ignore parse errors
   }
   return undefined;
@@ -120,13 +141,15 @@ function extractExample(result: any, index: number): string | undefined {
 /**
  * Extract related word
  */
-function extractSynonym(result: any): string | undefined {
+function extractSynonym(result: MWApiResult): string | undefined {
   try {
-    const synonyms = result.def?.[0]?.sseq?.[0]?.[0]?.[1]?.sim;
+    const def = result.def as { sseq?: unknown[][] }[] | undefined;
+    const entry = def?.[0]?.sseq?.[0] as [unknown, { sim?: string[] }][] | undefined;
+    const synonyms = entry?.[0]?.[1]?.sim;
     if (synonyms && synonyms.length > 0) {
       return synonyms[0];
     }
-  } catch (e) {
+  } catch {
     // Ignore parse errors
   }
   return undefined;
@@ -135,7 +158,7 @@ function extractSynonym(result: any): string | undefined {
 /**
  * Extract audio URL
  */
-function extractAudioUrl(result: any): string | undefined {
+function extractAudioUrl(result: MWApiResult): string | undefined {
   try {
     const audio = result.hwi?.hw?.prs?.[0]?.sound?.audio;
     if (audio) {
@@ -143,7 +166,7 @@ function extractAudioUrl(result: any): string | undefined {
       const subdirectory = audio.substring(0, 3);
       return `https://media.merriam-webster.com/audio/prons/en/us/mp3/${subdirectory}/${audio}.mp3`;
     }
-  } catch (e) {
+  } catch {
     // Ignore parse errors
   }
   return undefined;
@@ -170,7 +193,7 @@ export async function getWordOfTheDay(): Promise<WordResponse | null> {
       return null;
     }
 
-    const data: any = await response.json();
+    const data = await response.json() as MWApiResponse;
 
     if (!data || !data.results || data.results.length === 0) {
       return null;
@@ -218,13 +241,13 @@ export async function searchWordsByPrefix(prefix: string, limit: number = 10): P
       return [];
     }
 
-    const data: any = await response.json();
+    const data = await response.json() as MWSearchResponse;
 
     if (!data || !data.results || data.results.length === 0) {
       return [];
     }
 
-    const words = data.results.slice(0, limit).map((r: any) => r.word);
+    const words = data.results.slice(0, limit).map((r) => r.word);
 
     await cache.set(cacheKey, words, 86400); // Cache 24 hours
 

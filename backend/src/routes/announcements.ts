@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getAnnouncementService } from '../services/announcements';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const announcements = getAnnouncementService();
 
@@ -27,12 +28,12 @@ router.get('/', async (req: Request, res: Response) => {
       count: userAnnouncements.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch announcements:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch announcements',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -87,12 +88,12 @@ router.post('/', async (req: Request, res: Response) => {
       data: announcement,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create announcement:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create announcement',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -120,12 +121,12 @@ router.patch('/:id', async (req: Request, res: Response) => {
       data: announcement,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to update announcement:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update announcement',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -152,12 +153,12 @@ router.delete('/:id', async (req: Request, res: Response) => {
       message: 'Announcement deleted',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to delete announcement:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to delete announcement',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -192,12 +193,12 @@ router.post('/:id/read', async (req: Request, res: Response) => {
       message: 'Announcement marked as read',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to mark announcement as read:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to mark announcement as read',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -227,12 +228,12 @@ router.get('/:id/readers', async (req: Request, res: Response) => {
       },
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get read count:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get read count',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

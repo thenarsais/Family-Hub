@@ -3,6 +3,17 @@
  * Tests actual HTTP endpoints and database interactions
  */
 
+interface ReadyResponse {
+  status: string;
+  checks: Array<{ name: string; status: string }>;
+}
+
+interface InfoResponse {
+  application: string;
+  version: string;
+  endpoints: Record<string, number> & { total: number };
+}
+
 describe('API Endpoints Integration Tests', () => {
   const baseURL = process.env.API_URL || 'http://localhost:3000';
 
@@ -45,11 +56,11 @@ describe('API Endpoints Integration Tests', () => {
     it('should return readiness status', async () => {
       try {
         const response = await fetch(`${baseURL}/ready`);
-        const data = await response.json() as any;
+        const data = await response.json() as ReadyResponse;
 
         expect(data).toHaveProperty('status');
         expect(data).toHaveProperty('checks');
-        expect(Array.isArray((data as any).checks)).toBe(true);
+        expect(Array.isArray(data.checks)).toBe(true);
       } catch (error) {
         // Expected if API not running
         expect(error).toBeDefined();
@@ -76,9 +87,9 @@ describe('API Endpoints Integration Tests', () => {
     it('should list 60+ endpoints', async () => {
       try {
         const response = await fetch(`${baseURL}/info`);
-        const data = await response.json() as any;
+        const data = await response.json() as InfoResponse;
 
-        expect((data as any).endpoints.total).toBeGreaterThanOrEqual(60);
+        expect(data.endpoints.total).toBeGreaterThanOrEqual(60);
       } catch (error) {
         // Expected if API not running
         expect(error).toBeDefined();

@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
 import axios from 'axios';
 import { getSupabase } from './supabase';
 
@@ -31,8 +32,31 @@ interface GoogleCalendar {
   primary?: boolean;
 }
 
+// google-auth-library's Credentials shape has `expiry_date` (absolute ms
+// epoch timestamp), not `expires_in` (relative seconds) -- this codebase's
+// GoogleAuthToken uses the latter throughout (storeUserToken persists an
+// absolute expiry computed from it). Converting here, once, at the
+// boundary, rather than letting each caller guess at a default when the
+// field it expects isn't actually on the real Google response.
+function credentialsToGoogleAuthToken(credentials: import('google-auth-library').Credentials): GoogleAuthToken {
+  if (!credentials.access_token) {
+    throw new Error('Google OAuth response is missing an access_token');
+  }
+
+  const expiresIn = credentials.expiry_date
+    ? Math.max(0, Math.floor((credentials.expiry_date - Date.now()) / 1000))
+    : 3600;
+
+  return {
+    access_token: credentials.access_token,
+    refresh_token: credentials.refresh_token ?? undefined,
+    expires_in: expiresIn,
+    token_type: credentials.token_type || 'Bearer',
+  };
+}
+
 class GoogleOAuthService {
-  private oauth2Client: any;
+  private oauth2Client: OAuth2Client;
 
   constructor() {
     this.oauth2Client = new google.auth.OAuth2(
@@ -61,7 +85,7 @@ class GoogleOAuthService {
   async exchangeCodeForToken(code: string): Promise<GoogleAuthToken> {
     try {
       const { tokens } = await this.oauth2Client.getToken(code);
-      return tokens;
+      return credentialsToGoogleAuthToken(tokens);
     } catch (error) {
       console.error('Failed to exchange code for token:', error);
       throw error;
@@ -129,7 +153,7 @@ class GoogleOAuthService {
     try {
       this.oauth2Client.setCredentials({ refresh_token: refreshToken });
       const { credentials } = await this.oauth2Client.refreshAccessToken();
-      return credentials;
+      return credentialsToGoogleAuthToken(credentials);
     } catch (error) {
       console.error('Failed to refresh access token:', error);
       // Mark integration as inactive if refresh fails (token revoked or expired)

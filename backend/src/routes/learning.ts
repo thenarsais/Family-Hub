@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getLearningService } from '../services/learning';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const learning = getLearningService();
 
@@ -45,12 +46,12 @@ router.post('/lessons/:lessonId/complete', async (req: Request, res: Response) =
       stats,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to complete lesson:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to complete lesson',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -100,12 +101,12 @@ router.post('/quiz/answer', async (req: Request, res: Response) => {
       },
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to record quiz answer:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to record quiz answer',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -141,12 +142,12 @@ router.get('/progress/:phase', async (req: Request, res: Response) => {
       progress,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get phase progress:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get phase progress',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -173,12 +174,12 @@ router.get('/stats', async (req: Request, res: Response) => {
       stats,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get learning stats:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get learning stats',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -205,12 +206,12 @@ router.get('/quiz/performance', async (req: Request, res: Response) => {
       performance,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get quiz performance:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get quiz performance',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -239,12 +240,12 @@ router.get('/activity/recent', async (req: Request, res: Response) => {
       count: activity.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get recent activity:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get recent activity',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

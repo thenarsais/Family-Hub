@@ -18,6 +18,7 @@ import {
 import { getCompressionStats } from '../middleware/compression';
 import { getIndexMonitoringQueries } from '../database/indexes';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 
 /**
@@ -206,10 +207,10 @@ router.post('/index-sql', (req: Request, res: Response) => {
       sql,
       message: 'Copy and run this SQL in your database to create recommended indexes'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       error: 'Failed to generate index SQL',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
