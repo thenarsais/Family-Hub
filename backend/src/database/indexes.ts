@@ -128,20 +128,22 @@ export const recommendedIndexes: IndexDefinition[] = [
   }
 ];
 
+function indexToCreateSQL(index: (typeof recommendedIndexes)[number]): string {
+  let sql = `CREATE ${index.unique ? 'UNIQUE ' : ''}INDEX IF NOT EXISTS ${index.name} ON ${index.table} (${index.columns.join(', ')})`;
+
+  if (index.partial) {
+    sql += ` WHERE ${index.partial}`;
+  }
+
+  sql += ';';
+  return sql;
+}
+
 /**
  * SQL to create all recommended indexes
  */
 export function generateCreateIndexSQL(): string[] {
-  return recommendedIndexes.map((index) => {
-    let sql = `CREATE ${index.unique ? 'UNIQUE ' : ''}INDEX IF NOT EXISTS ${index.name} ON ${index.table} (${index.columns.join(', ')})`;
-
-    if (index.partial) {
-      sql += ` WHERE ${index.partial}`;
-    }
-
-    sql += ';';
-    return sql;
-  });
+  return recommendedIndexes.map(indexToCreateSQL);
 }
 
 /**
@@ -152,7 +154,7 @@ export function getIndexSQL(tableName?: string): string {
     ? recommendedIndexes.filter((i) => i.table === tableName)
     : recommendedIndexes;
 
-  return indexes.map((index) => generateCreateIndexSQL()).flat().join('\n');
+  return indexes.map(indexToCreateSQL).join('\n');
 }
 
 /**

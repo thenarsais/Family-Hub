@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getReminderService } from '../services/reminders';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const reminders = getReminderService();
 
@@ -28,12 +29,12 @@ router.get('/', async (req: Request, res: Response) => {
       count: userReminders.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch reminders:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch reminders',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -61,12 +62,12 @@ router.get('/upcoming', async (req: Request, res: Response) => {
       count: upcomingReminders.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch upcoming reminders:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch upcoming reminders',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -121,12 +122,12 @@ router.post('/', async (req: Request, res: Response) => {
       data: reminder,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create reminder:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create reminder',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -154,12 +155,12 @@ router.patch('/:id', async (req: Request, res: Response) => {
       data: reminder,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to update reminder:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update reminder',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -186,12 +187,12 @@ router.post('/:id/dismiss', async (req: Request, res: Response) => {
       message: 'Reminder dismissed',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to dismiss reminder:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to dismiss reminder',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -218,12 +219,12 @@ router.delete('/:id', async (req: Request, res: Response) => {
       message: 'Reminder deleted',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to delete reminder:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to delete reminder',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

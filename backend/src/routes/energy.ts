@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getEnergyService } from '../services/energy';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const energy = getEnergyService();
 
@@ -21,12 +22,12 @@ router.get('/usage', async (req: Request, res: Response) => {
       count: data.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch energy usage:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch energy usage',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -48,12 +49,12 @@ router.get('/summary', async (req: Request, res: Response) => {
       count: data.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch energy summary:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch energy summary',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -74,12 +75,12 @@ router.get('/current-month', async (req: Request, res: Response) => {
       },
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get current month usage:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get current month usage',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -120,12 +121,12 @@ router.post('/goals', async (req: Request, res: Response) => {
       data: goal,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create goal:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create goal',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -153,12 +154,12 @@ router.get('/goals', async (req: Request, res: Response) => {
       count: goals.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch goals:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch goals',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

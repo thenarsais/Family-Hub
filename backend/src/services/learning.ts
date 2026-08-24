@@ -14,6 +14,49 @@ export interface LearningProgress {
   updatedAt: Date;
 }
 
+interface LearningProgressRow {
+  id: string;
+  user_id: string;
+  lesson_id: string;
+  category: 'alphabet' | 'numbers' | 'vocabulary';
+  phase: string;
+  completed: boolean;
+  points_earned: number;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface PhaseProgressRow {
+  total: string | null;
+  completed: string | null;
+  points_earned: string | null;
+}
+
+interface LearningStatsRow {
+  total_completed: string | null;
+  total_points: string | null;
+  alphabet_completed: string | null;
+  alphabet_total: string | null;
+  numbers_completed: string | null;
+  numbers_total: string | null;
+  vocab_completed: string | null;
+  vocab_total: string | null;
+}
+
+interface QuizPerformanceRow {
+  total: string | null;
+  correct: string | null;
+  points_earned: string | null;
+}
+
+interface RecentActivityRow {
+  type: 'lesson' | 'quiz';
+  subject: string;
+  created_at: string;
+  points_earned: number;
+}
+
 export class LearningService {
   /**
    * Record lesson completion
@@ -25,7 +68,7 @@ export class LearningService {
     phase: string,
     pointsValue: number = 10
   ): Promise<LearningProgress> {
-    const result = await queryOne<any>(
+    const result = await queryOne<LearningProgressRow>(
       `INSERT INTO learning_progress (user_id, lesson_id, category, phase, completed, points_earned, completed_at)
        VALUES ($1, $2, $3, $4, true, $5, CURRENT_TIMESTAMP)
        ON CONFLICT (user_id, lesson_id) DO UPDATE SET
@@ -79,7 +122,7 @@ export class LearningService {
     percentComplete: number;
     pointsEarned: number;
   }> {
-    const result = await queryOne<any>(
+    const result = await queryOne<PhaseProgressRow>(
       `SELECT
         COUNT(*) as total,
         SUM(CASE WHEN completed = true THEN 1 ELSE 0 END) as completed,
@@ -110,7 +153,7 @@ export class LearningService {
     numbers: { completed: number; total: number };
     vocabulary: { completed: number; total: number };
   }> {
-    const result = await queryOne<any>(
+    const result = await queryOne<LearningStatsRow>(
       `SELECT
         COUNT(*) as total_completed,
         SUM(points_earned) as total_points,
@@ -152,7 +195,7 @@ export class LearningService {
     accuracy: number;
     pointsEarned: number;
   }> {
-    const result = await queryOne<any>(
+    const result = await queryOne<QuizPerformanceRow>(
       `SELECT
         COUNT(*) as total,
         SUM(CASE WHEN is_correct = true THEN 1 ELSE 0 END) as correct,
@@ -176,8 +219,8 @@ export class LearningService {
   /**
    * Get recent activity
    */
-  async getRecentActivity(userId: string, limit: number = 20): Promise<any[]> {
-    const results = await query<any>(
+  async getRecentActivity(userId: string, limit: number = 20): Promise<RecentActivityRow[]> {
+    const results = await query<RecentActivityRow>(
       `SELECT 'lesson' as type, lesson_id as subject, completed_at as created_at, points_earned
        FROM learning_progress WHERE user_id = $1 AND completed = true
        UNION ALL
@@ -190,7 +233,7 @@ export class LearningService {
     return results.rows;
   }
 
-  private mapProgress(row: any): LearningProgress {
+  private mapProgress(row: LearningProgressRow): LearningProgress {
     return {
       id: row.id,
       userId: row.user_id,

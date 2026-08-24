@@ -1,19 +1,15 @@
 import fs from 'fs';
 import path from 'path';
-import { createClient } from '@supabase/supabase-js';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
+import { getErrorMessage, getErrorCode } from './utils/errors';
 dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const databaseUrl = process.env.DATABASE_URL!;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 async function runMigrations() {
-  let pool: any = null;
+  let pool: Pool | null = null;
 
   try {
     console.log('🔄 Running migrations...');
@@ -63,12 +59,12 @@ async function runMigrations() {
           } finally {
             client.release();
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Log but continue - some statements might fail if objects already exist
-          if (error.code === 'NOTICE' || error.message.includes('already exists')) {
-            console.warn(`⚠️  ${error.message}`);
+          if (getErrorCode(error) === 'NOTICE' || getErrorMessage(error).includes('already exists')) {
+            console.warn(`⚠️  ${getErrorMessage(error)}`);
           } else {
-            console.error(`❌ Error executing statement: ${error.message}`);
+            console.error(`❌ Error executing statement: ${getErrorMessage(error)}`);
             throw error;
           }
         }
@@ -78,8 +74,8 @@ async function runMigrations() {
     }
 
     console.log('✨ All migrations completed successfully!');
-  } catch (error: any) {
-    console.error('❌ Migration failed:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ Migration failed:', getErrorMessage(error));
     process.exit(1);
   } finally {
     if (pool) {

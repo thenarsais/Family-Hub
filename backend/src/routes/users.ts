@@ -3,9 +3,10 @@
  * Handles user profile management, parent-child relationships
  */
 
-import express, { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import * as UserRepository from '../database/repositories/UserRepository';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 
 // Middleware to verify auth header (simple example)
@@ -51,11 +52,11 @@ router.get('/me', verifyAuth, async (req: Request, res: Response) => {
         updated_at: user.updated_at
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get user error:', error);
     res.status(500).json({
       error: 'Failed to get user',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -86,11 +87,11 @@ router.get('/:id', verifyAuth, async (req: Request, res: Response) => {
         created_at: user.created_at
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get user error:', error);
     res.status(500).json({
       error: 'Failed to get user',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -114,7 +115,7 @@ router.put('/:id', verifyAuth, async (req: Request, res: Response) => {
       });
     }
 
-    const updates: any = {};
+    const updates: Partial<{ name: string; email: string }> = {};
     if (name) updates.name = name;
     if (email) updates.email = email;
 
@@ -129,11 +130,11 @@ router.put('/:id', verifyAuth, async (req: Request, res: Response) => {
         role: user.role
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update user error:', error);
     res.status(500).json({
       error: 'Failed to update user',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -154,7 +155,7 @@ router.get('/:parentId/children', verifyAuth, async (req: Request, res: Response
 
     res.json({
       parent_id: parentId,
-      children: children.map((child: any) => ({
+      children: children.map((child) => ({
         id: child.id,
         name: child.name,
         email: child.email,
@@ -162,11 +163,11 @@ router.get('/:parentId/children', verifyAuth, async (req: Request, res: Response
         created_at: child.created_at
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get children error:', error);
     res.status(500).json({
       error: 'Failed to get children',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -185,7 +186,7 @@ router.get('/role/parents', verifyAuth, async (req: Request, res: Response) => {
 
     res.json({
       count: parents.length,
-      parents: parents.map((parent: any) => ({
+      parents: parents.map((parent) => ({
         id: parent.id,
         name: parent.name,
         email: parent.email,
@@ -193,11 +194,11 @@ router.get('/role/parents', verifyAuth, async (req: Request, res: Response) => {
         created_at: parent.created_at
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get parents error:', error);
     res.status(500).json({
       error: 'Failed to get parents',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -216,7 +217,7 @@ router.get('/', verifyAuth, async (req: Request, res: Response) => {
 
     res.json({
       count: users.length,
-      users: users.map((user: any) => ({
+      users: users.map((user) => ({
         id: user.id,
         name: user.name,
         email: user.email,
@@ -224,11 +225,11 @@ router.get('/', verifyAuth, async (req: Request, res: Response) => {
         created_at: user.created_at
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get all users error:', error);
     res.status(500).json({
       error: 'Failed to get users',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -250,11 +251,11 @@ router.delete('/:id', verifyAuth, async (req: Request, res: Response) => {
     res.json({
       message: 'User deleted successfully'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete user error:', error);
     res.status(500).json({
       error: 'Failed to delete user',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });

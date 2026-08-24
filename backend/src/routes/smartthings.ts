@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getSmartThingsService } from '../services/smartthings';
 import { query } from '../database/connection';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const smartthings = getSmartThingsService();
 
@@ -19,12 +20,12 @@ router.get('/devices', async (req: Request, res: Response) => {
       count: devices.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to list devices:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to list devices',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -50,12 +51,12 @@ router.get('/devices/:deviceId', async (req: Request, res: Response) => {
       device,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get device:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get device',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -151,12 +152,12 @@ router.put('/devices/:deviceId', async (req: Request, res: Response) => {
       duration: `${duration}ms`,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to control device:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to control device',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -192,12 +193,12 @@ router.get('/status', async (req: Request, res: Response) => {
       data: status,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get SmartThings status:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get system status',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -220,12 +221,12 @@ router.post('/discover', async (req: Request, res: Response) => {
       duration: `${duration}ms`,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to discover devices:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to discover devices',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -253,12 +254,12 @@ router.get('/devices/:deviceId/history', async (req: Request, res: Response) => 
       count: result.rows.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get device history:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get device history',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

@@ -57,7 +57,7 @@ export function requestLogger() {
 
     // Override res.send to capture response
     const originalSend = res.send;
-    res.send = function(data: any) {
+    res.send = function(data: unknown) {
       const responseTime = Date.now() - startTime;
       const ip = getClientIp(req);
 
@@ -68,7 +68,7 @@ export function requestLogger() {
         path: req.path,
         statusCode: res.statusCode,
         responseTime,
-        userId: (req as any).userId,
+        userId: req.userId,
         userAgent: req.get('user-agent'),
         ip,
         requestSize: req.get('content-length') ? parseInt(req.get('content-length')!) : undefined,

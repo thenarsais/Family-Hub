@@ -3,6 +3,8 @@
  * Ensures required environment variables exist before server starts (fail-fast)
  */
 
+import { getErrorMessage } from '../../utils/errors';
+
 describe('Environment Validation', () => {
   const originalEnv = process.env;
 
@@ -88,12 +90,14 @@ describe('Environment Validation', () => {
       process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
+      let thrown: unknown;
       try {
         require('../../config/env').validateEnv();
-        fail('Should have thrown');
-      } catch (error: any) {
-        expect(error.message).toContain('cp .env.example .env');
+      } catch (error: unknown) {
+        thrown = error;
       }
+      expect(thrown).toBeDefined();
+      expect(getErrorMessage(thrown)).toContain('cp .env.example .env');
     });
 
     it('should list all missing variables in error', () => {
@@ -103,13 +107,15 @@ describe('Environment Validation', () => {
       process.env.SUPABASE_URL = 'https://test.supabase.co';
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost/db';
 
+      let thrown: unknown;
       try {
         require('../../config/env').validateEnv();
-        fail('Should have thrown');
-      } catch (error: any) {
-        expect(error.message).toContain('PORT');
-        expect(error.message).toContain('SUPABASE_SERVICE_ROLE_KEY');
+      } catch (error: unknown) {
+        thrown = error;
       }
+      expect(thrown).toBeDefined();
+      expect(getErrorMessage(thrown)).toContain('PORT');
+      expect(getErrorMessage(thrown)).toContain('SUPABASE_SERVICE_ROLE_KEY');
     });
   });
 

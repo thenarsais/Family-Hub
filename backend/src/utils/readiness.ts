@@ -1,3 +1,4 @@
+import { getErrorMessage } from './errors';
 /**
  * Readiness Checks
  * Verify system is ready to serve traffic
@@ -36,11 +37,11 @@ export async function checkDatabase(): Promise<HealthCheck> {
       message: 'Database connection successful',
       responseTime: Date.now() - start
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       name: 'database',
       status: 'unhealthy',
-      message: `Database connection failed: ${error.message}`,
+      message: `Database connection failed: ${getErrorMessage(error)}`,
       responseTime: Date.now() - start
     };
   }
@@ -59,11 +60,11 @@ export async function checkCache(): Promise<HealthCheck> {
       message: 'Cache connection successful',
       responseTime: Date.now() - start
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       name: 'cache',
       status: 'degraded',
-      message: `Cache connection degraded: ${error.message}`,
+      message: `Cache connection degraded: ${getErrorMessage(error)}`,
       responseTime: Date.now() - start
     };
   }
@@ -88,11 +89,11 @@ export async function checkExternalApis(): Promise<HealthCheck> {
       message: 'External APIs accessible',
       responseTime: Date.now() - start
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       name: 'external_apis',
       status: 'degraded',
-      message: `External APIs degraded: ${error.message}`,
+      message: `External APIs degraded: ${getErrorMessage(error)}`,
       responseTime: Date.now() - start
     };
   }

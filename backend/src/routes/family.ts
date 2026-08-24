@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getFamilyService } from '../services/family';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const family = getFamilyService();
 
@@ -33,12 +34,12 @@ router.get('/', async (req: Request, res: Response) => {
       data: userFamily,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch family:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch family',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -78,12 +79,12 @@ router.post('/', async (req: Request, res: Response) => {
       data: newFamily,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create family:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create family',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -120,12 +121,12 @@ router.get('/members', async (req: Request, res: Response) => {
       count: members.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch members:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch members',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -174,12 +175,12 @@ router.post('/members/invite', async (req: Request, res: Response) => {
       },
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to invite member:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to invite member',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -214,11 +215,11 @@ router.post('/members/accept-invitation', async (req: Request, res: Response) =>
       data: member,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to accept invitation:', error);
     res.status(400).json({
       status: 'error',
-      message: error.message || 'Failed to accept invitation',
+      message: getErrorMessage(error) || 'Failed to accept invitation',
     });
   }
 });
@@ -263,12 +264,12 @@ router.patch('/members/:memberId/role', async (req: Request, res: Response) => {
       data: updated,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to update member role:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update member role',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -305,12 +306,12 @@ router.delete('/members/:memberId', async (req: Request, res: Response) => {
       message: 'Member removed from family',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to remove member:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to remove member',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -346,12 +347,12 @@ router.get('/settings', async (req: Request, res: Response) => {
       data: settings,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch settings:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch settings',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -388,12 +389,12 @@ router.patch('/settings', async (req: Request, res: Response) => {
       data: settings,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to update settings:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to update settings',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

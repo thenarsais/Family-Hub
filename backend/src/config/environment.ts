@@ -43,6 +43,21 @@ export interface EnvironmentConfig {
   };
 }
 
+const VALID_ENVIRONMENTS: EnvironmentConfig['environment'][] = ['development', 'staging', 'production'];
+const VALID_LOG_LEVELS: EnvironmentConfig['logLevel'][] = ['debug', 'info', 'warn', 'error'];
+
+function parseEnvironment(value: string): EnvironmentConfig['environment'] {
+  return (VALID_ENVIRONMENTS as string[]).includes(value)
+    ? (value as EnvironmentConfig['environment'])
+    : 'development';
+}
+
+function parseLogLevel(value: string): EnvironmentConfig['logLevel'] {
+  return (VALID_LOG_LEVELS as string[]).includes(value)
+    ? (value as EnvironmentConfig['logLevel'])
+    : 'info';
+}
+
 /**
  * Load environment variables
  */
@@ -63,11 +78,11 @@ function loadEnvironmentVariables(): EnvironmentConfig {
   }
 
   const config: EnvironmentConfig = {
-    environment: env as any,
+    environment: parseEnvironment(env),
     nodeEnv: process.env.NODE_ENV || 'development',
     port: parseInt(process.env.PORT || process.env.API_PORT || '3000'),
     apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 3000}`,
-    logLevel: (process.env.LOG_LEVEL || 'info') as any,
+    logLevel: parseLogLevel(process.env.LOG_LEVEL || 'info'),
 
     database: {
       url: process.env.DATABASE_URL || 'postgresql://localhost/familyhub',

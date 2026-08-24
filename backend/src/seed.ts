@@ -1,8 +1,7 @@
 import { Client } from 'pg';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
 
+import { getErrorMessage } from './utils/errors';
 dotenv.config({ path: '../.env.local' });
 
 const connectionString = process.env.DATABASE_URL;
@@ -168,8 +167,8 @@ async function seed() {
     console.log(`   Badges: ${badges.length} (activity + chore mastery)`);
     console.log('\n⚠️  Note: This is Phase 1 seed data.');
     console.log('   Full seed data (1000+ trivia, 130+ quests) will be imported in Phase 1B.');
-  } catch (error: any) {
-    console.error('❌ Seeding failed:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ Seeding failed:', getErrorMessage(error));
     process.exit(1);
   } finally {
     await client.end();

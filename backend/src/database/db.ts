@@ -55,8 +55,8 @@ pool.on('remove', () => {
  */
 export async function query(
   sql: string,
-  params: any[] = []
-): Promise<any> {
+  params: unknown[] = []
+): Promise<QueryResult> {
   const start = Date.now();
   try {
     const result = await pool.query(sql, params);
@@ -77,9 +77,9 @@ export async function query(
 /**
  * Execute a query and return first row
  */
-export async function queryOne<T = any>(
+export async function queryOne<T = Record<string, unknown>>(
   sql: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<T | null> {
   const result = await query(sql, params);
   return result.rows[0] || null;
@@ -88,9 +88,9 @@ export async function queryOne<T = any>(
 /**
  * Execute a query and return all rows
  */
-export async function queryAll<T = any>(
+export async function queryAll<T = Record<string, unknown>>(
   sql: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<T[]> {
   const result = await query(sql, params);
   return result.rows;
@@ -101,7 +101,7 @@ export async function queryAll<T = any>(
  */
 export async function queryCount(
   sql: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<number> {
   const result = await queryOne<{ count: string }>(sql, params);
   return result ? parseInt(result.count, 10) : 0;
@@ -132,7 +132,7 @@ export async function transaction<T>(
  * Execute multiple queries in transaction
  */
 export async function batch(
-  queries: Array<{ sql: string; params: any[] }>
+  queries: Array<{ sql: string; params: unknown[] }>
 ): Promise<QueryResult[]> {
   return transaction(async (client) => {
     const results: QueryResult[] = [];

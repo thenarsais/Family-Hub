@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getChoreService } from '../services/chores';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const chores = getChoreService();
 
@@ -27,12 +28,12 @@ router.get('/', async (req: Request, res: Response) => {
       count: userChores.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to list chores:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to list chores',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -82,12 +83,12 @@ router.post('/', async (req: Request, res: Response) => {
       chore,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to create chore:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to create chore',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -125,8 +126,8 @@ router.post('/:choreId/complete', async (req: Request, res: Response) => {
       progress,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
-    if (error.message === 'Chore not found') {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'Chore not found') {
       return res.status(404).json({
         status: 'error',
         message: 'Chore not found',
@@ -137,7 +138,7 @@ router.post('/:choreId/complete', async (req: Request, res: Response) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to complete chore',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -168,12 +169,12 @@ router.get('/progress/summary', async (req: Request, res: Response) => {
       },
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get chore progress:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get chore progress',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -200,12 +201,12 @@ router.get('/points/summary', async (req: Request, res: Response) => {
       data: pointsSummary,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get points summary:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get points summary',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -234,12 +235,12 @@ router.get('/points/history', async (req: Request, res: Response) => {
       count: history.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to get transaction history:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to get transaction history',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

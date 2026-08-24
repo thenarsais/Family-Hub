@@ -17,10 +17,10 @@ class ReminderService {
   /**
    * Get all reminders for user
    */
-  async getRemindersForUser(userId: string, filter?: 'pending' | 'dismissed' | 'all'): Promise<any[]> {
+  async getRemindersForUser(userId: string, filter?: 'pending' | 'dismissed' | 'all'): Promise<Reminder[]> {
     try {
       const conditions = ['user_id = $1'];
-      const values: any[] = [userId];
+      const values: unknown[] = [userId];
 
       if (filter === 'pending') {
         conditions.push('is_dismissed = false');
@@ -43,7 +43,7 @@ class ReminderService {
   /**
    * Get upcoming reminders (next 24 hours)
    */
-  async getUpcomingReminders(userId: string): Promise<any[]> {
+  async getUpcomingReminders(userId: string): Promise<Reminder[]> {
     try {
       const now = new Date();
       const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -79,7 +79,7 @@ class ReminderService {
       recurrence?: 'once' | 'daily' | 'weekly' | 'monthly';
       recurrence_end_date?: string;
     },
-  ): Promise<any> {
+  ): Promise<Reminder> {
     try {
       const reminder = await queryOne<Reminder>(
         `INSERT INTO reminders
@@ -112,16 +112,16 @@ class ReminderService {
   /**
    * Update reminder
    */
-  async updateReminder(id: string, updates: Partial<ReminderInsert>): Promise<any> {
+  async updateReminder(id: string, updates: Partial<ReminderInsert>): Promise<Reminder | null> {
     try {
-      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_REMINDER_COLUMNS.includes(k));
+      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_REMINDER_COLUMNS.includes(k)) as (keyof ReminderInsert)[];
 
       if (columns.length === 0) {
         return queryOne<Reminder>(`SELECT * FROM reminders WHERE id = $1`, [id]);
       }
 
       const setClauses = columns.map((col, i) => `${col} = $${i + 2}`);
-      const values = columns.map((col) => (updates as any)[col]);
+      const values = columns.map((col) => updates[col]);
 
       const reminder = await queryOne<Reminder>(
         `UPDATE reminders
@@ -184,7 +184,7 @@ class ReminderService {
    * Get reminders that need notification (within remind_before_minutes window)
    * Run this periodically to send push notifications
    */
-  async getRemindersNeedingNotification(): Promise<any[]> {
+  async getRemindersNeedingNotification(): Promise<Reminder[]> {
     try {
       const result = await query<Reminder>(
         `SELECT * FROM reminders

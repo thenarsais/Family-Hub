@@ -30,6 +30,25 @@ interface ForecastItem {
   precipChance: number;
 }
 
+// Minimal shape of OpenWeatherMap's /weather and /forecast responses --
+// only the fields this file actually reads, not the full documented API.
+interface OpenWeatherCurrentResponse {
+  name?: string;
+  main: { temp: number; feels_like: number; humidity: number };
+  wind: { speed: number };
+  weather: Array<{ description: string; main: string }>;
+  sys: { sunrise: number; sunset: number };
+}
+
+interface OpenWeatherForecastResponse {
+  list: Array<{
+    dt: number;
+    main: { temp_max: number; temp_min: number };
+    weather: Array<{ description: string; main: string }>;
+    pop?: number;
+  }>;
+}
+
 /**
  * Get current weather by city name
  */
@@ -56,7 +75,7 @@ export async function getCurrentWeatherByCity(city: string): Promise<WeatherData
       return null;
     }
 
-    const data: any = await response.json();
+    const data = await response.json() as OpenWeatherCurrentResponse;
 
     const weatherData: WeatherData = {
       location: data.name || city,
@@ -103,7 +122,7 @@ export async function getCurrentWeatherByCoords(
       return null;
     }
 
-    const data: any = await response.json();
+    const data = await response.json() as OpenWeatherCurrentResponse;
 
     const weatherData: WeatherData = {
       location: data.name || `${lat}, ${lon}`,
@@ -151,7 +170,7 @@ export async function getForecast(city: string): Promise<ForecastItem[] | null> 
       return null;
     }
 
-    const data: any = await response.json();
+    const data = await response.json() as OpenWeatherForecastResponse;
     const forecast: ForecastItem[] = [];
     const processedDates = new Set<string>();
 

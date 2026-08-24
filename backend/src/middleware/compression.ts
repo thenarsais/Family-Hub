@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { gzipSync, brotliCompressSync } from 'zlib';
+import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'zlib';
 
 export interface CompressionOptions {
   level?: number; // Compression level (0-9, default 6)
@@ -49,7 +49,7 @@ export function compression(options: CompressionOptions = {}) {
 
     // Override res.json to compress response
     const originalJson = res.json.bind(res);
-    res.json = function(data: any) {
+    res.json = function(data: unknown) {
       const jsonString = JSON.stringify(data);
       const originalSize = Buffer.byteLength(jsonString);
 
@@ -74,7 +74,9 @@ export function compression(options: CompressionOptions = {}) {
           (algorithm === 'auto' && acceptEncoding.includes('br')) ||
           algorithm === 'br'
         ) {
-          compressed = brotliCompressSync(jsonString, { lgwin: 22 } as any);
+          compressed = brotliCompressSync(jsonString, {
+            params: { [zlibConstants.BROTLI_PARAM_LGWIN]: 22 },
+          });
           usedAlgorithm = 'br';
         } else {
           return originalJson(data);

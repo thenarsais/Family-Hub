@@ -59,15 +59,13 @@ const SENSITIVE_KEYS = [
   'db_password',
 ];
 
-interface ErrorObject {
-  [key: string]: any;
-}
+type ErrorObject = Record<string, unknown>;
 
 export function scrubbedError(error: ErrorObject): ErrorObject {
-  return scrubRecursive(error, new WeakSet());
+  return scrubRecursive(error, new WeakSet()) as ErrorObject;
 }
 
-function scrubRecursive(obj: any, visited: WeakSet<object>, depth = 0): any {
+function scrubRecursive(obj: unknown, visited: WeakSet<object>, depth = 0): unknown {
   // Prevent infinite recursion on circular references
   if (depth > 20) return obj;
   if (obj === null || obj === undefined) return obj;
@@ -129,7 +127,7 @@ function isSensitiveKey(key: string): boolean {
  * Sanitize an error for Sentry
  * Call this before sending any error to error tracking
  */
-export function sanitizeForSentry(error: any): any {
+export function sanitizeForSentry(error: unknown): unknown {
   if (error instanceof Error) {
     return {
       message: error.message,
@@ -139,7 +137,7 @@ export function sanitizeForSentry(error: any): any {
   }
 
   if (typeof error === 'object' && error !== null) {
-    return scrubbedError(error);
+    return scrubbedError(error as ErrorObject);
   }
 
   return error;

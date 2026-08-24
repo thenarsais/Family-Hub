@@ -1,3 +1,4 @@
+import { getErrorMessage } from '../utils/errors';
 /**
  * SendGrid Email Service
  * Sends emails for notifications, alerts, and communications
@@ -100,11 +101,11 @@ export async function sendEmail(options: EmailOptions): Promise<SendResult> {
       success: true,
       messageId
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to send email:', error);
     return {
       success: false,
-      error: error.message || 'Unknown error'
+      error: getErrorMessage(error) || 'Unknown error'
     };
   }
 }

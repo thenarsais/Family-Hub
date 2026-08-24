@@ -91,7 +91,7 @@ export async function signIn(
 /**
  * Sign out user
  */
-export async function signOut(accessToken: string): Promise<void> {
+export async function signOut(_accessToken: string): Promise<void> {
   const supabase = getSupabase();
 
   const { error } = await supabase.auth.signOut();
@@ -213,9 +213,11 @@ export async function listUsers(limit: number = 10): Promise<User[]> {
 /**
  * Query database via Supabase
  */
+type SupabaseSelectBuilder = ReturnType<ReturnType<SupabaseClient['from']>['select']>;
+
 export async function queryDatabase<T>(
   table: string,
-  query?: (q: any) => any
+  query?: (q: SupabaseSelectBuilder) => SupabaseSelectBuilder
 ): Promise<T[]> {
   const supabase = getSupabase();
 
@@ -240,7 +242,7 @@ export async function queryDatabase<T>(
  */
 export async function insertDatabase<T>(
   table: string,
-  data: any
+  data: Record<string, unknown>
 ): Promise<T> {
   const supabase = getSupabase();
 
@@ -264,7 +266,7 @@ export async function insertDatabase<T>(
 export async function updateDatabase<T>(
   table: string,
   id: string,
-  data: any
+  data: Record<string, unknown>
 ): Promise<T> {
   const supabase = getSupabase();
 

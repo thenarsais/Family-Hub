@@ -3,6 +3,7 @@ import path from 'path';
 import { Client } from 'pg';
 import dotenv from 'dotenv';
 
+import { getErrorMessage } from './utils/errors';
 dotenv.config({ path: '../.env.local' });
 
 const connectionString = process.env.DATABASE_URL;
@@ -43,17 +44,17 @@ async function runMigrations() {
       try {
         await client.query(sql);
         console.log(`✅ Migration completed: ${file}`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`❌ Error in migration ${file}:`);
-        console.error(error.message);
+        console.error(getErrorMessage(error));
         await client.end();
         process.exit(1);
       }
     }
 
     console.log('\n✨ All migrations completed successfully!');
-  } catch (error: any) {
-    console.error('❌ Connection failed:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ Connection failed:', getErrorMessage(error));
     process.exit(1);
   } finally {
     await client.end();

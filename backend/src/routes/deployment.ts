@@ -6,6 +6,7 @@
 import { Router, Request, Response } from 'express';
 import { runReadinessChecks, isAlive } from '../utils/readiness';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 
 /**
@@ -54,10 +55,10 @@ router.get('/ready', async (req: Request, res: Response) => {
       checks: readiness.checks,
       summary: readiness.summary
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     res.status(500).json({
       status: 'error',
-      message: error.message,
+      message: getErrorMessage(error),
       timestamp: new Date().toISOString()
     });
   }

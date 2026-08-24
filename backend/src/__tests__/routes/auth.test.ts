@@ -20,7 +20,21 @@
 import request from 'supertest';
 import express from 'express';
 
-const mockSupabaseClient: any = {
+interface MockSupabaseClient {
+  auth: {
+    admin: { createUser: jest.Mock };
+    signInWithPassword: jest.Mock;
+    signOut: jest.Mock;
+    getUser: jest.Mock;
+  };
+  from: jest.Mock;
+  select: jest.Mock;
+  eq: jest.Mock;
+  insert: jest.Mock;
+  single: jest.Mock;
+}
+
+const mockSupabaseClient: MockSupabaseClient = {
   auth: {
     admin: { createUser: jest.fn() },
     signInWithPassword: jest.fn(),

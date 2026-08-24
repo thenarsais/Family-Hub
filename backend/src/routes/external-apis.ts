@@ -3,11 +3,12 @@
  * Exposes Merriam-Webster, OpenWeather, and SendGrid functionality
  */
 
-import express, { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import * as mw from '../services/merriam-webster';
 import * as weather from '../services/openweather';
 import * as sendgrid from '../services/sendgrid';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 
 // Middleware to verify auth
@@ -42,11 +43,11 @@ router.get('/dictionary/word/:word', verifyAuth, async (req: Request, res: Respo
     }
 
     res.json(definition);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Dictionary error:', error);
     res.status(500).json({
       error: 'Failed to get word definition',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -67,11 +68,11 @@ router.get('/dictionary/word-of-day', verifyAuth, async (req: Request, res: Resp
       message: 'Word of the Day',
       ...wordOfDay
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Word of day error:', error);
     res.status(500).json({
       error: 'Failed to get word of the day',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -96,11 +97,11 @@ router.get('/dictionary/search', verifyAuth, async (req: Request, res: Response)
       count: words.length,
       words
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Word search error:', error);
     res.status(500).json({
       error: 'Failed to search words',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -128,11 +129,11 @@ router.get('/weather/city/:city', verifyAuth, async (req: Request, res: Response
     }
 
     res.json(weatherData);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Weather error:', error);
     res.status(500).json({
       error: 'Failed to get weather',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -157,11 +158,11 @@ router.get('/weather/coords', verifyAuth, async (req: Request, res: Response) =>
     }
 
     res.json(weatherData);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Weather coords error:', error);
     res.status(500).json({
       error: 'Failed to get weather',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -189,11 +190,11 @@ router.get('/weather/forecast/:city', verifyAuth, async (req: Request, res: Resp
       days: forecast.length,
       forecast
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Forecast error:', error);
     res.status(500).json({
       error: 'Failed to get forecast',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -224,11 +225,11 @@ router.post('/weather/activity-suitability', verifyAuth, async (req: Request, re
       weather: weatherData,
       suitability
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Activity suitability error:', error);
     res.status(500).json({
       error: 'Failed to check activity suitability',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -265,11 +266,11 @@ router.post('/email/achievement', verifyAuth, async (req: Request, res: Response
       message: 'Achievement email sent successfully',
       messageId: result.messageId
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Achievement email error:', error);
     res.status(500).json({
       error: 'Failed to send achievement email',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -302,11 +303,11 @@ router.post('/email/points', verifyAuth, async (req: Request, res: Response) => 
       message: 'Points email sent successfully',
       messageId: result.messageId
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Points email error:', error);
     res.status(500).json({
       error: 'Failed to send points email',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -345,11 +346,11 @@ router.post('/email/daily-summary', verifyAuth, async (req: Request, res: Respon
       message: 'Daily summary email sent successfully',
       messageId: result.messageId
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Daily summary email error:', error);
     res.status(500).json({
       error: 'Failed to send daily summary email',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -388,11 +389,11 @@ router.post('/email/parent-notification', verifyAuth, async (req: Request, res: 
       message: 'Parent notification email sent successfully',
       messageId: result.messageId
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Parent notification email error:', error);
     res.status(500).json({
       error: 'Failed to send parent notification email',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });

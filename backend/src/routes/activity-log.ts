@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getActivityLogService } from '../services/activity-log';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 const activityLog = getActivityLogService();
 
@@ -28,12 +29,12 @@ router.get('/feed', async (req: Request, res: Response) => {
       count: activity.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch activity feed:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch activity feed',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -76,12 +77,12 @@ router.get('/family-feed', async (req: Request, res: Response) => {
       count: activity.length,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch family activity:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch family activity',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -116,12 +117,12 @@ router.post('/log', async (req: Request, res: Response) => {
       data: entry,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to log activity:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to log activity',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });
@@ -149,12 +150,12 @@ router.get('/stats', async (req: Request, res: Response) => {
       data: stats,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch stats:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch stats',
-      error: error.message,
+      error: getErrorMessage(error),
     });
   }
 });

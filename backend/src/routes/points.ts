@@ -3,9 +3,10 @@
  * Handles points tracking, history, and analytics
  */
 
-import express, { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import * as PointsRepository from '../database/repositories/PointsRepository';
 
+import { getErrorMessage } from '../utils/errors';
 const router = Router();
 
 // Middleware to verify auth header
@@ -37,7 +38,7 @@ router.get('/users/:userId', verifyAuth, async (req: Request, res: Response) => 
           total_points: totalPoints
         }
       });
-    } catch (dbError) {
+    } catch {
       // Database unavailable - return mock data for demo
       console.warn('Database unavailable, using mock data');
       return res.json({
@@ -48,11 +49,11 @@ router.get('/users/:userId', verifyAuth, async (req: Request, res: Response) => 
         demo_mode: true
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get total points error:', error);
     res.status(500).json({
       error: 'Failed to get total points',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -75,7 +76,7 @@ router.get('/users/:userId/history', verifyAuth, async (req: Request, res: Respo
     res.json({
       user_id: userId,
       count: history.length,
-      history: history.map((entry: any) => ({
+      history: history.map((entry) => ({
         id: entry.id,
         activity_type: entry.activity_type,
         points: entry.points,
@@ -83,11 +84,11 @@ router.get('/users/:userId/history', verifyAuth, async (req: Request, res: Respo
         created_at: entry.created_at
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get points history error:', error);
     res.status(500).json({
       error: 'Failed to get points history',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -109,11 +110,11 @@ router.get('/users/:userId/breakdown', verifyAuth, async (req: Request, res: Res
       user_id: userId,
       breakdown
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get points breakdown error:', error);
     res.status(500).json({
       error: 'Failed to get points breakdown',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -148,11 +149,11 @@ router.get('/users/:userId/range', verifyAuth, async (req: Request, res: Respons
       date_range: { start, end },
       total_points: rangePoints
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get points in range error:', error);
     res.status(500).json({
       error: 'Failed to get points in date range',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -175,11 +176,11 @@ router.get('/users/:userId/today', verifyAuth, async (req: Request, res: Respons
       period: 'today',
       points: todayPoints
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get points today error:', error);
     res.status(500).json({
       error: 'Failed to get today points',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -198,11 +199,11 @@ router.get('/users/:userId/week', verifyAuth, async (req: Request, res: Response
       period: 'this_week',
       points: weekPoints
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get points this week error:', error);
     res.status(500).json({
       error: 'Failed to get week points',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -221,11 +222,11 @@ router.get('/users/:userId/month', verifyAuth, async (req: Request, res: Respons
       period: 'this_month',
       points: monthPoints
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get points this month error:', error);
     res.status(500).json({
       error: 'Failed to get month points',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -274,11 +275,11 @@ router.post('/users/:userId', verifyAuth, async (req: Request, res: Response) =>
         created_at: entry.created_at
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Add points error:', error);
     res.status(500).json({
       error: 'Failed to add points',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -319,11 +320,11 @@ router.post('/users/:userId/subtract', verifyAuth, async (req: Request, res: Res
       deducted_points: points,
       reason: reason || 'Points deducted'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Subtract points error:', error);
     res.status(500).json({
       error: 'Failed to subtract points',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });
@@ -351,17 +352,17 @@ router.get('/leaderboard', verifyAuth, async (req: Request, res: Response) => {
     res.json({
       limit,
       count: leaderboard.length,
-      leaderboard: leaderboard.map((entry: any, index: number) => ({
+      leaderboard: leaderboard.map((entry, index) => ({
         rank: index + 1,
         user_id: entry.user_id,
         points: entry.total_points
       }))
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get leaderboard error:', error);
     res.status(500).json({
       error: 'Failed to get leaderboard',
-      message: error.message
+      message: getErrorMessage(error)
     });
   }
 });

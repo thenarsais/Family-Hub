@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { pool } from './database/connection';
 
+import { getErrorMessage, getErrorCode } from './utils/errors';
 async function runMigrations() {
   try {
     console.log('🔄 Running migrations...');
@@ -36,13 +37,13 @@ async function runMigrations() {
       try {
         await pool.query(sql);
         console.log(`✅ Migration completed: ${file}\n`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Check if error is about already existing objects (this is OK)
-        if (error.message.includes('already exists') || error.code === '42P07' || error.code === '42710') {
-          console.warn(`⚠️  ${error.message} (this is OK if object already exists)\n`);
+        if (getErrorMessage(error).includes('already exists') || getErrorCode(error) === '42P07' || getErrorCode(error) === '42710') {
+          console.warn(`⚠️  ${getErrorMessage(error)} (this is OK if object already exists)\n`);
         } else {
           console.error(`❌ Error in migration ${file}:`);
-          console.error(error.message);
+          console.error(getErrorMessage(error));
           await pool.end();
           process.exit(1);
         }
@@ -51,8 +52,8 @@ async function runMigrations() {
 
     console.log('✨ All migrations completed successfully!');
     await pool.end();
-  } catch (error: any) {
-    console.error('❌ Migration failed:', error.message);
+  } catch (error: unknown) {
+    console.error('❌ Migration failed:', getErrorMessage(error));
     await pool.end();
     process.exit(1);
   }

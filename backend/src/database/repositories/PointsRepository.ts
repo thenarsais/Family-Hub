@@ -3,7 +3,7 @@
  * Database queries for activity_points table
  */
 
-import { query, queryOne, queryAll, queryCount } from '../db';
+import { queryOne, queryAll } from '../db';
 import { getOrSet, del } from '../cache';
 
 // ================================================

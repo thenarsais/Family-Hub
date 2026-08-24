@@ -37,13 +37,13 @@ export function cacheResponse(options: CacheOptions = {}) {
         res.set('X-Cache', 'HIT');
         return res.json(cached);
       }
-    } catch (e) {
+    } catch {
       // Cache miss is OK, continue
     }
 
     // Override res.json to cache response
     const originalJson = res.json.bind(res);
-    res.json = function(data: any) {
+    res.json = function(data: unknown) {
       const ttl = options.ttl || 300; // Default 5 minutes
       cache.set(cacheKey, data, ttl).catch((e) => {
         console.error('Cache set error:', e);
@@ -68,7 +68,7 @@ export function cacheWithETag() {
 
     // Override res.json
     const originalJson = res.json.bind(res);
-    res.json = function(data: any) {
+    res.json = function(data: unknown) {
       const crypto = require('crypto');
       const etag = crypto
         .createHash('md5')
@@ -111,13 +111,13 @@ export function cachePaginatedList(options: CacheOptions = {}) {
         res.set('X-Cache', 'HIT');
         return res.json(cached);
       }
-    } catch (e) {
+    } catch {
       // Continue
     }
 
     // Cache response
     const originalJson = res.json.bind(res);
-    res.json = function(data: any) {
+    res.json = function(data: unknown) {
       const ttl = options.ttl || 600; // Default 10 minutes
       cache.set(cacheKey, data, ttl).catch((e) => {
         console.error('Cache set error:', e);
@@ -140,7 +140,7 @@ export function cachePerUser(options: CacheOptions = {}) {
       return next();
     }
 
-    const userId = (req as any).userId;
+    const userId = req.userId;
     if (!userId) {
       return next();
     }
@@ -156,13 +156,13 @@ export function cachePerUser(options: CacheOptions = {}) {
         res.set('X-Cache', 'HIT');
         return res.json(cached);
       }
-    } catch (e) {
+    } catch {
       // Continue
     }
 
     // Cache response
     const originalJson = res.json.bind(res);
-    res.json = function(data: any) {
+    res.json = function(data: unknown) {
       const ttl = options.ttl || 300;
       cache.set(cacheKey, data, ttl).catch((e) => {
         console.error('Cache set error:', e);

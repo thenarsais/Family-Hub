@@ -6,7 +6,7 @@ export function errorHandler(
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void {
   console.error('❌ Error:', err.message);
 
@@ -27,6 +27,6 @@ export function errorHandler(
 
   res.status(500).json({
     error: 'Internal Server Error',
-    requestId: (req as any).id || 'unknown',
+    requestId: req.id || 'unknown',
   });
 }

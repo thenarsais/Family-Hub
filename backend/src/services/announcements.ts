@@ -89,7 +89,7 @@ class AnnouncementService {
       is_pinned?: boolean;
       expires_at?: string;
     },
-  ): Promise<any> {
+  ): Promise<Announcement> {
     try {
       const announcement = await queryOne<Announcement>(
         `INSERT INTO announcements
@@ -144,16 +144,16 @@ class AnnouncementService {
   async updateAnnouncement(
     id: string,
     updates: Partial<AnnouncementInsert>,
-  ): Promise<any> {
+  ): Promise<Announcement | null> {
     try {
-      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_ANNOUNCEMENT_COLUMNS.includes(k));
+      const columns = Object.keys(updates || {}).filter((k) => UPDATABLE_ANNOUNCEMENT_COLUMNS.includes(k)) as (keyof AnnouncementInsert)[];
 
       if (columns.length === 0) {
         return queryOne<Announcement>(`SELECT * FROM announcements WHERE id = $1`, [id]);
       }
 
       const setClauses = columns.map((col, i) => `${col} = $${i + 2}`);
-      const values = columns.map((col) => (updates as any)[col]);
+      const values = columns.map((col) => updates[col]);
 
       const announcement = await queryOne<Announcement>(
         `UPDATE announcements

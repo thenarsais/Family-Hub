@@ -5,18 +5,19 @@
 
 import { Request, Response, NextFunction } from 'express';
 
+import { getErrorMessage } from '../utils/errors';
 export interface BatchOperation {
   id: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   path: string;
-  body?: any;
+  body?: unknown;
   headers?: Record<string, string>;
 }
 
 export interface BatchOperationResult {
   id: string;
   statusCode: number;
-  data?: any;
+  data?: unknown;
   error?: string;
 }
 
@@ -24,8 +25,7 @@ export interface BatchOperationResult {
  * Batch operations endpoint handler
  */
 export async function handleBatchOperations(
-  req: Request,
-  res: Response
+  req: Request
 ): Promise<BatchOperationResult[]> {
   const operations: BatchOperation[] = req.body.operations;
 
@@ -64,11 +64,11 @@ export async function handleBatchOperations(
       // Execute operation
       const result = await executeBatchOperation(operation);
       results.push(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       results.push({
         id: operation.id,
         statusCode: 500,
-        error: error.message || 'Unknown error'
+        error: getErrorMessage(error) || 'Unknown error'
       });
     }
   }
@@ -95,11 +95,11 @@ async function executeBatchOperation(operation: BatchOperation): Promise<BatchOp
         timestamp: new Date().toISOString()
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       id: operation.id,
       statusCode: 500,
-      error: error.message
+      error: getErrorMessage(error)
     };
   }
 }
@@ -112,16 +112,16 @@ export function batchOperations() {
     // Only process batch endpoint
     if (req.path === '/batch' && req.method === 'POST') {
       try {
-        const results = await handleBatchOperations(req, res);
+        const results = await handleBatchOperations(req);
         return res.status(207).json({
           // 207 Multi-Status
           message: 'Batch operations completed',
           operations: results.length,
           results
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         return res.status(400).json({
-          error: error.message
+          error: getErrorMessage(error)
         });
       }
     }
@@ -136,10 +136,10 @@ export function batchOperations() {
 export class BatchBuilder {
   private operations: BatchOperation[] = [];
 
-  add(id: string, method: string, path: string, body?: any): this {
+  add(id: string, method: BatchOperation['method'], path: string, body?: unknown): this {
     this.operations.push({
       id,
-      method: method as any,
+      method,
       path,
       body
     });
@@ -150,15 +150,15 @@ export class BatchBuilder {
     return this.add(id, 'GET', path);
   }
 
-  post(id: string, path: string, body: any): this {
+  post(id: string, path: string, body: unknown): this {
     return this.add(id, 'POST', path, body);
   }
 
-  put(id: string, path: string, body: any): this {
+  put(id: string, path: string, body: unknown): this {
     return this.add(id, 'PUT', path, body);
   }
 
-  patch(id: string, path: string, body: any): this {
+  patch(id: string, path: string, body: unknown): this {
     return this.add(id, 'PATCH', path, body);
   }
 
