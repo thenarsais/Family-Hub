@@ -18,7 +18,8 @@
     "test:a11y": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest run src/__tests__/accessibility --reporter=verbose",
     "test:a11y:watch": "cross-env NODE_OPTIONS=--no-experimental-webstorage vitest watch src/__tests__/accessibility",
     "lighthouse": "lhci autorun",
-    "lighthouse:collect": "lhci collect --url=http://localhost:5173 --url=http://localhost:5173/login --url=http://localhost:5173/dashboard",
+    "lighthouse:collect": "lhci collect --url=http://localhost:4173 --url=http://localhost:4173/login --url=http://localhost:4173/dashboard",
+    "check:bundle-budget": "node scripts/check-bundle-budget.js",
     "validate": "npm run lint && npm run type-check && npm run test && npm run test:a11y",
     "check:debt": "grep -r 'TODO\\|FIXME' src --include='*.ts' --include='*.tsx' || echo 'No tech debt found'"
   },

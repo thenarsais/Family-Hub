@@ -357,8 +357,14 @@ jobs:
             sleep 2
           done
 
+      # lhci autorun = collect + assert against frontend/lighthouserc.json's
+      # thresholds (matching the targets summarized below) + save results
+      # locally. Previously ran `lighthouse:collect` (collect only, no
+      # assertions) against port 5173 (the dev server) while this job's own
+      # server was `vite preview` on 4173 -- collect was silently failing to
+      # connect, and `|| true` swallowed it, so this gate asserted nothing.
       - name: Run Lighthouse CI
-        run: cd frontend && npm run lighthouse:collect || true
+        run: cd frontend && npm run lighthouse
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
@@ -426,6 +432,16 @@ jobs:
         with:
           name: performance-baseline
           path: build-stats.txt
+
+      # Frontend bundle size budget gate (SDLC decision #9). This job builds
+      # the backend for stats above but never built the frontend, so there
+      # was never a real frontend bundle number to gate here despite the
+      # decision assuming one already existed.
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Check frontend bundle size budget (fails if >10% over baseline)
+        run: cd frontend && npm run check:bundle-budget
 
   # ================================================
   # SUMMARY & NOTIFICATIONS
