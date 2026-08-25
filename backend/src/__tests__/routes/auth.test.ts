@@ -176,13 +176,22 @@ describe('Auth Routes', () => {
       expect(res.body.required).toEqual(['email', 'password', 'name', 'role']);
     });
 
-    it('should reject a role that is not parent or child', async () => {
+    it('should reject a role that is not parent', async () => {
       const res = await request(app)
         .post('/signup')
         .send({ email: 'user@example.com', password: 'password123', name: 'User', role: 'admin' });
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('parent or child');
+      expect(res.body.error).toContain('parent');
+    });
+
+    it('should reject child self-registration (COPPA: parent-only provisioning)', async () => {
+      const res = await request(app)
+        .post('/signup')
+        .send({ email: 'kid@example.com', password: 'password123', name: 'Kid', role: 'child' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('cannot self-register');
     });
 
     it('should surface a Supabase signup failure without a 500', async () => {

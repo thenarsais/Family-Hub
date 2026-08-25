@@ -193,6 +193,29 @@ class FamilyService {
   }
 
   /**
+   * Directly add a member to a family, bypassing the email invite/accept
+   * token flow. Used for parent-provisioned child accounts (COPPA
+   * compliance, FRAMEWORK.md Decision #29) where the parent is creating the
+   * account themselves, not inviting someone who accepts independently.
+   */
+  async addMember(
+    familyId: string,
+    userId: string,
+    role: 'admin' | 'parent' | 'child' | 'guardian',
+    addedById: string,
+  ): Promise<FamilyMember> {
+    const member = await queryOne<FamilyMember>(
+      `INSERT INTO family_members (family_id, user_id, role, invited_by_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [familyId, userId, role, addedById]
+    );
+
+    if (!member) throw new Error('Failed to add family member');
+    return member;
+  }
+
+  /**
    * Update member role
    */
   async updateMemberRole(

@@ -1,6 +1,11 @@
 /**
  * OpenWeather API Service
  * Provides current weather, forecasts, and location data
+ *
+ * COPPA note (FRAMEWORK.md Decision #29): lat/lon here are a transient
+ * parameter for a weather lookup, not persisted user location -- nothing
+ * in this file writes coordinates to the database, so the
+ * no-exact-dob-or-gps lint rule is disabled for it (see .eslintrc.json).
  */
 
 import * as cache from '../database/cache';

@@ -224,11 +224,12 @@ export type Database = {
       child_profiles: {
         Row: {
           avatar: string | null
+          birth_year: number | null
           created_at: string | null
           current_streak: number | null
-          date_of_birth: string | null
           display_name: string | null
           id: string
+          is_under_13: boolean | null
           parent_id: string
           points_total: number | null
           updated_at: string | null
@@ -236,11 +237,12 @@ export type Database = {
         }
         Insert: {
           avatar?: string | null
+          birth_year?: number | null
           created_at?: string | null
           current_streak?: number | null
-          date_of_birth?: string | null
           display_name?: string | null
           id?: string
+          is_under_13?: boolean | null
           parent_id: string
           points_total?: number | null
           updated_at?: string | null
@@ -248,11 +250,12 @@ export type Database = {
         }
         Update: {
           avatar?: string | null
+          birth_year?: number | null
           created_at?: string | null
           current_streak?: number | null
-          date_of_birth?: string | null
           display_name?: string | null
           id?: string
+          is_under_13?: boolean | null
           parent_id?: string
           points_total?: number | null
           updated_at?: string | null
