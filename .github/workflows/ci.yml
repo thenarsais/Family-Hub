@@ -122,9 +122,16 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/familyhub_test
           REDIS_URL: redis://localhost:6379
 
+      # Placeholder values, not real secrets -- src/__tests__/config/env.test.ts
+      # only checks that these vars are present and correctly shaped, never
+      # that they connect to anything real.
       - name: Run frontend tests (with 80% coverage gate)
         working-directory: ./frontend
         run: npm run test:coverage
+        env:
+          VITE_API_URL: http://localhost:3000
+          VITE_SUPABASE_URL: https://test-project.supabase.co
+          VITE_SUPABASE_ANON_KEY: test-anon-key
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
