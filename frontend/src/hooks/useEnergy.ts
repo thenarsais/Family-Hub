@@ -41,16 +41,16 @@ export function useEnergy(): UseEnergyReturn {
       if (!user?.id) return;
 
       const [usageResponse, goalsResponse] = await Promise.all([
-        apiClient.get('/energy/current-month', {
+        apiClient.get('/api/energy/current-month', {
           headers: { 'x-user-id': user.id },
         }),
-        apiClient.get('/energy/goals', {
+        apiClient.get('/api/energy/goals', {
           headers: { 'x-user-id': user.id },
         }),
       ]);
 
-      setCurrentMonth(usageResponse.data?.total_kwh || 0);
-      setGoals(goalsResponse.data || []);
+      setCurrentMonth(usageResponse.data?.data?.total_kwh || 0);
+      setGoals(goalsResponse.data?.data || []);
     } catch (err: any) {
       console.error('Failed to fetch energy data:', err);
       setError(err.message || 'Failed to fetch energy data');
@@ -73,12 +73,12 @@ export function useEnergy(): UseEnergyReturn {
     if (!user?.id) throw new Error('User not authenticated');
 
     const response = await apiClient.post(
-      '/energy/goals',
+      '/api/energy/goals',
       { goal_type: goalType, target_kwh: targetKwh, start_date: startDate, end_date: endDate, points_reward: pointsReward },
       { headers: { 'x-user-id': user.id } },
     );
 
-    const newGoal = response.data;
+    const newGoal = response.data?.data;
     setGoals((prev) => [...prev, newGoal]);
     return newGoal;
   };

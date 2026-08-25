@@ -48,11 +48,11 @@ export function useReminders(): UseRemindersReturn {
         return;
       }
 
-      const response = await apiClient.get('/reminders', {
+      const response = await apiClient.get('/api/reminders', {
         headers: { 'x-user-id': user.id },
       });
 
-      setReminders(response.data || []);
+      setReminders(response.data?.data || []);
     } catch (err: any) {
       console.error('Failed to fetch reminders:', err);
       setError(err.message || 'Failed to fetch reminders');
@@ -65,11 +65,11 @@ export function useReminders(): UseRemindersReturn {
     try {
       if (!user?.id) return;
 
-      const response = await apiClient.get('/reminders/upcoming', {
+      const response = await apiClient.get('/api/reminders/upcoming', {
         headers: { 'x-user-id': user.id },
       });
 
-      setUpcomingReminders(response.data || []);
+      setUpcomingReminders(response.data?.data || []);
     } catch (err: any) {
       console.error('Failed to fetch upcoming reminders:', err);
     }
@@ -87,12 +87,12 @@ export function useReminders(): UseRemindersReturn {
       }
 
       const response = await apiClient.post(
-        '/reminders',
+        '/api/reminders',
         data,
         { headers: { 'x-user-id': user.id } },
       );
 
-      const newReminder = response.data;
+      const newReminder = response.data?.data;
       setReminders((prev) => [...prev, newReminder]);
       return newReminder;
     } catch (err: any) {
@@ -108,7 +108,7 @@ export function useReminders(): UseRemindersReturn {
       }
 
       await apiClient.post(
-        `/reminders/${reminderId}/dismiss`,
+        `/api/reminders/${reminderId}/dismiss`,
         {},
         { headers: { 'x-user-id': user.id } },
       );
@@ -130,7 +130,7 @@ export function useReminders(): UseRemindersReturn {
         throw new Error('User not authenticated');
       }
 
-      await apiClient.delete(`/reminders/${reminderId}`, {
+      await apiClient.delete(`/api/reminders/${reminderId}`, {
         headers: { 'x-user-id': user.id },
       });
 

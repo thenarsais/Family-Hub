@@ -13,8 +13,8 @@ import { useReminders } from '@/hooks/useReminders';
 
 function mockGetPaths(overrides: { reminders?: unknown[]; upcoming?: unknown[] } = {}) {
   (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-    if (path === '/reminders') return Promise.resolve({ data: overrides.reminders ?? [] });
-    if (path === '/reminders/upcoming') return Promise.resolve({ data: overrides.upcoming ?? [] });
+    if (path === '/api/reminders') return Promise.resolve({ data: { status: 'success', data: overrides.reminders ?? [] } });
+    if (path === '/api/reminders/upcoming') return Promise.resolve({ data: { status: 'success', data: overrides.upcoming ?? [] } });
     return Promise.reject(new Error(`unexpected path ${path}`));
   });
 }
@@ -47,8 +47,8 @@ describe('useReminders', () => {
 
   it('should set an error when the reminders fetch fails', async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-      if (path === '/reminders') return Promise.reject(new Error('down'));
-      return Promise.resolve({ data: [] });
+      if (path === '/api/reminders') return Promise.reject(new Error('down'));
+      return Promise.resolve({ data: { status: 'success', data: [] } });
     });
 
     const { result } = renderHook(() => useReminders());
@@ -59,8 +59,8 @@ describe('useReminders', () => {
 
   it('should silently continue when the upcoming fetch fails', async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-      if (path === '/reminders/upcoming') return Promise.reject(new Error('down'));
-      return Promise.resolve({ data: [] });
+      if (path === '/api/reminders/upcoming') return Promise.reject(new Error('down'));
+      return Promise.resolve({ data: { status: 'success', data: [] } });
     });
 
     const { result } = renderHook(() => useReminders());
@@ -73,7 +73,9 @@ describe('useReminders', () => {
   describe('createReminder', () => {
     it('should post and append the new reminder', async () => {
       mockGetPaths();
-      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { id: 'r1', title: 'Take out trash' } });
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { status: 'success', data: { id: 'r1', title: 'Take out trash' } },
+      });
 
       const { result } = renderHook(() => useReminders());
       await waitFor(() => expect(result.current.loading).toBe(false));
@@ -84,7 +86,7 @@ describe('useReminders', () => {
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/reminders',
+        '/api/reminders',
         { title: 'Take out trash' },
         { headers: { 'x-user-id': 'user-1' } }
       );
@@ -113,7 +115,7 @@ describe('useReminders', () => {
         await result.current.dismissReminder('r1');
       });
 
-      expect(apiClient.post).toHaveBeenCalledWith('/reminders/r1/dismiss', {}, { headers: { 'x-user-id': 'user-1' } });
+      expect(apiClient.post).toHaveBeenCalledWith('/api/reminders/r1/dismiss', {}, { headers: { 'x-user-id': 'user-1' } });
       expect(result.current.reminders[0].is_dismissed).toBe(true);
     });
 
@@ -138,7 +140,7 @@ describe('useReminders', () => {
         await result.current.deleteReminder('r1');
       });
 
-      expect(apiClient.delete).toHaveBeenCalledWith('/reminders/r1', { headers: { 'x-user-id': 'user-1' } });
+      expect(apiClient.delete).toHaveBeenCalledWith('/api/reminders/r1', { headers: { 'x-user-id': 'user-1' } });
       expect(result.current.reminders).toEqual([]);
     });
 
@@ -162,8 +164,8 @@ describe('useReminders', () => {
         await result.current.refreshUpcoming();
       });
 
-      expect(apiClient.get).toHaveBeenCalledWith('/reminders', expect.anything());
-      expect(apiClient.get).toHaveBeenCalledWith('/reminders/upcoming', expect.anything());
+      expect(apiClient.get).toHaveBeenCalledWith('/api/reminders', expect.anything());
+      expect(apiClient.get).toHaveBeenCalledWith('/api/reminders/upcoming', expect.anything());
     });
   });
 });
