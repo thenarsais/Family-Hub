@@ -168,6 +168,15 @@ jobs:
           name: dist
           path: backend/dist
 
+      # GitHub withholds repo secrets from workflow runs triggered by
+      # Dependabot (anti-exfiltration default), so secrets.SUPABASE_URL/
+      # SUPABASE_SERVICE_ROLE_KEY come through blank on every Dependabot PR
+      # and the server fails its own fail-fast env validation before it can
+      # even respond to a health check -- this job was unconditionally
+      # failing on all 15 open Dependabot PRs regardless of what was being
+      # bumped. Safe to use placeholders instead: /health, /ready, /info
+      # (utils/readiness.ts) are all stubs that only check these vars are
+      # non-empty, never make a real Supabase/DB/Redis call.
       - name: Start API server
         run: npm start &
         env:
@@ -175,8 +184,8 @@ jobs:
           PORT: 3000
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/familyhub
           REDIS_URL: redis://localhost:6379
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: https://test-project.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
 
       - name: Wait for server startup
         run: |
