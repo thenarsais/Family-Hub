@@ -420,7 +420,7 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
     const { id } = req.params;
-    const { calendarId } = req.body;
+    const { calendarId } = req.body || {};
 
     if (!userId) {
       return res.status(401).json({
