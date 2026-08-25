@@ -1,9 +1,9 @@
 {
-  "description": "Frontend production bundle size budget (gzipped). CI fails a PR if either total exceeds its baseline by more than toleranceRatio. Update this file deliberately (`npm run check:bundle-budget -- --update-baseline`) when a PR intentionally grows the bundle, so the change is visible in review rather than the budget silently ratcheting up.",
+  "description": "Frontend production bundle size budget (gzipped). CI fails a PR if either total exceeds its baseline by more than toleranceRatio. Update this file deliberately (`npm run check:bundle-budget -- --update-baseline`) when a PR intentionally grows the bundle, so the change is visible in review rather than the budget silently ratcheting up. Baseline MUST be captured from a CI run, not a local dev build -- this repo's CI runs Node 22 on Ubuntu, and that combination produces a genuinely larger compiled JS bundle (same 2248 modules, different output size) than this project's local Windows/Node 26 dev environment. The first baseline was captured locally and undercounted the real bundle by ~28%; corrected here using PR #13's actual CI run (32870713646).",
   "updated": "2026-08-25",
   "toleranceRatio": 1.1,
   "budgets": {
-    "js_gzip_bytes": 89554,
+    "js_gzip_bytes": 115062,
     "css_gzip_bytes": 5442
   }
 }

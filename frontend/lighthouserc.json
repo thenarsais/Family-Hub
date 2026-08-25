@@ -6,7 +6,10 @@
         "http://localhost:4173/login",
         "http://localhost:4173/dashboard"
       ],
-      "numberOfRuns": 1
+      "numberOfRuns": 1,
+      "settings": {
+        "chromeFlags": "--no-sandbox --headless=new --disable-gpu"
+      }
     },
     "assert": {
       "assertions": {
