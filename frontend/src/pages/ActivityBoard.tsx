@@ -18,7 +18,7 @@ export default function ActivityBoard() {
         ].map((activity) => (
           <div key={activity.name} className="card-hover">
             <div className="text-4xl mb-4">{activity.emoji}</div>
-            <h3 className="text-xl font-bold mb-2">{activity.name}</h3>
+            <h2 className="text-xl font-bold mb-2">{activity.name}</h2>
             <p className="text-gray-600 text-sm mb-4">{activity.description}</p>
             <button className="btn btn-primary text-sm">Start Activity</button>
           </div>
