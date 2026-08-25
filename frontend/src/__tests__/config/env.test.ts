@@ -4,8 +4,48 @@
  */
 
 import { vi } from 'vitest';
+import { validateEnv } from '@/config/env';
 
-describe('Frontend Environment Validation', () => {
+describe('validateEnv', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_API_URL', 'http://localhost:3000');
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'anon-key');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('should not throw when all required vars are set', () => {
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it('should throw and list each missing var when one is unset', () => {
+    vi.stubEnv('VITE_API_URL', '');
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => validateEnv()).toThrow('Missing required environment variables');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('  • VITE_API_URL');
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should list all missing vars when several are unset', () => {
+    vi.stubEnv('VITE_API_URL', '');
+    vi.stubEnv('VITE_SUPABASE_URL', '');
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => validateEnv()).toThrow();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('  • VITE_API_URL');
+    expect(consoleErrorSpy).toHaveBeenCalledWith('  • VITE_SUPABASE_URL');
+
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('Frontend Environment Validation (actual test-environment values)', () => {
   const originalEnv = { ...import.meta.env };
 
   beforeEach(() => {
