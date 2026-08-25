@@ -14,6 +14,23 @@ export default defineConfig({
       // localStorage/sessionStorage throw a SecurityError on access.
       jsdom: { url: 'http://localhost:5173' },
     },
+    coverage: {
+      // Vitest's v8 provider defaults to reporting only files actually
+      // imported during the run -- untested files are silently omitted
+      // rather than shown as 0%, which let the real number drift far below
+      // what was being reported. `all: true` instruments everything
+      // matching `include` so the percentage (and the threshold below)
+      // reflect the whole source tree.
+      all: true,
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.d.ts', 'src/main.tsx', 'src/__tests__/**'],
+      thresholds: {
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
+    },
   },
   resolve: {
     alias: {
