@@ -440,6 +440,15 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm run build
 
+      - name: DEBUG bundle content
+        run: |
+          echo "node: $(node -v)"
+          F=$(ls frontend/dist/assets/*.js)
+          echo "file: $F ($(wc -c < "$F") bytes)"
+          echo "dev-marker matches:"
+          grep -o "Warning: [A-Za-z][A-Za-z ]*" "$F" | sort -u | head -20 || echo "(none)"
+          echo "NODE_ENV literal occurrences: $(grep -o "process.env.NODE_ENV" "$F" | wc -l)"
+
       - name: Check frontend bundle size budget (fails if >10% over baseline)
         run: cd frontend && npm run check:bundle-budget
 
