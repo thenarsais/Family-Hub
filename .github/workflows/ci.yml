@@ -445,9 +445,9 @@ jobs:
           echo "node: $(node -v)"
           F=$(ls frontend/dist/assets/*.js)
           echo "file: $F ($(wc -c < "$F") bytes)"
-          echo "dev-marker matches:"
-          grep -o "Warning: [A-Za-z][A-Za-z ]*" "$F" | sort -u | head -20 || echo "(none)"
-          echo "NODE_ENV literal occurrences: $(grep -o "process.env.NODE_ENV" "$F" | wc -l)"
+          for term in "sentry" "Sentry" "lucide" "axios" "zustand" "react-router" "@sentry/tracing" "BrowserTracing" "instrumentation"; do
+            echo "$term: $(grep -o "$term" "$F" | wc -l)"
+          done
 
       - name: Check frontend bundle size budget (fails if >10% over baseline)
         run: cd frontend && npm run check:bundle-budget
