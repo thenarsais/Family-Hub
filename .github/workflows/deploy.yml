@@ -12,7 +12,7 @@ on:
   #     - 'docker-compose.yml'
 
   # workflow_run:
-  #   workflows: ['CI/CD Pipeline']
+  #   workflows: ['CI']
   #   types: [completed]
   #   branches: [main]
 
