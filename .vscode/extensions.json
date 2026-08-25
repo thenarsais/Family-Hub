@@ -1,0 +1,13 @@
+{
+  // Recommended extensions for this workspace.
+  //
+  // "wix.vscode-import-cost" is the "Import Cost" extension: it annotates
+  // each `import`/`require` statement inline in the editor gutter with the
+  // resolved bundle size of that import. This is an editor-side annotation
+  // feature, not a lint rule -- there is no ESLint plugin that provides it
+  // (there is no published `eslint-plugin-import-cost` package; see the
+  // note next to the `import-cost` devDependency in frontend/package.json
+  // for the full story). Installing this extension is the actual, correct
+  // way to get import-cost feedback while editing files in frontend/src.
+  "recommendations": ["wix.vscode-import-cost"]
+}

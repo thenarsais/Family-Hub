@@ -1,0 +1,4536 @@
+openapi: 3.1.0
+info:
+  title: Family Hub API
+  version: "1.0.0"
+  description: |
+    Family Hub backend API (Express + TypeScript + Supabase/Postgres).
+
+    This spec documents the API **as it actually behaves today**, including
+    two genuinely different response-envelope conventions and three
+    different auth conventions, depending on which route file an endpoint
+    lives in. See `docs/API.md` for a human-oriented companion/index to this
+    spec, including narrative explanation of the quirks below.
+
+    ## Response envelopes (two incompatible conventions)
+
+    - **Newer routes** (`chores`, `learning`, `announcements`, `reminders`,
+      `energy`, `calendar`, `family`, `activity-log`, `smartthings`) return
+      an object with a top-level `status: 'success' | 'error'` field and a
+      `timestamp` ISO string on every response. On error, the shape is
+      `{ status: 'error', message: string, error?: string }`
+      (see `EnvelopeError`). On success, most — but **not all** — of these
+      routes nest the payload under a `data` key alongside `count?`
+      (see `EnvelopeSuccess`). Several endpoints in this same "newer" group
+      (`chores`, `smartthings`, `learning`, `performance`-adjacent routes)
+      instead use an endpoint-specific top-level key (e.g. `chores`,
+      `devices`, `stats`, `progress`, `activity`, `history`) instead of
+      `data`. Each such endpoint documents its literal response shape
+      below rather than being forced into `EnvelopeSuccess` — do not assume
+      every 2xx response in this group has a `data` key; check the specific
+      path.
+    - **Older routes** (`auth`, `users`, `badges`, `points`,
+      `external-apis`) return ad hoc, endpoint-specific objects with no
+      consistent wrapper at all (no `status`/`success` field, no
+      `timestamp`). Each such endpoint's schema is documented individually.
+    - `middleware/response-formatter.ts` installs a *third* envelope
+      (`res.success()` -> `{ success, data, message?, timestamp, meta? }`)
+      as global Express middleware, but **no route handler in this codebase
+      actually calls `res.success()`/`res.created()`/`res.paginated()`** —
+      it is registered, unused, dead infrastructure. It is intentionally
+      *not* documented as the contract for any endpoint below.
+
+    ## Auth conventions (three, genuinely different)
+
+    - `auth`, `users`, `badges`, `points`, `external-apis`: require an
+      `Authorization: Bearer <token>` header to be *present* on every
+      route except `POST /auth/signup` and `POST /auth/login`. The server
+      only checks that the header exists and is prefixed `Bearer `; for
+      most routes in this group it does not cryptographically verify the
+      token server-side (the one exception is `GET /auth/me`, which calls
+      `supabase.auth.getUser(token)`). Modeled as `bearerAuth`.
+    - `chores`, `learning`, `announcements`, `reminders`, `energy`,
+      `calendar`, `family`, `activity-log`: require a custom `x-user-id`
+      header identifying the caller. There is no cryptographic
+      verification of this header at all — any value is trusted as-is.
+      Modeled as `userIdHeader`.
+    - `smartthings`, `performance`, `deployment`, `health`: no auth of any
+      kind.
+
+    ## Known quirks worth knowing about before you rely on this spec
+
+    - **`GET /health` is shadowed.** There are two implementations: a
+      legacy one registered directly in `server.ts` (`{status, timestamp,
+      environment}`) and a richer one in `routes/deployment.ts`
+      (`{status, timestamp, environment, uptime, version}`). Because
+      Express matches routes in registration order and the legacy handler
+      is registered first, **the legacy handler always wins** — the
+      deployment.ts version is effectively dead code at this path. This
+      spec documents the deployment.ts richer shape as canonical (it's the
+      one that *should* be reachable), with a note on the path itself.
+    - **`chores`, `learning`, and `smartthings` do not use the Supabase
+      schema in `types/database.ts` for their primary entities.** They
+      read/write different, hand-rolled tables (`chores`,
+      `chore_completions`, `learning_progress`, `learning_quiz_answers`,
+      `smartthings_devices`) via a raw `pg` connection pool, with field
+      names that do not match the generated Supabase types of the
+      similarly-named tables (`chores`, `learning_progress`,
+      `smart_devices`) in `types/database.ts`. The schemas below for
+      `Chore`, `ChoreCompletion`, `LearningProgressEntry`, and
+      `SmartDevice` are modeled from the actual service-layer TypeScript
+      interfaces, not from `types/database.ts`, because for these three
+      feature areas the generated Supabase types describe a schema the
+      running code does not use.
+    - **`GET /api/smartthings/devices/:deviceId/history` queries a
+      `point_transactions` table** that does not appear anywhere in
+      `types/database.ts` either. Documented as best-effort/loosely-typed.
+    - **`users.birth_year` and `users.is_under_13`** are read and written
+      by real code (`UserRepository`, `POST /api/family/children`) but are
+      absent from the generated `types/database.ts` `users` table — the
+      generated types are stale relative to the live schema. They are
+      included in the `User` schema below.
+  contact:
+    name: Family Hub Engineering
+
+tags:
+  - name: Health
+    description: Liveness/health endpoints (note the /health shadowing quirk documented on that path).
+  - name: Deployment
+    description: Readiness/startup probes, Prometheus metrics, app info/config (root-mounted, no auth).
+  - name: Auth
+    description: Signup, login, logout, current-user (legacy ad hoc response shapes, Bearer auth).
+  - name: Users
+    description: User profile CRUD and parent/child lookups (Bearer auth).
+  - name: Badges
+    description: Badge catalog and per-user badge awarding (Bearer auth).
+  - name: Points
+    description: Points ledger, breakdowns, leaderboard (Bearer auth).
+  - name: SmartThings
+    description: Smart-home device listing/control (no auth; uses a hand-rolled device table, not Supabase smart_devices).
+  - name: Chores
+    description: Chore creation/completion/progress (x-user-id auth; uses a hand-rolled chores schema, not Supabase chores).
+  - name: Learning
+    description: Lesson completion, quizzes, learning stats (x-user-id auth; hand-rolled schema, not Supabase learning_progress).
+  - name: Announcements
+    description: Family announcements/messaging (x-user-id auth).
+  - name: Reminders
+    description: Scheduled reminders and dismissal (x-user-id auth).
+  - name: Energy
+    description: Energy usage tracking and goals (x-user-id auth for goal endpoints; usage/summary endpoints are unauthenticated).
+  - name: Calendar
+    description: Family calendar events plus Google Calendar OAuth/sync (x-user-id auth; OAuth callback is unauthenticated by nature).
+  - name: Family
+    description: Family creation, membership, invitations, settings (x-user-id auth).
+  - name: ActivityLog
+    description: Dashboard activity feed and stats (x-user-id auth; POST /log has no auth check).
+  - name: ExternalAPIs
+    description: Dictionary (Merriam-Webster), weather (OpenWeather), and email (SendGrid) passthroughs (Bearer auth).
+  - name: Performance
+    description: Query/request/compression diagnostics (no auth).
+
+servers:
+  - url: /
+    description: Relative to wherever the Express app is hosted (no fixed base path).
+
+security: []
+
+paths:
+  # ================================================================
+  # HEALTH
+  # ================================================================
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness probe (SHADOWED — see description)
+      description: |
+        **Important:** two handlers are registered for this exact path.
+        `server.ts` registers a legacy inline handler *before*
+        `routes/deployment.ts` mounts its own `GET /health`. Express
+        dispatches to the first matching route, so the legacy handler in
+        `server.ts` always wins in practice, and the richer handler
+        documented here (from `deployment.ts`) is currently unreachable
+        dead code. The response below is what `deployment.ts` *would*
+        return if it were reachable; the actual live response today is the
+        legacy shape: `{ status: 'ok', timestamp: string, environment: string }`
+        (no `uptime` or `version` fields).
+      operationId: getHealthCanonical
+      responses:
+        '200':
+          description: Process is alive (legacy handler shape actually served today).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentHealth'
+        '503':
+          description: Process is not alive (only reachable if the legacy handler is ever removed).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: unavailable }
+                  message: { type: string }
+
+  /api:
+    get:
+      tags: [Health]
+      summary: Comprehensive health check (mounted at /api via routes/health.ts's root handler)
+      operationId: getApiHealth
+      responses:
+        '200':
+          description: Health status with uptime and a hardcoded db flag.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, timestamp, uptime, database]
+                properties:
+                  status: { type: string, const: healthy }
+                  timestamp: { type: string, format: date-time }
+                  uptime: { type: number, description: process.uptime() in seconds }
+                  database: { type: string, const: connected, description: "Hardcoded; not an actual live DB check (see code comment 'Phase 1: add actual DB health check')." }
+    head:
+      tags: [Health]
+      summary: HEAD health check
+      operationId: headApiHealth
+      responses:
+        '200':
+          description: Empty body, 200 status only.
+
+  # ================================================================
+  # DEPLOYMENT (root-mounted, no prefix)
+  # ================================================================
+  /ready:
+    get:
+      tags: [Deployment]
+      summary: Readiness probe
+      operationId: getReady
+      responses:
+        '200':
+          description: Service is ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResult'
+        '503':
+          description: Service is not ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessResult'
+        '500':
+          description: Readiness check itself threw.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: error }
+                  message: { type: string }
+                  timestamp: { type: string, format: date-time }
+
+  /startup:
+    get:
+      tags: [Deployment]
+      summary: Startup probe (started once uptime > 5s and no unhealthy readiness checks)
+      operationId: getStartup
+      responses:
+        '200':
+          description: Application has finished starting up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: started }
+                  uptime: { type: number }
+                  timestamp: { type: string, format: date-time }
+        '503':
+          description: Still starting.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: starting }
+                  uptime: { type: number }
+                  checks: { type: array, items: { type: object } }
+                  summary: { type: object }
+
+  /metrics:
+    get:
+      tags: [Deployment]
+      summary: Prometheus-style text metrics
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Plain-text Prometheus exposition format (process uptime, heap usage, node version).
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /info:
+    get:
+      tags: [Deployment]
+      summary: Application info
+      operationId: getInfo
+      responses:
+        '200':
+          description: Static-ish application metadata. Note the `endpoints` counts are hardcoded in source and not derived from the live route table (do not treat them as authoritative).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application: { type: string }
+                  version: { type: string }
+                  environment: { type: string }
+                  node: { type: string }
+                  uptime: { type: number }
+                  timestamp: { type: string, format: date-time }
+                  endpoints: { type: object, additionalProperties: { type: integer } }
+                  features: { type: array, items: { type: string } }
+
+  /config:
+    get:
+      tags: [Deployment]
+      summary: Current configuration (redacted; blocked outside dev)
+      operationId: getConfig
+      responses:
+        '200':
+          description: Redacted configuration snapshot (values replaced with "[configured]"/"[not set]").
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  environment: { type: string }
+                  port: { type: string }
+                  database: { type: object, properties: { url: { type: string }, poolSize: { type: string } } }
+                  redis: { type: object, properties: { url: { type: string } } }
+                  supabase: { type: object, properties: { url: { type: string }, key: { type: string } } }
+                  cors: { type: object, properties: { origins: { type: string } } }
+        '403':
+          description: Not available when ENVIRONMENT=production.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, const: "Configuration not available in production" }
+
+  # ================================================================
+  # AUTH
+  # ================================================================
+  /auth/signup:
+    post:
+      tags: [Auth]
+      summary: Register a new parent/admin user
+      description: |
+        Only `role: 'parent'` may self-register (COPPA compliance,
+        FRAMEWORK.md Decision #29). `role: 'child'` is explicitly rejected
+        with 400 — child accounts can only be created by an existing parent
+        via `POST /api/family/children`. A family is auto-created for new
+        parent/admin users on success (best-effort; failure does not fail
+        the signup).
+      operationId: authSignup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name, role]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                name: { type: string }
+                role: { type: string, enum: [parent], description: "'child' is rejected with 400; any value other than 'parent' is rejected with 400." }
+                account_type: { type: string, default: primary }
+      responses:
+        '201':
+          description: User created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "User created successfully" }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      email: { type: string }
+                      name: { type: string }
+                      role: { type: string }
+        '400':
+          description: Missing fields, child self-registration attempt, invalid role, or Supabase signup failure.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  message: { type: string }
+                  required: { type: array, items: { type: string } }
+        '500':
+          description: Unexpected failure.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyErrorBody'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate and return a Supabase session
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "Login successful" }
+                  session:
+                    type: object
+                    properties:
+                      access_token: { type: [string, 'null'] }
+                      refresh_token: { type: [string, 'null'] }
+                      expires_in: { type: [integer, 'null'] }
+                  user:
+                    type: object
+                    properties:
+                      id: { type: [string, 'null'] }
+                      email: { type: [string, 'null'] }
+                      name: { type: [string, 'null'] }
+                      role: { type: [string, 'null'] }
+        '400':
+          description: Missing email or password.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LegacyErrorBody' }
+        '401':
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LegacyErrorBody' }
+        '500':
+          description: Unexpected failure.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LegacyErrorBody' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Sign out the current Supabase session
+      description: Signs out the server's Supabase client session (not scoped to the caller's specific token) and returns success regardless of Supabase-side warnings.
+      operationId: authLogout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_token]
+              properties:
+                access_token: { type: string, description: "Required by the handler's validation, but not actually used to scope the Supabase signOut() call." }
+      responses:
+        '200':
+          description: Logout successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "Logout successful" }
+        '400':
+          description: Missing access_token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LegacyErrorBody' }
+        '500':
+          description: Unexpected failure.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LegacyErrorBody' }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated user (real token verification)
+      description: The one endpoint in `auth.ts`/`users.ts`/`badges.ts`/`points.ts` that actually cryptographically verifies the bearer token via `supabase.auth.getUser(token)`, rather than just checking header presence.
+      operationId: authMe
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id: { type: [string, 'null'] }
+                      email: { type: [string, 'null'] }
+                      name: { type: [string, 'null'] }
+                      role: { type: [string, 'null'] }
+                      created_at: { type: [string, 'null'], format: date-time }
+        '401':
+          description: Missing/invalid authorization header, or invalid/expired token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LegacyErrorBody' }
+        '500':
+          description: Unexpected failure.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LegacyErrorBody' }
+
+  # ================================================================
+  # USERS
+  # ================================================================
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current user's profile by explicit userId query param
+      description: "Despite the name, this does NOT derive the user from the bearer token — it requires a `userId` query parameter (the code comment admits: 'In a real app, extract user ID from token')."
+      operationId: usersMe
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: User profile.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/UserProfileFull' }
+        '400':
+          description: Missing userId.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '404':
+          description: User not found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      operationId: getUserById
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '200':
+          description: User found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/UserProfileBasic' }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '404':
+          description: User not found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+    put:
+      tags: [Users]
+      summary: Update user profile (name and/or email only)
+      operationId: updateUser
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "User updated successfully" }
+                  user: { $ref: '#/components/schemas/UserProfileBasic' }
+        '400':
+          description: No fields to update.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+    delete:
+      tags: [Users]
+      summary: Soft-delete a user (sets is_active = false)
+      operationId: deleteUser
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "User deleted successfully" }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /users/{parentId}/children:
+    get:
+      tags: [Users]
+      summary: List a parent's children (via linked_accounts join)
+      operationId: getParentChildren
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: parentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Children list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parent_id: { type: string }
+                  children:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        email: { type: string }
+                        role: { type: string }
+                        created_at: { type: string, format: date-time }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /users/role/parents:
+    get:
+      tags: [Users]
+      summary: List all parent users
+      operationId: getAllParents
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Parents list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+                  parents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        email: { type: string }
+                        account_type: { type: string }
+                        created_at: { type: string, format: date-time }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List all users (admin)
+      operationId: getAllUsers
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Users list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        email: { type: string }
+                        role: { type: string }
+                        created_at: { type: string, format: date-time }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  # ================================================================
+  # BADGES
+  # ================================================================
+  /badges:
+    get:
+      tags: [Badges]
+      summary: List all available badges
+      operationId: listBadges
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: All badges.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+                  badges:
+                    type: array
+                    items: { $ref: '#/components/schemas/Badge' }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /badges/{id}:
+    get:
+      tags: [Badges]
+      summary: Get a badge by ID
+      operationId: getBadge
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Badge found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  badge: { $ref: '#/components/schemas/Badge' }
+        '404':
+          description: Badge not found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /badges/category/{category}:
+    get:
+      tags: [Badges]
+      summary: List badges in a category
+      operationId: getBadgesByCategory
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Badges in category.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category: { type: string }
+                  count: { type: integer }
+                  badges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        title: { type: string }
+                        icon_emoji: { type: [string, 'null'] }
+                        tier: { type: string }
+                        points_required: { type: [integer, 'null'] }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /badges/users/{userId}:
+    get:
+      tags: [Badges]
+      summary: List badges earned by a user
+      description: "Falls back to hardcoded mock/demo data (`demo_mode: true`) if the database call throws, rather than erroring."
+      operationId: getUserBadges
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      responses:
+        '200':
+          description: User's earned badges (real or, on DB failure, demo/mock data).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  count: { type: integer }
+                  meta: { type: object, properties: { total_badges: { type: integer } } }
+                  badges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        badge_id: { type: string }
+                        earned_at: { type: string, format: date-time }
+                  demo_mode: { type: boolean, description: "Present and true only when the DB call failed and mock data was substituted." }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /badges/users/{userId}/detailed:
+    get:
+      tags: [Badges]
+      summary: List badges earned by a user, with full badge details joined in
+      operationId: getUserBadgesDetailed
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      responses:
+        '200':
+          description: Earned badges with details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  count: { type: integer }
+                  badges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        earned_badge_id: { type: string }
+                        badge:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            title: { type: string }
+                            description: { type: [string, 'null'] }
+                            icon_emoji: { type: [string, 'null'] }
+                            category: { type: string }
+                            tier: { type: string }
+                        earned_at: { type: string, format: date-time }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /badges/users/{userId}/badges/{badgeId}:
+    post:
+      tags: [Badges]
+      summary: Award a badge to a user
+      operationId: awardBadge
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+        - name: badgeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Badge awarded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "Badge awarded successfully" }
+                  badge:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      user_id: { type: string }
+                      badge_id: { type: string }
+                      earned_at: { type: string, format: date-time }
+        '400':
+          description: User already has this badge.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+    delete:
+      tags: [Badges]
+      summary: Revoke a badge from a user
+      operationId: revokeBadge
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+        - name: badgeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Badge revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "Badge revoked successfully" }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /badges/users/{userId}/range:
+    get:
+      tags: [Badges]
+      summary: List badges earned by a user within a date range
+      operationId: getUserBadgesInRange
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+        - name: start
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: end
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Badges earned in range.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  date_range: { type: object, properties: { start: { type: string }, end: { type: string } } }
+                  count: { type: integer }
+                  badges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        badge_id: { type: string }
+                        earned_at: { type: string, format: date-time }
+        '400':
+          description: Missing start or end.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  # ================================================================
+  # POINTS
+  # ================================================================
+  /points/users/{userId}:
+    get:
+      tags: [Points]
+      summary: Get a user's total points
+      description: "Falls back to hardcoded demo data (`total_points 250`, `demo_mode: true`) if the database call throws."
+      operationId: getTotalPoints
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      responses:
+        '200':
+          description: Total points (real or demo).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user_id: { type: string }
+                      total_points: { type: integer }
+                  demo_mode: { type: boolean }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+    post:
+      tags: [Points]
+      summary: Award points to a user
+      operationId: addPoints
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [points, activity_type]
+              properties:
+                points: { type: number, minimum: 0.01 }
+                activity_type: { type: string }
+                reason: { type: string, default: "Activity completed" }
+      responses:
+        '201':
+          description: Points added.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "Points awarded successfully" }
+                  entry: { $ref: '#/components/schemas/ActivityPointsEntry' }
+        '400':
+          description: Missing fields or non-positive points.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /points/users/{userId}/history:
+    get:
+      tags: [Points]
+      summary: Get points transaction history
+      operationId: getPointsHistory
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: History list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  count: { type: integer }
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        activity_type: { type: string }
+                        points: { type: number }
+                        reason: { type: [string, 'null'] }
+                        created_at: { type: string, format: date-time }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /points/users/{userId}/breakdown:
+    get:
+      tags: [Points]
+      summary: Get points breakdown by activity type
+      operationId: getPointsBreakdown
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      responses:
+        '200':
+          description: Breakdown.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  breakdown:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        activity_type: { type: string }
+                        total: { type: integer }
+                        count: { type: integer }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /points/users/{userId}/range:
+    get:
+      tags: [Points]
+      summary: Get total points earned within a date range
+      operationId: getPointsRange
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+        - name: start
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: end
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Total points in range.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  date_range: { type: object, properties: { start: { type: string }, end: { type: string } } }
+                  total_points: { type: integer }
+        '400':
+          description: Missing start or end.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /points/users/{userId}/today:
+    get:
+      tags: [Points]
+      summary: Get points earned today
+      operationId: getPointsToday
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      responses:
+        '200':
+          description: Today's points.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  period: { type: string, const: today }
+                  points: { type: integer }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /points/users/{userId}/week:
+    get:
+      tags: [Points]
+      summary: Get points earned this week
+      operationId: getPointsWeek
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      responses:
+        '200':
+          description: This week's points.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  period: { type: string, const: this_week }
+                  points: { type: integer }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /points/users/{userId}/month:
+    get:
+      tags: [Points]
+      summary: Get points earned this month
+      operationId: getPointsMonth
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      responses:
+        '200':
+          description: This month's points.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id: { type: string }
+                  period: { type: string, const: this_month }
+                  points: { type: integer }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /points/users/{userId}/subtract:
+    post:
+      tags: [Points]
+      summary: Deduct points from a user (penalty)
+      operationId: subtractPoints
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/UserIdPathBadges'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [points]
+              properties:
+                points: { type: number, minimum: 0.01 }
+                reason: { type: string, default: "Points deducted" }
+      responses:
+        '201':
+          description: Points deducted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, const: "Points deducted successfully" }
+                  deducted_points: { type: number }
+                  reason: { type: string }
+        '400':
+          description: Missing or non-positive points.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /points/leaderboard:
+    get:
+      tags: [Points]
+      summary: Get top users by total points
+      operationId: getLeaderboard
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Leaderboard.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  limit: { type: integer }
+                  count: { type: integer }
+                  leaderboard:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        rank: { type: integer }
+                        user_id: { type: string }
+                        points: { type: integer }
+        '400':
+          description: Limit out of range.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  # ================================================================
+  # SMARTTHINGS (no auth)
+  # ================================================================
+  /api/smartthings/devices:
+    get:
+      tags: [SmartThings]
+      summary: List all known SmartThings devices
+      operationId: listSmartDevices
+      responses:
+        '200':
+          description: Devices.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  devices:
+                    type: array
+                    items: { $ref: '#/components/schemas/SmartDevice' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/smartthings/devices/{deviceId}:
+    get:
+      tags: [SmartThings]
+      summary: Get one device's details
+      operationId: getSmartDevice
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdPath'
+      responses:
+        '200':
+          description: Device.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  device: { $ref: '#/components/schemas/SmartDevice' }
+                  timestamp: { type: string, format: date-time }
+        '404':
+          description: Device not found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    put:
+      tags: [SmartThings]
+      summary: Send a control command to a device (on/off/brightness/temperature/lock/unlock)
+      operationId: controlSmartDevice
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [command]
+              properties:
+                command:
+                  type: string
+                  enum: [on, turn-on, off, turn-off, setbrightness, brightness, settemperature, temperature, lock, unlock]
+                arguments:
+                  type: array
+                  items: {}
+                  description: "arguments[0] is required (brightness level or temperature) for the brightness/temperature commands."
+      responses:
+        '200':
+          description: Command executed (or failed at the device layer — still a 200; check `status`).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success, failed] }
+                  message: { type: string }
+                  device: { $ref: '#/components/schemas/SmartDevice' }
+                  command: { type: string }
+                  arguments: { type: array, items: {} }
+                  duration: { type: string, example: "42ms" }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing command, missing required argument, or unknown command.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Device not found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/smartthings/status:
+    get:
+      tags: [SmartThings]
+      summary: Aggregate SmartThings system status
+      operationId: getSmartThingsStatus
+      responses:
+        '200':
+          description: Status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    type: object
+                    properties:
+                      online: { type: boolean }
+                      totalDevices: { type: integer }
+                      devicesByType:
+                        type: object
+                        properties:
+                          lights: { type: integer }
+                          locks: { type: integer }
+                          climate: { type: integer }
+                          switches: { type: integer }
+                          sensors: { type: integer }
+                          other: { type: integer }
+                      devicesByStatus:
+                        type: object
+                        properties:
+                          online: { type: integer }
+                          offline: { type: integer }
+                      lastSync: { type: string, format: date-time }
+                  timestamp: { type: string, format: date-time }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/smartthings/discover:
+    post:
+      tags: [SmartThings]
+      summary: Discover and sync devices from the SmartThings cloud API (or mock devices if no token configured)
+      operationId: discoverSmartDevices
+      responses:
+        '200':
+          description: Discovery result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string }
+                  devices:
+                    type: array
+                    items: { $ref: '#/components/schemas/SmartDevice' }
+                  count: { type: integer }
+                  duration: { type: string }
+                  timestamp: { type: string, format: date-time }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/smartthings/devices/{deviceId}/history:
+    get:
+      tags: [SmartThings]
+      summary: Get device control history
+      description: "Queries a `point_transactions` table that does not appear in `types/database.ts` at all; rows are returned as-is (loosely typed) rather than mapped to a known schema."
+      operationId: getSmartDeviceHistory
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdPath'
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 100 }
+      responses:
+        '200':
+          description: History rows (untyped passthrough of point_transactions rows filtered by description LIKE %deviceId%).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  deviceId: { type: string }
+                  history: { type: array, items: { type: object } }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # CHORES (x-user-id)
+  # ================================================================
+  /api/chores:
+    get:
+      tags: [Chores]
+      summary: List the authenticated user's chores
+      operationId: listChores
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Chores.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  chores:
+                    type: array
+                    items: { $ref: '#/components/schemas/Chore' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Chores]
+      summary: Create a chore
+      operationId: createChore
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, timeSlot, pointsValue]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                timeSlot: { type: string, enum: [morning, afternoon, evening] }
+                pointsValue: { type: number, minimum: 1 }
+      responses:
+        '201':
+          description: Chore created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Chore created successfully" }
+                  chore: { $ref: '#/components/schemas/Chore' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing/invalid fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/chores/{choreId}/complete:
+    post:
+      tags: [Chores]
+      summary: Mark a chore complete and award its points
+      operationId: completeChore
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: choreId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Completion recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Chore completed successfully" }
+                  completion: { $ref: '#/components/schemas/ChoreCompletion' }
+                  progress: { $ref: '#/components/schemas/ChoreProgress' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Chore not found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/chores/progress/summary:
+    get:
+      tags: [Chores]
+      summary: Get chore-completion progress plus points summary, merged
+      operationId: getChoreProgressSummary
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Progress and points summary (flattened together).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  progress:
+                    allOf:
+                      - $ref: '#/components/schemas/ChoreProgress'
+                      - $ref: '#/components/schemas/ChorePointsSummary'
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/chores/points/summary:
+    get:
+      tags: [Chores]
+      summary: Get points summary (daily/weekly/monthly/total)
+      operationId: getChorePointsSummary
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Points summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data: { $ref: '#/components/schemas/ChorePointsSummary' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/chores/points/history:
+    get:
+      tags: [Chores]
+      summary: Get point transaction history (delegates to the shared activity_points ledger)
+      operationId: getChorePointsHistory
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 100 }
+      responses:
+        '200':
+          description: History.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  history:
+                    type: array
+                    items: { $ref: '#/components/schemas/ActivityPointsEntry' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # LEARNING (x-user-id)
+  # ================================================================
+  /api/learning/lessons/{lessonId}/complete:
+    post:
+      tags: [Learning]
+      summary: Record lesson completion and award points
+      operationId: completeLesson
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, phase]
+              properties:
+                category: { type: string, enum: [alphabet, numbers, vocabulary] }
+                phase: { type: string }
+                pointsValue: { type: number, default: 10 }
+      responses:
+        '201':
+          description: Lesson completion recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Lesson completed successfully" }
+                  progress: { $ref: '#/components/schemas/LearningProgressEntry' }
+                  stats: { $ref: '#/components/schemas/LearningStats' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing/invalid category or phase.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/learning/quiz/answer:
+    post:
+      tags: [Learning]
+      summary: Record a quiz answer (points awarded only if correct)
+      operationId: recordQuizAnswer
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lessonId, questionNumber, selectedAnswer, correctAnswer]
+              properties:
+                lessonId: { type: string }
+                questionNumber: { type: number }
+                selectedAnswer: {}
+                correctAnswer: {}
+                pointsEarned: { type: number, default: 5 }
+      responses:
+        '201':
+          description: Answer recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, description: "'Correct answer!' or 'Incorrect answer'" }
+                  result:
+                    type: object
+                    properties:
+                      isCorrect: { type: boolean }
+                      pointsEarned: { type: number }
+                      selectedAnswer: {}
+                      correctAnswer: {}
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing fields or questionNumber not a number.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/learning/progress/{phase}:
+    get:
+      tags: [Learning]
+      summary: Get progress for a specific phase
+      operationId: getPhaseProgress
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: phase
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Phase progress.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  phase: { type: string }
+                  progress: { $ref: '#/components/schemas/PhaseProgress' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing phase.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/learning/stats:
+    get:
+      tags: [Learning]
+      summary: Get overall learning statistics
+      operationId: getLearningStats
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Stats.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  stats: { $ref: '#/components/schemas/LearningStats' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/learning/quiz/performance:
+    get:
+      tags: [Learning]
+      summary: Get quiz performance metrics
+      operationId: getQuizPerformance
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Quiz performance.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  performance:
+                    type: object
+                    properties:
+                      totalAnswered: { type: integer }
+                      correctAnswers: { type: integer }
+                      accuracy: { type: integer, description: "0-100 percentage, rounded" }
+                      pointsEarned: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/learning/activity/recent:
+    get:
+      tags: [Learning]
+      summary: Get recent learning activity (lessons and quiz answers, merged)
+      operationId: getRecentLearningActivity
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        '200':
+          description: Recent activity.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  activity:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type: { type: string, enum: [lesson, quiz] }
+                        subject: { type: string }
+                        created_at: { type: string, format: date-time }
+                        points_earned: { type: integer }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # ANNOUNCEMENTS (x-user-id)
+  # ================================================================
+  /api/announcements:
+    get:
+      tags: [Announcements]
+      summary: Get announcements visible to the authenticated user's family
+      operationId: listAnnouncements
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Announcements.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/AnnouncementWithReadStatus' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Announcements]
+      summary: Create an announcement
+      operationId: createAnnouncement
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [family_id, title, message]
+              properties:
+                family_id: { type: string, format: uuid }
+                title: { type: string }
+                message: { type: string }
+                announcement_type: { type: string, default: general }
+                priority: { type: string, default: normal }
+                target_audience: { type: string, default: all }
+                target_user_ids: { type: array, items: { type: string, format: uuid } }
+                is_pinned: { type: boolean, default: false }
+                expires_at: { type: string, format: date-time }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Announcement' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/announcements/{id}:
+    patch:
+      tags: [Announcements]
+      summary: Update an announcement
+      description: "Request body is passed through with only a column-name whitelist (no other validation); only whitelisted columns are actually applied."
+      operationId: updateAnnouncement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                message: { type: string }
+                announcement_type: { type: string }
+                priority: { type: string }
+                target_audience: { type: string }
+                target_user_ids: { type: array, items: { type: string } }
+                is_pinned: { type: boolean }
+                expires_at: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Announcement' }
+        '400':
+          description: Missing announcement ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Announcements]
+      summary: Delete an announcement
+      operationId: deleteAnnouncement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Announcement deleted" }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing announcement ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/announcements/{id}/read:
+    post:
+      tags: [Announcements]
+      summary: Mark an announcement as read by the authenticated user
+      operationId: markAnnouncementRead
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Marked read.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Announcement marked as read" }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing announcement ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/announcements/{id}/readers:
+    get:
+      tags: [Announcements]
+      summary: Get read-count for an announcement
+      description: Despite the plural "readers" name, this returns only an aggregate count, not the list of reading users.
+      operationId: getAnnouncementReaders
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Read count.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          announcement_id: { type: string }
+                          read_count: { type: integer }
+        '400':
+          description: Missing announcement ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # REMINDERS (x-user-id)
+  # ================================================================
+  /api/reminders:
+    get:
+      tags: [Reminders]
+      summary: List the authenticated user's reminders
+      operationId: listReminders
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: filter
+          in: query
+          schema: { type: string, enum: [pending, dismissed, all], default: all }
+      responses:
+        '200':
+          description: Reminders.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Reminder' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Reminders]
+      summary: Create a reminder
+      operationId: createReminder
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, reminder_type, scheduled_time]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                reminder_type: { type: string, enum: [chore, assignment, event, goal, custom] }
+                related_item_id: { type: string }
+                related_item_type: { type: string }
+                scheduled_time: { type: string, format: date-time }
+                remind_before_minutes: { type: integer, default: 15 }
+                recurrence: { type: string, enum: [once, daily, weekly, monthly], default: once }
+                recurrence_end_date: { type: string, format: date-time }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Reminder' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/reminders/upcoming:
+    get:
+      tags: [Reminders]
+      summary: Get reminders due in the next 24 hours
+      operationId: getUpcomingReminders
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Upcoming reminders.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Reminder' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/reminders/{id}:
+    patch:
+      tags: [Reminders]
+      summary: Update a reminder
+      description: "Request body is passed through with only a column-name whitelist (no other validation)."
+      operationId: updateReminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                reminder_type: { type: string }
+                related_item_id: { type: string }
+                related_item_type: { type: string }
+                scheduled_time: { type: string, format: date-time }
+                remind_before_minutes: { type: integer }
+                recurrence: { type: string }
+                recurrence_end_date: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Reminder' }
+        '400':
+          description: Missing reminder ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Reminders]
+      summary: Delete a reminder
+      operationId: deleteReminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Reminder deleted" }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing reminder ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/reminders/{id}/dismiss:
+    post:
+      tags: [Reminders]
+      summary: Dismiss a reminder
+      operationId: dismissReminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Dismissed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Reminder dismissed" }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing reminder ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # ENERGY
+  # ================================================================
+  /api/energy/usage:
+    get:
+      tags: [Energy]
+      summary: Get raw energy usage time series
+      description: "No auth check in the handler despite being in the x-user-id route group — readable by anyone who can reach the API."
+      operationId: getEnergyUsage
+      parameters:
+        - name: daysBack
+          in: query
+          schema: { type: integer, default: 30 }
+        - name: deviceId
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Usage series.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/EnergyUsage' }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/energy/summary:
+    get:
+      tags: [Energy]
+      summary: Get energy summary rows (daily/weekly/monthly aggregates)
+      description: "No auth check in the handler despite being in the x-user-id route group."
+      operationId: getEnergySummary
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string, enum: [daily, weekly, monthly], default: daily }
+        - name: monthsBack
+          in: query
+          schema: { type: integer, default: 12 }
+      responses:
+        '200':
+          description: Summary rows.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/EnergySummaryRow' }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/energy/current-month:
+    get:
+      tags: [Energy]
+      summary: Get current calendar month's total energy usage
+      description: "No auth check in the handler despite being in the x-user-id route group."
+      operationId: getCurrentMonthEnergyUsage
+      responses:
+        '200':
+          description: Total for current month.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          period: { type: string, const: current_month }
+                          total_kwh: { type: number }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/energy/goals:
+    post:
+      tags: [Energy]
+      summary: Create an energy goal
+      operationId: createEnergyGoal
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [goal_type, target_kwh, start_date, end_date]
+              properties:
+                goal_type: { type: string, enum: [daily, weekly, monthly] }
+                target_kwh: { type: number }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                points_reward: { type: integer, default: 100 }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/EnergyGoal' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    get:
+      tags: [Energy]
+      summary: List the authenticated user's active energy goals
+      operationId: listEnergyGoals
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Goals (status = 'active' only; filtered by created_by_id = x-user-id).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/EnergyGoal' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # CALENDAR
+  # ================================================================
+  /api/calendar/events:
+    get:
+      tags: [Calendar]
+      summary: Get family calendar events
+      operationId: listCalendarEvents
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: startDate
+          in: query
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Events.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CalendarEvent' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Calendar]
+      summary: Create a calendar event
+      operationId: createCalendarEvent
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_title, event_date]
+              properties:
+                event_title: { type: string }
+                event_description: { type: string }
+                event_type: { type: string }
+                event_date: { type: string, format: date }
+                start_time: { type: string }
+                end_time: { type: string }
+                location: { type: string }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CalendarEvent' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/upcoming:
+    get:
+      tags: [Calendar]
+      summary: Get events in the next 7 days (max 10)
+      operationId: getUpcomingCalendarEvents
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Upcoming events.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/CalendarEvent' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/events/{id}:
+    patch:
+      tags: [Calendar]
+      summary: Update a calendar event
+      description: "Request body is passed through with only a column-name whitelist (no other validation)."
+      operationId: updateCalendarEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_title: { type: string }
+                event_description: { type: string }
+                event_type: { type: string }
+                event_date: { type: string, format: date }
+                start_time: { type: string }
+                end_time: { type: string }
+                location: { type: string }
+                child_id: { type: string }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CalendarEvent' }
+        '400':
+          description: Missing event ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Calendar]
+      summary: Delete a calendar event
+      operationId: deleteCalendarEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Event deleted" }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing event ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/auth/google:
+    get:
+      tags: [Calendar]
+      summary: Get Google OAuth authorization URL, or report already-connected
+      description: "userId may come from x-user-id header OR a userId query param (the only endpoint in this route file that accepts either)."
+      operationId: getGoogleAuthUrl
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+          description: "Alternative to the x-user-id header."
+      responses:
+        '200':
+          description: Connection status / auth URL.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          connected: { type: boolean }
+                          authUrl: { type: [string, 'null'] }
+        '401':
+          description: Missing user ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/auth/google/callback:
+    get:
+      tags: [Calendar]
+      summary: Google OAuth callback (redirect, not JSON)
+      description: |
+        On success or failure, this always issues a 302 redirect back to
+        `${FRONTEND_URL}/dashboard` with a `googleAuth=success` or
+        `googleAuth=error&message=...` query param — it never returns a JSON
+        body. Also reachable via the legacy alias `GET /auth/google/callback`
+        (registered directly in `server.ts`), which itself just 302-redirects
+        to this path with the query string preserved.
+      operationId: googleOAuthCallback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string }
+        - name: state
+          in: query
+          required: true
+          schema: { type: string, description: "The user ID, passed through as OAuth state." }
+      responses:
+        '302':
+          description: Redirect to frontend dashboard with googleAuth=success|error.
+          headers:
+            Location:
+              schema: { type: string }
+        '400':
+          description: Missing code or state (JSON, not a redirect, in this one case).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /auth/google/callback:
+    get:
+      tags: [Calendar]
+      summary: Legacy OAuth callback alias (redirect shim only)
+      description: "Registered directly in server.ts. Immediately 302-redirects to /api/calendar/auth/google/callback with the query string forwarded unchanged. Exists for backwards compatibility with a previously-registered Google OAuth redirect URI."
+      operationId: legacyGoogleOAuthCallbackAlias
+      parameters:
+        - name: code
+          in: query
+          schema: { type: string }
+        - name: state
+          in: query
+          schema: { type: string }
+      responses:
+        '302':
+          description: Redirect to /api/calendar/auth/google/callback.
+          headers:
+            Location:
+              schema: { type: string }
+
+  /api/calendar/google/events:
+    get:
+      tags: [Calendar]
+      summary: Fetch the user's Google Calendar events (across all their Google calendars)
+      operationId: getGoogleCalendarEvents
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: timeMin
+          in: query
+          schema: { type: string, format: date-time, description: "Defaults to start of current week (Monday) if omitted." }
+        - name: timeMax
+          in: query
+          schema: { type: string, format: date-time }
+        - name: maxResults
+          in: query
+          schema: { type: integer, default: 250 }
+      responses:
+        '200':
+          description: Events from Google Calendar.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/GoogleCalendarEvent' }
+                  count: { type: integer }
+                  source: { type: string, const: google_calendar }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id, or Google authorization expired/revoked with no refresh token (code TOKEN_REFRESH_FAILED or NO_REFRESH_TOKEN).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: error }
+                  code: { type: string }
+                  message: { type: string }
+                  error: { type: string }
+        '500':
+          description: Unexpected failure (status code passed through from a thrown error's `status` field when present, defaulting to 500).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/google/disconnect:
+    post:
+      tags: [Calendar]
+      summary: Disconnect Google Calendar
+      description: "Best-effort token revoke with Google (failure is logged but does not block); always marks the local integration inactive."
+      operationId: disconnectGoogleCalendar
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Disconnected.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Google Calendar disconnected successfully" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/dismissed:
+    get:
+      tags: [Calendar]
+      summary: List event IDs the user has dismissed from view
+      operationId: listDismissedEvents
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Dismissed events.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        event_id: { type: string }
+                        calendar_id: { type: [string, 'null'] }
+                        dismissed_at: { type: string, format: date-time }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/events/{id}/dismiss:
+    post:
+      tags: [Calendar]
+      summary: Dismiss/hide an event (local or Google) from the calendar view
+      operationId: dismissCalendarEvent
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, description: "Local event UUID or Google event ID." }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                calendarId: { type: string, description: "Google calendar ID, when dismissing a Google event." }
+      responses:
+        '200':
+          description: Dismissed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Event dismissed successfully" }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing event ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # FAMILY
+  # ================================================================
+  /api/family:
+    get:
+      tags: [Family]
+      summary: Get the authenticated user's family (with member list)
+      operationId: getMyFamily
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Family.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/FamilyWithMembers' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No family found for user.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Family]
+      summary: Create a new family (caller becomes admin member)
+      operationId: createFamily
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                max_children: { type: integer, default: 5 }
+                max_parents: { type: integer, default: 2 }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Family' }
+        '400':
+          description: Missing name.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/family/members:
+    get:
+      tags: [Family]
+      summary: List all active members of the caller's family
+      operationId: listFamilyMembers
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Members.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/FamilyMember' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No family found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/family/members/invite:
+    post:
+      tags: [Family]
+      summary: Invite a member to the family by email (7-day token)
+      operationId: inviteFamilyMember
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                role: { type: string, enum: [admin, parent, child, guardian] }
+      responses:
+        '201':
+          description: Invitation created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          invite_token: { type: string }
+                          email: { type: string }
+                          role: { type: string }
+                          expires_in: { type: string, const: "7 days" }
+        '400':
+          description: Missing email or role.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No family found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/family/children:
+    post:
+      tags: [Family]
+      summary: Parent-provisioned child account creation (COPPA compliance)
+      description: |
+        Only an existing parent/admin member of a family may call this
+        (403 otherwise). This is the only legitimate way to create a child
+        account — `POST /auth/signup` rejects `role: 'child'` outright.
+      operationId: createChildAccount
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, birth_year]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string }
+                birth_year: { type: integer, description: "Must correspond to age 0-17." }
+      responses:
+        '201':
+          description: Child account created and added to family.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: string }
+                          name: { type: string }
+                          email: { type: string }
+                          role: { type: string, const: child }
+                          is_under_13: { type: boolean }
+        '400':
+          description: Missing/invalid fields, invalid birth_year, or Supabase auth create failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '403':
+          description: Caller is not a parent/admin of the family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/family/members/accept-invitation:
+    post:
+      tags: [Family]
+      summary: Accept a family invitation by token
+      operationId: acceptFamilyInvitation
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invite_token]
+              properties:
+                invite_token: { type: string }
+      responses:
+        '200':
+          description: Joined family.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/FamilyMember' }
+        '400':
+          description: "Missing invite_token, invalid/expired invitation (this handler returns 400 for ALL failures including unexpected ones, not just validation errors)."
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/family/members/{memberId}/role:
+    patch:
+      tags: [Family]
+      summary: Update a family member's role
+      operationId: updateFamilyMemberRole
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { type: string }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/FamilyMember' }
+        '400':
+          description: Missing role.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No family found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/family/members/{memberId}:
+    delete:
+      tags: [Family]
+      summary: Remove (soft-deactivate) a member from the family
+      operationId: removeFamilyMember
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Member removed from family" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No family found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/family/settings:
+    get:
+      tags: [Family]
+      summary: Get family settings
+      operationId: getFamilySettings
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Settings.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/FamilySettings' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No family found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    patch:
+      tags: [Family]
+      summary: Update family settings
+      description: "Request body is passed through with only a column-name whitelist (no other validation); non-whitelisted keys are silently dropped."
+      operationId: updateFamilySettings
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FamilySettingsUpdatable'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/FamilySettings' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No family found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # ACTIVITY LOG
+  # ================================================================
+  /api/activity/feed:
+    get:
+      tags: [ActivityLog]
+      summary: Get the authenticated user's activity feed
+      operationId: getActivityFeed
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: Activity feed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ActivityLogEntry' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/activity/family-feed:
+    get:
+      tags: [ActivityLog]
+      summary: Get the activity feed for the caller's whole family
+      operationId: getFamilyActivityFeed
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 100 }
+      responses:
+        '200':
+          description: Family activity feed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ActivityLogEntry' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: User not in a family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/activity/log:
+    post:
+      tags: [ActivityLog]
+      summary: Log an activity entry
+      description: "No auth check in this handler at all (not even x-user-id) — the target user is taken from the request body's `user_id` field, so any caller can log activity for any user."
+      operationId: logActivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, activity_type, action]
+              properties:
+                user_id: { type: string, format: uuid }
+                activity_type: { type: string }
+                action: { type: string }
+                points_earned: { type: integer, default: 0 }
+                achievement_title: { type: string }
+                related_item_id: { type: string }
+                related_item_type: { type: string }
+                metadata: { type: object }
+      responses:
+        '201':
+          description: Logged.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ActivityLogEntry' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/activity/stats:
+    get:
+      tags: [ActivityLog]
+      summary: Get activity-type counts over a trailing window
+      operationId: getActivityStats
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: daysBack
+          in: query
+          schema: { type: integer, default: 7 }
+      responses:
+        '200':
+          description: "Map of activity_type -> count."
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: { type: integer }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # EXTERNAL APIS (Bearer)
+  # ================================================================
+  /api/external/dictionary/word/{word}:
+    get:
+      tags: [ExternalAPIs]
+      summary: Get a word definition (Merriam-Webster, cached 7 days)
+      operationId: getWordDefinition
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: word
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Definition.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WordResponse' }
+        '400':
+          description: Empty word parameter.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '404':
+          description: No definition found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/dictionary/word-of-day:
+    get:
+      tags: [ExternalAPIs]
+      summary: Get word of the day (cached 24h)
+      operationId: getWordOfTheDay
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Word of the day.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WordResponse'
+                  - type: object
+                    properties:
+                      message: { type: string, const: "Word of the Day" }
+        '503':
+          description: Unable to fetch word of the day.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/dictionary/search:
+    get:
+      tags: [ExternalAPIs]
+      summary: Search words by prefix (cached 24h)
+      operationId: searchWords
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: prefix
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Matching words.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prefix: { type: string }
+                  count: { type: integer }
+                  words: { type: array, items: { type: string } }
+        '400':
+          description: Prefix too short.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/weather/city/{city}:
+    get:
+      tags: [ExternalAPIs]
+      summary: Get current weather for a city (cached 10 min)
+      operationId: getWeatherByCity
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: city
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Weather.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WeatherData' }
+        '400':
+          description: Empty city parameter.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '404':
+          description: Weather not found for city.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/weather/coords:
+    get:
+      tags: [ExternalAPIs]
+      summary: Get current weather by coordinates (cached 10 min)
+      operationId: getWeatherByCoords
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+      responses:
+        '200':
+          description: Weather.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WeatherData' }
+        '400':
+          description: Invalid coordinates.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '503':
+          description: Unable to fetch weather data.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/weather/forecast/{city}:
+    get:
+      tags: [ExternalAPIs]
+      summary: Get 5-day forecast for a city (cached 1h)
+      operationId: getWeatherForecast
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: city
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Forecast.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  city: { type: string }
+                  days: { type: integer }
+                  forecast:
+                    type: array
+                    items: { $ref: '#/components/schemas/ForecastItem' }
+        '400':
+          description: Empty city parameter.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '404':
+          description: Forecast not found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/weather/activity-suitability:
+    post:
+      tags: [ExternalAPIs]
+      summary: Check whether current weather suits a given activity
+      operationId: checkActivitySuitability
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [city, activityType]
+              properties:
+                city: { type: string }
+                activityType: { type: string, enum: [outdoor-sports, hiking, walking], description: "Any other value falls through to a default 'no restrictions' response." }
+      responses:
+        '200':
+          description: Suitability result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  city: { type: string }
+                  activityType: { type: string }
+                  weather: { $ref: '#/components/schemas/WeatherData' }
+                  suitability:
+                    type: object
+                    properties:
+                      suitable: { type: boolean }
+                      reason: { type: string }
+        '400':
+          description: Missing city or activityType.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '404':
+          description: Weather not found for city.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/email/achievement:
+    post:
+      tags: [ExternalAPIs]
+      summary: Send an achievement/badge notification email (SendGrid; demo mode if no API key configured)
+      operationId: sendAchievementEmail
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, userName, badgeTitle, badgeEmoji]
+              properties:
+                email: { type: string, format: email }
+                userName: { type: string }
+                badgeTitle: { type: string }
+                badgeEmoji: { type: string }
+      responses:
+        '201':
+          description: Sent (or simulated in demo mode).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmailSentResponse' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: SendGrid failure or unexpected error.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/email/points:
+    post:
+      tags: [ExternalAPIs]
+      summary: Send a points-earned notification email
+      operationId: sendPointsEmail
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, userName, points, activity]
+              properties:
+                email: { type: string, format: email }
+                userName: { type: string }
+                points: { type: number }
+                activity: { type: string }
+      responses:
+        '201':
+          description: Sent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmailSentResponse' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: SendGrid failure or unexpected error.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/email/daily-summary:
+    post:
+      tags: [ExternalAPIs]
+      summary: Send a daily activity summary email
+      operationId: sendDailySummaryEmail
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, userName, dailyPoints, badgesEarned]
+              properties:
+                email: { type: string, format: email }
+                userName: { type: string }
+                dailyPoints: { type: number }
+                badgesEarned: { type: integer }
+                streakDays: { type: integer, default: 0 }
+      responses:
+        '201':
+          description: Sent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmailSentResponse' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: SendGrid failure or unexpected error.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  /api/external/email/parent-notification:
+    post:
+      tags: [ExternalAPIs]
+      summary: Send a parent notification email about a child's progress
+      operationId: sendParentNotificationEmail
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, parentName, childName, pointsEarned]
+              properties:
+                email: { type: string, format: email }
+                parentName: { type: string }
+                childName: { type: string }
+                pointsEarned: { type: number }
+                badgesEarned: { type: integer, default: 0 }
+      responses:
+        '201':
+          description: Sent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EmailSentResponse' }
+        '400':
+          description: Missing required fields.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '401':
+          description: Missing authorization header.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+        '500':
+          description: SendGrid failure or unexpected error.
+          content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
+
+  # ================================================================
+  # PERFORMANCE (no auth)
+  # ================================================================
+  /performance/health:
+    get:
+      tags: [Performance]
+      summary: Overall system health (query/request/compression stats)
+      operationId: getPerformanceHealth
+      responses:
+        '200':
+          description: Health snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: healthy }
+                  timestamp: { type: string, format: date-time }
+                  database: { type: object }
+                  requests: { type: object }
+                  compression: { type: object }
+
+  /performance/queries:
+    get:
+      tags: [Performance]
+      summary: Query performance statistics, slow queries, and recommendations
+      operationId: getQueryPerformance
+      responses:
+        '200':
+          description: Query stats.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statistics: { type: [object, 'null'] }
+                  slowQueries: { type: array, items: { type: object } }
+                  recommendations: { type: array, items: {} }
+
+  /performance/queries/slow:
+    get:
+      tags: [Performance]
+      summary: Get slow queries
+      operationId: getSlowQueries
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Slow queries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+                  queries: { type: array, items: { type: object } }
+
+  /performance/queries/n-plus-one:
+    get:
+      tags: [Performance]
+      summary: Detect N+1 query patterns
+      operationId: getNPlusOnePatterns
+      responses:
+        '200':
+          description: Patterns (or an explicit "none detected" message).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, description: "Only present when no patterns were detected." }
+                  patternsDetected: { type: integer, description: "Only present when patterns were detected." }
+                  patterns:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pattern: { type: string }
+                        occurrences: { type: integer }
+
+  /performance/requests:
+    get:
+      tags: [Performance]
+      summary: Request performance statistics, recent requests, recent errors
+      operationId: getRequestPerformance
+      responses:
+        '200':
+          description: Stats.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statistics: { type: [object, 'null'] }
+                  recentRequests: { type: array, items: { type: object } }
+                  recentErrors: { type: array, items: { type: object } }
+
+  /performance/compression:
+    get:
+      tags: [Performance]
+      summary: Response compression statistics
+      operationId: getCompressionStats
+      responses:
+        '200':
+          description: Stats (or an explicit "no data yet" message).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, description: "Only present when no compression data is available yet." }
+                  compressionRatio: { type: number }
+                  totalBytesSaved: { type: integer }
+
+  /performance/indexes:
+    get:
+      tags: [Performance]
+      summary: Database index monitoring queries (informational SQL, not executed)
+      operationId: getIndexMonitoringQueries
+      responses:
+        '200':
+          description: SQL snippets to run manually.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  queries: { type: object }
+
+  /performance/summary:
+    get:
+      tags: [Performance]
+      summary: Complete performance summary (query + request + compression + overall health rollup)
+      operationId: getPerformanceSummary
+      responses:
+        '200':
+          description: Summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp: { type: string, format: date-time }
+                  database:
+                    type: object
+                    properties:
+                      queries: { type: [object, 'null'] }
+                      recommendations: { type: array, items: {} }
+                      nPlusOnePatterns: { type: integer }
+                  requests: { type: [object, 'null'] }
+                  compression: { type: [object, 'null'] }
+                  overallHealth:
+                    type: object
+                    properties:
+                      databaseHealth: { type: string, enum: [good, "needs attention", "no data"] }
+                      requestHealth: { type: string, enum: [good, "needs attention", "no data"] }
+
+  /performance/index-sql:
+    post:
+      tags: [Performance]
+      summary: Generate recommended CREATE INDEX SQL for a table
+      operationId: getIndexSql
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                table: { type: string }
+      responses:
+        '200':
+          description: Generated SQL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sql: { type: string }
+                  message: { type: string }
+        '500':
+          description: Failed to generate SQL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  message: { type: string }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        `Authorization: Bearer <token>` must be present. Used by `auth`,
+        `users`, `badges`, `points`, `external-apis`. For most routes in
+        this group the server only checks the header is present and
+        prefixed `Bearer ` — it does not cryptographically verify the
+        token (the one exception is `GET /auth/me`, which does call
+        `supabase.auth.getUser(token)`).
+    userIdHeader:
+      type: apiKey
+      in: header
+      name: x-user-id
+      description: |
+        Custom header identifying the caller by user ID. Used by `chores`,
+        `learning`, `announcements`, `reminders`, `energy`, `calendar`,
+        `family`, `activity-log`. There is no cryptographic verification —
+        any UUID-shaped (or even arbitrary) value is trusted as-is. A few
+        endpoints within these route files (e.g. `GET /api/energy/usage`,
+        `POST /api/activity/log`, several PATCH/DELETE-by-id endpoints in
+        `announcements`/`reminders`/`calendar`) do not actually check this
+        header despite living in the same route file — see the per-endpoint
+        `security` field and description for exceptions.
+
+  parameters:
+    UserIdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    UserIdPathBadges:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DeviceIdPath:
+      name: deviceId
+      in: path
+      required: true
+      schema: { type: string }
+
+  schemas:
+    # ---------------- Generic envelopes ----------------
+    EnvelopeSuccess:
+      type: object
+      description: |
+        The success shape used by MOST (not all) "newer" routes. `count`
+        is present on list endpoints, absent on single-resource endpoints.
+        `data`'s actual type varies per endpoint — see the `allOf` override
+        on each path.
+      required: [status, timestamp]
+      properties:
+        status: { type: string, const: success }
+        data: {}
+        count: { type: integer }
+        timestamp: { type: string, format: date-time }
+
+    EnvelopeError:
+      type: object
+      description: The error shape used consistently by all "newer" routes (chores, learning, announcements, reminders, energy, calendar, family, activity-log, smartthings).
+      required: [status, message]
+      properties:
+        status: { type: string, const: error }
+        message: { type: string }
+        error: { type: string, description: "Present on most (not all) error responses; usually a raw error message string." }
+
+    LegacyErrorBody:
+      type: object
+      description: The ad hoc error shape used by "older" routes (auth, users, badges, points, external-apis). No `status`/`timestamp` field; shape varies slightly per endpoint but always includes `error`.
+      required: [error]
+      properties:
+        error: { type: string }
+        message: { type: string }
+        required: { type: array, items: { type: string }, description: "Present only on some 'missing required fields' 400s." }
+
+    ReadinessResult:
+      type: object
+      properties:
+        status: { type: string, enum: [ready, not_ready] }
+        timestamp: { type: string, format: date-time }
+        checks: { type: array, items: { type: object } }
+        summary: { type: object }
+
+    DeploymentHealth:
+      type: object
+      required: [status, timestamp, environment, uptime, version]
+      properties:
+        status: { type: string, const: ok }
+        timestamp: { type: string, format: date-time }
+        environment: { type: string }
+        uptime: { type: number, description: process.uptime() in seconds }
+        version: { type: string }
+
+    EmailSentResponse:
+      type: object
+      properties:
+        message: { type: string }
+        messageId: { type: string, description: "'demo-<timestamp>' when SENDGRID_API_KEY is unset (demo mode), otherwise SendGrid's x-message-id response header, or 'unknown'." }
+
+    # ---------------- Users / Auth ----------------
+    User:
+      type: object
+      description: |
+        Raw `users` table row, from `UserRepository`. NOTE: `birth_year`
+        and `is_under_13` are read/written by real code (see
+        `POST /api/family/children`) but are absent from the generated
+        `types/database.ts` — the generated types are stale relative to
+        the live schema; they are included here because they are real.
+      required: [id, email, name, role, account_type, is_active]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { type: string, enum: [parent, child] }
+        account_type: { type: string, enum: [primary, coparent, guardian, child] }
+        password_hash: { type: string, description: "Internally, this column stores the Supabase Auth user ID as a reference, not an actual password hash." }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        last_login: { type: [string, 'null'], format: date-time }
+        is_active: { type: boolean }
+        birth_year: { type: [integer, 'null'] }
+        is_under_13: { type: [boolean, 'null'] }
+
+    UserProfileFull:
+      type: object
+      description: Subset returned by GET /users/me.
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string }
+        role: { type: string }
+        account_type: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    UserProfileBasic:
+      type: object
+      description: Subset returned by GET/PUT /users/{id}.
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string }
+        role: { type: string }
+        created_at: { type: string, format: date-time }
+
+    # ---------------- Badges / Points ----------------
+    Badge:
+      type: object
+      description: Raw `badges` table row.
+      required: [id, title, category, tier]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        icon_emoji: { type: [string, 'null'] }
+        category: { type: string }
+        tier: { type: string, enum: [bronze, silver, gold, platinum] }
+        points_required: { type: [integer, 'null'] }
+        created_at: { type: [string, 'null'], format: date-time }
+
+    ActivityPointsEntry:
+      type: object
+      description: Raw `activity_points` table row (the one real points ledger; used by PointsRepository and by chores/learning point awards).
+      required: [id, user_id, activity_type, points, reason]
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        activity_type: { type: string }
+        points: { type: number }
+        reason: { type: string }
+        created_at: { type: string, format: date-time }
+
+    # ---------------- SmartThings ----------------
+    SmartDevice:
+      type: object
+      description: |
+        Hand-rolled device shape from `smartthings_devices` table (via
+        `SmartThingsService`), NOT the Supabase `smart_devices` table in
+        `types/database.ts` (different table, different columns entirely).
+      required: [deviceId, name, type, status]
+      properties:
+        deviceId: { type: string }
+        name: { type: string }
+        type: { type: string, enum: [light, switch, lock, climate, sensor, other] }
+        room: { type: string }
+        status: { type: object, additionalProperties: true, description: "Free-form capability/state map, e.g. {switch:'on', level:100} or {temperature:72, mode:'heat'}." }
+
+    # ---------------- Chores (hand-rolled schema) ----------------
+    Chore:
+      type: object
+      description: |
+        From `ChoreService`'s raw-Postgres `chores` table — NOT the
+        Supabase `chores` table in `types/database.ts` (which has entirely
+        different columns: child_id/priority/status/due_date). This
+        feature area's real schema is user_id/name/time_slot/points_value/enabled.
+      required: [id, userId, name, timeSlot, pointsValue, enabled, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        timeSlot: { type: string, enum: [morning, afternoon, evening] }
+        pointsValue: { type: number }
+        enabled: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ChoreCompletion:
+      type: object
+      required: [id, choreId, userId, completedAt, pointsEarned]
+      properties:
+        id: { type: string, format: uuid }
+        choreId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        completedAt: { type: string, format: date-time }
+        pointsEarned: { type: number }
+
+    ChoreProgress:
+      type: object
+      properties:
+        totalCompleted: { type: integer }
+        thisWeek: { type: integer }
+        thisMonth: { type: integer }
+        pointsEarned: { type: integer }
+
+    ChorePointsSummary:
+      type: object
+      properties:
+        totalPoints: { type: integer }
+        dailyPoints: { type: integer }
+        weeklyPoints: { type: integer }
+        monthlyPoints: { type: integer }
+
+    # ---------------- Learning (hand-rolled schema) ----------------
+    LearningProgressEntry:
+      type: object
+      description: |
+        From `LearningService`'s raw-Postgres `learning_progress` table —
+        NOT the Supabase `learning_progress` table in `types/database.ts`
+        (different columns: course_id/current_lesson_id/completion_percentage
+        vs. this feature's lesson_id/category/phase/completed).
+      required: [id, userId, lessonId, category, phase, completed, pointsEarned, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        lessonId: { type: string }
+        category: { type: string, enum: [alphabet, numbers, vocabulary] }
+        phase: { type: string }
+        completed: { type: boolean }
+        pointsEarned: { type: integer }
+        completedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    PhaseProgress:
+      type: object
+      properties:
+        totalLessons: { type: integer }
+        completedLessons: { type: integer }
+        percentComplete: { type: integer, description: "0-100, rounded" }
+        pointsEarned: { type: integer }
+
+    LearningStats:
+      type: object
+      properties:
+        totalLessonsCompleted: { type: integer }
+        totalPointsEarned: { type: integer }
+        alphabet: { type: object, properties: { completed: { type: integer }, total: { type: integer } } }
+        numbers: { type: object, properties: { completed: { type: integer }, total: { type: integer } } }
+        vocabulary: { type: object, properties: { completed: { type: integer }, total: { type: integer } } }
+
+    # ---------------- Announcements ----------------
+    Announcement:
+      type: object
+      description: Raw `announcements` table row (Tables<'announcements'>['Row']).
+      required: [id, family_id, created_by_id, title, message]
+      properties:
+        id: { type: string, format: uuid }
+        family_id: { type: [string, 'null'], format: uuid }
+        created_by_id: { type: string, format: uuid }
+        title: { type: string }
+        message: { type: string }
+        announcement_type: { type: [string, 'null'] }
+        priority: { type: [string, 'null'] }
+        target_audience: { type: [string, 'null'] }
+        target_user_ids: { type: [array, 'null'], items: { type: string } }
+        is_pinned: { type: [boolean, 'null'] }
+        expires_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+
+    AnnouncementWithReadStatus:
+      allOf:
+        - $ref: '#/components/schemas/Announcement'
+        - type: object
+          required: [is_read, reader_count]
+          properties:
+            is_read: { type: boolean }
+            reader_count: { type: integer, description: "Currently always 0 — marked TODO in source, not yet implemented." }
+
+    # ---------------- Reminders ----------------
+    Reminder:
+      type: object
+      description: Raw `reminders` table row (Tables<'reminders'>['Row']).
+      required: [id, user_id, title, reminder_type, scheduled_time]
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        reminder_type: { type: string, enum: [chore, assignment, event, goal, custom] }
+        related_item_id: { type: [string, 'null'] }
+        related_item_type: { type: [string, 'null'] }
+        scheduled_time: { type: string, format: date-time }
+        remind_before_minutes: { type: [integer, 'null'] }
+        recurrence: { type: [string, 'null'], enum: [once, daily, weekly, monthly, null] }
+        recurrence_end_date: { type: [string, 'null'], format: date-time }
+        is_dismissed: { type: [boolean, 'null'] }
+        dismissed_at: { type: [string, 'null'], format: date-time }
+        notification_sent: { type: [boolean, 'null'] }
+        sent_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+
+    # ---------------- Energy ----------------
+    EnergyUsage:
+      type: object
+      description: Raw `energy_usage` table row (Tables<'energy_usage'>['Row']).
+      required: [id, device_id, timestamp]
+      properties:
+        id: { type: string, format: uuid }
+        device_id: { type: string }
+        device_name: { type: [string, 'null'] }
+        device_type: { type: [string, 'null'] }
+        power_watts: { type: [number, 'null'] }
+        energy_kwh: { type: [number, 'null'] }
+        timestamp: { type: string, format: date-time }
+        recorded_at: { type: [string, 'null'], format: date-time }
+
+    EnergySummaryRow:
+      type: object
+      description: Raw `energy_summary` table row (Tables<'energy_summary'>['Row']).
+      required: [id, period, period_start, period_end]
+      properties:
+        id: { type: string, format: uuid }
+        period: { type: string, enum: [daily, weekly, monthly] }
+        period_start: { type: string, format: date }
+        period_end: { type: string, format: date }
+        total_kwh: { type: [number, 'null'] }
+        average_power_watts: { type: [number, 'null'] }
+        peak_power_watts: { type: [number, 'null'] }
+        peak_time: { type: [string, 'null'], format: date-time }
+        device_count: { type: [integer, 'null'] }
+        created_at: { type: [string, 'null'], format: date-time }
+
+    EnergyGoal:
+      type: object
+      description: Raw `energy_goals` table row (Tables<'energy_goals'>['Row']).
+      required: [id, created_by_id, goal_type, start_date, end_date]
+      properties:
+        id: { type: string, format: uuid }
+        created_by_id: { type: string, format: uuid }
+        goal_type: { type: string, enum: [daily, weekly, monthly] }
+        target_kwh: { type: [number, 'null'] }
+        current_kwh: { type: [number, 'null'] }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        status: { type: [string, 'null'], description: "GET /api/energy/goals filters status = 'active'." }
+        points_reward: { type: [integer, 'null'] }
+        achieved_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: [string, 'null'], format: date-time }
+
+    # ---------------- Calendar ----------------
+    CalendarEvent:
+      type: object
+      description: Raw `calendar_events` table row (Tables<'calendar_events'>['Row']).
+      required: [id, family_id, created_by_id, event_title, event_date]
+      properties:
+        id: { type: string, format: uuid }
+        family_id: { type: string, format: uuid }
+        created_by_id: { type: string, format: uuid }
+        event_title: { type: string }
+        event_description: { type: [string, 'null'] }
+        event_type: { type: [string, 'null'] }
+        event_date: { type: string, format: date }
+        start_time: { type: [string, 'null'] }
+        end_time: { type: [string, 'null'] }
+        location: { type: [string, 'null'] }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+
+    GoogleCalendarEvent:
+      type: object
+      description: Passthrough (lightly typed) of Google Calendar API event objects, plus calendar metadata attached by the service.
+      properties:
+        id: { type: [string, 'null'] }
+        summary: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+        start:
+          type: [object, 'null']
+          properties:
+            dateTime: { type: [string, 'null'] }
+            date: { type: [string, 'null'] }
+        end:
+          type: [object, 'null']
+          properties:
+            dateTime: { type: [string, 'null'] }
+            date: { type: [string, 'null'] }
+        location: { type: [string, 'null'] }
+        attendees:
+          type: [array, 'null']
+          items: { type: object, properties: { email: { type: string } } }
+        calendarId: { type: string, description: "Attached by the service; identifies which of the user's Google calendars this event came from." }
+        calendarName: { type: string }
+        calendarColor: { type: string }
+
+    # ---------------- Family ----------------
+    Family:
+      type: object
+      description: Raw `families` table row (Tables<'families'>['Row']).
+      required: [id, created_by_id, name]
+      properties:
+        id: { type: string, format: uuid }
+        created_by_id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        max_children: { type: [integer, 'null'] }
+        max_parents: { type: [integer, 'null'] }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+
+    FamilyMember:
+      type: object
+      description: Raw `family_members` table row (Tables<'family_members'>['Row']).
+      required: [id, family_id, user_id, role]
+      properties:
+        id: { type: string, format: uuid }
+        family_id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        role: { type: string, enum: [admin, parent, child, guardian] }
+        invited_by_id: { type: [string, 'null'], format: uuid }
+        is_active: { type: [boolean, 'null'] }
+        joined_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+
+    FamilyWithMembers:
+      allOf:
+        - $ref: '#/components/schemas/Family'
+        - type: object
+          required: [member_count, members]
+          properties:
+            member_count: { type: integer }
+            members:
+              type: array
+              items: { $ref: '#/components/schemas/FamilyMember' }
+
+    FamilySettings:
+      type: object
+      description: Raw `family_settings` table row (Tables<'family_settings'>['Row']).
+      required: [id, family_id]
+      properties:
+        id: { type: string, format: uuid }
+        family_id: { type: string, format: uuid }
+        theme: { type: [string, 'null'] }
+        language: { type: [string, 'null'] }
+        timezone: { type: [string, 'null'] }
+        notifications_enabled: { type: [boolean, 'null'] }
+        sound_notifications: { type: [boolean, 'null'] }
+        email_digest_frequency: { type: [string, 'null'] }
+        parental_controls_enabled: { type: [boolean, 'null'] }
+        require_age_verification: { type: [boolean, 'null'] }
+        max_screen_time_minutes: { type: [integer, 'null'] }
+        bedtime_enabled: { type: [boolean, 'null'] }
+        bedtime_start: { type: [string, 'null'] }
+        bedtime_end: { type: [string, 'null'] }
+        enable_smart_home_control: { type: [boolean, 'null'] }
+        points_system_enabled: { type: [boolean, 'null'] }
+        badges_system_enabled: { type: [boolean, 'null'] }
+        leaderboard_enabled: { type: [boolean, 'null'] }
+        privacy_mode: { type: [boolean, 'null'] }
+        allow_google_calendar_sync: { type: [boolean, 'null'] }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+
+    FamilySettingsUpdatable:
+      type: object
+      description: Only these columns are actually applied by PATCH /api/family/settings (whitelist enforced server-side); any other keys in the request body are silently dropped.
+      properties:
+        theme: { type: string }
+        language: { type: string }
+        timezone: { type: string }
+        notifications_enabled: { type: boolean }
+        sound_notifications: { type: boolean }
+        email_digest_frequency: { type: string }
+        parental_controls_enabled: { type: boolean }
+        require_age_verification: { type: boolean }
+        max_screen_time_minutes: { type: integer }
+        bedtime_enabled: { type: boolean }
+        bedtime_start: { type: string }
+        bedtime_end: { type: string }
+        enable_smart_home_control: { type: boolean }
+        points_system_enabled: { type: boolean }
+        badges_system_enabled: { type: boolean }
+        leaderboard_enabled: { type: boolean }
+        privacy_mode: { type: boolean }
+        allow_google_calendar_sync: { type: boolean }
+
+    # ---------------- Activity Log ----------------
+    ActivityLogEntry:
+      type: object
+      description: Raw `activity_log` table row (Tables<'activity_log'>['Row']).
+      required: [id, user_id, activity_type, action]
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        activity_type: { type: string }
+        action: { type: string }
+        points_earned: { type: [integer, 'null'] }
+        achievement_title: { type: [string, 'null'] }
+        related_item_id: { type: [string, 'null'] }
+        related_item_type: { type: [string, 'null'] }
+        metadata: { type: [object, 'null'] }
+        created_at: { type: [string, 'null'], format: date-time }
+
+    # ---------------- External APIs ----------------
+    WordDefinition:
+      type: object
+      properties:
+        word: { type: string }
+        partOfSpeech: { type: string }
+        definition: { type: string }
+        example: { type: string }
+        synonym: { type: string }
+
+    WordResponse:
+      type: object
+      properties:
+        word: { type: string }
+        definitions:
+          type: array
+          items: { $ref: '#/components/schemas/WordDefinition' }
+        pronunciation: { type: string }
+        audioUrl: { type: string }
+
+    WeatherData:
+      type: object
+      properties:
+        location: { type: string }
+        temperature: { type: number, description: "Celsius, rounded." }
+        feelsLike: { type: number }
+        humidity: { type: number }
+        windSpeed: { type: number }
+        description: { type: string }
+        icon: { type: string, description: "An emoji character, not an icon code/URL." }
+        timestamp: { type: string, format: date-time }
+        sunrise: { type: string, format: date-time }
+        sunset: { type: string, format: date-time }
+
+    ForecastItem:
+      type: object
+      properties:
+        date: { type: string, description: "Locale date string (toLocaleDateString()), not ISO 8601." }
+        high: { type: number }
+        low: { type: number }
+        description: { type: string }
+        icon: { type: string }
+        precipChance: { type: integer, description: "0-100" }
