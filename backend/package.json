@@ -21,7 +21,8 @@
     "format": "echo \"Formatting code...\" && exit 0",
     "format:check": "echo \"Checking format...\" && exit 0",
     "validate": "npm run lint && npm run build && npm run test",
-    "check:debt": "grep -r 'TODO\\|FIXME' src --include='*.ts' || echo 'No tech debt found'"
+    "check:debt": "grep -r 'TODO\\|FIXME' src --include='*.ts' || echo 'No tech debt found'",
+    "check:coppa": "node scripts/check-coppa.js"
   },
   "keywords": [],
   "author": "",
@@ -54,6 +55,7 @@
     "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.67.0",
     "eslint": "^8.57.1",
+    "eslint-plugin-local-rules": "^3.0.2",
     "jest": "^29.7.0",
     "nodemon": "^3.1.14",
     "supertest": "^7.0.0",

@@ -21,6 +21,8 @@ export interface User {
   updated_at: Date;
   last_login?: Date;
   is_active: boolean;
+  birth_year?: number;
+  is_under_13?: boolean;
 }
 
 // ================================================
@@ -101,10 +103,12 @@ export async function createUser(data: {
   role: 'parent' | 'child';
   account_type: 'primary' | 'coparent' | 'guardian' | 'child';
   password_hash: string;
+  birth_year?: number;
+  is_under_13?: boolean;
 }): Promise<User> {
   const result = await queryOne<User>(
-    `INSERT INTO users (email, name, role, account_type, password_hash)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO users (email, name, role, account_type, password_hash, birth_year, is_under_13)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     [
       data.email.toLowerCase(),
@@ -112,6 +116,8 @@ export async function createUser(data: {
       data.role,
       data.account_type,
       data.password_hash,
+      data.birth_year ?? null,
+      data.is_under_13 ?? null,
     ]
   );
 

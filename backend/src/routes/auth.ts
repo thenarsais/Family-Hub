@@ -92,9 +92,19 @@ router.post('/signup', async (req: Request, res: Response) => {
       });
     }
 
-    if (!['parent', 'child'].includes(role)) {
+    // COPPA compliance (FRAMEWORK.md Decision #29): child accounts must be
+    // provisioned by an authenticated parent, never through open public
+    // self-registration. See POST /api/family/children instead.
+    if (role === 'child') {
       return res.status(400).json({
-        error: 'Invalid role. Must be parent or child'
+        error: 'Child accounts cannot self-register',
+        message: 'Ask a parent to add you from their family settings.'
+      });
+    }
+
+    if (role !== 'parent') {
+      return res.status(400).json({
+        error: 'Invalid role. Must be parent'
       });
     }
 
