@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -50,7 +50,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -66,7 +66,7 @@ jobs:
           path: backend/dist
 
   # ================================================
-  # UNIT & INTEGRATION TESTS
+  # UNIT & INTEGRATION TESTS (backend + frontend, with coverage)
   # ================================================
   test:
     name: Run Tests
@@ -103,32 +103,44 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm run test:unit --if-present
+      # These previously ran `npm run test:unit --if-present` /
+      # `test:integration --if-present` at the repo root, where neither
+      # script exists -- `--if-present` silently no-ops, so this job passed
+      # without ever running a test. Run each workspace's real
+      # coverage-enforced suite directly instead.
+      - name: Run backend tests (with 80% coverage gate)
+        working-directory: ./backend
+        run: npm run test:coverage
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/familyhub_test
           REDIS_URL: redis://localhost:6379
 
-      - name: Run integration tests
-        run: npm run test:integration --if-present
+      # Placeholder values, not real secrets -- src/__tests__/config/env.test.ts
+      # only checks that these vars are present and correctly shaped, never
+      # that they connect to anything real.
+      - name: Run frontend tests (with 80% coverage gate)
+        working-directory: ./frontend
+        run: npm run test:coverage
         env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/familyhub_test
-          REDIS_URL: redis://localhost:6379
+          VITE_API_URL: http://localhost:3000
+          VITE_SUPABASE_URL: https://test-project.supabase.co
+          VITE_SUPABASE_ANON_KEY: test-anon-key
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage
-          path: coverage/
+          path: |
+            backend/coverage/
+            frontend/coverage/
 
   # ================================================
   # API ENDPOINT TESTS
@@ -144,7 +156,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -256,7 +268,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Run Trivy vulnerability scanner
@@ -322,7 +334,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -388,7 +400,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
