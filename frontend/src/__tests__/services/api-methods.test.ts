@@ -112,8 +112,7 @@ describe('API Service — method delegation', () => {
     it('awardBadge', async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({ data: {} });
       await apiClient.awardBadge('u1', 'b1', 'great job');
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/badges/users/u1/award', {
-        badge_id: 'b1',
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/badges/users/u1/badges/b1', {
         reason: 'great job',
       });
     });
@@ -181,19 +180,19 @@ describe('API Service — method delegation', () => {
     it('getWordDefinition', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getWordDefinition('cat');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/dictionary/word/cat');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/external/dictionary/word/cat');
     });
 
     it('getWordOfDay', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getWordOfDay();
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/dictionary/word-of-day');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/external/dictionary/word-of-day');
     });
 
     it('searchWords with default limit', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.searchWords('cat');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/dictionary/search', {
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/external/dictionary/search', {
         params: { prefix: 'cat', limit: 5 },
       });
     });
@@ -201,7 +200,7 @@ describe('API Service — method delegation', () => {
     it('getWeatherByCity with default units', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getWeatherByCity('Seattle');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/weather/city/Seattle', {
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/external/weather/city/Seattle', {
         params: { units: 'metric' },
       });
     });
@@ -209,7 +208,7 @@ describe('API Service — method delegation', () => {
     it('getWeatherByCoords', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getWeatherByCoords(47.6, -122.3);
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/weather/coords', {
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/external/weather/coords', {
         params: { lat: 47.6, lon: -122.3, units: 'metric' },
       });
     });
@@ -217,16 +216,15 @@ describe('API Service — method delegation', () => {
     it('getWeatherForecast', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getWeatherForecast('Seattle');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/weather/forecast/Seattle');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/external/weather/forecast/Seattle');
     });
 
     it('checkWeatherSuitability', async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({ data: {} });
-      await apiClient.checkWeatherSuitability(47.6, -122.3, 'hiking');
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/weather/activity-suitability', {
-        latitude: 47.6,
-        longitude: -122.3,
-        activity: 'hiking',
+      await apiClient.checkWeatherSuitability('Seattle', 'hiking');
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/external/weather/activity-suitability', {
+        city: 'Seattle',
+        activityType: 'hiking',
       });
     });
   });
@@ -267,19 +265,19 @@ describe('API Service — method delegation', () => {
     it('getSmartThingsDevices', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getSmartThingsDevices();
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/smartthings/devices');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/smartthings/devices');
     });
 
     it('getSmartThingsDevice', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getSmartThingsDevice('d1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/smartthings/devices/d1');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/smartthings/devices/d1');
     });
 
     it('controlSmartThingsDevice', async () => {
       mockAxiosInstance.put.mockResolvedValueOnce({ data: {} });
       await apiClient.controlSmartThingsDevice('d1', 'on', [1]);
-      expect(mockAxiosInstance.put).toHaveBeenCalledWith('/smartthings/devices/d1', {
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith('/api/smartthings/devices/d1', {
         command: 'on',
         arguments: [1],
       });
@@ -288,7 +286,7 @@ describe('API Service — method delegation', () => {
     it('getSmartThingsStatus', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getSmartThingsStatus();
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/smartthings/status');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/smartthings/status');
     });
   });
 

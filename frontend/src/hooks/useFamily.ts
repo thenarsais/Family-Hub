@@ -56,14 +56,14 @@ export function useFamily(): UseFamilyReturn {
       if (!user?.id) return;
 
       const [familyResponse, membersResponse, settingsResponse] = await Promise.all([
-        apiClient.get('/family', { headers: { 'x-user-id': user.id } }),
-        apiClient.get('/family/members', { headers: { 'x-user-id': user.id } }),
-        apiClient.get('/family/settings', { headers: { 'x-user-id': user.id } }),
+        apiClient.get('/api/family', { headers: { 'x-user-id': user.id } }),
+        apiClient.get('/api/family/members', { headers: { 'x-user-id': user.id } }),
+        apiClient.get('/api/family/settings', { headers: { 'x-user-id': user.id } }),
       ]);
 
-      setFamily(familyResponse.data || null);
-      setMembers(membersResponse.data || []);
-      setSettings(settingsResponse.data || null);
+      setFamily(familyResponse.data?.data || null);
+      setMembers(membersResponse.data?.data || []);
+      setSettings(settingsResponse.data?.data || null);
     } catch (err: any) {
       console.error('Failed to fetch family:', err);
       setError(err.message || 'Failed to fetch family');
@@ -80,19 +80,19 @@ export function useFamily(): UseFamilyReturn {
     if (!user?.id) throw new Error('User not authenticated');
 
     const response = await apiClient.post(
-      '/family/members/invite',
+      '/api/family/members/invite',
       { email, role },
       { headers: { 'x-user-id': user.id } },
     );
 
-    return response.data?.invite_token || '';
+    return response.data?.data?.invite_token || '';
   };
 
   const updateMemberRole = async (memberId: string, role: string): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
     await apiClient.patch(
-      `/family/members/${memberId}/role`,
+      `/api/family/members/${memberId}/role`,
       { role },
       { headers: { 'x-user-id': user.id } },
     );
@@ -105,7 +105,7 @@ export function useFamily(): UseFamilyReturn {
   const removeMember = async (memberId: string): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    await apiClient.delete(`/family/members/${memberId}`, {
+    await apiClient.delete(`/api/family/members/${memberId}`, {
       headers: { 'x-user-id': user.id },
     });
 
@@ -116,12 +116,12 @@ export function useFamily(): UseFamilyReturn {
     if (!user?.id) throw new Error('User not authenticated');
 
     const response = await apiClient.patch(
-      '/family/settings',
+      '/api/family/settings',
       newSettings,
       { headers: { 'x-user-id': user.id } },
     );
 
-    setSettings(response.data || null);
+    setSettings(response.data?.data || null);
   };
 
   return {

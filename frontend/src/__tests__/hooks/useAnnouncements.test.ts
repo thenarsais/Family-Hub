@@ -28,7 +28,7 @@ describe('useAnnouncements', () => {
   });
 
   it('should load announcements on mount', async () => {
-    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: [{ id: 'a1' }] });
+    (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { status: 'success', data: [{ id: 'a1' }] } });
 
     const { result } = renderHook(() => useAnnouncements());
 
@@ -47,8 +47,8 @@ describe('useAnnouncements', () => {
 
   describe('createAnnouncement', () => {
     it('should post and prepend the new announcement', async () => {
-      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: [{ id: 'existing' }] });
-      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { id: 'new1' } });
+      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { status: 'success', data: [{ id: 'existing' }] } });
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { status: 'success', data: { id: 'new1' } } });
 
       const { result } = renderHook(() => useAnnouncements());
       await waitFor(() => expect(result.current.loading).toBe(false));
@@ -59,7 +59,7 @@ describe('useAnnouncements', () => {
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/announcements',
+        '/api/announcements',
         { family_id: 'family-1', title: 'Movie night', message: 'Fun!', is_pinned: true },
         { headers: { 'x-user-id': 'user-1' } }
       );
@@ -76,7 +76,7 @@ describe('useAnnouncements', () => {
     });
 
     it('should rethrow when the post fails', async () => {
-      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: [] });
+      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { status: 'success', data: [] } });
       (apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('post failed'));
 
       const { result } = renderHook(() => useAnnouncements());
@@ -88,7 +88,7 @@ describe('useAnnouncements', () => {
 
   describe('markAsRead', () => {
     it('should mark the matching announcement as read', async () => {
-      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: [{ id: 'a1', is_read: false }] });
+      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { status: 'success', data: [{ id: 'a1', is_read: false }] } });
       (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});
 
       const { result } = renderHook(() => useAnnouncements());
@@ -98,7 +98,7 @@ describe('useAnnouncements', () => {
         await result.current.markAsRead('a1');
       });
 
-      expect(apiClient.post).toHaveBeenCalledWith('/announcements/a1/read', {}, { headers: { 'x-user-id': 'user-1' } });
+      expect(apiClient.post).toHaveBeenCalledWith('/api/announcements/a1/read', {}, { headers: { 'x-user-id': 'user-1' } });
       expect(result.current.announcements[0].is_read).toBe(true);
     });
 
@@ -113,7 +113,7 @@ describe('useAnnouncements', () => {
 
   describe('deleteAnnouncement', () => {
     it('should delete and remove the announcement from state', async () => {
-      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: [{ id: 'a1' }] });
+      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { status: 'success', data: [{ id: 'a1' }] } });
       (apiClient.delete as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});
 
       const { result } = renderHook(() => useAnnouncements());
@@ -123,7 +123,7 @@ describe('useAnnouncements', () => {
         await result.current.deleteAnnouncement('a1');
       });
 
-      expect(apiClient.delete).toHaveBeenCalledWith('/announcements/a1', { headers: { 'x-user-id': 'user-1' } });
+      expect(apiClient.delete).toHaveBeenCalledWith('/api/announcements/a1', { headers: { 'x-user-id': 'user-1' } });
       expect(result.current.announcements).toEqual([]);
     });
 
@@ -139,8 +139,8 @@ describe('useAnnouncements', () => {
   describe('refresh', () => {
     it('should re-fetch announcements', async () => {
       (apiClient.get as ReturnType<typeof vi.fn>)
-        .mockResolvedValueOnce({ data: [] })
-        .mockResolvedValueOnce({ data: [{ id: 'a1' }] });
+        .mockResolvedValueOnce({ data: { status: 'success', data: [] } })
+        .mockResolvedValueOnce({ data: { status: 'success', data: [{ id: 'a1' }] } });
 
       const { result } = renderHook(() => useAnnouncements());
       await waitFor(() => expect(result.current.loading).toBe(false));
