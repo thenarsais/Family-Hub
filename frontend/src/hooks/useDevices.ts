@@ -53,11 +53,13 @@ export function useDevices() {
           args
         );
 
-        // Update local state optimistically
+        // Update local state optimistically. The control endpoint's
+        // top-level `status` is a 'success'/'failed' string, not the
+        // device's own status object -- that lives at `response.device.status`.
         setDevices(
           devices.map(d =>
             d.deviceId === deviceId
-              ? { ...d, status: { ...d.status, ...response.status } }
+              ? { ...d, status: { ...d.status, ...response.device?.status } }
               : d
           )
         );
