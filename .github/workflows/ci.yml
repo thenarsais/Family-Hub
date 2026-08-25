@@ -323,10 +323,20 @@ jobs:
   # ================================================
   # LIGHTHOUSE CI (PERFORMANCE)
   # ================================================
+  # KNOWN OPEN ISSUE: headless Chrome hits NO_FCP ("page did not paint any
+  # content") on this specific GitHub Actions runner image, consistently,
+  # regardless of chromeFlags (4 combinations tried) or execution path (raw
+  # `lhci autorun` vs. this treosh/lighthouse-ci-action). Chrome launches
+  # and navigates fine; the render pipeline itself never completes within
+  # the 30s timeout. Doesn't reproduce locally. continue-on-error keeps
+  # this informational (visibly failed in the Actions UI, not silently
+  # swallowed) until someone has time to dig further -- see
+  # thenarsais/Family-Hub PR #13 for the full investigation history.
   lighthouse:
     name: Lighthouse Performance Audit
     runs-on: ubuntu-latest
     needs: build
+    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
