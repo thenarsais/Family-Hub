@@ -1,0 +1,386 @@
+/**
+ * Google OAuth Service Tests — everything except disconnectCalendar(),
+ * which already has dedicated regression coverage in google-oauth.test.ts.
+ */
+
+process.env.SUPABASE_URL = 'https://test.supabase.co';
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'placeholder-service-role-key';
+
+const mockOAuth2Instance = {
+  generateAuthUrl: jest.fn(),
+  getToken: jest.fn(),
+  setCredentials: jest.fn(),
+  refreshAccessToken: jest.fn(),
+};
+
+const mockCalendarListList = jest.fn();
+const mockEventsList = jest.fn();
+const mockCalendarClient = {
+  calendarList: { list: mockCalendarListList },
+  events: { list: mockEventsList },
+};
+
+jest.mock('googleapis', () => ({
+  google: {
+    auth: { OAuth2: jest.fn(() => mockOAuth2Instance) },
+    calendar: jest.fn(() => mockCalendarClient),
+  },
+}));
+
+interface MockChain {
+  from: jest.Mock;
+  select: jest.Mock;
+  eq: jest.Mock;
+  update: jest.Mock;
+  upsert: jest.Mock;
+  single: jest.Mock;
+  then: (resolve: (value: { error: unknown }) => void) => void;
+}
+
+const mockChain: MockChain = {
+  from: jest.fn(),
+  select: jest.fn(),
+  eq: jest.fn(),
+  update: jest.fn(),
+  upsert: jest.fn(),
+  single: jest.fn(),
+  then: () => {},
+};
+mockChain.from.mockReturnValue(mockChain);
+mockChain.select.mockReturnValue(mockChain);
+mockChain.eq.mockReturnValue(mockChain);
+mockChain.update.mockReturnValue(mockChain);
+mockChain.upsert.mockReturnValue(mockChain);
+let thenResolution: { error: unknown } = { error: null };
+mockChain.then = (resolve) => resolve(thenResolution);
+
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => mockChain),
+}));
+jest.mock('axios');
+
+import { getGoogleOAuthService } from '../../services/google-oauth';
+
+describe('GoogleOAuthService', () => {
+  const userId = 'user-123';
+  const service = getGoogleOAuthService();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockChain.from.mockReturnValue(mockChain);
+    mockChain.select.mockReturnValue(mockChain);
+    mockChain.eq.mockReturnValue(mockChain);
+    mockChain.update.mockReturnValue(mockChain);
+    mockChain.upsert.mockReturnValue(mockChain);
+    thenResolution = { error: null };
+  });
+
+  describe('getAuthUrl', () => {
+    it('should generate an offline-access URL scoped to calendar.readonly, keyed by userId', () => {
+      mockOAuth2Instance.generateAuthUrl.mockReturnValueOnce('https://accounts.google.com/auth?x=1');
+
+      const url = service.getAuthUrl(userId);
+
+      expect(mockOAuth2Instance.generateAuthUrl).toHaveBeenCalledWith({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/calendar.readonly'],
+        state: userId,
+      });
+      expect(url).toBe('https://accounts.google.com/auth?x=1');
+    });
+  });
+
+  describe('exchangeCodeForToken', () => {
+    it('should convert a successful token exchange to GoogleAuthToken', async () => {
+      const expiryDate = Date.now() + 3600 * 1000;
+      mockOAuth2Instance.getToken.mockResolvedValueOnce({
+        tokens: { access_token: 'tok', refresh_token: 'refresh', expiry_date: expiryDate, token_type: 'Bearer' },
+      });
+
+      const result = await service.exchangeCodeForToken('auth-code');
+
+      expect(mockOAuth2Instance.getToken).toHaveBeenCalledWith('auth-code');
+      expect(result.access_token).toBe('tok');
+      expect(result.refresh_token).toBe('refresh');
+      expect(result.expires_in).toBeGreaterThan(3500);
+    });
+
+    it('should default expires_in to 3600 when there is no expiry_date', async () => {
+      mockOAuth2Instance.getToken.mockResolvedValueOnce({ tokens: { access_token: 'tok' } });
+
+      const result = await service.exchangeCodeForToken('auth-code');
+
+      expect(result.expires_in).toBe(3600);
+      expect(result.token_type).toBe('Bearer');
+    });
+
+    it('should throw when the response has no access_token', async () => {
+      mockOAuth2Instance.getToken.mockResolvedValueOnce({ tokens: {} });
+
+      await expect(service.exchangeCodeForToken('auth-code')).rejects.toThrow(
+        'Google OAuth response is missing an access_token'
+      );
+    });
+
+    it('should propagate a failed exchange', async () => {
+      mockOAuth2Instance.getToken.mockRejectedValueOnce(new Error('invalid_grant'));
+
+      await expect(service.exchangeCodeForToken('bad-code')).rejects.toThrow('invalid_grant');
+    });
+  });
+
+  describe('storeUserToken', () => {
+    it('should upsert the token with a computed absolute expiry', async () => {
+      await service.storeUserToken(userId, {
+        access_token: 'tok',
+        refresh_token: 'refresh',
+        expires_in: 1800,
+        token_type: 'Bearer',
+      });
+
+      expect(mockChain.from).toHaveBeenCalledWith('user_integrations');
+      expect(mockChain.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: userId, provider: 'google_calendar', access_token: 'tok', is_active: true }),
+        { onConflict: 'user_id,provider' }
+      );
+    });
+
+    it('should default expires_in to 3600 when falsy', async () => {
+      await service.storeUserToken(userId, { access_token: 'tok', expires_in: 0, token_type: 'Bearer' });
+
+      const upsertArg = mockChain.upsert.mock.calls[0][0];
+      const expiresAt = new Date(upsertArg.token_expires_at).getTime();
+      expect(expiresAt).toBeGreaterThan(Date.now() + 3500 * 1000);
+    });
+
+    it('should throw when the upsert fails', async () => {
+      thenResolution = { error: new Error('constraint violation') };
+
+      await expect(
+        service.storeUserToken(userId, { access_token: 'tok', expires_in: 3600, token_type: 'Bearer' })
+      ).rejects.toThrow('constraint violation');
+    });
+  });
+
+  describe('getUserToken', () => {
+    it('should return null when no active token row exists', async () => {
+      mockChain.single.mockResolvedValueOnce({ data: null, error: { message: 'not found' } });
+
+      const result = await service.getUserToken(userId);
+
+      expect(result).toBeNull();
+    });
+
+    it('should compute expires_in from the stored absolute expiry', async () => {
+      const futureExpiry = new Date(Date.now() + 1800 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'tok', refresh_token: 'refresh', token_expires_at: futureExpiry },
+        error: null,
+      });
+
+      const result = await service.getUserToken(userId);
+
+      expect(result?.access_token).toBe('tok');
+      expect(result?.expires_in).toBeGreaterThan(1700);
+      expect(result?.token_type).toBe('Bearer');
+    });
+
+    it('should return null when the lookup throws', async () => {
+      mockChain.single.mockRejectedValueOnce(new Error('db down'));
+
+      const result = await service.getUserToken(userId);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('refreshAccessToken', () => {
+    it('should convert refreshed credentials to a GoogleAuthToken', async () => {
+      const expiryDate = Date.now() + 3600 * 1000;
+      mockOAuth2Instance.refreshAccessToken.mockResolvedValueOnce({
+        credentials: { access_token: 'new-tok', expiry_date: expiryDate },
+      });
+
+      const result = await service.refreshAccessToken('refresh-tok');
+
+      expect(mockOAuth2Instance.setCredentials).toHaveBeenCalledWith({ refresh_token: 'refresh-tok' });
+      expect(result.access_token).toBe('new-tok');
+    });
+
+    it('should mark the integration inactive when refresh fails and a userId is given', async () => {
+      mockOAuth2Instance.refreshAccessToken.mockRejectedValueOnce(new Error('invalid_grant'));
+
+      await expect(service.refreshAccessToken('refresh-tok', userId)).rejects.toThrow('invalid_grant');
+
+      expect(mockChain.update).toHaveBeenCalledWith({ is_active: false });
+    });
+
+    it('should still throw the original error even if marking inactive itself fails', async () => {
+      mockOAuth2Instance.refreshAccessToken.mockRejectedValueOnce(new Error('invalid_grant'));
+      thenResolution = { error: new Error('db down') };
+
+      await expect(service.refreshAccessToken('refresh-tok', userId)).rejects.toThrow('invalid_grant');
+    });
+
+    it('should not attempt to mark inactive when no userId is given', async () => {
+      mockOAuth2Instance.refreshAccessToken.mockRejectedValueOnce(new Error('invalid_grant'));
+
+      await expect(service.refreshAccessToken('refresh-tok')).rejects.toThrow('invalid_grant');
+
+      expect(mockChain.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listCalendars', () => {
+    it('should return an empty array when there is no stored token', async () => {
+      mockChain.single.mockResolvedValueOnce({ data: null, error: { message: 'not found' } });
+
+      const result = await service.listCalendars(userId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return calendars for a still-valid token', async () => {
+      const futureExpiry = new Date(Date.now() + 3600 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'tok', refresh_token: null, token_expires_at: futureExpiry },
+        error: null,
+      });
+      mockCalendarListList.mockResolvedValueOnce({ data: { items: [{ id: 'cal1', summary: 'Primary' }] } });
+
+      const result = await service.listCalendars(userId);
+
+      expect(result).toEqual([{ id: 'cal1', summary: 'Primary' }]);
+    });
+
+    it('should refresh an expiring token before listing calendars', async () => {
+      const soonExpiry = new Date(Date.now() + 60 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'old-tok', refresh_token: 'refresh-tok', token_expires_at: soonExpiry },
+        error: null,
+      });
+      mockOAuth2Instance.refreshAccessToken.mockResolvedValueOnce({
+        credentials: { access_token: 'new-tok', expiry_date: Date.now() + 3600 * 1000 },
+      });
+      mockCalendarListList.mockResolvedValueOnce({ data: { items: [] } });
+
+      const result = await service.listCalendars(userId);
+
+      expect(mockChain.upsert).toHaveBeenCalled(); // storeUserToken persisted the refreshed token
+      expect(result).toEqual([]);
+    });
+
+    it('should throw NO_REFRESH_TOKEN when expiring and there is no refresh token', async () => {
+      const soonExpiry = new Date(Date.now() + 60 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'old-tok', refresh_token: null, token_expires_at: soonExpiry },
+        error: null,
+      });
+
+      await expect(service.listCalendars(userId)).rejects.toMatchObject({ code: 'NO_REFRESH_TOKEN', status: 401 });
+    });
+
+    it('should throw TOKEN_REFRESH_FAILED when the refresh call itself fails', async () => {
+      const soonExpiry = new Date(Date.now() + 60 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'old-tok', refresh_token: 'refresh-tok', token_expires_at: soonExpiry },
+        error: null,
+      });
+      mockOAuth2Instance.refreshAccessToken.mockRejectedValueOnce(new Error('revoked'));
+
+      await expect(service.listCalendars(userId)).rejects.toMatchObject({ code: 'TOKEN_REFRESH_FAILED', status: 401 });
+    });
+  });
+
+  describe('getCalendarEvents', () => {
+    it('should return an empty array when there is no stored token', async () => {
+      mockChain.single.mockResolvedValueOnce({ data: null, error: { message: 'not found' } });
+
+      const result = await service.getCalendarEvents(userId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should aggregate and sort events across all calendars, tagging each with its source calendar', async () => {
+      const futureExpiry = new Date(Date.now() + 3600 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'tok', refresh_token: null, token_expires_at: futureExpiry },
+        error: null,
+      });
+      mockCalendarListList.mockResolvedValueOnce({
+        data: {
+          items: [
+            { id: 'cal1', summary: 'Personal', backgroundColor: '#fff' },
+            { id: 'cal2', summary: 'Work', backgroundColor: '#000' },
+          ],
+        },
+      });
+      mockEventsList
+        .mockResolvedValueOnce({ data: { items: [{ id: 'e2', start: { dateTime: '2026-02-01T10:00:00Z' } }] } })
+        .mockResolvedValueOnce({ data: { items: [{ id: 'e1', start: { dateTime: '2026-01-01T10:00:00Z' } }] } });
+
+      const result = await service.getCalendarEvents(userId);
+
+      expect(result.map((e) => e.id)).toEqual(['e1', 'e2']);
+      expect(result[0].calendarId).toBe('cal2');
+      expect(result[0].calendarName).toBe('Work');
+      expect(result[1].calendarId).toBe('cal1');
+    });
+
+    it('should continue when one calendar fails to fetch events', async () => {
+      const futureExpiry = new Date(Date.now() + 3600 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'tok', refresh_token: null, token_expires_at: futureExpiry },
+        error: null,
+      });
+      mockCalendarListList.mockResolvedValueOnce({
+        data: { items: [{ id: 'cal1', summary: 'Personal' }, { id: 'cal2', summary: 'Broken' }] },
+      });
+      mockEventsList
+        .mockResolvedValueOnce({ data: { items: [{ id: 'e1', start: { dateTime: '2026-01-01T10:00:00Z' } }] } })
+        .mockRejectedValueOnce(new Error('calendar unavailable'));
+
+      const result = await service.getCalendarEvents(userId);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('e1');
+    });
+
+    it('should refresh an expiring token before fetching events', async () => {
+      const soonExpiry = new Date(Date.now() + 60 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'old-tok', refresh_token: 'refresh-tok', token_expires_at: soonExpiry },
+        error: null,
+      });
+      mockOAuth2Instance.refreshAccessToken.mockResolvedValueOnce({
+        credentials: { access_token: 'new-tok', expiry_date: Date.now() + 3600 * 1000 },
+      });
+      mockCalendarListList.mockResolvedValueOnce({ data: { items: [] } });
+
+      const result = await service.getCalendarEvents(userId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw NO_REFRESH_TOKEN when expiring with no refresh token', async () => {
+      const soonExpiry = new Date(Date.now() + 60 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'old-tok', refresh_token: null, token_expires_at: soonExpiry },
+        error: null,
+      });
+
+      await expect(service.getCalendarEvents(userId)).rejects.toMatchObject({ code: 'NO_REFRESH_TOKEN' });
+    });
+
+    it('should throw TOKEN_REFRESH_FAILED when refresh itself fails', async () => {
+      const soonExpiry = new Date(Date.now() + 60 * 1000).toISOString();
+      mockChain.single.mockResolvedValueOnce({
+        data: { access_token: 'old-tok', refresh_token: 'refresh-tok', token_expires_at: soonExpiry },
+        error: null,
+      });
+      mockOAuth2Instance.refreshAccessToken.mockRejectedValueOnce(new Error('revoked'));
+
+      await expect(service.getCalendarEvents(userId)).rejects.toMatchObject({ code: 'TOKEN_REFRESH_FAILED' });
+    });
+  });
+});

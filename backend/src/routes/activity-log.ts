@@ -56,7 +56,7 @@ router.get('/family-feed', async (req: Request, res: Response) => {
     }
 
     // Get user's family
-    const { data: familyMember } = await require('../services/supabase').supabase
+    const { data: familyMember } = await require('../services/supabase').getSupabase()
       .from('family_members')
       .select('family_id')
       .eq('user_id', userId)

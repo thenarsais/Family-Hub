@@ -13,16 +13,25 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
     '!src/server.ts',
+    // One-shot CLI scripts that execute immediately on import (fs/pg/dotenv
+    // side effects at module scope, no exports) -- not application logic
+    // that's reused or unit-testable, same category as runMigrations.ts/
+    // seed.ts below.
     '!src/runMigrations.ts',
-    '!src/seed.ts'
+    '!src/migrations.ts',
+    '!src/runMigrationsV2.ts',
+    '!src/seed.ts',
+    // Pure type declarations, no runtime behavior to cover.
+    '!src/types/database.ts'
   ],
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
     }
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
