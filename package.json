@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Family Hub - Home automation and educational platform",
   "private": true,
+  "packageManager": "npm@11.17.0",
   "workspaces": [
     "frontend",
     "backend"
@@ -10,18 +11,28 @@
   "scripts": {
     "start": "npm run start --workspace=backend",
     "dev": "npm run dev --workspaces",
-    "build": "npm run build --workspaces",
-    "validate": "npm run validate --workspaces",
-    "lint": "npm run lint --workspaces",
+    "build": "turbo run build",
+    "validate": "turbo run validate",
+    "lint": "turbo run lint",
     "format": "npm run format --workspaces",
-    "test": "npm run test --workspaces",
+    "test": "turbo run test",
     "test:watch": "npm run test:watch --workspaces",
-    "test:coverage": "npm run test:coverage --workspaces",
-    "check:debt": "npm run check:debt --workspaces"
+    "test:coverage": "turbo run test:coverage",
+    "check:debt": "npm run check:debt --workspaces",
+    "tunnel": "npx ngrok http 3000",
+    "changelog": "conventional-changelog -p conventionalcommits -i CHANGELOG.md -s",
+    "changelog:first": "conventional-changelog -p conventionalcommits -i CHANGELOG.md -s -r 0"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
-    "playwright": "^1.62.1"
+    "conventional-changelog-cli": "^5.0.0",
+    "playwright": "^1.62.1",
+    "turbo": "^2.10.12"
+  },
+  "overrides": {
+    "conventional-changelog-cli": {
+      "conventional-changelog": "^8.0.0"
+    }
   }
 }

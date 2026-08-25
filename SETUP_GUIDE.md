@@ -95,6 +95,26 @@ npm run dev
 
 App runs on `http://localhost:5173`
 
+### Exposing your local backend (ngrok tunnel)
+
+Google's OAuth consent flow needs a real, publicly-reachable HTTPS redirect URI --
+`http://localhost:3000` doesn't work as a registered callback. To test the Google
+Calendar OAuth flow (or any webhook that needs to reach your machine) against your
+local backend:
+
+```bash
+npm run tunnel
+```
+
+This runs `ngrok http 3000`, forwarding a public `https://*.ngrok-free.app` URL to
+your local backend. First time only: [sign up free at ngrok.com](https://ngrok.com)
+and run `npx ngrok config add-authtoken <your-token>` -- ngrok requires an authtoken
+even on the free tier. Once the tunnel is up, temporarily point
+`GOOGLE_CLIENT_ID`'s authorized redirect URI (in the
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials)) at the
+ngrok URL's `/api/calendar/auth/google/callback` path -- see
+[GOOGLE_CALENDAR_SETUP.md](./GOOGLE_CALENDAR_SETUP.md) for the full OAuth setup.
+
 ---
 
 ## Verify Everything Works
