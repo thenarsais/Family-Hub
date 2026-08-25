@@ -357,16 +357,25 @@ jobs:
             sleep 2
           done
 
-      # lhci autorun = collect + assert against frontend/lighthouserc.json's
-      # thresholds (matching the targets summarized below) + save results
-      # locally. Previously ran `lighthouse:collect` (collect only, no
-      # assertions) against port 5173 (the dev server) while this job's own
-      # server was `vite preview` on 4173 -- collect was silently failing to
-      # connect, and `|| true` swallowed it, so this gate asserted nothing.
+      # Previously ran `lhci autorun` (the @lhci/cli chrome-launcher path)
+      # directly. That fixed the original bug (collect-only, wrong port,
+      # `|| true` swallowing failures -- see git history), but hit a new,
+      # CI-runner-specific issue: Chrome launched and navigated fine, then
+      # never painted for the full 30s timeout (NO_FCP), reproducing
+      # identically across 4 different chromeFlags combinations and
+      # completely unaffected by real bundle-size fixes made along the way.
+      # Switched to this action, which manages its own Chrome
+      # install/launch path instead of chrome-launcher's default flags.
       - name: Run Lighthouse CI
-        run: cd frontend && npm run lighthouse
-        env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            http://localhost:4173/
+            http://localhost:4173/login
+            http://localhost:4173/dashboard
+          configPath: ./frontend/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
 
       - name: Generate performance report
         if: always()
@@ -384,13 +393,11 @@ jobs:
           echo "- Best Practices (target: 85+)" >> $GITHUB_STEP_SUMMARY
           echo "- SEO (target: 80+)" >> $GITHUB_STEP_SUMMARY
           echo "- Cumulative Layout Shift (target: 0.1 or better)" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Lighthouse results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lighthouse-results
-          path: frontend/.lighthouseci
+          # treosh/lighthouse-ci-action's own uploadArtifacts: true above
+          # already uploads the raw reports -- a second explicit
+          # actions/upload-artifact step here would collide on the same
+          # artifact name (v4 requires unique names) and pointed at a path
+          # (frontend/.lighthouseci) the action doesn't actually write to.
 
   # ================================================
   # BUILD STATISTICS & PERFORMANCE BASELINE

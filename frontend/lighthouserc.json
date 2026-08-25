@@ -8,7 +8,7 @@
       ],
       "numberOfRuns": 1,
       "settings": {
-        "chromeFlags": "--no-sandbox --disable-dev-shm-usage --headless=old"
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
       }
     },
     "assert": {
@@ -19,10 +19,6 @@
         "categories:seo": ["error", { "minScore": 0.8 }],
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }]
       }
-    },
-    "upload": {
-      "target": "filesystem",
-      "outputDir": "./.lighthouseci"
     }
   }
 }
