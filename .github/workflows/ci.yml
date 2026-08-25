@@ -440,15 +440,6 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm run build
 
-      - name: DEBUG bundle content
-        run: |
-          echo "node: $(node -v)"
-          F=$(ls frontend/dist/assets/*.js)
-          echo "file: $F ($(wc -c < "$F") bytes)"
-          for term in "sentry" "Sentry" "lucide" "axios" "zustand" "react-router" "@sentry/tracing" "BrowserTracing" "instrumentation"; do
-            echo "$term: $(grep -o "$term" "$F" | wc -l)"
-          done
-
       - name: Check frontend bundle size budget (fails if >10% over baseline)
         run: cd frontend && npm run check:bundle-budget
 

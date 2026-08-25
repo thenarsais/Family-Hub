@@ -6,27 +6,34 @@
 //   node scripts/check-bundle-budget.js                 # check dist/ against the budget
 //   node scripts/check-bundle-budget.js --update-baseline  # record dist/'s current size as the new baseline
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { gzipSync } from 'zlib';
-import { join, dirname, extname } from 'path';
+import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const distDir = join(__dirname, '..', 'dist', 'assets');
+const distRoot = join(__dirname, '..', 'dist');
 const budgetPath = join(__dirname, '..', 'performance-budget.json');
 
-function gzipSizeOfDir(dir, ext) {
+// Only count assets eagerly referenced from index.html's <script>/<link>
+// tags -- the initial page-load payload. dist/assets can also contain
+// lazy chunks (e.g. Sentry, loaded via dynamic import() only once a real
+// DSN is configured) that a real user's browser never fetches unless that
+// code path actually runs; summing every file in the directory regardless
+// of whether it's on the critical path overstates what's actually shipped.
+function gzipSizeOfReferencedAssets(ext, attr) {
+  const html = readFileSync(join(distRoot, 'index.html'), 'utf-8');
+  const re = new RegExp(`${attr}="/?(assets/[^"]+${ext.replace('.', '\\.')})"`, 'g');
   let total = 0;
-  for (const file of readdirSync(dir)) {
-    if (extname(file) !== ext) continue;
-    const contents = readFileSync(join(dir, file));
+  for (const match of html.matchAll(re)) {
+    const contents = readFileSync(join(distRoot, match[1]));
     total += gzipSync(contents).length;
   }
   return total;
 }
 
-const jsBytes = gzipSizeOfDir(distDir, '.js');
-const cssBytes = gzipSizeOfDir(distDir, '.css');
+const jsBytes = gzipSizeOfReferencedAssets('.js', 'src');
+const cssBytes = gzipSizeOfReferencedAssets('.css', 'href');
 
 const updateBaseline = process.argv.includes('--update-baseline');
 
