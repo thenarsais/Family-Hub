@@ -56,11 +56,11 @@ export function useAnnouncements(): UseAnnouncementsReturn {
         return;
       }
 
-      const response = await apiClient.get('/announcements', {
+      const response = await apiClient.get('/api/announcements', {
         headers: { 'x-user-id': user.id },
       });
 
-      setAnnouncements(response.data || []);
+      setAnnouncements(response.data?.data || []);
     } catch (err: any) {
       console.error('Failed to fetch announcements:', err);
       setError(err.message || 'Failed to fetch announcements');
@@ -85,7 +85,7 @@ export function useAnnouncements(): UseAnnouncementsReturn {
       }
 
       const response = await apiClient.post(
-        '/announcements',
+        '/api/announcements',
         {
           family_id: familyId,
           title,
@@ -95,7 +95,7 @@ export function useAnnouncements(): UseAnnouncementsReturn {
         { headers: { 'x-user-id': user.id } },
       );
 
-      const newAnnouncement = response.data;
+      const newAnnouncement = response.data?.data;
       setAnnouncements((prev) => [newAnnouncement, ...prev]);
       return newAnnouncement;
     } catch (err: any) {
@@ -111,7 +111,7 @@ export function useAnnouncements(): UseAnnouncementsReturn {
       }
 
       await apiClient.post(
-        `/announcements/${announcementId}/read`,
+        `/api/announcements/${announcementId}/read`,
         {},
         { headers: { 'x-user-id': user.id } },
       );
@@ -133,7 +133,7 @@ export function useAnnouncements(): UseAnnouncementsReturn {
         throw new Error('User not authenticated');
       }
 
-      await apiClient.delete(`/announcements/${announcementId}`, {
+      await apiClient.delete(`/api/announcements/${announcementId}`, {
         headers: { 'x-user-id': user.id },
       });
 

@@ -13,9 +13,9 @@ import { useFamily } from '@/hooks/useFamily';
 
 function mockGetPaths(overrides: { family?: unknown; members?: unknown[]; settings?: unknown } = {}) {
   (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-    if (path === '/family') return Promise.resolve({ data: overrides.family ?? null });
-    if (path === '/family/members') return Promise.resolve({ data: overrides.members ?? [] });
-    if (path === '/family/settings') return Promise.resolve({ data: overrides.settings ?? null });
+    if (path === '/api/family') return Promise.resolve({ data: { status: 'success', data: overrides.family ?? null } });
+    if (path === '/api/family/members') return Promise.resolve({ data: { status: 'success', data: overrides.members ?? [] } });
+    if (path === '/api/family/settings') return Promise.resolve({ data: { status: 'success', data: overrides.settings ?? null } });
     return Promise.reject(new Error(`unexpected path ${path}`));
   });
 }
@@ -62,7 +62,9 @@ describe('useFamily', () => {
   describe('inviteMember', () => {
     it('should post and return the invite token', async () => {
       mockGetPaths();
-      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { invite_token: 'tok-abc' } });
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { status: 'success', data: { invite_token: 'tok-abc' } },
+      });
 
       const { result } = renderHook(() => useFamily());
       await waitFor(() => expect(result.current.loading).toBe(false));
@@ -73,7 +75,7 @@ describe('useFamily', () => {
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/family/members/invite',
+        '/api/family/members/invite',
         { email: 'a@b.com', role: 'parent' },
         { headers: { 'x-user-id': 'user-1' } }
       );
@@ -82,7 +84,7 @@ describe('useFamily', () => {
 
     it('should default to an empty string when there is no invite_token', async () => {
       mockGetPaths();
-      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: {} });
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { status: 'success', data: {} } });
 
       const { result } = renderHook(() => useFamily());
       await waitFor(() => expect(result.current.loading).toBe(false));
@@ -117,7 +119,7 @@ describe('useFamily', () => {
       });
 
       expect(apiClient.patch).toHaveBeenCalledWith(
-        '/family/members/u2/role',
+        '/api/family/members/u2/role',
         { role: 'parent' },
         { headers: { 'x-user-id': 'user-1' } }
       );
@@ -145,7 +147,7 @@ describe('useFamily', () => {
         await result.current.removeMember('u2');
       });
 
-      expect(apiClient.delete).toHaveBeenCalledWith('/family/members/u2', { headers: { 'x-user-id': 'user-1' } });
+      expect(apiClient.delete).toHaveBeenCalledWith('/api/family/members/u2', { headers: { 'x-user-id': 'user-1' } });
       expect(result.current.members).toEqual([]);
     });
 
@@ -161,7 +163,9 @@ describe('useFamily', () => {
   describe('updateSettings', () => {
     it('should patch and store the returned settings', async () => {
       mockGetPaths();
-      (apiClient.patch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { family_id: 'family-1', theme: 'dark' } });
+      (apiClient.patch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { status: 'success', data: { family_id: 'family-1', theme: 'dark' } },
+      });
 
       const { result } = renderHook(() => useFamily());
       await waitFor(() => expect(result.current.loading).toBe(false));
@@ -171,7 +175,7 @@ describe('useFamily', () => {
       });
 
       expect(apiClient.patch).toHaveBeenCalledWith(
-        '/family/settings',
+        '/api/family/settings',
         { theme: 'dark' },
         { headers: { 'x-user-id': 'user-1' } }
       );

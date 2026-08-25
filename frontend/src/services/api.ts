@@ -135,8 +135,7 @@ class ApiClient {
   }
 
   async awardBadge(userId: string, badgeId: string, reason?: string) {
-    const response = await this.client.post(`/badges/users/${userId}/award`, {
-      badge_id: badgeId,
+    const response = await this.client.post(`/badges/users/${userId}/badges/${badgeId}`, {
       reason,
     });
     return response.data;
@@ -193,46 +192,45 @@ class ApiClient {
 
   // ============ External APIs ============
   async getWordDefinition(word: string) {
-    const response = await this.client.get(`/dictionary/word/${word}`);
+    const response = await this.client.get(`/api/external/dictionary/word/${word}`);
     return response.data;
   }
 
   async getWordOfDay() {
-    const response = await this.client.get('/dictionary/word-of-day');
+    const response = await this.client.get('/api/external/dictionary/word-of-day');
     return response.data;
   }
 
   async searchWords(prefix: string, limit = 5) {
-    const response = await this.client.get('/dictionary/search', {
+    const response = await this.client.get('/api/external/dictionary/search', {
       params: { prefix, limit },
     });
     return response.data;
   }
 
   async getWeatherByCity(city: string, units = 'metric') {
-    const response = await this.client.get(`/weather/city/${city}`, {
+    const response = await this.client.get(`/api/external/weather/city/${city}`, {
       params: { units },
     });
     return response.data;
   }
 
   async getWeatherByCoords(lat: number, lon: number, units = 'metric') {
-    const response = await this.client.get('/weather/coords', {
+    const response = await this.client.get('/api/external/weather/coords', {
       params: { lat, lon, units },
     });
     return response.data;
   }
 
   async getWeatherForecast(city: string) {
-    const response = await this.client.get(`/weather/forecast/${city}`);
+    const response = await this.client.get(`/api/external/weather/forecast/${city}`);
     return response.data;
   }
 
-  async checkWeatherSuitability(latitude: number, longitude: number, activity: string) {
-    const response = await this.client.post('/weather/activity-suitability', {
-      latitude,
-      longitude,
-      activity,
+  async checkWeatherSuitability(city: string, activityType: string) {
+    const response = await this.client.post('/api/external/weather/activity-suitability', {
+      city,
+      activityType,
     });
     return response.data;
   }
@@ -266,17 +264,17 @@ class ApiClient {
 
   // ============ SmartThings Devices ============
   async getSmartThingsDevices() {
-    const response = await this.client.get('/smartthings/devices');
+    const response = await this.client.get('/api/smartthings/devices');
     return response.data;
   }
 
   async getSmartThingsDevice(deviceId: string) {
-    const response = await this.client.get(`/smartthings/devices/${deviceId}`);
+    const response = await this.client.get(`/api/smartthings/devices/${deviceId}`);
     return response.data;
   }
 
   async controlSmartThingsDevice(deviceId: string, command: string, args?: any[]) {
-    const response = await this.client.put(`/smartthings/devices/${deviceId}`, {
+    const response = await this.client.put(`/api/smartthings/devices/${deviceId}`, {
       command,
       arguments: args,
     });
@@ -284,7 +282,7 @@ class ApiClient {
   }
 
   async getSmartThingsStatus() {
-    const response = await this.client.get('/smartthings/status');
+    const response = await this.client.get('/api/smartthings/status');
     return response.data;
   }
 
