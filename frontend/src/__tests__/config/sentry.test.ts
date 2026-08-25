@@ -1,11 +1,15 @@
 import { vi } from 'vitest';
 
-const { mockInit } = vi.hoisted(() => ({ mockInit: vi.fn() }));
+const { mockInit, mockCaptureException } = vi.hoisted(() => ({
+  mockInit: vi.fn(),
+  mockCaptureException: vi.fn(),
+}));
 vi.mock('@sentry/react', () => ({
   init: mockInit,
+  captureException: mockCaptureException,
 }));
 
-import { initSentry, Sentry } from '@/config/sentry';
+import { initSentry, captureException } from '@/config/sentry';
 
 describe('initSentry', () => {
   beforeEach(() => {
@@ -17,21 +21,26 @@ describe('initSentry', () => {
     vi.unstubAllEnvs();
   });
 
-  it('should warn and skip initialization when VITE_SENTRY_DSN is unset', () => {
+  it('should no-op captureException before Sentry has ever been initialized', () => {
+    expect(() => captureException(new Error('boom'))).not.toThrow();
+    expect(mockCaptureException).not.toHaveBeenCalled();
+  });
+
+  it('should warn and skip initialization when VITE_SENTRY_DSN is unset', async () => {
     vi.stubEnv('VITE_SENTRY_DSN', '');
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    initSentry();
+    await initSentry();
 
     expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('VITE_SENTRY_DSN not configured'));
     expect(mockInit).not.toHaveBeenCalled();
     consoleWarnSpy.mockRestore();
   });
 
-  it('should initialize Sentry with the configured DSN and disabled sampling', () => {
+  it('should initialize Sentry with the configured DSN and disabled sampling', async () => {
     vi.stubEnv('VITE_SENTRY_DSN', 'https://example.sentry.io/1');
 
-    initSentry();
+    await initSentry();
 
     expect(mockInit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -40,9 +49,8 @@ describe('initSentry', () => {
         replaysSessionSampleRate: 0,
       })
     );
-  });
 
-  it('should re-export the Sentry namespace', () => {
-    expect(Sentry).toBeDefined();
+    captureException(new Error('boom'));
+    expect(mockCaptureException).toHaveBeenCalledWith(expect.any(Error), undefined);
   });
 });
