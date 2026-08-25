@@ -90,7 +90,8 @@ describe('useDevices', () => {
   it('controlDevice should merge the returned status into local state', async () => {
     (apiClient.getSmartThingsDevices as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ devices: [device1] });
     (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      status: { switch: 'on' },
+      status: 'success',
+      device: { ...device1, status: { switch: 'on' } },
     });
 
     const { result } = renderHook(() => useDevices());
@@ -120,7 +121,7 @@ describe('useDevices', () => {
 
   it('turnOn should call controlDevice with "on"', async () => {
     (apiClient.getSmartThingsDevices as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ devices: [device1] });
-    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: {} });
+    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: 'success', device: {} });
 
     const { result } = renderHook(() => useDevices());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -134,7 +135,7 @@ describe('useDevices', () => {
 
   it('turnOff should call controlDevice with "off"', async () => {
     (apiClient.getSmartThingsDevices as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ devices: [device1] });
-    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: {} });
+    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: 'success', device: {} });
 
     const { result } = renderHook(() => useDevices());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -148,7 +149,7 @@ describe('useDevices', () => {
 
   it('setBrightness should clamp to 0-100', async () => {
     (apiClient.getSmartThingsDevices as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ devices: [device1] });
-    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValue({ status: {} });
+    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValue({ status: 'success', device: {} });
 
     const { result } = renderHook(() => useDevices());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -166,7 +167,7 @@ describe('useDevices', () => {
 
   it('setTemperature should pass the value through', async () => {
     (apiClient.getSmartThingsDevices as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ devices: [device1] });
-    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: {} });
+    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: 'success', device: {} });
 
     const { result } = renderHook(() => useDevices());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -180,7 +181,7 @@ describe('useDevices', () => {
 
   it('lock should call controlDevice with "lock"', async () => {
     (apiClient.getSmartThingsDevices as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ devices: [device2] });
-    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: {} });
+    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: 'success', device: {} });
 
     const { result } = renderHook(() => useDevices());
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -194,7 +195,7 @@ describe('useDevices', () => {
 
   it('unlock should call controlDevice with "unlock"', async () => {
     (apiClient.getSmartThingsDevices as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ devices: [device2] });
-    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: {} });
+    (apiClient.controlSmartThingsDevice as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ status: 'success', device: {} });
 
     const { result } = renderHook(() => useDevices());
     await waitFor(() => expect(result.current.loading).toBe(false));

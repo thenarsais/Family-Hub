@@ -13,8 +13,12 @@ import { useEnergy } from '@/hooks/useEnergy';
 
 function mockGetPaths(overrides: { total_kwh?: number; goals?: unknown[] } = {}) {
   (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-    if (path === '/energy/current-month') return Promise.resolve({ data: { total_kwh: overrides.total_kwh ?? 0 } });
-    if (path === '/energy/goals') return Promise.resolve({ data: overrides.goals ?? [] });
+    if (path === '/api/energy/current-month') {
+      return Promise.resolve({ data: { status: 'success', data: { total_kwh: overrides.total_kwh ?? 0 } } });
+    }
+    if (path === '/api/energy/goals') {
+      return Promise.resolve({ data: { status: 'success', data: overrides.goals ?? [] } });
+    }
     return Promise.reject(new Error(`unexpected path ${path}`));
   });
 }
@@ -65,7 +69,9 @@ describe('useEnergy', () => {
   describe('createGoal', () => {
     it('should post and append the new goal', async () => {
       mockGetPaths();
-      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { id: 'g1', goal_type: 'monthly' } });
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { status: 'success', data: { id: 'g1', goal_type: 'monthly' } },
+      });
 
       const { result } = renderHook(() => useEnergy());
       await waitFor(() => expect(result.current.loading).toBe(false));
@@ -76,7 +82,7 @@ describe('useEnergy', () => {
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/energy/goals',
+        '/api/energy/goals',
         { goal_type: 'monthly', target_kwh: 500, start_date: '2026-01-01', end_date: '2026-01-31', points_reward: 100 },
         { headers: { 'x-user-id': 'user-1' } }
       );
