@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { components } from '@/types/api-generated';
-import { apiClient } from '../services/api';
+import { apiClient, type ApiEnvelope } from '../services/api';
 import { useAuth } from './useAuth';
 
 // GET /api/announcements returns the base row plus a per-user read flag.
@@ -44,7 +44,7 @@ export function useAnnouncements(): UseAnnouncementsReturn {
         return;
       }
 
-      const response = await apiClient.get('/api/announcements', {
+      const response = await apiClient.get<ApiEnvelope<Announcement[]>>('/api/announcements', {
         headers: { 'x-user-id': user.id },
       });
 
@@ -72,7 +72,7 @@ export function useAnnouncements(): UseAnnouncementsReturn {
         throw new Error('User not authenticated');
       }
 
-      const response = await apiClient.post(
+      const response = await apiClient.post<ApiEnvelope<Announcement>>(
         '/api/announcements',
         {
           family_id: familyId,
