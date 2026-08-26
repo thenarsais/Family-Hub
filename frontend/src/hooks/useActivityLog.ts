@@ -1,18 +1,9 @@
 import { useState, useEffect } from 'react';
+import type { components } from '@/types/api-generated';
 import { apiClient } from '../services/api';
 import { useAuth } from './useAuth';
 
-interface ActivityLogEntry {
-  id: string;
-  user_id: string;
-  activity_type: string;
-  action: string;
-  points_earned: number;
-  achievement_title?: string;
-  related_item_id?: string;
-  related_item_type?: string;
-  created_at: string;
-}
+type ActivityLogEntry = components['schemas']['ActivityLogEntry'];
 
 interface UseActivityLogReturn {
   activity: ActivityLogEntry[];
@@ -46,11 +37,11 @@ export function useActivityLog(): UseActivityLogReturn {
 
       if (!user?.id) return;
 
-      const response = await apiClient.get('/activity/feed', {
+      const response = await apiClient.get('/api/activity/feed', {
         headers: { 'x-user-id': user.id },
       });
 
-      setActivity(response.data || []);
+      setActivity(response.data?.data || []);
     } catch (err: any) {
       console.error('Failed to fetch activity:', err);
       setError(err.message || 'Failed to fetch activity');
@@ -63,11 +54,11 @@ export function useActivityLog(): UseActivityLogReturn {
     try {
       if (!user?.id) return;
 
-      const response = await apiClient.get('/activity/family-feed', {
+      const response = await apiClient.get('/api/activity/family-feed', {
         headers: { 'x-user-id': user.id },
       });
 
-      setFamilyActivity(response.data || []);
+      setFamilyActivity(response.data?.data || []);
     } catch (err: any) {
       console.error('Failed to fetch family activity:', err);
     }
@@ -77,11 +68,11 @@ export function useActivityLog(): UseActivityLogReturn {
     try {
       if (!user?.id) return;
 
-      const response = await apiClient.get('/activity/stats', {
+      const response = await apiClient.get('/api/activity/stats', {
         headers: { 'x-user-id': user.id },
       });
 
-      setStats(response.data || {});
+      setStats(response.data?.data || {});
     } catch (err: any) {
       console.error('Failed to fetch activity stats:', err);
     }
@@ -103,7 +94,7 @@ export function useActivityLog(): UseActivityLogReturn {
       if (!user?.id) throw new Error('User not authenticated');
 
       await apiClient.post(
-        '/activity/log',
+        '/api/activity/log',
         {
           user_id: user.id,
           activity_type: activityType,
