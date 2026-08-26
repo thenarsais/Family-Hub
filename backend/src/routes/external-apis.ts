@@ -9,7 +9,10 @@ import * as weather from '../services/openweather';
 import * as sendgrid from '../services/sendgrid';
 
 import { getErrorMessage } from '../utils/errors';
+import { normalizeBody } from '../middleware/normalize-body';
+
 const router = Router();
+router.use(normalizeBody); // req.body is {} even on a bodyless request
 
 // Middleware to verify auth
 const verifyAuth = (req: Request, res: Response, next: Function) => {

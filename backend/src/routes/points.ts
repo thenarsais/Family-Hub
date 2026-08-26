@@ -7,7 +7,10 @@ import { Router, Request, Response } from 'express';
 import * as PointsRepository from '../database/repositories/PointsRepository';
 
 import { getErrorMessage } from '../utils/errors';
+import { normalizeBody } from '../middleware/normalize-body';
+
 const router = Router();
+router.use(normalizeBody); // req.body is {} even on a bodyless request
 
 // Middleware to verify auth header
 const verifyAuth = (req: Request, res: Response, next: Function) => {

@@ -155,6 +155,13 @@ describe('Chores Routes', () => {
       expect(res.body.message).toContain('required');
     });
 
+    it('should return 4xx (not 500) for a bodyless request', async () => {
+      // The handler destructures `req.body` before the userId guard; without
+      // normalizeBody a bodyless POST would throw and 500. See middleware/normalize-body.ts.
+      await request(app).post('/api/chores').expect(401);
+      await request(app).post('/api/chores').set('x-user-id', 'user-1').expect(400);
+    });
+
     it('should validate timeSlot enum', async () => {
       const res = await request(app)
         .post('/api/chores')

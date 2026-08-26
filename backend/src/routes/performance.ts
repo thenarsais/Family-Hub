@@ -19,7 +19,10 @@ import { getCompressionStats } from '../middleware/compression';
 import { getIndexMonitoringQueries } from '../database/indexes';
 
 import { getErrorMessage } from '../utils/errors';
+import { normalizeBody } from '../middleware/normalize-body';
+
 const router = Router();
+router.use(normalizeBody); // req.body is {} even on a bodyless request
 
 /**
  * GET /performance/health

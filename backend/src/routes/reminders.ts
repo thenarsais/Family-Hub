@@ -2,7 +2,10 @@ import { Router, Request, Response } from 'express';
 import { getReminderService } from '../services/reminders';
 
 import { getErrorMessage } from '../utils/errors';
+import { normalizeBody } from '../middleware/normalize-body';
+
 const router = Router();
+router.use(normalizeBody); // req.body is {} even on a bodyless request
 const reminders = getReminderService();
 
 /**

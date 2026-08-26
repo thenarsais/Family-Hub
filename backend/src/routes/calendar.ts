@@ -4,7 +4,10 @@ import { getFamilyService } from '../services/family';
 import { getGoogleOAuthService } from '../services/google-oauth';
 
 import { getErrorMessage } from '../utils/errors';
+import { normalizeBody } from '../middleware/normalize-body';
+
 const router = Router();
+router.use(normalizeBody); // req.body is {} even on a bodyless request
 const calendar = getCalendarService();
 const family = getFamilyService();
 const googleOAuth = getGoogleOAuthService();
