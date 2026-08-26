@@ -1,22 +1,10 @@
 import { useState, useEffect } from 'react';
+import type { components } from '@/types/api-generated';
 import { apiClient } from '../services/api';
 import { useAuth } from './useAuth';
 
-interface Announcement {
-  id: string;
-  family_id: string;
-  created_by_id: string;
-  title: string;
-  message: string;
-  announcement_type: string;
-  priority: string;
-  target_audience: string;
-  is_pinned: boolean;
-  expires_at?: string;
-  created_at: string;
-  updated_at: string;
-  is_read?: boolean;
-}
+// GET /api/announcements returns the base row plus a per-user read flag.
+type Announcement = components['schemas']['Announcement'] & { is_read?: boolean };
 
 interface UseAnnouncementsReturn {
   announcements: Announcement[];
