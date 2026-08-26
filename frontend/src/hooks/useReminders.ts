@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { components } from '@/types/api-generated';
-import { apiClient } from '../services/api';
+import { apiClient, type ApiEnvelope } from '../services/api';
 import { useAuth } from './useAuth';
 
 type Reminder = components['schemas']['Reminder'];
@@ -34,7 +34,7 @@ export function useReminders(): UseRemindersReturn {
         return;
       }
 
-      const response = await apiClient.get('/api/reminders', {
+      const response = await apiClient.get<ApiEnvelope<Reminder[]>>('/api/reminders', {
         headers: { 'x-user-id': user.id },
       });
 
@@ -51,7 +51,7 @@ export function useReminders(): UseRemindersReturn {
     try {
       if (!user?.id) return;
 
-      const response = await apiClient.get('/api/reminders/upcoming', {
+      const response = await apiClient.get<ApiEnvelope<Reminder[]>>('/api/reminders/upcoming', {
         headers: { 'x-user-id': user.id },
       });
 
@@ -72,7 +72,7 @@ export function useReminders(): UseRemindersReturn {
         throw new Error('User not authenticated');
       }
 
-      const response = await apiClient.post(
+      const response = await apiClient.post<ApiEnvelope<Reminder>>(
         '/api/reminders',
         data,
         { headers: { 'x-user-id': user.id } },

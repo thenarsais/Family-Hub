@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { components } from '@/types/api-generated';
-import { apiClient } from '../services/api';
+import { apiClient, type ApiEnvelope } from '../services/api';
 import { useAuth } from './useAuth';
 
 type EnergyGoal = components['schemas']['EnergyGoal'];
@@ -35,10 +35,10 @@ export function useEnergy(): UseEnergyReturn {
       if (!user?.id) return;
 
       const [usageResponse, goalsResponse] = await Promise.all([
-        apiClient.get('/api/energy/current-month', {
+        apiClient.get<ApiEnvelope<{ total_kwh?: number | null }>>('/api/energy/current-month', {
           headers: { 'x-user-id': user.id },
         }),
-        apiClient.get('/api/energy/goals', {
+        apiClient.get<ApiEnvelope<EnergyGoal[]>>('/api/energy/goals', {
           headers: { 'x-user-id': user.id },
         }),
       ]);
@@ -66,7 +66,7 @@ export function useEnergy(): UseEnergyReturn {
   ): Promise<EnergyGoal> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    const response = await apiClient.post(
+    const response = await apiClient.post<ApiEnvelope<EnergyGoal>>(
       '/api/energy/goals',
       { goal_type: goalType, target_kwh: targetKwh, start_date: startDate, end_date: endDate, points_reward: pointsReward },
       { headers: { 'x-user-id': user.id } },

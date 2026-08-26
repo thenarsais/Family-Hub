@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { components } from '@/types/api-generated';
-import { apiClient } from '../services/api';
+import { apiClient, type ApiEnvelope } from '../services/api';
 import { useAuth } from './useAuth';
 
 type LocalCalendarEvent = components['schemas']['CalendarEvent'];
@@ -48,13 +48,13 @@ export function useCalendar(): UseCalendarReturn {
       if (!user?.id) return;
 
       const [eventsResponse, upcomingResponse, googleEventsResponse] = await Promise.all([
-        apiClient.get('/api/calendar/events', {
+        apiClient.get<ApiEnvelope<LocalCalendarEvent[]>>('/api/calendar/events', {
           headers: { 'x-user-id': user.id },
         }).catch(() => ({ data: { data: [] } })),
-        apiClient.get('/api/calendar/upcoming', {
+        apiClient.get<ApiEnvelope<LocalCalendarEvent[]>>('/api/calendar/upcoming', {
           headers: { 'x-user-id': user.id },
         }).catch(() => ({ data: { data: [] } })),
-        apiClient.get('/api/calendar/google/events', {
+        apiClient.get<ApiEnvelope<GoogleCalendarEvent[]>>('/api/calendar/google/events', {
           headers: { 'x-user-id': user.id },
         }).catch((err) => {
           // Handle Google token expiration specifically
@@ -112,7 +112,7 @@ export function useCalendar(): UseCalendarReturn {
       if (!user?.id) return;
 
       try {
-        const authResponse = await apiClient.get('/api/calendar/auth/google', {
+        const authResponse = await apiClient.get<ApiEnvelope<{ connected?: boolean; authUrl?: string }>>('/api/calendar/auth/google', {
           headers: { 'x-user-id': user.id },
         });
 
@@ -132,7 +132,7 @@ export function useCalendar(): UseCalendarReturn {
   const createEvent = async (data: Partial<CalendarEvent>): Promise<CalendarEvent> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    const response = await apiClient.post(
+    const response = await apiClient.post<CalendarEvent>(
       '/api/calendar/events',
       data,
       { headers: { 'x-user-id': user.id } },
@@ -146,7 +146,7 @@ export function useCalendar(): UseCalendarReturn {
   const updateEvent = async (eventId: string, data: Partial<CalendarEvent>): Promise<CalendarEvent> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    const response = await apiClient.patch(
+    const response = await apiClient.patch<CalendarEvent>(
       `/api/calendar/events/${eventId}`,
       data,
       { headers: { 'x-user-id': user.id } },
@@ -187,7 +187,7 @@ export function useCalendar(): UseCalendarReturn {
       if (!userId) throw new Error('User not authenticated');
 
       console.log('Connecting to Google Calendar with user ID:', userId);
-      const response = await apiClient.get('/api/calendar/auth/google', {
+      const response = await apiClient.get<ApiEnvelope<{ connected?: boolean; authUrl?: string }>>('/api/calendar/auth/google', {
         headers: { 'x-user-id': userId },
       });
 

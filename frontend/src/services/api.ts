@@ -1,4 +1,17 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+
+/**
+ * The `{ status, data, ... }` success envelope the "newer" routes wrap their
+ * payload in (chores, learning, announcements, reminders, energy, calendar,
+ * family, activity-log, smartthings). Fields other than `data` are optional
+ * here so partial fallbacks like `{ data: { data: [] } }` still satisfy it.
+ */
+export interface ApiEnvelope<T> {
+  status?: 'success' | 'error';
+  data: T;
+  count?: number;
+  timestamp?: string;
+}
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -298,24 +311,27 @@ class ApiClient {
   }
 
   // ============ Generic HTTP Methods ============
-  async get(path: string, config?: any) {
-    return this.client.get(path, config);
+  // `T` is the response body type — pass it at the call site, e.g.
+  // `apiClient.get<ApiEnvelope<Reminder[]>>('/api/reminders')`. Defaults to
+  // `unknown` so an un-annotated call is caught rather than silently `any`.
+  async get<T = unknown>(path: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.get<T>(path, config);
   }
 
-  async post(path: string, data?: any, config?: any) {
-    return this.client.post(path, data, config);
+  async post<T = unknown>(path: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.post<T>(path, data, config);
   }
 
-  async patch(path: string, data?: any, config?: any) {
-    return this.client.patch(path, data, config);
+  async patch<T = unknown>(path: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.patch<T>(path, data, config);
   }
 
-  async delete(path: string, config?: any) {
-    return this.client.delete(path, config);
+  async delete<T = unknown>(path: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.delete<T>(path, config);
   }
 
-  async put(path: string, data?: any, config?: any) {
-    return this.client.put(path, data, config);
+  async put<T = unknown>(path: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.put<T>(path, data, config);
   }
 }
 

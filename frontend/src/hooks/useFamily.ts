@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { components } from '@/types/api-generated';
-import { apiClient } from '../services/api';
+import { apiClient, type ApiEnvelope } from '../services/api';
 import { useAuth } from './useAuth';
 
 type FamilyMember = components['schemas']['FamilyMember'];
@@ -37,9 +37,9 @@ export function useFamily(): UseFamilyReturn {
       if (!user?.id) return;
 
       const [familyResponse, membersResponse, settingsResponse] = await Promise.all([
-        apiClient.get('/api/family', { headers: { 'x-user-id': user.id } }),
-        apiClient.get('/api/family/members', { headers: { 'x-user-id': user.id } }),
-        apiClient.get('/api/family/settings', { headers: { 'x-user-id': user.id } }),
+        apiClient.get<ApiEnvelope<Family>>('/api/family', { headers: { 'x-user-id': user.id } }),
+        apiClient.get<ApiEnvelope<FamilyMember[]>>('/api/family/members', { headers: { 'x-user-id': user.id } }),
+        apiClient.get<ApiEnvelope<FamilySettings>>('/api/family/settings', { headers: { 'x-user-id': user.id } }),
       ]);
 
       setFamily(familyResponse.data?.data || null);
@@ -60,7 +60,7 @@ export function useFamily(): UseFamilyReturn {
   const inviteMember = async (email: string, role: FamilyMember["role"]): Promise<string> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    const response = await apiClient.post(
+    const response = await apiClient.post<ApiEnvelope<{ invite_token?: string }>>(
       '/api/family/members/invite',
       { email, role },
       { headers: { 'x-user-id': user.id } },
@@ -96,7 +96,7 @@ export function useFamily(): UseFamilyReturn {
   const updateSettings = async (newSettings: FamilySettingsUpdate): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    const response = await apiClient.patch(
+    const response = await apiClient.patch<ApiEnvelope<FamilySettings>>(
       '/api/family/settings',
       newSettings,
       { headers: { 'x-user-id': user.id } },

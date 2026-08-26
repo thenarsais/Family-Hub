@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { components } from '@/types/api-generated';
-import { apiClient } from '../services/api';
+import { apiClient, type ApiEnvelope } from '../services/api';
 import { useAuth } from './useAuth';
 
 type ActivityLogEntry = components['schemas']['ActivityLogEntry'];
@@ -37,7 +37,7 @@ export function useActivityLog(): UseActivityLogReturn {
 
       if (!user?.id) return;
 
-      const response = await apiClient.get('/api/activity/feed', {
+      const response = await apiClient.get<ApiEnvelope<ActivityLogEntry[]>>('/api/activity/feed', {
         headers: { 'x-user-id': user.id },
       });
 
@@ -54,7 +54,7 @@ export function useActivityLog(): UseActivityLogReturn {
     try {
       if (!user?.id) return;
 
-      const response = await apiClient.get('/api/activity/family-feed', {
+      const response = await apiClient.get<ApiEnvelope<ActivityLogEntry[]>>('/api/activity/family-feed', {
         headers: { 'x-user-id': user.id },
       });
 
@@ -68,7 +68,7 @@ export function useActivityLog(): UseActivityLogReturn {
     try {
       if (!user?.id) return;
 
-      const response = await apiClient.get('/api/activity/stats', {
+      const response = await apiClient.get<ApiEnvelope<Record<string, number>>>('/api/activity/stats', {
         headers: { 'x-user-id': user.id },
       });
 
