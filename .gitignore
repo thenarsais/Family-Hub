@@ -16,6 +16,9 @@ coverage/
 # Turborepo cache
 .turbo/
 
+# Lighthouse CI run output
+.lighthouseci/
+
 # IDE
 .idea/
 .vscode/*

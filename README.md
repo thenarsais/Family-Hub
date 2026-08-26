@@ -516,7 +516,7 @@ cd backend && npm run seed     # Seed test data
 | `package.json` | Root workspace config |
 | `.github/workflows/ci.yml` | CI/CD pipeline |
 | `commitlint.config.js` | Commit linting rules |
-| `lighthouserc.json` | Performance thresholds |
+| `frontend/lighthouserc.json` | Lighthouse CI performance thresholds |
 | `SETUP_GUIDE.md` | Developer onboarding |
 | `DISASTER_RECOVERY.md` | Backup procedures |
 | `COPPA_COMPLIANCE_TEST.md` | Legal compliance |
