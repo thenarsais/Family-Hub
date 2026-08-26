@@ -1,12 +1,43 @@
 import { Request, Response, NextFunction } from 'express';
 import { Sentry } from '../config/sentry';
 
+// Express hands the error middleware whatever was thrown or passed to
+// next(err). These are the optional fields this handler reads: body-parser /
+// http-errors set status/statusCode/expose on client errors (malformed JSON,
+// payload too large, unsupported charset, ...); `body` is present on the JSON
+// parse SyntaxError specifically (it holds the raw unparsed string).
+interface ErrorLike extends Error {
+  status?: number;
+  statusCode?: number;
+  expose?: boolean;
+  body?: unknown;
+}
+
 export function errorHandler(
-  err: Error,
+  rawErr: Error,
   req: Request,
   res: Response,
   _next: NextFunction
 ): void {
+  const err = rawErr as ErrorLike;
+
+  // Client errors — a malformed request body, not a server bug. Respond with
+  // the intended 4xx and do NOT report to Sentry (these are caller mistakes;
+  // reporting them just adds noise and can page on nothing).
+  const isJsonParseError = err instanceof SyntaxError && 'body' in err;
+  const isClientError = isJsonParseError || err.expose === true;
+
+  if (isClientError) {
+    const status = isJsonParseError ? 400 : err.status ?? err.statusCode ?? 400;
+    const message = isJsonParseError ? 'Invalid JSON in request body' : err.message;
+    console.warn(`⚠️  ${status} ${req.method} ${req.path}: ${err.message}`);
+    res.status(status).json({
+      error: message,
+      requestId: req.id || 'unknown',
+    });
+    return;
+  }
+
   console.error('❌ Error:', err.message);
 
   // Report the real Error so Sentry parses its stack trace and groups it
