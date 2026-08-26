@@ -37,8 +37,21 @@ describe('initSentry', () => {
     consoleWarnSpy.mockRestore();
   });
 
+  it('should skip initialization on localhost without VITE_SENTRY_FORCE_LOCAL', async () => {
+    // jsdom serves the suite from http://localhost:5173 (see vitest.config.ts)
+    vi.stubEnv('VITE_SENTRY_DSN', 'https://example.sentry.io/1');
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    await initSentry();
+
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('localhost'));
+    expect(mockInit).not.toHaveBeenCalled();
+    consoleInfoSpy.mockRestore();
+  });
+
   it('should initialize Sentry with the configured DSN and disabled sampling', async () => {
     vi.stubEnv('VITE_SENTRY_DSN', 'https://example.sentry.io/1');
+    vi.stubEnv('VITE_SENTRY_FORCE_LOCAL', 'true');
 
     await initSentry();
 

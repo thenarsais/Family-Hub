@@ -33,13 +33,19 @@ describe('errorHandler — Sentry reporting', () => {
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
-  it('should report a scrubbed error to Sentry when SENTRY_DSN is set', () => {
+  it('should report the real Error plus request context when SENTRY_DSN is set', () => {
     process.env.SENTRY_DSN = 'https://example.sentry.io/1';
 
     errorHandler(new Error('boom'), mockReq as Request, mockRes as Response, mockNext);
 
     expect(Sentry.captureException).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'boom', url: '/api/test', method: 'POST' })
+      expect.any(Error),
+      expect.objectContaining({
+        extra: expect.objectContaining({ path: '/api/test', method: 'POST' }),
+      })
     );
+    const [errArg] = (Sentry.captureException as jest.Mock).mock.calls[0];
+    expect(errArg).toBeInstanceOf(Error);
+    expect(errArg.message).toBe('boom');
   });
 });
