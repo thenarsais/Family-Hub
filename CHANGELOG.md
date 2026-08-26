@@ -1,3 +1,14 @@
+## [1.1.0](https://github.com/thenarsais/Family-Hub/compare/v1.0.0...v1.1.0) (2026-08-26)
+
+### Features
+
+* Batch E tooling (Turborepo, ngrok, CHANGELOG) + untrack node_modules/dist ([#32](https://github.com/thenarsais/Family-Hub/issues/32)) ([2266990](https://github.com/thenarsais/Family-Hub/commit/22669908046e88cc89a5efe6367dc1a08da71a29)), references [#18](https://github.com/thenarsais/Family-Hub/issues/18) [#19](https://github.com/thenarsais/Family-Hub/issues/19) [#22](https://github.com/thenarsais/Family-Hub/issues/22)
+* wire up Sentry error monitoring end-to-end ([#33](https://github.com/thenarsais/Family-Hub/issues/33)) ([7e577ee](https://github.com/thenarsais/Family-Hub/commit/7e577eeecda6b6525573e0e1cb1498be431dd941))
+
+### Bug Fixes
+
+* return 400 (not 500) for malformed JSON request bodies ([#34](https://github.com/thenarsais/Family-Hub/issues/34)) ([8edbb0a](https://github.com/thenarsais/Family-Hub/commit/8edbb0ac37ac715dc1d7b1d05ac686046549a1c5))
+
 ## 1.0.0 (2026-08-25)
 
 ### Features
