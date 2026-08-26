@@ -25,7 +25,8 @@ body {
 }
 
 .btn-primary {
-  @apply btn bg-primary-500 text-white hover:bg-primary-600;
+  /* primary-700 keeps white text at ~5.9:1 (WCAG AA); 500/600 were ~2.5/3.9:1 */
+  @apply btn bg-primary-700 text-white hover:bg-primary-800;
 }
 
 .btn-secondary {
