@@ -30,6 +30,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache turbo build outputs
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-lint-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            turbo-lint-${{ github.job }}-
+
       - name: Run linter
         run: npm run lint --if-present
 
@@ -55,6 +63,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Cache turbo build outputs
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-build-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            turbo-build-${{ github.job }}-
 
       - name: Build TypeScript
         run: npm run build
