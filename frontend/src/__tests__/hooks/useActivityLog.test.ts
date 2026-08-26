@@ -13,9 +13,9 @@ import { useActivityLog } from '@/hooks/useActivityLog';
 
 function mockGetPaths(overrides: Record<string, unknown> = {}) {
   (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-    if (path === '/activity/feed') return Promise.resolve({ data: overrides.feed ?? [] });
-    if (path === '/activity/family-feed') return Promise.resolve({ data: overrides.familyFeed ?? [] });
-    if (path === '/activity/stats') return Promise.resolve({ data: overrides.stats ?? {} });
+    if (path === '/api/activity/feed') return Promise.resolve({ data: { status: 'success', data: overrides.feed ?? [] } });
+    if (path === '/api/activity/family-feed') return Promise.resolve({ data: { status: 'success', data: overrides.familyFeed ?? [] } });
+    if (path === '/api/activity/stats') return Promise.resolve({ data: { status: 'success', data: overrides.stats ?? {} } });
     return Promise.reject(new Error(`unexpected path ${path}`));
   });
 }
@@ -53,8 +53,8 @@ describe('useActivityLog', () => {
 
   it('should set an error when the activity feed fetch fails', async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-      if (path === '/activity/feed') return Promise.reject(new Error('feed down'));
-      return Promise.resolve({ data: [] });
+      if (path === '/api/activity/feed') return Promise.reject(new Error('feed down'));
+      return Promise.resolve({ data: { status: 'success', data: [] } });
     });
 
     const { result } = renderHook(() => useActivityLog());
@@ -66,8 +66,8 @@ describe('useActivityLog', () => {
 
   it('should silently continue when family activity fails', async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-      if (path === '/activity/family-feed') return Promise.reject(new Error('down'));
-      return Promise.resolve({ data: [] });
+      if (path === '/api/activity/family-feed') return Promise.reject(new Error('down'));
+      return Promise.resolve({ data: { status: 'success', data: [] } });
     });
 
     const { result } = renderHook(() => useActivityLog());
@@ -80,8 +80,8 @@ describe('useActivityLog', () => {
 
   it('should silently continue when stats fails', async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-      if (path === '/activity/stats') return Promise.reject(new Error('down'));
-      return Promise.resolve({ data: [] });
+      if (path === '/api/activity/stats') return Promise.reject(new Error('down'));
+      return Promise.resolve({ data: { status: 'success', data: [] } });
     });
 
     const { result } = renderHook(() => useActivityLog());
@@ -106,7 +106,7 @@ describe('useActivityLog', () => {
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/activity/log',
+        '/api/activity/log',
         {
           user_id: 'user-1',
           activity_type: 'chore',
@@ -116,8 +116,8 @@ describe('useActivityLog', () => {
         },
         { headers: { 'x-user-id': 'user-1' } }
       );
-      expect(apiClient.get).toHaveBeenCalledWith('/activity/feed', expect.anything());
-      expect(apiClient.get).toHaveBeenCalledWith('/activity/stats', expect.anything());
+      expect(apiClient.get).toHaveBeenCalledWith('/api/activity/feed', expect.anything());
+      expect(apiClient.get).toHaveBeenCalledWith('/api/activity/stats', expect.anything());
     });
 
     it('should default pointsEarned to 0 when omitted', async () => {
@@ -132,7 +132,7 @@ describe('useActivityLog', () => {
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/activity/log',
+        '/api/activity/log',
         expect.objectContaining({ points_earned: 0 }),
         expect.anything()
       );
@@ -169,9 +169,9 @@ describe('useActivityLog', () => {
         await result.current.refreshStats();
       });
 
-      expect(apiClient.get).toHaveBeenCalledWith('/activity/feed', expect.anything());
-      expect(apiClient.get).toHaveBeenCalledWith('/activity/family-feed', expect.anything());
-      expect(apiClient.get).toHaveBeenCalledWith('/activity/stats', expect.anything());
+      expect(apiClient.get).toHaveBeenCalledWith('/api/activity/feed', expect.anything());
+      expect(apiClient.get).toHaveBeenCalledWith('/api/activity/family-feed', expect.anything());
+      expect(apiClient.get).toHaveBeenCalledWith('/api/activity/stats', expect.anything());
     });
   });
 });
