@@ -1,23 +1,19 @@
 import { useState, useEffect } from 'react';
+import type { components } from '@/types/api-generated';
 import { apiClient } from '../services/api';
 import { useAuth } from './useAuth';
 
-interface CalendarEvent {
-  id: string;
-  event_title?: string;
-  summary?: string;
-  event_description?: string;
-  description?: string;
-  event_type?: string;
-  event_date?: string;
-  start_time?: string;
-  end_time?: string;
-  location?: string;
-  created_at?: string;
-  start?: { dateTime?: string; date?: string };
-  end?: { dateTime?: string; date?: string };
-  source?: 'local' | 'google';
-}
+type LocalCalendarEvent = components['schemas']['CalendarEvent'];
+type GoogleCalendarEvent = components['schemas']['GoogleCalendarEvent'];
+
+// The hook merges the local (`/api/calendar/events`) and Google
+// (`/api/calendar/google/events`) feeds into one list, tagging each with its
+// origin. An item is therefore either shape — everything is optional except id.
+type CalendarEvent = Partial<LocalCalendarEvent> &
+  Partial<GoogleCalendarEvent> & {
+    id: string;
+    source?: 'local' | 'google';
+  };
 
 interface UseCalendarReturn {
   events: CalendarEvent[];
