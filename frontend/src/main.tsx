@@ -12,16 +12,19 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 // Fail-fast if required environment variables are missing
 validateEnv();
 
-// ================================================
-// PHASE 0 COMPLIANCE: INITIALIZE SENTRY MONITORING
-// ================================================
-// Error tracking (graceful degradation if SENTRY_DSN not set)
-initSentry();
+// initSentry() dynamically imports @sentry/react, so it must be awaited before
+// the first render — otherwise errors thrown during initial mount happen before
+// the SDK's global handlers are installed and are never reported.
+async function bootstrap(): Promise<void> {
+  await initSentry();
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>,
-)
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </React.StrictMode>,
+  )
+}
+
+void bootstrap();

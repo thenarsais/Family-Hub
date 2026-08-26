@@ -21,12 +21,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Capture to Sentry (non-blocking)
-    if (window.location.origin !== 'http://localhost:5173') {
-      captureException(error, {
-        extra: { componentStack: errorInfo.componentStack }
-      });
-    }
+    // Non-blocking. No-ops unless Sentry was initialized for this environment
+    // (config/sentry.ts suppresses localhost) — so no origin check is needed here.
+    captureException(error, {
+      extra: { componentStack: errorInfo.componentStack }
+    });
   }
 
   componentDidUpdate(prevProps: Props) {

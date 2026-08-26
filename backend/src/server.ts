@@ -186,6 +186,15 @@ app.use(deploymentRoutes);
 // TEST ENDPOINTS
 // ================================================
 
+// Deliberate error trigger for verifying the Sentry pipeline end-to-end.
+// The thrown error propagates to `errorHandler` (last middleware), which
+// reports it to Sentry when SENTRY_DSN is set. Never mounted in production.
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug/error', () => {
+    throw new Error('Sentry smoke test: deliberate error from GET /debug/error');
+  });
+}
+
 app.get('/test-db', async (req, res) => {
   try {
     const client = getSupabase();

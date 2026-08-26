@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { Sentry } from '../config/sentry';
-import { sanitizeForSentry } from '../utils/pii-scrubber';
 
 export function errorHandler(
   err: Error,
@@ -10,19 +9,19 @@ export function errorHandler(
 ): void {
   console.error('❌ Error:', err.message);
 
-  // Scrub sensitive data before sending to Sentry (COPPA Compliance - Decision 29)
-  const cleanedError = {
-    message: err.message,
-    stack: err.stack,
-    url: req.path,
-    method: req.method,
-    // COPPA: Exclude user data, tokens, PII
-  };
-
-  // Send to Sentry (non-blocking) with PII scrubbing
+  // Report the real Error so Sentry parses its stack trace and groups it
+  // correctly (passing a plain {message,stack} object instead produces an
+  // ungrouped "Non-Error exception captured" with no usable stack). PII is
+  // stripped centrally in config/sentry.ts's beforeSend hook — COPPA
+  // (Decision 29); req.path/req.method are not PII.
   if (process.env.SENTRY_DSN) {
-    const sanitized = sanitizeForSentry(cleanedError);
-    Sentry.captureException(sanitized);
+    Sentry.captureException(err, {
+      extra: {
+        path: req.path,
+        method: req.method,
+        requestId: req.id ?? 'unknown',
+      },
+    });
   }
 
   res.status(500).json({
