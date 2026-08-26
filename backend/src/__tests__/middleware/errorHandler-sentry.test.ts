@@ -48,4 +48,46 @@ describe('errorHandler — Sentry reporting', () => {
     expect(errArg).toBeInstanceOf(Error);
     expect(errArg.message).toBe('boom');
   });
+
+  it('should respond 400 and NOT report a malformed-JSON body error', () => {
+    process.env.SENTRY_DSN = 'https://example.sentry.io/1';
+    const parseErr = Object.assign(new SyntaxError('Unexpected token i in JSON at position 0'), {
+      body: 'invalid json{',
+      status: 400,
+      statusCode: 400,
+      expose: true,
+    });
+
+    errorHandler(parseErr, mockReq as Request, mockRes as Response, mockNext);
+
+    expect(statusSpy).toHaveBeenCalledWith(400);
+    expect(jsonSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Invalid JSON in request body' })
+    );
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('should honor a client status and NOT report an http-errors client error (expose:true)', () => {
+    process.env.SENTRY_DSN = 'https://example.sentry.io/1';
+    const tooLarge = Object.assign(new Error('request entity too large'), {
+      status: 413,
+      statusCode: 413,
+      expose: true,
+    });
+
+    errorHandler(tooLarge, mockReq as Request, mockRes as Response, mockNext);
+
+    expect(statusSpy).toHaveBeenCalledWith(413);
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('should still report a server error that happens to carry a 5xx status', () => {
+    process.env.SENTRY_DSN = 'https://example.sentry.io/1';
+    const serverErr = Object.assign(new Error('upstream exploded'), { status: 502 });
+
+    errorHandler(serverErr, mockReq as Request, mockRes as Response, mockNext);
+
+    expect(statusSpy).toHaveBeenCalledWith(500);
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+  });
 });
