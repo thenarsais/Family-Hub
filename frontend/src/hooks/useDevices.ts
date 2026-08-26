@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { components } from '@/types/api-generated';
 import { apiClient } from '../services/api';
 
-export interface SmartDevice {
-  deviceId: string;
-  name: string;
-  type: 'light' | 'lock' | 'climate' | 'switch' | 'sensor' | 'other';
-  room?: string;
-  status: Record<string, any>;
-}
+export type SmartDevice = components['schemas']['SmartDevice'];
 
 export function useDevices() {
   const [devices, setDevices] = useState<SmartDevice[]>([]);
