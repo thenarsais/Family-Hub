@@ -1,23 +1,9 @@
 import { useState, useEffect } from 'react';
+import type { components } from '@/types/api-generated';
 import { apiClient } from '../services/api';
 import { useAuth } from './useAuth';
 
-interface Reminder {
-  id: string;
-  user_id: string;
-  title: string;
-  description?: string;
-  reminder_type: 'chore' | 'assignment' | 'event' | 'goal' | 'custom';
-  related_item_id?: string;
-  related_item_type?: string;
-  scheduled_time: string;
-  remind_before_minutes: number;
-  notification_sent: boolean;
-  is_dismissed: boolean;
-  recurrence?: string;
-  created_at: string;
-  updated_at: string;
-}
+type Reminder = components['schemas']['Reminder'];
 
 interface UseRemindersReturn {
   reminders: Reminder[];

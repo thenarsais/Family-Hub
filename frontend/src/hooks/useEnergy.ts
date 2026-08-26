@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react';
+import type { components } from '@/types/api-generated';
 import { apiClient } from '../services/api';
 import { useAuth } from './useAuth';
 
-interface EnergyGoal {
-  id: string;
-  goal_type: string;
-  target_kwh: number;
-  current_kwh: number;
-  status: string;
-  points_reward: number;
-}
+type EnergyGoal = components['schemas']['EnergyGoal'];
 
 interface UseEnergyReturn {
   currentMonth: number;

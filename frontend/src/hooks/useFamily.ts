@@ -1,31 +1,12 @@
 import { useState, useEffect } from 'react';
+import type { components } from '@/types/api-generated';
 import { apiClient } from '../services/api';
 import { useAuth } from './useAuth';
 
-interface FamilyMember {
-  id: string;
-  user_id: string;
-  family_id: string;
-  role: string;
-  joined_at: string;
-}
-
-interface Family {
-  id: string;
-  name: string;
-  description?: string;
-  created_by_id: string;
-  members?: FamilyMember[];
-  member_count?: number;
-}
-
-interface FamilySettings {
-  family_id: string;
-  theme: string;
-  language: string;
-  notifications_enabled: boolean;
-  max_screen_time_minutes?: number;
-}
+type FamilyMember = components['schemas']['FamilyMember'];
+type Family = components['schemas']['Family'];
+type FamilySettings = components['schemas']['FamilySettings'];
+type FamilySettingsUpdate = components['schemas']['FamilySettingsUpdatable'];
 
 interface UseFamilyReturn {
   family: Family | null;
@@ -33,10 +14,10 @@ interface UseFamilyReturn {
   settings: FamilySettings | null;
   loading: boolean;
   error: string | null;
-  inviteMember: (email: string, role: string) => Promise<string>;
-  updateMemberRole: (memberId: string, role: string) => Promise<void>;
+  inviteMember: (email: string, role: FamilyMember["role"]) => Promise<string>;
+  updateMemberRole: (memberId: string, role: FamilyMember["role"]) => Promise<void>;
   removeMember: (memberId: string) => Promise<void>;
-  updateSettings: (settings: Partial<FamilySettings>) => Promise<void>;
+  updateSettings: (settings: FamilySettingsUpdate) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -76,7 +57,7 @@ export function useFamily(): UseFamilyReturn {
     fetchFamily();
   }, [user?.id]);
 
-  const inviteMember = async (email: string, role: string): Promise<string> => {
+  const inviteMember = async (email: string, role: FamilyMember["role"]): Promise<string> => {
     if (!user?.id) throw new Error('User not authenticated');
 
     const response = await apiClient.post(
@@ -88,7 +69,7 @@ export function useFamily(): UseFamilyReturn {
     return response.data?.data?.invite_token || '';
   };
 
-  const updateMemberRole = async (memberId: string, role: string): Promise<void> => {
+  const updateMemberRole = async (memberId: string, role: FamilyMember["role"]): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
     await apiClient.patch(
@@ -112,7 +93,7 @@ export function useFamily(): UseFamilyReturn {
     setMembers((prev) => prev.filter((m) => m.user_id !== memberId));
   };
 
-  const updateSettings = async (newSettings: Partial<FamilySettings>): Promise<void> => {
+  const updateSettings = async (newSettings: FamilySettingsUpdate): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
     const response = await apiClient.patch(
