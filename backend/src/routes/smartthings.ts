@@ -3,7 +3,10 @@ import { getSmartThingsService } from '../services/smartthings';
 import { query } from '../database/connection';
 
 import { getErrorMessage } from '../utils/errors';
+import { normalizeBody } from '../middleware/normalize-body';
+
 const router = Router();
+router.use(normalizeBody); // req.body is {} even on a bodyless request
 const smartthings = getSmartThingsService();
 
 /**

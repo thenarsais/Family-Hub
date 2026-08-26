@@ -20,6 +20,7 @@ import familyRoutes from './routes/family';
 import activityLogRoutes from './routes/activity-log';
 import { responseFormatter } from './middleware/response-formatter';
 import { errorHandler } from './middleware/errorHandler';
+import { normalizeBody } from './middleware/normalize-body';
 import { requestLogger } from './middleware/request-logger';
 import { rateLimit, rateLimitPresets } from './middleware/rate-limiter';
 import { batchOperations } from './middleware/batch-operations';
@@ -63,6 +64,7 @@ initSentry();
 app.use(helmet()); // Security headers (X-Content-Type-Options, HSTS, etc.)
 app.use(cors());
 app.use(express.json());
+app.use(normalizeBody); // Guard route handlers that destructure req.body (see middleware/normalize-body.ts)
 app.use(compression(compressionPresets.standard)); // Response compression
 app.use(responseFormatter()); // Standard response formatting
 app.use(requestLogger()); // Request logging

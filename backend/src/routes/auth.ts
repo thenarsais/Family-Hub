@@ -9,7 +9,10 @@ import * as UserRepository from '../database/repositories/UserRepository';
 import { getFamilyService } from '../services/family';
 
 import { getErrorMessage } from '../utils/errors';
+import { normalizeBody } from '../middleware/normalize-body';
+
 const router = Router();
+router.use(normalizeBody); // req.body is {} even on a bodyless request
 
 // Lazy-initialize Supabase client
 let supabase: SupabaseClient | null = null;
