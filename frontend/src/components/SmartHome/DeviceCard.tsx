@@ -111,13 +111,13 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
             type="range"
             min="60"
             max="85"
-            value={device.status.temperature || 72}
+            value={Number(device.status.temperature) || 72}
             onChange={(e) => onControl('setTemperature', [parseInt(e.target.value)])}
             disabled={loading}
             className="w-full"
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-            Set to {device.status.temperature}°F
+            Set to {Number(device.status.temperature)}°F
           </p>
         </div>
       )}
@@ -128,13 +128,13 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({
             type="range"
             min="0"
             max="100"
-            value={device.status.level || 100}
+            value={Number(device.status.level) || 100}
             onChange={(e) => onControl('setBrightness', [parseInt(e.target.value)])}
             disabled={loading}
             className="w-full"
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-            Brightness: {device.status.level}%
+            Brightness: {Number(device.status.level)}%
           </p>
         </div>
       )}
