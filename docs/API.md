@@ -158,21 +158,12 @@ summarized here for scanning:
 
 ## Systemic gaps noted but intentionally not fixed in this pass
 
-- Roughly 29 route handlers across the codebase destructure `req.body`
-  without checking `Content-Type` first, so a request with a missing/wrong
-  content type gets a 500 instead of a 4xx in some of them. Only the
-  `calendar.ts` instance has been fixed to date (see engineering memory:
-  "Systemic req.body Destructure Bug"). `openapi.yaml` documents the
-  *intended* validation behavior (400 on missing fields) since that's the
-  documented contract for well-formed requests; it does not attempt to
-  model the content-type edge case.
 - `middleware/response-formatter.ts` (see above) — worth deleting or
   actually adopting, not both left in this half-alive state.
-- Pre-existing docs `docs/API-REFERENCE.md`, `docs/API_ENDPOINTS.md`, and
-  `docs/API_ENDPOINTS_COMPLETE.md` were not reconciled against this pass —
-  treat `openapi.yaml` and this file as authoritative going forward, and
-  consider retiring or rewriting the older docs in a follow-up so there's
-  a single source of truth.
+
+Three superseded API docs (`docs/API-REFERENCE.md`, `docs/API_ENDPOINTS.md`,
+`docs/API_ENDPOINTS_COMPLETE.md`) were retired in favor of `openapi.yaml` +
+this file as the single source of truth.
 
 ## Regenerating types from the spec
 

@@ -544,7 +544,7 @@ RATE_LIMIT_WINDOW_MS=60000   # Shorter window
 ## Support
 
 For deployment issues, refer to:
-- [API Documentation](./API_ENDPOINTS_COMPLETE.md)
+- [API Documentation](./API.md) (and [`openapi.yaml`](../openapi.yaml), the source of truth)
 - [Testing Guide](./TESTING_API.md)
 - [Architecture Guide](../backend/README.md)
 

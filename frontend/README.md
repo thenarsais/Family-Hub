@@ -160,7 +160,7 @@ const leaderboard = await apiClient.getLeaderboard(10, 'week');
 
 ### Full API Documentation
 
-See `docs/API-REFERENCE.md` for all 60+ endpoints with examples.
+See [`openapi.yaml`](../openapi.yaml) (source of truth) and [`docs/API.md`](../docs/API.md) for all endpoints.
 
 ---
 
