@@ -108,6 +108,11 @@ export default function Dashboard() {
         <p className="text-gray-600 dark:text-gray-400">Here's your activity overview</p>
       </div>
 
+      {/* Calendar Widget — primary dashboard focus, sits above everything else */}
+      <div className="mb-8">
+        <WeekCalendar />
+      </div>
+
       {/* Stats Cards — derived from this week's activity */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="card bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900 dark:to-primary-800">
@@ -145,11 +150,6 @@ export default function Dashboard() {
             <span className="text-5xl" aria-hidden="true">⏰</span>
           </div>
         </div>
-      </div>
-
-      {/* Calendar Widget - Primary Focus */}
-      <div className="mb-8">
-        <WeekCalendar />
       </div>
 
       {/* Announcements & Reminders */}
