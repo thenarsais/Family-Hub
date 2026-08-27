@@ -70,9 +70,15 @@ class GoogleOAuthService {
    * Get the OAuth authorization URL for user to sign in
    */
   getAuthUrl(userId: string): string {
-    const scopes = ['https://www.googleapis.com/auth/calendar.readonly'];
+    // `calendar.events` (read + write to events) rather than `calendar.readonly`
+    // so a dashboard dismiss can decline an invite in the user's Google
+    // Calendar. `prompt: 'consent'` forces the consent screen every time so the
+    // scope upgrade actually takes effect for already-connected users and we
+    // always get a fresh refresh token back.
+    const scopes = ['https://www.googleapis.com/auth/calendar.events'];
     const url = this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
+      prompt: 'consent',
       scope: scopes,
       state: userId,
     });
@@ -303,6 +309,65 @@ class GoogleOAuthService {
       console.error(`Failed to fetch Google Calendar events for user ${userId}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get an authed Google Calendar v3 client for the user, refreshing the
+   * access token first if it's about to expire. Returns null when the user has
+   * no stored token; throws a typed 401 when a refresh is needed but fails.
+   */
+  private async getAuthedCalendar(userId: string) {
+    let token = await this.getUserToken(userId);
+    if (!token) return null;
+
+    if (token.expires_in < 300) {
+      if (!token.refresh_token) {
+        throw { code: 'NO_REFRESH_TOKEN', message: 'Google Calendar authorization expired. Please re-authenticate.', status: 401 };
+      }
+      try {
+        const newToken = await this.refreshAccessToken(token.refresh_token, userId);
+        await this.storeUserToken(userId, newToken);
+        token = newToken;
+      } catch (refreshError) {
+        console.error(`Token refresh failed for user ${userId}:`, refreshError);
+        throw { code: 'TOKEN_REFRESH_FAILED', message: 'Google Calendar authorization expired. Please re-authenticate.', status: 401 };
+      }
+    }
+
+    this.oauth2Client.setCredentials({ access_token: token.access_token });
+    return google.calendar({ version: 'v3', auth: this.oauth2Client });
+  }
+
+  /**
+   * If the given event has the connected user as an attendee, set their RSVP
+   * to "declined" in Google Calendar. Events the user owns (or isn't invited
+   * to) are left untouched — the caller falls back to a local-only hide.
+   *
+   * Returns `{ declined: true }` on a real decline, or `{ declined: false }`
+   * with a reason otherwise. Google API errors (e.g. a stale readonly token
+   * that predates the calendar.events scope) propagate to the caller.
+   */
+  async declineEventIfInvited(
+    userId: string,
+    calendarId: string,
+    eventId: string,
+  ): Promise<{ declined: boolean; reason?: 'no_token' | 'not_an_attendee' }> {
+    const calendar = await this.getAuthedCalendar(userId);
+    if (!calendar) return { declined: false, reason: 'no_token' };
+
+    const { data: event } = await calendar.events.get({ calendarId, eventId });
+    const attendees = event.attendees ?? [];
+    const meIndex = attendees.findIndex((a) => a.self);
+    if (meIndex === -1) return { declined: false, reason: 'not_an_attendee' };
+
+    attendees[meIndex].responseStatus = 'declined';
+    await calendar.events.patch({
+      calendarId,
+      eventId,
+      sendUpdates: 'none',
+      requestBody: { attendees },
+    });
+    return { declined: true };
   }
 
   /**

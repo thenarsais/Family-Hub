@@ -21,6 +21,7 @@ const mockGoogleOAuthService = {
   exchangeCodeForToken: jest.fn(),
   storeUserToken: jest.fn(),
   getCalendarEvents: jest.fn(),
+  declineEventIfInvited: jest.fn(),
   disconnectCalendar: jest.fn(),
 };
 jest.mock('../../services/google-oauth', () => ({ getGoogleOAuthService: () => mockGoogleOAuthService }));
@@ -433,6 +434,58 @@ describe('Calendar Routes', () => {
         .send({})
         .expect(500);
       expect(res.body.message).toBe('Failed to dismiss event');
+    });
+
+    it('declines the invite in Google for a google event the user attends', async () => {
+      mockUpsert.mockResolvedValueOnce({ error: null });
+      mockGoogleOAuthService.declineEventIfInvited.mockResolvedValueOnce({ declined: true });
+
+      const res = await request(app)
+        .post('/api/calendar/events/g1/dismiss')
+        .set('x-user-id', 'user-1')
+        .send({ calendarId: 'cal-1', source: 'google' })
+        .expect(200);
+
+      expect(mockGoogleOAuthService.declineEventIfInvited).toHaveBeenCalledWith('user-1', 'cal-1', 'g1');
+      expect(res.body.data).toEqual({ local: true, synced: true, action: 'declined' });
+    });
+
+    it('local-hides only when the user is not an attendee of the google event', async () => {
+      mockUpsert.mockResolvedValueOnce({ error: null });
+      mockGoogleOAuthService.declineEventIfInvited.mockResolvedValueOnce({ declined: false, reason: 'not_an_attendee' });
+
+      const res = await request(app)
+        .post('/api/calendar/events/g1/dismiss')
+        .set('x-user-id', 'user-1')
+        .send({ calendarId: 'cal-1', source: 'google' })
+        .expect(200);
+
+      expect(res.body.data).toEqual({ local: true, synced: false, reason: 'not_an_attendee' });
+    });
+
+    it('reports reconnect_required when the Google write is rejected for scope', async () => {
+      mockUpsert.mockResolvedValueOnce({ error: null });
+      mockGoogleOAuthService.declineEventIfInvited.mockRejectedValueOnce({ status: 403 });
+
+      const res = await request(app)
+        .post('/api/calendar/events/g1/dismiss')
+        .set('x-user-id', 'user-1')
+        .send({ calendarId: 'cal-1', source: 'google' })
+        .expect(200);
+
+      expect(res.body.data).toEqual({ local: true, synced: false, reason: 'reconnect_required' });
+    });
+
+    it('does not touch Google for a local event', async () => {
+      mockUpsert.mockResolvedValueOnce({ error: null });
+
+      await request(app)
+        .post('/api/calendar/events/l1/dismiss')
+        .set('x-user-id', 'user-1')
+        .send({ calendarId: 'family', source: 'local' })
+        .expect(200);
+
+      expect(mockGoogleOAuthService.declineEventIfInvited).not.toHaveBeenCalled();
     });
   });
 });

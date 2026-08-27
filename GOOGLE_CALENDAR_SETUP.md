@@ -9,7 +9,15 @@ The backend is now ready for Google Calendar integration! Here's what was implem
   - Handles OAuth2 flow with Google
   - Manages access token storage and refresh
   - Fetches events from Google Calendar API
+  - Declines an invite in Google Calendar when the user dismisses it on the dashboard
   - Revokes tokens when disconnecting
+
+> **OAuth scope:** `https://www.googleapis.com/auth/calendar.events` (read + write
+> to events). It was `calendar.readonly` before two-way dismiss sync; the auth URL
+> now also sends `prompt=consent` so already-connected users re-grant on their next
+> reconnect. A token that still only has `calendar.readonly` keeps working for
+> reads — a dismiss just falls back to a local hide and the calendar shows a
+> "Reconnect" prompt.
 
 ### Backend Routes
 - **POST /auth/google** - Start OAuth authorization
