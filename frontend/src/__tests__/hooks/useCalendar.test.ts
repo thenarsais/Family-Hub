@@ -57,6 +57,21 @@ describe('useCalendar', () => {
     expect(result.current.events).toEqual([]);
   });
 
+  it('requests Google events for a window that reaches into the past', async () => {
+    mockFetchEventsCalls();
+
+    const { result } = renderHook(() => useCalendar());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const googleCall = (apiClient.get as ReturnType<typeof vi.fn>).mock.calls.find(
+      ([path]) => path === '/api/calendar/google/events'
+    );
+    expect(googleCall).toBeDefined();
+    const params = googleCall?.[1]?.params as { timeMin: string; timeMax: string };
+    expect(new Date(params.timeMin).getTime()).toBeLessThan(Date.now());
+    expect(new Date(params.timeMax).getTime()).toBeGreaterThan(Date.now());
+  });
+
   it('should merge local and google events, tagging each with its source', async () => {
     mockFetchEventsCalls({
       events: [{ id: 'e1', event_date: '2099-01-01' }],

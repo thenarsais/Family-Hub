@@ -47,6 +47,13 @@ export function useCalendar(): UseCalendarReturn {
 
       if (!user?.id) return;
 
+      // Ask Google for a window around "now" so the WeekCalendar's back/forward
+      // navigation has data — not just future events. The route otherwise
+      // defaults timeMin to the start of the current week.
+      const DAY_MS = 24 * 60 * 60 * 1000;
+      const timeMin = new Date(Date.now() - 60 * DAY_MS).toISOString();
+      const timeMax = new Date(Date.now() + 90 * DAY_MS).toISOString();
+
       const [eventsResponse, upcomingResponse, googleEventsResponse] = await Promise.all([
         apiClient.get<ApiEnvelope<LocalCalendarEvent[]>>('/api/calendar/events', {
           headers: { 'x-user-id': user.id },
@@ -56,6 +63,7 @@ export function useCalendar(): UseCalendarReturn {
         }).catch(() => ({ data: { data: [] } })),
         apiClient.get<ApiEnvelope<GoogleCalendarEvent[]>>('/api/calendar/google/events', {
           headers: { 'x-user-id': user.id },
+          params: { timeMin, timeMax },
         }).catch((err) => {
           // Handle Google token expiration specifically
           if (err.response?.status === 401) {
@@ -90,7 +98,11 @@ export function useCalendar(): UseCalendarReturn {
 
       setEvents(mergedEvents);
       setUpcomingEvents(upcomingMerged.length > 0 ? upcomingMerged : localUpcoming);
-      setGoogleConnected(googleEvents.length > 0);
+      // One-directional: seeing Google events proves a live connection, but an
+      // empty window doesn't disprove one — leave "not connected" to the
+      // dedicated /auth/google check so a connected user with no nearby events
+      // doesn't get the "Connect" banner.
+      if (googleEvents.length > 0) setGoogleConnected(true);
     } catch (err: any) {
       console.error('Failed to fetch calendar events:', err);
       setError(err.message || 'Failed to fetch calendar events');
