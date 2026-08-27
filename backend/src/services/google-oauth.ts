@@ -70,12 +70,20 @@ class GoogleOAuthService {
    * Get the OAuth authorization URL for user to sign in
    */
   getAuthUrl(userId: string): string {
-    // `calendar.events` (read + write to events) rather than `calendar.readonly`
-    // so a dashboard dismiss can decline an invite in the user's Google
-    // Calendar. `prompt: 'consent'` forces the consent screen every time so the
-    // scope upgrade actually takes effect for already-connected users and we
-    // always get a fresh refresh token back.
-    const scopes = ['https://www.googleapis.com/auth/calendar.events'];
+    // Both scopes, additively:
+    //  - calendar.readonly: needed for calendarList.list() (enumerating the
+    //    user's calendars) and reading events. calendar.events alone does NOT
+    //    grant calendarList access, so a read-only scope set breaks the whole
+    //    fetch path with a 403.
+    //  - calendar.events: needed for the write — declining an invite (RSVP)
+    //    when the user dismisses an event on the dashboard.
+    // `prompt: 'consent'` forces the consent screen every time so scope changes
+    // take effect for already-connected users and we always get a fresh
+    // refresh token back.
+    const scopes = [
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/calendar.events',
+    ];
     const url = this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
