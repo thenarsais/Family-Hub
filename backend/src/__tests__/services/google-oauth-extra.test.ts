@@ -78,7 +78,7 @@ describe('GoogleOAuthService', () => {
   });
 
   describe('getAuthUrl', () => {
-    it('should generate an offline-access URL scoped to calendar.events, keyed by userId', () => {
+    it('should generate an offline-access URL scoped to calendar read + events write, keyed by userId', () => {
       mockOAuth2Instance.generateAuthUrl.mockReturnValueOnce('https://accounts.google.com/auth?x=1');
 
       const url = service.getAuthUrl(userId);
@@ -86,7 +86,10 @@ describe('GoogleOAuthService', () => {
       expect(mockOAuth2Instance.generateAuthUrl).toHaveBeenCalledWith({
         access_type: 'offline',
         prompt: 'consent',
-        scope: ['https://www.googleapis.com/auth/calendar.events'],
+        scope: [
+          'https://www.googleapis.com/auth/calendar.readonly',
+          'https://www.googleapis.com/auth/calendar.events',
+        ],
         state: userId,
       });
       expect(url).toBe('https://accounts.google.com/auth?x=1');
