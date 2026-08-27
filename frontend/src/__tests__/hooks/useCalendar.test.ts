@@ -117,22 +117,25 @@ describe('useCalendar', () => {
     expect(result.current.upcomingEvents).toEqual([{ id: 'fallback-upcoming' }]);
   });
 
-  it('should set tokenExpired true and continue with empty google events on a 401', async () => {
-    (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
-      if (path === '/api/calendar/events') return Promise.resolve({ data: { data: [] } });
-      if (path === '/api/calendar/upcoming') return Promise.resolve({ data: { data: [] } });
-      if (path === '/api/calendar/google/events') return Promise.reject({ response: { status: 401 } });
-      if (path === '/api/calendar/auth/google') return Promise.resolve({ data: { data: { connected: false } } });
-      return Promise.reject(new Error('unexpected'));
-    });
+  it.each([401, 403])(
+    'sets tokenExpired and continues with empty google events on a %i',
+    async (status) => {
+      (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
+        if (path === '/api/calendar/events') return Promise.resolve({ data: { data: [] } });
+        if (path === '/api/calendar/upcoming') return Promise.resolve({ data: { data: [] } });
+        if (path === '/api/calendar/google/events') return Promise.reject({ response: { status } });
+        if (path === '/api/calendar/auth/google') return Promise.resolve({ data: { data: { connected: false } } });
+        return Promise.reject(new Error('unexpected'));
+      });
 
-    const { result } = renderHook(() => useCalendar());
+      const { result } = renderHook(() => useCalendar());
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+      await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.tokenExpired).toBe(true);
-    expect(result.current.events).toEqual([]);
-  });
+      expect(result.current.tokenExpired).toBe(true);
+      expect(result.current.events).toEqual([]);
+    }
+  );
 
   it('should surface a general fetch failure as an error', async () => {
     (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {

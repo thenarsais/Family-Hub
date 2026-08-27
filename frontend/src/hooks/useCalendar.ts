@@ -65,10 +65,13 @@ export function useCalendar(): UseCalendarReturn {
           headers: { 'x-user-id': user.id },
           params: { timeMin, timeMax },
         }).catch((err) => {
-          // Handle Google token expiration specifically
-          if (err.response?.status === 401) {
+          // 401 = token expired/revoked; 403 = token's scopes no longer cover
+          // the read (e.g. a token that predates the calendar.readonly scope).
+          // Both are fixed the same way — surface the re-authorize prompt.
+          const status = err.response?.status;
+          if (status === 401 || status === 403) {
             setTokenExpired(true);
-            console.warn('Google Calendar token expired. Please re-authenticate.');
+            console.warn('Google Calendar needs re-authorization (status', status, ')');
           } else {
             console.warn('Failed to fetch Google events:', err);
           }
