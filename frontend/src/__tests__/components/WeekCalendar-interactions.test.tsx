@@ -27,6 +27,9 @@ function mockCalendar(overrides: Record<string, unknown> = {}) {
     tokenExpired: false,
     googleConnected: true,
     connectGoogle: vi.fn(),
+    createEvent: vi.fn().mockResolvedValue({}),
+    updateEvent: vi.fn().mockResolvedValue({}),
+    deleteEvent: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   });
 }
@@ -328,6 +331,125 @@ describe('WeekCalendar — interactions', () => {
         .getByText('Sunday Brunch')
         .closest('div.group');
       expect(eventEl?.className).not.toContain('opacity-60');
+    });
+  });
+
+  describe('event management', () => {
+    const asParent = () =>
+      (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+        user: { id: 'user-1', role: 'parent' },
+        isLoading: false,
+      });
+
+    it('hides the "Add event" button from non-parents', () => {
+      mockCalendar();
+      render(<WeekCalendar />);
+      expect(screen.queryByRole('button', { name: /add event/i })).not.toBeInTheDocument();
+    });
+
+    it('shows "Add event" to a parent and opens the create form', () => {
+      asParent();
+      mockCalendar();
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: /^add event$/i }));
+      expect(screen.getByRole('heading', { name: /new event/i })).toBeInTheDocument();
+    });
+
+    it('creates an event through the form', async () => {
+      asParent();
+      const createEvent = vi.fn().mockResolvedValue({});
+      mockCalendar({ createEvent });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: /^add event$/i }));
+      fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Piano recital' } });
+      fireEvent.submit(screen.getByRole('button', { name: /create event/i }).closest('form')!);
+
+      await vi.waitFor(() => expect(createEvent).toHaveBeenCalled());
+      expect(createEvent.mock.calls[0][0]).toMatchObject({ summary: 'Piano recital', allDay: false });
+    });
+
+    it('pre-fills the date when a day cell "+" is used', () => {
+      asParent();
+      mockCalendar();
+      render(<WeekCalendar />);
+
+      const cell = screen.getByTestId('day-cell-2026-08-20');
+      fireEvent.click(within(cell).getByRole('button', { name: /add event on 2026-08-20/i }));
+
+      expect((screen.getByLabelText('Start date') as HTMLInputElement).value).toBe('2026-08-20');
+    });
+
+    it('shows Edit/Delete only on the creator\'s own feature-created event', () => {
+      asParent();
+      mockCalendar({
+        events: [{
+          id: 'g-1', summary: 'My event', source: 'google',
+          start: { dateTime: '2026-08-22T10:00:00-04:00', timeZone: 'America/New_York' },
+          google_event_id: 'g-1', created_by_id: 'user-1',
+        }],
+      });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('My event'));
+      expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    });
+
+    it('hides Edit/Delete on an event created by someone else', () => {
+      asParent();
+      mockCalendar({
+        events: [{
+          id: 'g-2', summary: 'Their event', source: 'google',
+          start: { dateTime: '2026-08-22T10:00:00-04:00', timeZone: 'America/New_York' },
+          google_event_id: 'g-2', created_by_id: 'other-user',
+        }],
+      });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('Their event'));
+      expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument();
+    });
+
+    it('deletes the creator\'s own event via the hook', async () => {
+      asParent();
+      const deleteEvent = vi.fn().mockResolvedValue(undefined);
+      mockCalendar({
+        deleteEvent,
+        events: [{
+          id: 'g-3', summary: 'Doomed', source: 'google',
+          start: { dateTime: '2026-08-22T10:00:00-04:00', timeZone: 'America/New_York' },
+          google_event_id: 'g-3', created_by_id: 'user-1',
+        }],
+      });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('Doomed'));
+      fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+
+      await vi.waitFor(() => expect(deleteEvent).toHaveBeenCalledWith('g-3'));
+    });
+
+    it('dismiss (✕) on your own feature-created event is a local hide, not a Google decline', () => {
+      asParent();
+      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
+      global.fetch = fetchSpy as unknown as typeof fetch;
+      mockCalendar({
+        events: [{
+          id: 'g-4', summary: 'Mine to hide', source: 'google', type: 'google',
+          start: { dateTime: '2026-08-22T10:00:00-04:00', timeZone: 'America/New_York' },
+          google_event_id: 'g-4', created_by_id: 'user-1', calendarId: 'primary',
+        }],
+      });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByTitle('Dismiss event'));
+
+      const dismissCall = fetchSpy.mock.calls.find(([url]) => String(url).endsWith('/g-4/dismiss'));
+      expect(dismissCall).toBeTruthy();
+      expect(JSON.parse(dismissCall![1].body)).toMatchObject({ source: 'local' });
     });
   });
 });

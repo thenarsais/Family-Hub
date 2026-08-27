@@ -7,6 +7,10 @@ const mockCalendarService = {
   createEvent: jest.fn(),
   updateEvent: jest.fn(),
   deleteEvent: jest.fn(),
+  createMirrorRow: jest.fn(),
+  updateMirrorByGoogleId: jest.fn(),
+  deleteMirrorByGoogleId: jest.fn(),
+  getMirrorRowByGoogleId: jest.fn(),
 };
 jest.mock('../../services/calendar', () => ({ getCalendarService: () => mockCalendarService }));
 
@@ -23,6 +27,9 @@ const mockGoogleOAuthService = {
   getCalendarEvents: jest.fn(),
   declineEventIfInvited: jest.fn(),
   disconnectCalendar: jest.fn(),
+  createEvent: jest.fn(),
+  updateEvent: jest.fn(),
+  deleteEvent: jest.fn(),
 };
 jest.mock('../../services/google-oauth', () => ({ getGoogleOAuthService: () => mockGoogleOAuthService }));
 
@@ -488,6 +495,189 @@ describe('Calendar Routes', () => {
         .expect(200);
 
       expect(mockGoogleOAuthService.declineEventIfInvited).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /api/calendar/google/events', () => {
+    const parentFamily = { id: 'family-1', members: [{ user_id: 'user-1', role: 'parent' }] };
+    const validBody = {
+      summary: 'Dentist', startDate: '2026-09-10', startTime: '14:00',
+      timeZone: 'America/New_York', attendees: ['mom@example.com'],
+    };
+
+    it('requires a user id', async () => {
+      const res = await request(app).post('/api/calendar/google/events').send(validBody).expect(401);
+      expect(res.body.message).toBe('User ID required');
+    });
+
+    it('rejects a non-parent caller with 403', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({
+        id: 'family-1', members: [{ user_id: 'user-1', role: 'child' }],
+      });
+      const res = await request(app)
+        .post('/api/calendar/google/events').set('x-user-id', 'user-1').send(validBody).expect(403);
+      expect(res.body.message).toMatch(/parent/i);
+    });
+
+    it('rejects a bad body with 400', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      const res = await request(app)
+        .post('/api/calendar/google/events').set('x-user-id', 'user-1')
+        .send({ startDate: '2026-09-10' }).expect(400);
+      expect(res.body.message).toMatch(/summary is required/);
+    });
+
+    it('rejects an invalid attendee email with 400', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      const res = await request(app)
+        .post('/api/calendar/google/events').set('x-user-id', 'user-1')
+        .send({ ...validBody, attendees: ['not-an-email'] }).expect(400);
+      expect(res.body.message).toMatch(/not a valid email/);
+    });
+
+    it('creates in Google, writes a mirror row, returns the event', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockGoogleOAuthService.createEvent.mockResolvedValueOnce({
+        id: 'g-new', summary: 'Dentist', start: { dateTime: '2026-09-10T14:00:00-04:00' },
+      });
+      mockCalendarService.createMirrorRow.mockResolvedValueOnce({ id: 'mirror-1' });
+
+      const res = await request(app)
+        .post('/api/calendar/google/events').set('x-user-id', 'user-1').send(validBody).expect(201);
+
+      expect(mockGoogleOAuthService.createEvent).toHaveBeenCalledWith(
+        'user-1', 'primary',
+        expect.objectContaining({ summary: 'Dentist', allDay: false, startTime: '14:00', attendees: ['mom@example.com'] }),
+        'all',
+      );
+      expect(mockCalendarService.createMirrorRow).toHaveBeenCalledWith(
+        'family-1', 'user-1', expect.objectContaining({ id: 'g-new', calendarId: 'primary' }),
+      );
+      expect(res.body.data).toEqual(expect.objectContaining({ google_event_id: 'g-new', mirrorId: 'mirror-1' }));
+    });
+
+    it('passes sendInvites:false through as sendUpdates none', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockGoogleOAuthService.createEvent.mockResolvedValueOnce({ id: 'g-new' });
+      mockCalendarService.createMirrorRow.mockResolvedValueOnce({ id: 'mirror-1' });
+
+      await request(app)
+        .post('/api/calendar/google/events').set('x-user-id', 'user-1')
+        .send({ ...validBody, sendInvites: false }).expect(201);
+
+      expect(mockGoogleOAuthService.createEvent).toHaveBeenCalledWith(
+        'user-1', 'primary', expect.anything(), 'none',
+      );
+    });
+
+    it('still 201s when the mirror write fails (event exists in Google)', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockGoogleOAuthService.createEvent.mockResolvedValueOnce({ id: 'g-new' });
+      mockCalendarService.createMirrorRow.mockRejectedValueOnce(new Error('db down'));
+
+      const res = await request(app)
+        .post('/api/calendar/google/events').set('x-user-id', 'user-1').send(validBody).expect(201);
+      expect(res.body.data).toEqual(expect.objectContaining({ google_event_id: 'g-new', mirrorId: null }));
+    });
+
+    it('maps a Google 401 through to a 401 response', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockGoogleOAuthService.createEvent.mockRejectedValueOnce({ status: 401, code: 'NO_TOKEN', message: 'connect it' });
+
+      const res = await request(app)
+        .post('/api/calendar/google/events').set('x-user-id', 'user-1').send(validBody).expect(401);
+      expect(res.body.code).toBe('NO_TOKEN');
+    });
+  });
+
+  describe('PATCH /api/calendar/google/events/:id', () => {
+    const parentFamily = { id: 'family-1', members: [{ user_id: 'user-1', role: 'parent' }] };
+    const body = { summary: 'Dentist moved', startDate: '2026-09-11', startTime: '15:00', timeZone: 'America/New_York' };
+
+    it('404s when no mirror row exists for that google id', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.getMirrorRowByGoogleId.mockResolvedValueOnce(null);
+      await request(app)
+        .patch('/api/calendar/google/events/g-x').set('x-user-id', 'user-1').send(body).expect(404);
+    });
+
+    it('403s when the caller is not the creator', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.getMirrorRowByGoogleId.mockResolvedValueOnce({
+        google_event_id: 'g-1', google_calendar_id: 'primary', created_by_id: 'someone-else',
+      });
+      await request(app)
+        .patch('/api/calendar/google/events/g-1').set('x-user-id', 'user-1').send(body).expect(403);
+    });
+
+    it('updates Google then refreshes the mirror', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.getMirrorRowByGoogleId.mockResolvedValueOnce({
+        google_event_id: 'g-1', google_calendar_id: 'primary', created_by_id: 'user-1',
+      });
+      mockGoogleOAuthService.updateEvent.mockResolvedValueOnce({ id: 'g-1', summary: 'Dentist moved' });
+      mockCalendarService.updateMirrorByGoogleId.mockResolvedValueOnce({ id: 'mirror-1' });
+
+      const res = await request(app)
+        .patch('/api/calendar/google/events/g-1').set('x-user-id', 'user-1').send(body).expect(200);
+
+      expect(mockGoogleOAuthService.updateEvent).toHaveBeenCalledWith(
+        'user-1', 'primary', 'g-1', expect.objectContaining({ summary: 'Dentist moved' }), 'all',
+      );
+      expect(res.body.data).toEqual(expect.objectContaining({ google_event_id: 'g-1', mirrorId: 'mirror-1' }));
+    });
+
+    it('drops the mirror row and 404s when Google reports the event gone', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.getMirrorRowByGoogleId.mockResolvedValueOnce({
+        google_event_id: 'g-1', google_calendar_id: 'primary', created_by_id: 'user-1',
+      });
+      mockGoogleOAuthService.updateEvent.mockRejectedValueOnce({ status: 404, code: 'NOT_FOUND' });
+
+      await request(app)
+        .patch('/api/calendar/google/events/g-1').set('x-user-id', 'user-1').send(body).expect(404);
+      expect(mockCalendarService.deleteMirrorByGoogleId).toHaveBeenCalledWith('g-1');
+    });
+  });
+
+  describe('DELETE /api/calendar/google/events/:id', () => {
+    const parentFamily = { id: 'family-1', members: [{ user_id: 'user-1', role: 'parent' }] };
+
+    it('403s when the caller is not the creator', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.getMirrorRowByGoogleId.mockResolvedValueOnce({
+        google_event_id: 'g-1', google_calendar_id: 'primary', created_by_id: 'someone-else',
+      });
+      await request(app)
+        .delete('/api/calendar/google/events/g-1').set('x-user-id', 'user-1').expect(403);
+    });
+
+    it('deletes in Google and drops the mirror row', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.getMirrorRowByGoogleId.mockResolvedValueOnce({
+        google_event_id: 'g-1', google_calendar_id: 'primary', created_by_id: 'user-1',
+      });
+      mockGoogleOAuthService.deleteEvent.mockResolvedValueOnce({ alreadyGone: false });
+
+      const res = await request(app)
+        .delete('/api/calendar/google/events/g-1').set('x-user-id', 'user-1').expect(200);
+
+      expect(mockGoogleOAuthService.deleteEvent).toHaveBeenCalledWith('user-1', 'primary', 'g-1', 'all');
+      expect(mockCalendarService.deleteMirrorByGoogleId).toHaveBeenCalledWith('g-1');
+      expect(res.body.data.alreadyGone).toBe(false);
+    });
+
+    it('succeeds when the event was already gone in Google', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.getMirrorRowByGoogleId.mockResolvedValueOnce({
+        google_event_id: 'g-1', google_calendar_id: 'primary', created_by_id: 'user-1',
+      });
+      mockGoogleOAuthService.deleteEvent.mockResolvedValueOnce({ alreadyGone: true });
+
+      const res = await request(app)
+        .delete('/api/calendar/google/events/g-1').set('x-user-id', 'user-1').expect(200);
+      expect(res.body.data.alreadyGone).toBe(true);
+      expect(mockCalendarService.deleteMirrorByGoogleId).toHaveBeenCalledWith('g-1');
     });
   });
 });

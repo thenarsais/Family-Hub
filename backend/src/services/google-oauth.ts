@@ -10,7 +10,7 @@ interface GoogleAuthToken {
   token_type: string;
 }
 
-interface GoogleCalendarEvent {
+export interface GoogleCalendarEvent {
   id?: string | null;
   summary?: string | null;
   description?: string | null;
@@ -30,6 +30,81 @@ interface GoogleCalendar {
   backgroundColor?: string;
   foregroundColor?: string;
   primary?: boolean;
+}
+
+// Shape the calendar routes hand to createEvent / updateEvent after validating
+// the request body. Dates/times are wall-clock parts kept separate from the
+// timezone, exactly how Google's API wants them for a timed event
+// ({ dateTime, timeZone }); an all-day event uses startDate only.
+export interface CalendarEventInput {
+  summary: string;
+  description?: string;
+  location?: string;
+  allDay: boolean;
+  startDate: string; // 'YYYY-MM-DD'
+  startTime?: string; // 'HH:MM' — required when !allDay
+  endDate?: string; // 'YYYY-MM-DD' — defaults to startDate
+  endTime?: string; // 'HH:MM' — defaults to startTime + 1h
+  timeZone: string; // IANA, e.g. 'America/New_York'
+  attendees?: string[]; // email addresses
+}
+
+export type GoogleSendUpdates = 'all' | 'none';
+
+// Add one hour to a wall-clock date+time, rolling the date over midnight.
+// Uses a UTC base purely for the arithmetic — the parts come back out as
+// wall-clock again and are paired with an explicit timeZone downstream.
+function addOneHour(dateStr: string, timeStr: string): { date: string; time: string } {
+  const base = new Date(`${dateStr}T${timeStr}:00Z`);
+  base.setUTCHours(base.getUTCHours() + 1);
+  return { date: base.toISOString().slice(0, 10), time: base.toISOString().slice(11, 16) };
+}
+
+// Google's all-day `end.date` is EXCLUSIVE: a single-day event on the 30th is
+// start.date=…-30, end.date=…-31. Sending them equal is a 400.
+function nextDay(dateStr: string): string {
+  const base = new Date(`${dateStr}T00:00:00Z`);
+  base.setUTCDate(base.getUTCDate() + 1);
+  return base.toISOString().slice(0, 10);
+}
+
+function buildEventRequestBody(input: CalendarEventInput): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    summary: input.summary,
+    description: input.description || undefined,
+    location: input.location || undefined,
+    attendees: input.attendees?.length ? input.attendees.map((email) => ({ email })) : undefined,
+  };
+
+  if (input.allDay) {
+    const startDate = input.startDate;
+    const endDate = input.endDate && input.endDate > startDate ? nextDay(input.endDate) : nextDay(startDate);
+    body.start = { date: startDate };
+    body.end = { date: endDate };
+  } else {
+    const startTime = input.startTime || '09:00';
+    let endDate = input.endDate || input.startDate;
+    let endTime = input.endTime;
+    if (!endTime) {
+      const bumped = addOneHour(input.startDate, startTime);
+      endDate = bumped.date;
+      endTime = bumped.time;
+    }
+    body.start = { dateTime: `${input.startDate}T${startTime}:00`, timeZone: input.timeZone };
+    body.end = { dateTime: `${endDate}T${endTime}:00`, timeZone: input.timeZone };
+  }
+
+  return body;
+}
+
+// googleapis throws errors carrying an HTTP status on `.code` (number) and/or
+// `.response.status`. Normalise to a number so callers can branch on 404/410/etc.
+function googleErrorStatus(error: unknown): number | undefined {
+  const e = error as { code?: unknown; response?: { status?: number }; status?: number };
+  if (typeof e?.code === 'number') return e.code;
+  if (typeof e?.status === 'number') return e.status;
+  if (typeof e?.response?.status === 'number') return e.response.status;
+  return undefined;
 }
 
 // google-auth-library's Credentials shape has `expiry_date` (absolute ms
@@ -376,6 +451,93 @@ class GoogleOAuthService {
       requestBody: { attendees },
     });
     return { declined: true };
+  }
+
+  /**
+   * Create an event on one of the user's Google calendars. Google is the
+   * source of truth for events made through the dashboard form — the caller
+   * mirrors the returned event into calendar_events afterwards.
+   *
+   * Throws the same typed 401 as the read path when there's no usable token,
+   * so the frontend's re-authorize banner fires.
+   */
+  async createEvent(
+    userId: string,
+    calendarId: string,
+    input: CalendarEventInput,
+    sendUpdates: GoogleSendUpdates,
+  ): Promise<GoogleCalendarEvent> {
+    const calendar = await this.getAuthedCalendar(userId);
+    if (!calendar) {
+      throw { code: 'NO_TOKEN', message: 'Google Calendar isn\'t connected. Please connect it first.', status: 401 };
+    }
+
+    const { data } = await calendar.events.insert({
+      calendarId,
+      sendUpdates,
+      requestBody: buildEventRequestBody(input),
+    });
+    return data as GoogleCalendarEvent;
+  }
+
+  /**
+   * Patch an existing Google event. A 404/410 (the event was already deleted
+   * upstream) is re-thrown as a typed 404 so the route can drop the stale
+   * mirror row and tell the user.
+   */
+  async updateEvent(
+    userId: string,
+    calendarId: string,
+    eventId: string,
+    input: CalendarEventInput,
+    sendUpdates: GoogleSendUpdates,
+  ): Promise<GoogleCalendarEvent> {
+    const calendar = await this.getAuthedCalendar(userId);
+    if (!calendar) {
+      throw { code: 'NO_TOKEN', message: 'Google Calendar isn\'t connected. Please connect it first.', status: 401 };
+    }
+
+    try {
+      const { data } = await calendar.events.patch({
+        calendarId,
+        eventId,
+        sendUpdates,
+        requestBody: buildEventRequestBody(input),
+      });
+      return data as GoogleCalendarEvent;
+    } catch (error: unknown) {
+      const status = googleErrorStatus(error);
+      if (status === 404 || status === 410) {
+        throw { code: 'NOT_FOUND', message: 'That event no longer exists in Google Calendar.', status: 404 };
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a Google event. A 404/410 means it's already gone upstream — that's
+   * the desired end state, so it resolves successfully and the caller still
+   * clears the mirror row.
+   */
+  async deleteEvent(
+    userId: string,
+    calendarId: string,
+    eventId: string,
+    sendUpdates: GoogleSendUpdates,
+  ): Promise<{ alreadyGone: boolean }> {
+    const calendar = await this.getAuthedCalendar(userId);
+    if (!calendar) {
+      throw { code: 'NO_TOKEN', message: 'Google Calendar isn\'t connected. Please connect it first.', status: 401 };
+    }
+
+    try {
+      await calendar.events.delete({ calendarId, eventId, sendUpdates });
+      return { alreadyGone: false };
+    } catch (error: unknown) {
+      const status = googleErrorStatus(error);
+      if (status === 404 || status === 410) return { alreadyGone: true };
+      throw error;
+    }
   }
 
   /**

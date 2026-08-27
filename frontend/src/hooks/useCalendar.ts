@@ -13,7 +13,30 @@ type CalendarEvent = Partial<LocalCalendarEvent> &
   Partial<GoogleCalendarEvent> & {
     id: string;
     source?: 'local' | 'google';
+    // Present on B-lite events (created via the dashboard form). Folded onto
+    // the Google-feed copy from its calendar_events mirror row so the UI can
+    // gate Edit/Delete to the creator without a second lookup.
+    created_by_id?: string;
+    google_event_id?: string;
+    google_calendar_id?: string;
+    mirror_id?: string;
   };
+
+// Body for POST/PATCH /api/calendar/google/events — matches
+// components['schemas']['GoogleCalendarEventInput'].
+export interface GoogleEventInput {
+  summary: string;
+  description?: string;
+  location?: string;
+  allDay: boolean;
+  startDate: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
+  timeZone: string;
+  attendees?: string[];
+  sendInvites?: boolean;
+}
 
 interface UseCalendarReturn {
   events: CalendarEvent[];
@@ -22,9 +45,9 @@ interface UseCalendarReturn {
   error: string | null;
   tokenExpired: boolean;
   googleConnected: boolean;
-  createEvent: (data: Partial<CalendarEvent>) => Promise<CalendarEvent>;
-  updateEvent: (eventId: string, data: Partial<CalendarEvent>) => Promise<CalendarEvent>;
-  deleteEvent: (eventId: string) => Promise<void>;
+  createEvent: (input: GoogleEventInput) => Promise<CalendarEvent>;
+  updateEvent: (googleEventId: string, input: GoogleEventInput) => Promise<CalendarEvent>;
+  deleteEvent: (googleEventId: string, sendInvites?: boolean) => Promise<void>;
   connectGoogle: () => Promise<string>;
   disconnectGoogle: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -87,8 +110,29 @@ export function useCalendar(): UseCalendarReturn {
       const localEventsWithSource = localEvents.map((e: any) => ({ ...e, source: 'local' }));
       const googleEventsWithSource = googleEvents.map((e: any) => ({ ...e, source: 'google' }));
 
+      // B-lite dedupe: a form-created event comes back on BOTH feeds — once
+      // from Google (rich) and once as its calendar_events mirror row. Keep the
+      // Google copy, fold the mirror's creator/ids onto it so the UI can gate
+      // Edit/Delete, and drop the duplicate local row. A family member who
+      // isn't an attendee has only the mirror row, so they still see it.
+      const googleById = new Map<string, any>(
+        googleEventsWithSource.map((e: any) => [e.id, e]),
+      );
+      const localWithoutMirrorDupes = localEventsWithSource.filter((e: any) => {
+        const gid = e.google_event_id;
+        if (gid && googleById.has(gid)) {
+          const g = googleById.get(gid);
+          g.created_by_id = e.created_by_id;
+          g.google_event_id = gid;
+          g.google_calendar_id = e.google_calendar_id;
+          g.mirror_id = e.id;
+          return false;
+        }
+        return true;
+      });
+
       // Merge events (Google events first, then local)
-      const mergedEvents = [...googleEventsWithSource, ...localEventsWithSource];
+      const mergedEvents = [...googleEventsWithSource, ...localWithoutMirrorDupes];
 
       // Filter upcoming from merged events
       const now = new Date();
@@ -144,42 +188,46 @@ export function useCalendar(): UseCalendarReturn {
     fetchEvents();
   }, [user?.id]);
 
-  const createEvent = async (data: Partial<CalendarEvent>): Promise<CalendarEvent> => {
+  // Create / edit / delete all go through the Google routes (B-lite): the
+  // event is written to the user's Google Calendar and mirrored locally. We
+  // re-fetch afterwards rather than splicing an optimistic object in, so the
+  // merged/deduped list stays the single source of shape.
+  const createEvent = async (input: GoogleEventInput): Promise<CalendarEvent> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    const response = await apiClient.post<CalendarEvent>(
-      '/api/calendar/events',
-      data,
+    const response = await apiClient.post<ApiEnvelope<CalendarEvent & { google_event_id?: string }>>(
+      '/api/calendar/google/events',
+      input,
       { headers: { 'x-user-id': user.id } },
     );
 
-    const newEvent = response.data;
-    setEvents((prev) => [...prev, newEvent]);
-    return newEvent;
+    await fetchEvents();
+    return response.data.data;
   };
 
-  const updateEvent = async (eventId: string, data: Partial<CalendarEvent>): Promise<CalendarEvent> => {
+  const updateEvent = async (googleEventId: string, input: GoogleEventInput): Promise<CalendarEvent> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    const response = await apiClient.patch<CalendarEvent>(
-      `/api/calendar/events/${eventId}`,
-      data,
+    const response = await apiClient.patch<ApiEnvelope<CalendarEvent & { google_event_id?: string }>>(
+      `/api/calendar/google/events/${googleEventId}`,
+      input,
       { headers: { 'x-user-id': user.id } },
     );
 
-    const updated = response.data;
-    setEvents((prev) => prev.map((e) => (e.id === eventId ? updated : e)));
-    return updated;
+    await fetchEvents();
+    return response.data.data;
   };
 
-  const deleteEvent = async (eventId: string): Promise<void> => {
+  const deleteEvent = async (googleEventId: string, sendInvites = true): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
-    await apiClient.delete(`/api/calendar/events/${eventId}`, {
+    await apiClient.delete(`/api/calendar/google/events/${googleEventId}`, {
       headers: { 'x-user-id': user.id },
+      data: { sendInvites },
     });
 
-    setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    setEvents((prev) => prev.filter((e) => (e.google_event_id ?? e.id) !== googleEventId));
+    await fetchEvents();
   };
 
   const connectGoogle = async (): Promise<string> => {

@@ -2795,6 +2795,57 @@ paths:
         '500':
           description: Unexpected failure (status code passed through from a thrown error's `status` field when present, defaulting to 500).
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Calendar]
+      summary: Create an event on the caller's Google Calendar (B-lite, parents only)
+      description: >
+        Writes the event to the caller's Google Calendar (`primary` for now) via
+        `events.insert`, then mirrors it into `calendar_events` tagged with its
+        `google_event_id` so family members who aren't attendees still see it.
+        Google is the source of truth — the mirror row is never edited by hand.
+        The mirror write is best-effort: a failure leaves `mirrorId` null but the
+        request still succeeds because the event exists in Google. Restricted to
+        family members with role `parent` or `admin`.
+      operationId: createGoogleCalendarEvent
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GoogleCalendarEventInput' }
+      responses:
+        '201':
+          description: Created in Google (and, best-effort, mirrored locally).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/GoogleCalendarEvent'
+                      - type: object
+                        properties:
+                          google_event_id: { type: string }
+                          google_calendar_id: { type: string }
+                          mirrorId: { type: [string, 'null'], description: "calendar_events row id, or null if the mirror write failed." }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid body (missing summary, bad date/time format, invalid attendee email, etc.).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id, or Google isn't connected / authorization expired (code NO_TOKEN, TOKEN_REFRESH_FAILED, NO_REFRESH_TOKEN).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '403':
+          description: Caller is not a parent/admin in their family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure (upstream Google status passed through when present).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
 
   /api/calendar/google/disconnect:
     post:
@@ -2906,6 +2957,110 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '401':
           description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/google/events/{id}:
+    patch:
+      tags: [Calendar]
+      summary: Update a feature-created Google event (creator only)
+      description: >
+        Patches the Google event and refreshes its `calendar_events` mirror row.
+        Only events that were created through this feature (i.e. have a mirror row
+        carrying the `google_event_id`) can be edited, and only by the user who
+        created them. If Google reports the event gone, the stale mirror row is
+        dropped and a 404 is returned.
+      operationId: updateGoogleCalendarEvent
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, description: "The Google event id." }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GoogleCalendarEventInput' }
+      responses:
+        '200':
+          description: Updated in Google and in the local mirror.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/GoogleCalendarEvent'
+                      - type: object
+                        properties:
+                          google_event_id: { type: string }
+                          google_calendar_id: { type: string }
+                          mirrorId: { type: [string, 'null'] }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid body.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id, or Google authorization expired.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '403':
+          description: Caller is not a parent/admin, or not the event's creator.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No feature-created event with that id, the caller has no family, or Google reports the event no longer exists.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Calendar]
+      summary: Delete a feature-created Google event (creator only)
+      description: >
+        Deletes the Google event and drops its `calendar_events` mirror row. Only
+        the creating user can delete. A Google 404/410 (already gone upstream) is
+        treated as success — `data.alreadyGone` reports which happened.
+      operationId: deleteGoogleCalendarEvent
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, description: "The Google event id." }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sendInvites: { type: boolean, default: true, description: "false → sendUpdates: none (no cancellation emails to attendees)." }
+      responses:
+        '200':
+          description: Deleted (or already gone upstream).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      alreadyGone: { type: boolean, description: "True when Google reported the event already deleted." }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id, or Google authorization expired.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '403':
+          description: Caller is not a parent/admin, or not the event's creator.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No feature-created event with that id, or the caller has no family.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -4401,6 +4556,30 @@ components:
         calendarId: { type: string, description: "Attached by the service; identifies which of the user's Google calendars this event came from." }
         calendarName: { type: string }
         calendarColor: { type: string }
+
+    GoogleCalendarEventInput:
+      type: object
+      description: >
+        Body for creating/updating a Google Calendar event from the dashboard
+        form. Wall-clock date/time parts are kept separate from the timezone,
+        matching how Google's API wants a timed event ({ dateTime, timeZone }).
+      required: [summary, startDate, timeZone]
+      properties:
+        summary: { type: string, description: "Event title. Required, non-empty." }
+        description: { type: string }
+        location: { type: string }
+        allDay: { type: boolean, default: false }
+        startDate: { type: string, format: date, description: "YYYY-MM-DD." }
+        startTime: { type: string, pattern: '^\d{2}:\d{2}$', description: "HH:MM. Required when allDay is false." }
+        endDate: { type: string, format: date, description: "YYYY-MM-DD. Defaults to startDate. For an all-day event this is the last day (the API's exclusive end is computed server-side)." }
+        endTime: { type: string, pattern: '^\d{2}:\d{2}$', description: "HH:MM. Defaults to startTime + 1 hour." }
+        timeZone: { type: string, description: "IANA timezone, e.g. America/New_York." }
+        attendees:
+          type: array
+          items: { type: string, format: email }
+          description: "Attendee email addresses. Each is validated for shape."
+        sendInvites: { type: boolean, default: true, description: "false → sendUpdates: none (no invite/update/cancellation emails)." }
+        calendarId: { type: string, default: primary, description: "Reserved for a future calendar picker; only 'primary' is used today." }
 
     # ---------------- Family ----------------
     Family:

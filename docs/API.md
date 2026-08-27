@@ -111,7 +111,7 @@ Each group below links to its tag in `openapi.yaml`. "Auth" column values:
 | Announcements | `/api/announcements/*` | x-user-id | Family messaging: create/update/delete, mark-read, read counts. |
 | Reminders | `/api/reminders/*` | x-user-id | Scheduled reminders: create/update/delete/dismiss, upcoming/filtered lists. |
 | Energy | `/api/energy/*` | x-user-id for goal endpoints; **usage/summary/current-month have no auth check** despite living in this route file | Usage time series, period summaries, goals. |
-| Calendar | `/api/calendar/*` | x-user-id (OAuth callback is unauthenticated by nature) | Family events CRUD, Google Calendar OAuth connect/callback/disconnect, Google event fetch, event dismissal. |
+| Calendar | `/api/calendar/*` | x-user-id (OAuth callback is unauthenticated by nature) | Family events CRUD, Google Calendar OAuth connect/callback/disconnect, Google event fetch, event dismissal, and Google event create/edit/delete (`POST`/`PATCH`/`DELETE /api/calendar/google/events` — parents only). |
 | Family | `/api/family/*` | x-user-id | Family creation, membership, invitations, child account provisioning (the only legitimate path to create a child account — see COPPA note), settings. |
 | ActivityLog | `/api/activity/*` | x-user-id for feed/stats; **`POST /log` has no auth check at all** (target user comes from the request body) | Dashboard activity feed and stats. |
 | ExternalAPIs | `/api/external/*` | Bearer | Merriam-Webster dictionary, OpenWeather, SendGrid email passthroughs. All cached (dictionary 7d/24h, weather 10min–1h). |
@@ -152,6 +152,15 @@ summarized here for scanning:
   body when the user's Google OAuth grant has expired and can't be
   silently refreshed — the frontend needs to send the user back through
   `GET /api/calendar/auth/google` in that case.
+- **`POST`/`PATCH`/`DELETE /api/calendar/google/events`** (B-lite): Google is
+  the source of truth. Create writes to the caller's `primary` Google calendar
+  then best-effort mirrors a `calendar_events` row tagged with `google_event_id`
+  so non-attendee family members still see it (mirror write failure → `mirrorId:
+  null`, request still 201s). Edit/delete only work on events with a mirror row,
+  and only for the row's `created_by_id` (403 otherwise). Google 404/410 on
+  edit/delete is treated as "already gone" — the stale mirror row is dropped.
+  Parents/admins only (403 otherwise). Same 401 structured-error contract as the
+  read endpoint.
 - **`POST /api/family/members/accept-invitation`** returns 400 for *every*
   failure mode, including unexpected/server errors, not just validation
   failures — don't assume a 400 here always means "bad input."

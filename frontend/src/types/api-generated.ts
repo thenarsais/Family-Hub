@@ -1223,7 +1223,11 @@ export interface paths {
         /** Fetch the user's Google Calendar events (across all their Google calendars) */
         get: operations["getGoogleCalendarEvents"];
         put?: never;
-        post?: never;
+        /**
+         * Create an event on the caller's Google Calendar (B-lite, parents only)
+         * @description Writes the event to the caller's Google Calendar (`primary` for now) via `events.insert`, then mirrors it into `calendar_events` tagged with its `google_event_id` so family members who aren't attendees still see it. Google is the source of truth — the mirror row is never edited by hand. The mirror write is best-effort: a failure leaves `mirrorId` null but the request still succeeds because the event exists in Google. Restricted to family members with role `parent` or `admin`.
+         */
+        post: operations["createGoogleCalendarEvent"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1285,6 +1289,30 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/calendar/google/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a feature-created Google event (creator only)
+         * @description Deletes the Google event and drops its `calendar_events` mirror row. Only the creating user can delete. A Google 404/410 (already gone upstream) is treated as success — `data.alreadyGone` reports which happened.
+         */
+        delete: operations["deleteGoogleCalendarEvent"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a feature-created Google event (creator only)
+         * @description Patches the Google event and refreshes its `calendar_events` mirror row. Only events that were created through this feature (i.e. have a mirror row carrying the `google_event_id`) can be edited, and only by the user who created them. If Google reports the event gone, the stale mirror row is dropped and a 404 is returned.
+         */
+        patch: operations["updateGoogleCalendarEvent"];
         trace?: never;
     };
     "/api/family": {
@@ -2238,6 +2266,43 @@ export interface components {
             calendarId?: string;
             calendarName?: string;
             calendarColor?: string;
+        };
+        /** @description Body for creating/updating a Google Calendar event from the dashboard form. Wall-clock date/time parts are kept separate from the timezone, matching how Google's API wants a timed event ({ dateTime, timeZone }). */
+        GoogleCalendarEventInput: {
+            /** @description Event title. Required, non-empty. */
+            summary: string;
+            description?: string;
+            location?: string;
+            /** @default false */
+            allDay: boolean;
+            /**
+             * Format: date
+             * @description YYYY-MM-DD.
+             */
+            startDate: string;
+            /** @description HH:MM. Required when allDay is false. */
+            startTime?: string;
+            /**
+             * Format: date
+             * @description YYYY-MM-DD. Defaults to startDate. For an all-day event this is the last day (the API's exclusive end is computed server-side).
+             */
+            endDate?: string;
+            /** @description HH:MM. Defaults to startTime + 1 hour. */
+            endTime?: string;
+            /** @description IANA timezone, e.g. America/New_York. */
+            timeZone: string;
+            /** @description Attendee email addresses. Each is validated for shape. */
+            attendees?: string[];
+            /**
+             * @description false → sendUpdates: none (no invite/update/cancellation emails).
+             * @default true
+             */
+            sendInvites: boolean;
+            /**
+             * @description Reserved for a future calendar picker; only 'primary' is used today.
+             * @default primary
+             */
+            calendarId: string;
         };
         /** @description Raw `families` table row (Tables<'families'>['Row']). */
         Family: {
@@ -6384,6 +6449,86 @@ export interface operations {
             };
         };
     };
+    createGoogleCalendarEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleCalendarEventInput"];
+            };
+        };
+        responses: {
+            /** @description Created in Google (and, best-effort, mirrored locally). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        data?: components["schemas"]["GoogleCalendarEvent"] & {
+                            google_event_id?: string;
+                            google_calendar_id?: string;
+                            /** @description calendar_events row id, or null if the mirror write failed. */
+                            mirrorId?: string | null;
+                        };
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid body (missing summary, bad date/time format, invalid attendee email, etc.). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id, or Google isn't connected / authorization expired (code NO_TOKEN, TOKEN_REFRESH_FAILED, NO_REFRESH_TOKEN). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller is not a parent/admin in their family. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller has no family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure (upstream Google status passed through when present). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
     disconnectGoogleCalendar: {
         parameters: {
             query?: never;
@@ -6541,6 +6686,165 @@ export interface operations {
             };
             /** @description Missing x-user-id. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    deleteGoogleCalendarEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description false → sendUpdates: none (no cancellation emails to attendees).
+                     * @default true
+                     */
+                    sendInvites?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Deleted (or already gone upstream). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        message?: string;
+                        data?: {
+                            /** @description True when Google reported the event already deleted. */
+                            alreadyGone?: boolean;
+                        };
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id, or Google authorization expired. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller is not a parent/admin, or not the event's creator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No feature-created event with that id, or the caller has no family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateGoogleCalendarEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleCalendarEventInput"];
+            };
+        };
+        responses: {
+            /** @description Updated in Google and in the local mirror. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        data?: components["schemas"]["GoogleCalendarEvent"] & {
+                            google_event_id?: string;
+                            google_calendar_id?: string;
+                            mirrorId?: string | null;
+                        };
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id, or Google authorization expired. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller is not a parent/admin, or not the event's creator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No feature-created event with that id, the caller has no family, or Google reports the event no longer exists. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
