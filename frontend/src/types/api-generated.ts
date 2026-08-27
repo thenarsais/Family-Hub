@@ -1276,7 +1276,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Dismiss/hide an event (local or Google) from the calendar view */
+        /**
+         * Dismiss an event from the calendar view (local hide + Google decline when invited)
+         * @description Always records a local hide so the event stays out of this user's Family Hub calendar. When `source` is `google` and the connected user is an attendee of the event, also sets their RSVP to `declined` in Google Calendar (requires the `calendar.events` OAuth scope — a token predating it yields `reason: reconnect_required`).
+         */
         post: operations["dismissCalendarEvent"];
         delete?: never;
         options?: never;
@@ -6489,6 +6492,11 @@ export interface operations {
                 "application/json": {
                     /** @description Google calendar ID, when dismissing a Google event. */
                     calendarId?: string;
+                    /**
+                     * @description Origin of the event. `google` enables the two-way decline; anything else is a local hide only.
+                     * @enum {string}
+                     */
+                    source?: "google" | "local";
                 };
             };
         };
@@ -6504,6 +6512,19 @@ export interface operations {
                         status?: "success";
                         /** @constant */
                         message?: "Event dismissed successfully";
+                        data?: {
+                            /** @constant */
+                            local?: true;
+                            /** @description True only when the invite was declined in Google. */
+                            synced?: boolean;
+                            /** @enum {string} */
+                            action?: "declined";
+                            /**
+                             * @description Why the Google decline didn't happen (absent on success).
+                             * @enum {string}
+                             */
+                            reason?: "no_token" | "not_an_attendee" | "reconnect_required" | "google_error";
+                        };
                         /** Format: date-time */
                         timestamp?: string;
                     };

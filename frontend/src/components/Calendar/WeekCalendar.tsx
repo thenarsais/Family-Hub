@@ -62,8 +62,11 @@ export function WeekCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [dismissedEventIds, setDismissedEventIds] = useState<Set<string>>(new Set());
+  // Set when a Google dismiss couldn't decline the invite because the stored
+  // token predates the calendar.events scope — prompts a reconnect.
+  const [reconnectForSync, setReconnectForSync] = useState(false);
 
-  const dismissEvent = async (eventId: string, calendarId?: string) => {
+  const dismissEvent = async (eventId: string, source: 'google' | 'local', calendarId?: string) => {
     if (!user?.id) {
       console.error('User not authenticated');
       return;
@@ -72,11 +75,15 @@ export function WeekCalendar() {
     setDismissedEventIds(prev => new Set([...prev, eventId]));
 
     try {
-      await fetch(`/api/calendar/events/${eventId}/dismiss`, {
+      const res = await fetch(`/api/calendar/events/${eventId}/dismiss`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
-        body: JSON.stringify({ calendarId }),
+        body: JSON.stringify({ calendarId, source }),
       });
+      const body = await res.json().catch(() => null);
+      if (body?.data?.reason === 'reconnect_required') {
+        setReconnectForSync(true);
+      }
     } catch (error) {
       console.error('Failed to dismiss event:', error);
       // Revert UI state on error
@@ -269,6 +276,28 @@ export function WeekCalendar() {
         </div>
       )}
 
+      {/* Reconnect for two-way sync */}
+      {reconnectForSync && (
+        <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900 border border-amber-200 dark:border-amber-700 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                🔁 Reconnect to decline invites in Google
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                The event was hidden here, but declining it in your Google Calendar needs updated access.
+              </p>
+            </div>
+            <button
+              onClick={() => connectGoogle()}
+              className="ml-4 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded transition"
+            >
+              Reconnect
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Week Navigation */}
       <div className="flex items-center justify-between mb-6">
         <button
@@ -349,7 +378,11 @@ export function WeekCalendar() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            dismissEvent(event.id, event.calendarId);
+                            dismissEvent(
+                              event.id,
+                              event.type === 'google' ? 'google' : 'local',
+                              event.calendarId,
+                            );
                           }}
                           className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition hover:text-red-500"
                           title="Dismiss event"

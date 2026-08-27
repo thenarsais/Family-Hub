@@ -2855,7 +2855,13 @@ paths:
   /api/calendar/events/{id}/dismiss:
     post:
       tags: [Calendar]
-      summary: Dismiss/hide an event (local or Google) from the calendar view
+      summary: Dismiss an event from the calendar view (local hide + Google decline when invited)
+      description: >
+        Always records a local hide so the event stays out of this user's Family
+        Hub calendar. When `source` is `google` and the connected user is an
+        attendee of the event, also sets their RSVP to `declined` in Google
+        Calendar (requires the `calendar.events` OAuth scope — a token predating
+        it yields `reason: reconnect_required`).
       operationId: dismissCalendarEvent
       security: [{ userIdHeader: [] }]
       parameters:
@@ -2870,6 +2876,10 @@ paths:
               type: object
               properties:
                 calendarId: { type: string, description: "Google calendar ID, when dismissing a Google event." }
+                source:
+                  type: string
+                  enum: [google, local]
+                  description: "Origin of the event. `google` enables the two-way decline; anything else is a local hide only."
       responses:
         '200':
           description: Dismissed.
@@ -2880,6 +2890,16 @@ paths:
                 properties:
                   status: { type: string, const: success }
                   message: { type: string, const: "Event dismissed successfully" }
+                  data:
+                    type: object
+                    properties:
+                      local: { type: boolean, const: true }
+                      synced: { type: boolean, description: "True only when the invite was declined in Google." }
+                      action: { type: string, enum: [declined] }
+                      reason:
+                        type: string
+                        enum: [no_token, not_an_attendee, reconnect_required, google_error]
+                        description: "Why the Google decline didn't happen (absent on success)."
                   timestamp: { type: string, format: date-time }
         '400':
           description: Missing event ID.

@@ -15,9 +15,11 @@ const mockOAuth2Instance = {
 
 const mockCalendarListList = jest.fn();
 const mockEventsList = jest.fn();
+const mockEventsGet = jest.fn();
+const mockEventsPatch = jest.fn();
 const mockCalendarClient = {
   calendarList: { list: mockCalendarListList },
-  events: { list: mockEventsList },
+  events: { list: mockEventsList, get: mockEventsGet, patch: mockEventsPatch },
 };
 
 jest.mock('googleapis', () => ({
@@ -76,17 +78,96 @@ describe('GoogleOAuthService', () => {
   });
 
   describe('getAuthUrl', () => {
-    it('should generate an offline-access URL scoped to calendar.readonly, keyed by userId', () => {
+    it('should generate an offline-access URL scoped to calendar.events, keyed by userId', () => {
       mockOAuth2Instance.generateAuthUrl.mockReturnValueOnce('https://accounts.google.com/auth?x=1');
 
       const url = service.getAuthUrl(userId);
 
       expect(mockOAuth2Instance.generateAuthUrl).toHaveBeenCalledWith({
         access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/calendar.readonly'],
+        prompt: 'consent',
+        scope: ['https://www.googleapis.com/auth/calendar.events'],
         state: userId,
       });
       expect(url).toBe('https://accounts.google.com/auth?x=1');
+    });
+  });
+
+  describe('declineEventIfInvited', () => {
+    const validToken = () =>
+      mockChain.single.mockResolvedValueOnce({
+        data: {
+          access_token: 'tok',
+          refresh_token: null,
+          token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        },
+        error: null,
+      });
+
+    it('returns no_token when the user has no stored token', async () => {
+      mockChain.single.mockResolvedValueOnce({ data: null, error: { message: 'not found' } });
+
+      const result = await service.declineEventIfInvited(userId, 'cal-1', 'ev-1');
+
+      expect(result).toEqual({ declined: false, reason: 'no_token' });
+      expect(mockEventsGet).not.toHaveBeenCalled();
+    });
+
+    it('does not patch when the user is not an attendee', async () => {
+      validToken();
+      mockEventsGet.mockResolvedValueOnce({
+        data: { attendees: [{ email: 'someone@else.com' }] },
+      });
+
+      const result = await service.declineEventIfInvited(userId, 'cal-1', 'ev-1');
+
+      expect(result).toEqual({ declined: false, reason: 'not_an_attendee' });
+      expect(mockEventsPatch).not.toHaveBeenCalled();
+    });
+
+    it('does not patch when the event has no attendees at all', async () => {
+      validToken();
+      mockEventsGet.mockResolvedValueOnce({ data: {} });
+
+      const result = await service.declineEventIfInvited(userId, 'cal-1', 'ev-1');
+
+      expect(result).toEqual({ declined: false, reason: 'not_an_attendee' });
+    });
+
+    it('patches the self attendee to declined and returns declined:true', async () => {
+      validToken();
+      mockEventsGet.mockResolvedValueOnce({
+        data: {
+          attendees: [
+            { email: 'other@x.com', responseStatus: 'accepted' },
+            { email: 'me@x.com', self: true, responseStatus: 'needsAction' },
+          ],
+        },
+      });
+      mockEventsPatch.mockResolvedValueOnce({ data: {} });
+
+      const result = await service.declineEventIfInvited(userId, 'cal-1', 'ev-1');
+
+      expect(result).toEqual({ declined: true });
+      expect(mockEventsPatch).toHaveBeenCalledWith({
+        calendarId: 'cal-1',
+        eventId: 'ev-1',
+        sendUpdates: 'none',
+        requestBody: {
+          attendees: [
+            { email: 'other@x.com', responseStatus: 'accepted' },
+            { email: 'me@x.com', self: true, responseStatus: 'declined' },
+          ],
+        },
+      });
+    });
+
+    it('propagates a Google write error to the caller', async () => {
+      validToken();
+      mockEventsGet.mockResolvedValueOnce({ data: { attendees: [{ self: true }] } });
+      mockEventsPatch.mockRejectedValueOnce({ code: 403, message: 'insufficient scope' });
+
+      await expect(service.declineEventIfInvited(userId, 'cal-1', 'ev-1')).rejects.toMatchObject({ code: 403 });
     });
   });
 

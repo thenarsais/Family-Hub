@@ -186,8 +186,37 @@ describe('WeekCalendar — interactions', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({ 'x-user-id': 'user-1' }),
-          body: JSON.stringify({ calendarId: 'cal-1' }),
+          body: JSON.stringify({ calendarId: 'cal-1', source: 'google' }),
         })
+      );
+    });
+
+    it('shows the reconnect prompt when Google decline needs updated access', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: { local: true, synced: false, reason: 'reconnect_required' } }),
+      }) as unknown as typeof fetch;
+      mockCalendar({ events: [event] });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByTitle('Dismiss event'));
+
+      await vi.waitFor(() => {
+        expect(screen.getByText(/decline invites in Google/i)).toBeInTheDocument();
+      });
+    });
+
+    it('sends source:local for a family event', async () => {
+      mockCalendar({
+        events: [{ id: 'l-1', event_title: 'Chore', event_date: '2026-08-22', source: 'local', calendarId: 'family' }],
+      });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByTitle('Dismiss event'));
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/calendar/events/l-1/dismiss',
+        expect.objectContaining({ body: JSON.stringify({ calendarId: 'family', source: 'local' }) })
       );
     });
 

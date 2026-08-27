@@ -423,7 +423,7 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
     const { id } = req.params;
-    const { calendarId } = req.body || {};
+    const { calendarId, source } = req.body || {};
 
     if (!userId) {
       return res.status(401).json({
@@ -439,7 +439,8 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
       });
     }
 
-    // Store dismissal in database
+    // Local hide: always recorded, so the event stays out of this user's
+    // Family Hub calendar regardless of what happens with Google below.
     const { error } = await require('../services/supabase').getSupabase()
       .from('dismissed_events')
       .upsert({
@@ -453,9 +454,28 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
 
     if (error) throw error;
 
+    // Two-way sync: for a Google event the user is invited to, also decline
+    // the invite in their Google Calendar. Owned / uninvited / local events
+    // are a local hide only.
+    let sync: { synced: boolean; action?: 'declined'; reason?: string } = { synced: false };
+    if (source === 'google' && calendarId) {
+      try {
+        const result = await googleOAuth.declineEventIfInvited(userId, calendarId, id as string);
+        sync = result.declined
+          ? { synced: true, action: 'declined' }
+          : { synced: false, reason: result.reason };
+      } catch (syncError: unknown) {
+        const status = (syncError as { status?: number; code?: number })?.status
+          ?? (syncError as { code?: number })?.code;
+        sync = { synced: false, reason: status === 403 ? 'reconnect_required' : 'google_error' };
+        console.warn('Google decline failed during dismiss:', getErrorMessage(syncError));
+      }
+    }
+
     res.json({
       status: 'success',
       message: 'Event dismissed successfully',
+      data: { local: true, ...sync },
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
