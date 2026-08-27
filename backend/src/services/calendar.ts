@@ -12,6 +12,36 @@ const UPDATABLE_EVENT_COLUMNS = [
   'start_time', 'end_time', 'location', 'child_id',
 ];
 
+// The slice of a Google Calendar event the mirror row needs. Kept loose on
+// purpose — the route passes the googleapis response straight through.
+export interface GoogleMirrorSource {
+  id: string;
+  summary?: string | null;
+  description?: string | null;
+  location?: string | null;
+  start?: { date?: string | null; dateTime?: string | null } | null;
+  end?: { date?: string | null; dateTime?: string | null } | null;
+  calendarId?: string;
+}
+
+// Google gives a timed event an ISO `dateTime` and an all-day event a bare
+// `date`. calendar_events splits that into a DATE column plus nullable TIME
+// columns. Take the wall-clock parts straight off the string — no Date
+// round-trip, which is what caused the timezone bugs in Issue #4.
+function splitGoogleDateTime(g: GoogleMirrorSource): {
+  event_date: string;
+  start_time: string | null;
+  end_time: string | null;
+} {
+  const startRaw = g.start?.dateTime || g.start?.date || '';
+  const endRaw = g.end?.dateTime || g.end?.date || '';
+  return {
+    event_date: startRaw.slice(0, 10),
+    start_time: g.start?.dateTime ? startRaw.slice(11, 16) : null,
+    end_time: g.end?.dateTime ? endRaw.slice(11, 16) : null,
+  };
+}
+
 class CalendarService {
   /**
    * Get calendar events for family
@@ -152,6 +182,72 @@ class CalendarService {
       console.error('Failed to delete event:', error);
       throw error;
     }
+  }
+
+  /**
+   * B-lite mirror rows: an event created through the dashboard form lives in
+   * the user's Google Calendar (source of truth) and is copied here, tagged
+   * with its google_event_id, so family members who aren't attendees still see
+   * it. These rows are never edited by hand — they're refreshed from Google.
+   */
+  async createMirrorRow(
+    familyId: string,
+    createdById: string,
+    google: GoogleMirrorSource,
+  ): Promise<CalendarEvent> {
+    const parts = splitGoogleDateTime(google);
+    const event = await queryOne<CalendarEvent>(
+      `INSERT INTO calendar_events
+         (family_id, event_title, event_description, event_type, event_date,
+          start_time, end_time, location, created_by_id, google_event_id, google_calendar_id)
+       VALUES ($1, $2, $3, 'google', $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
+      [
+        familyId,
+        google.summary || 'Untitled Event',
+        google.description || null,
+        parts.event_date,
+        parts.start_time,
+        parts.end_time,
+        google.location || null,
+        createdById,
+        google.id,
+        google.calendarId || 'primary',
+      ],
+    );
+    if (!event) throw new Error('Failed to create calendar mirror row');
+    return event;
+  }
+
+  async updateMirrorByGoogleId(googleEventId: string, google: GoogleMirrorSource): Promise<CalendarEvent | null> {
+    const parts = splitGoogleDateTime(google);
+    return queryOne<CalendarEvent>(
+      `UPDATE calendar_events
+         SET event_title = $2, event_description = $3, event_date = $4,
+             start_time = $5, end_time = $6, location = $7, updated_at = CURRENT_TIMESTAMP
+       WHERE google_event_id = $1
+       RETURNING *`,
+      [
+        googleEventId,
+        google.summary || 'Untitled Event',
+        google.description || null,
+        parts.event_date,
+        parts.start_time,
+        parts.end_time,
+        google.location || null,
+      ],
+    );
+  }
+
+  async deleteMirrorByGoogleId(googleEventId: string): Promise<void> {
+    await query(`DELETE FROM calendar_events WHERE google_event_id = $1`, [googleEventId]);
+  }
+
+  async getMirrorRowByGoogleId(googleEventId: string): Promise<CalendarEvent | null> {
+    return queryOne<CalendarEvent>(
+      `SELECT * FROM calendar_events WHERE google_event_id = $1`,
+      [googleEventId],
+    );
   }
 
   /**

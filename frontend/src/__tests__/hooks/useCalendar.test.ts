@@ -154,26 +154,32 @@ describe('useCalendar', () => {
     expect(result.current.events).toEqual([]);
   });
 
+  const validInput = {
+    summary: 'Soccer', allDay: false, startDate: '2099-01-01', startTime: '10:00',
+    timeZone: 'America/New_York', attendees: [] as string[],
+  };
+
   describe('createEvent', () => {
-    it('should post and append the new event', async () => {
+    it('posts to the Google route and re-fetches', async () => {
       mockFetchEventsCalls();
-      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { id: 'new1', event_title: 'Soccer' } });
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { data: { id: 'g-new', google_event_id: 'g-new', summary: 'Soccer' } },
+      });
 
       const { result } = renderHook(() => useCalendar());
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       let created;
       await act(async () => {
-        created = await result.current.createEvent({ event_title: 'Soccer' });
+        created = await result.current.createEvent(validInput);
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
-        '/api/calendar/events',
-        { event_title: 'Soccer' },
+        '/api/calendar/google/events',
+        validInput,
         { headers: { 'x-user-id': 'user-1' } }
       );
-      expect(created).toEqual({ id: 'new1', event_title: 'Soccer' });
-      expect(result.current.events).toContainEqual({ id: 'new1', event_title: 'Soccer' });
+      expect(created).toEqual({ id: 'g-new', google_event_id: 'g-new', summary: 'Soccer' });
     });
 
     it('should throw when there is no authenticated user', async () => {
@@ -181,36 +187,35 @@ describe('useCalendar', () => {
       const { result } = renderHook(() => useCalendar());
       await waitFor(() => expect(result.current.loading).toBe(false));
 
-      await expect(result.current.createEvent({})).rejects.toThrow('User not authenticated');
+      await expect(result.current.createEvent(validInput)).rejects.toThrow('User not authenticated');
     });
   });
 
   describe('updateEvent', () => {
-    it('should patch and replace the event in local state', async () => {
-      mockFetchEventsCalls({ events: [{ id: 'e1', event_date: '2099-01-01', event_title: 'Old' }] });
+    it('patches the Google route by google_event_id and re-fetches', async () => {
+      mockFetchEventsCalls();
       (apiClient.patch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        data: { id: 'e1', event_title: 'New' },
+        data: { data: { id: 'g-1', google_event_id: 'g-1', summary: 'New' } },
       });
 
       const { result } = renderHook(() => useCalendar());
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       await act(async () => {
-        await result.current.updateEvent('e1', { event_title: 'New' });
+        await result.current.updateEvent('g-1', { ...validInput, summary: 'New' });
       });
 
       expect(apiClient.patch).toHaveBeenCalledWith(
-        '/api/calendar/events/e1',
-        { event_title: 'New' },
+        '/api/calendar/google/events/g-1',
+        { ...validInput, summary: 'New' },
         { headers: { 'x-user-id': 'user-1' } }
       );
-      expect(result.current.events.find((e) => e.id === 'e1')).toEqual({ id: 'e1', event_title: 'New' });
     });
   });
 
   describe('deleteEvent', () => {
-    it('should delete and remove the event from local state', async () => {
-      mockFetchEventsCalls({ events: [{ id: 'e1', event_date: '2099-01-01' }] });
+    it('deletes via the Google route and drops it from local state', async () => {
+      mockFetchEventsCalls({ events: [{ id: 'm1', google_event_id: 'g-1', event_date: '2099-01-01' }] });
       (apiClient.delete as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});
 
       const { result } = renderHook(() => useCalendar());
@@ -218,13 +223,50 @@ describe('useCalendar', () => {
       expect(result.current.events).toHaveLength(1);
 
       await act(async () => {
-        await result.current.deleteEvent('e1');
+        await result.current.deleteEvent('g-1');
       });
 
-      expect(apiClient.delete).toHaveBeenCalledWith('/api/calendar/events/e1', {
+      expect(apiClient.delete).toHaveBeenCalledWith('/api/calendar/google/events/g-1', {
         headers: { 'x-user-id': 'user-1' },
+        data: { sendInvites: true },
       });
-      expect(result.current.events).toHaveLength(0);
+    });
+  });
+
+  describe('B-lite mirror dedupe', () => {
+    it('drops the local mirror row when the Google copy is present, folding creator/ids onto it', async () => {
+      mockFetchEventsCalls({
+        events: [{
+          id: 'mirror-1', google_event_id: 'g-1', google_calendar_id: 'primary',
+          created_by_id: 'user-1', event_date: '2099-01-01', event_title: 'Dentist',
+        }],
+        google: [{ id: 'g-1', summary: 'Dentist', start: { dateTime: '2099-01-01T10:00:00Z' } }],
+      });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      const matching = result.current.events.filter(
+        (e) => e.id === 'g-1' || (e as { google_event_id?: string }).google_event_id === 'g-1'
+      );
+      expect(matching).toHaveLength(1);
+      expect(matching[0].source).toBe('google');
+      expect((matching[0] as { created_by_id?: string }).created_by_id).toBe('user-1');
+    });
+
+    it('keeps the mirror row for a family member with no Google copy', async () => {
+      mockFetchEventsCalls({
+        events: [{
+          id: 'mirror-1', google_event_id: 'g-1', created_by_id: 'other-user',
+          event_date: '2099-01-01', event_title: 'Dentist',
+        }],
+        google: [],
+      });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.events.some((e) => e.id === 'mirror-1')).toBe(true);
     });
   });
 

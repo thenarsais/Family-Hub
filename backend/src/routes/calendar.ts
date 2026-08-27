@@ -479,4 +479,255 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
   }
 });
 
+/* -------------------------------------------------------------------------- */
+/* Google Calendar create / edit / delete (B-lite)                            */
+/*                                                                            */
+/* Google is the source of truth. Each of these writes to the caller's Google */
+/* calendar first, then mirrors the result into calendar_events so non-       */
+/* attendee family members see it. Parents/admins only.                       */
+/* -------------------------------------------------------------------------- */
+
+type GoogleEventBody = {
+  summary?: unknown;
+  description?: unknown;
+  location?: unknown;
+  allDay?: unknown;
+  startDate?: unknown;
+  startTime?: unknown;
+  endDate?: unknown;
+  endTime?: unknown;
+  timeZone?: unknown;
+  attendees?: unknown;
+  sendInvites?: unknown;
+  calendarId?: unknown;
+};
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^\d{2}:\d{2}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Validate + normalise the request body into the CalendarEventInput the
+ * google-oauth service expects. Nothing is passed through raw. Returns a
+ * string on the first problem.
+ */
+function parseGoogleEventBody(
+  body: GoogleEventBody,
+): { input: import('../services/google-oauth').CalendarEventInput; sendUpdates: 'all' | 'none'; calendarId: string } | { error: string } {
+  const summary = typeof body.summary === 'string' ? body.summary.trim() : '';
+  if (!summary) return { error: 'summary is required' };
+
+  const startDate = typeof body.startDate === 'string' ? body.startDate : '';
+  if (!DATE_RE.test(startDate)) return { error: 'startDate must be YYYY-MM-DD' };
+
+  const allDay = body.allDay === true;
+
+  let startTime: string | undefined;
+  let endTime: string | undefined;
+  if (!allDay) {
+    startTime = typeof body.startTime === 'string' ? body.startTime : '';
+    if (!TIME_RE.test(startTime)) return { error: 'startTime must be HH:MM for a timed event' };
+    if (body.endTime != null && body.endTime !== '') {
+      endTime = typeof body.endTime === 'string' ? body.endTime : '';
+      if (!TIME_RE.test(endTime)) return { error: 'endTime must be HH:MM' };
+    }
+  }
+
+  let endDate: string | undefined;
+  if (body.endDate != null && body.endDate !== '') {
+    endDate = typeof body.endDate === 'string' ? body.endDate : '';
+    if (!DATE_RE.test(endDate)) return { error: 'endDate must be YYYY-MM-DD' };
+    if (endDate < startDate) return { error: 'endDate cannot be before startDate' };
+  }
+
+  const timeZone = typeof body.timeZone === 'string' && body.timeZone ? body.timeZone : 'UTC';
+
+  let attendees: string[] | undefined;
+  if (body.attendees != null) {
+    if (!Array.isArray(body.attendees)) return { error: 'attendees must be an array of email addresses' };
+    attendees = body.attendees.map((a) => String(a).trim()).filter(Boolean);
+    const bad = attendees.find((email) => !EMAIL_RE.test(email));
+    if (bad) return { error: `"${bad}" is not a valid email address` };
+  }
+
+  return {
+    input: { summary, description: typeof body.description === 'string' ? body.description : undefined,
+      location: typeof body.location === 'string' ? body.location : undefined,
+      allDay, startDate, startTime, endDate, endTime, timeZone, attendees },
+    sendUpdates: body.sendInvites === false ? 'none' : 'all',
+    calendarId: typeof body.calendarId === 'string' && body.calendarId ? body.calendarId : 'primary',
+  };
+}
+
+/**
+ * Resolve the caller's family and confirm they're a parent/admin. Mirrors the
+ * gate in routes/family.ts. Returns the family on success, or a ready-to-send
+ * { status, message } on failure.
+ */
+async function requireParent(
+  userId: string | undefined,
+): Promise<{ family: Awaited<ReturnType<typeof family.getUserFamily>> } | { fail: { status: number; message: string } }> {
+  if (!userId) return { fail: { status: 401, message: 'User ID required' } };
+  const userFamily = await family.getUserFamily(userId);
+  if (!userFamily) return { fail: { status: 404, message: 'No family found' } };
+  const caller = userFamily.members.find((m) => m.user_id === userId);
+  if (!caller || !['admin', 'parent'].includes(caller.role)) {
+    return { fail: { status: 403, message: 'Only a parent can manage calendar events' } };
+  }
+  return { family: userFamily };
+}
+
+function sendGoogleError(res: Response, error: unknown, fallback: string): void {
+  const e = error as { status?: number; code?: unknown };
+  const status = typeof e?.status === 'number' ? e.status : 500;
+  res.status(status).json({
+    status: 'error',
+    code: e?.code,
+    message: getErrorMessage(error) || fallback,
+    error: getErrorMessage(error),
+  });
+}
+
+/**
+ * POST /api/calendar/google/events
+ * Create an event on the caller's Google Calendar + mirror it locally.
+ */
+router.post('/google/events', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string | undefined;
+    const gate = await requireParent(userId);
+    if ('fail' in gate) {
+      return res.status(gate.fail.status).json({ status: 'error', message: gate.fail.message });
+    }
+
+    const parsed = parseGoogleEventBody(req.body || {});
+    if ('error' in parsed) {
+      return res.status(400).json({ status: 'error', message: parsed.error });
+    }
+
+    const googleEvent = await googleOAuth.createEvent(
+      userId as string, parsed.calendarId, parsed.input, parsed.sendUpdates,
+    );
+
+    if (!googleEvent.id) {
+      return res.status(502).json({ status: 'error', message: 'Google did not return an event id' });
+    }
+
+    // Best-effort mirror: the event exists in Google either way, so a failure
+    // here degrades family visibility but must not fail the request.
+    let mirrorId: string | null = null;
+    try {
+      const row = await calendar.createMirrorRow(gate.family!.id, userId as string, {
+        ...googleEvent, id: googleEvent.id, calendarId: parsed.calendarId,
+      });
+      mirrorId = row.id;
+    } catch (mirrorError: unknown) {
+      console.warn('Failed to write calendar mirror row:', getErrorMessage(mirrorError));
+    }
+
+    res.status(201).json({
+      status: 'success',
+      data: { ...googleEvent, google_event_id: googleEvent.id, google_calendar_id: parsed.calendarId, mirrorId },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to create Google Calendar event:', error);
+    sendGoogleError(res, error, 'Failed to create Google Calendar event');
+  }
+});
+
+/**
+ * PATCH /api/calendar/google/events/:id
+ * Update a feature-created Google event (creator only) + refresh the mirror.
+ */
+router.patch('/google/events/:id', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string | undefined;
+    const { id } = req.params;
+    const gate = await requireParent(userId);
+    if ('fail' in gate) {
+      return res.status(gate.fail.status).json({ status: 'error', message: gate.fail.message });
+    }
+
+    const mirror = await calendar.getMirrorRowByGoogleId(id as string);
+    if (!mirror) {
+      return res.status(404).json({ status: 'error', message: 'That event was not created here' });
+    }
+    if (mirror.created_by_id !== userId) {
+      return res.status(403).json({ status: 'error', message: 'Only the event creator can edit it' });
+    }
+
+    const parsed = parseGoogleEventBody(req.body || {});
+    if ('error' in parsed) {
+      return res.status(400).json({ status: 'error', message: parsed.error });
+    }
+
+    const calendarId = mirror.google_calendar_id || 'primary';
+    let googleEvent: import('../services/google-oauth').GoogleCalendarEvent;
+    try {
+      googleEvent = await googleOAuth.updateEvent(
+        userId as string, calendarId, id as string, parsed.input, parsed.sendUpdates,
+      );
+    } catch (error: unknown) {
+      if ((error as { status?: number })?.status === 404) {
+        await calendar.deleteMirrorByGoogleId(id as string);
+      }
+      throw error;
+    }
+
+    const row = await calendar.updateMirrorByGoogleId(id as string, {
+      ...googleEvent, id: id as string, calendarId,
+    });
+
+    res.json({
+      status: 'success',
+      data: { ...googleEvent, google_event_id: id, google_calendar_id: calendarId, mirrorId: row?.id ?? null },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to update Google Calendar event:', error);
+    sendGoogleError(res, error, 'Failed to update Google Calendar event');
+  }
+});
+
+/**
+ * DELETE /api/calendar/google/events/:id
+ * Delete a feature-created Google event (creator only) + drop the mirror.
+ */
+router.delete('/google/events/:id', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string | undefined;
+    const { id } = req.params;
+    const sendInvites = (req.body || {}).sendInvites;
+    const gate = await requireParent(userId);
+    if ('fail' in gate) {
+      return res.status(gate.fail.status).json({ status: 'error', message: gate.fail.message });
+    }
+
+    const mirror = await calendar.getMirrorRowByGoogleId(id as string);
+    if (!mirror) {
+      return res.status(404).json({ status: 'error', message: 'That event was not created here' });
+    }
+    if (mirror.created_by_id !== userId) {
+      return res.status(403).json({ status: 'error', message: 'Only the event creator can delete it' });
+    }
+
+    const calendarId = mirror.google_calendar_id || 'primary';
+    const result = await googleOAuth.deleteEvent(
+      userId as string, calendarId, id as string, sendInvites === false ? 'none' : 'all',
+    );
+    await calendar.deleteMirrorByGoogleId(id as string);
+
+    res.json({
+      status: 'success',
+      message: result.alreadyGone ? 'Event was already removed in Google Calendar' : 'Event deleted',
+      data: { alreadyGone: result.alreadyGone },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to delete Google Calendar event:', error);
+    sendGoogleError(res, error, 'Failed to delete Google Calendar event');
+  }
+});
+
 export default router;

@@ -17,9 +17,14 @@ const mockCalendarListList = jest.fn();
 const mockEventsList = jest.fn();
 const mockEventsGet = jest.fn();
 const mockEventsPatch = jest.fn();
+const mockEventsInsert = jest.fn();
+const mockEventsDelete = jest.fn();
 const mockCalendarClient = {
   calendarList: { list: mockCalendarListList },
-  events: { list: mockEventsList, get: mockEventsGet, patch: mockEventsPatch },
+  events: {
+    list: mockEventsList, get: mockEventsGet, patch: mockEventsPatch,
+    insert: mockEventsInsert, delete: mockEventsDelete,
+  },
 };
 
 jest.mock('googleapis', () => ({
@@ -465,6 +470,132 @@ describe('GoogleOAuthService', () => {
       mockOAuth2Instance.refreshAccessToken.mockRejectedValueOnce(new Error('revoked'));
 
       await expect(service.getCalendarEvents(userId)).rejects.toMatchObject({ code: 'TOKEN_REFRESH_FAILED' });
+    });
+  });
+
+  describe('createEvent / updateEvent / deleteEvent', () => {
+    const validToken = () =>
+      mockChain.single.mockResolvedValueOnce({
+        data: {
+          access_token: 'tok',
+          refresh_token: null,
+          token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        },
+        error: null,
+      });
+
+    const timedInput = {
+      summary: 'Dentist', description: 'checkup', location: 'Main St',
+      allDay: false, startDate: '2026-09-10', startTime: '14:00',
+      timeZone: 'America/New_York', attendees: ['mom@example.com'],
+    };
+
+    it('throws a typed 401 when the user has no token', async () => {
+      mockChain.single.mockResolvedValueOnce({ data: null, error: { message: 'none' } });
+
+      await expect(service.createEvent(userId, 'primary', timedInput, 'all'))
+        .rejects.toMatchObject({ status: 401, code: 'NO_TOKEN' });
+      expect(mockEventsInsert).not.toHaveBeenCalled();
+    });
+
+    it('inserts a timed event with dateTime + timeZone and mapped attendees', async () => {
+      validToken();
+      mockEventsInsert.mockResolvedValueOnce({ data: { id: 'g-new', summary: 'Dentist' } });
+
+      const result = await service.createEvent(userId, 'primary', timedInput, 'all');
+
+      expect(mockEventsInsert).toHaveBeenCalledWith({
+        calendarId: 'primary',
+        sendUpdates: 'all',
+        requestBody: expect.objectContaining({
+          summary: 'Dentist',
+          description: 'checkup',
+          location: 'Main St',
+          attendees: [{ email: 'mom@example.com' }],
+          start: { dateTime: '2026-09-10T14:00:00', timeZone: 'America/New_York' },
+          end: { dateTime: '2026-09-10T15:00:00', timeZone: 'America/New_York' },
+        }),
+      });
+      expect(result).toEqual({ id: 'g-new', summary: 'Dentist' });
+    });
+
+    it('defaults a blank end time to start + 1h, rolling past midnight', async () => {
+      validToken();
+      mockEventsInsert.mockResolvedValueOnce({ data: { id: 'g-late' } });
+
+      await service.createEvent(userId, 'primary', {
+        ...timedInput, startTime: '23:30', endTime: undefined, attendees: undefined,
+      }, 'none');
+
+      expect(mockEventsInsert).toHaveBeenCalledWith(expect.objectContaining({
+        requestBody: expect.objectContaining({
+          start: { dateTime: '2026-09-10T23:30:00', timeZone: 'America/New_York' },
+          end: { dateTime: '2026-09-11T00:30:00', timeZone: 'America/New_York' },
+        }),
+      }));
+    });
+
+    it('sends an all-day event with an EXCLUSIVE end date (start + 1 day)', async () => {
+      validToken();
+      mockEventsInsert.mockResolvedValueOnce({ data: { id: 'g-allday' } });
+
+      await service.createEvent(userId, 'primary', {
+        summary: 'Trip', allDay: true, startDate: '2026-09-30',
+        timeZone: 'America/New_York',
+      }, 'none');
+
+      expect(mockEventsInsert).toHaveBeenCalledWith(expect.objectContaining({
+        requestBody: expect.objectContaining({
+          start: { date: '2026-09-30' },
+          end: { date: '2026-10-01' },
+        }),
+      }));
+    });
+
+    it('patches an event and returns the updated data', async () => {
+      validToken();
+      mockEventsPatch.mockResolvedValueOnce({ data: { id: 'g-1', summary: 'Dentist moved' } });
+
+      const result = await service.updateEvent(userId, 'primary', 'g-1', timedInput, 'all');
+
+      expect(mockEventsPatch).toHaveBeenCalledWith(expect.objectContaining({
+        calendarId: 'primary', eventId: 'g-1', sendUpdates: 'all',
+      }));
+      expect(result).toEqual({ id: 'g-1', summary: 'Dentist moved' });
+    });
+
+    it('re-throws a Google 404 on patch as a typed NOT_FOUND', async () => {
+      validToken();
+      mockEventsPatch.mockRejectedValueOnce({ code: 404, message: 'Not Found' });
+
+      await expect(service.updateEvent(userId, 'primary', 'g-gone', timedInput, 'all'))
+        .rejects.toMatchObject({ status: 404, code: 'NOT_FOUND' });
+    });
+
+    it('deletes an event', async () => {
+      validToken();
+      mockEventsDelete.mockResolvedValueOnce({});
+
+      const result = await service.deleteEvent(userId, 'primary', 'g-1', 'all');
+
+      expect(mockEventsDelete).toHaveBeenCalledWith({ calendarId: 'primary', eventId: 'g-1', sendUpdates: 'all' });
+      expect(result).toEqual({ alreadyGone: false });
+    });
+
+    it('resolves delete as alreadyGone on a Google 410', async () => {
+      validToken();
+      mockEventsDelete.mockRejectedValueOnce({ code: 410, message: 'Resource has been deleted' });
+
+      const result = await service.deleteEvent(userId, 'primary', 'g-1', 'all');
+
+      expect(result).toEqual({ alreadyGone: true });
+    });
+
+    it('propagates a non-404 Google error on delete', async () => {
+      validToken();
+      mockEventsDelete.mockRejectedValueOnce({ code: 500, message: 'backend error' });
+
+      await expect(service.deleteEvent(userId, 'primary', 'g-1', 'all')).rejects.toMatchObject({ code: 500 });
     });
   });
 });

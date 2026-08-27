@@ -135,4 +135,95 @@ describe('CalendarService', () => {
       expect(result).toEqual(rows);
     });
   });
+
+  describe('B-lite mirror rows', () => {
+    const timedGoogle = {
+      id: 'g-1',
+      summary: 'Dentist',
+      description: 'checkup',
+      location: 'Main St',
+      start: { dateTime: '2026-09-10T14:00:00-04:00' },
+      end: { dateTime: '2026-09-10T15:00:00-04:00' },
+      calendarId: 'primary',
+    };
+
+    describe('createMirrorRow', () => {
+      it('maps a timed Google event to columns and stores the google ids', async () => {
+        (connection.queryOne as jest.Mock).mockResolvedValueOnce({ id: 'mirror-1' });
+
+        const result = await service.createMirrorRow('family-1', 'user-1', timedGoogle);
+
+        expect(result).toEqual({ id: 'mirror-1' });
+        const [sql, params] = (connection.queryOne as jest.Mock).mock.calls[0];
+        expect(sql).toContain('INSERT INTO calendar_events');
+        expect(sql).toContain('google_event_id');
+        expect(params).toEqual([
+          'family-1', 'Dentist', 'checkup', '2026-09-10', '14:00', '15:00', 'Main St',
+          'user-1', 'g-1', 'primary',
+        ]);
+      });
+
+      it('keeps time columns null for an all-day event and defaults calendar to primary', async () => {
+        (connection.queryOne as jest.Mock).mockResolvedValueOnce({ id: 'mirror-2' });
+
+        await service.createMirrorRow('family-1', 'user-1', {
+          id: 'g-allday', summary: 'Trip', start: { date: '2026-09-30' }, end: { date: '2026-10-01' },
+        });
+
+        const params = (connection.queryOne as jest.Mock).mock.calls[0][1];
+        expect(params[3]).toBe('2026-09-30'); // event_date
+        expect(params[4]).toBeNull(); // start_time
+        expect(params[5]).toBeNull(); // end_time
+        expect(params[9]).toBe('primary'); // google_calendar_id fallback
+      });
+
+      it('throws when the insert returns nothing', async () => {
+        (connection.queryOne as jest.Mock).mockResolvedValueOnce(null);
+
+        await expect(service.createMirrorRow('family-1', 'user-1', timedGoogle))
+          .rejects.toThrow('Failed to create calendar mirror row');
+      });
+    });
+
+    describe('updateMirrorByGoogleId', () => {
+      it('updates the row matched by google_event_id', async () => {
+        (connection.queryOne as jest.Mock).mockResolvedValueOnce({ id: 'mirror-1' });
+
+        await service.updateMirrorByGoogleId('g-1', { ...timedGoogle, summary: 'Dentist moved' });
+
+        const [sql, params] = (connection.queryOne as jest.Mock).mock.calls[0];
+        expect(sql).toContain('UPDATE calendar_events');
+        expect(sql).toContain('WHERE google_event_id = $1');
+        expect(params[0]).toBe('g-1');
+        expect(params[1]).toBe('Dentist moved');
+      });
+    });
+
+    describe('deleteMirrorByGoogleId', () => {
+      it('deletes the row matched by google_event_id', async () => {
+        (connection.query as jest.Mock).mockResolvedValueOnce({});
+
+        await service.deleteMirrorByGoogleId('g-1');
+
+        expect(connection.query).toHaveBeenCalledWith(
+          expect.stringContaining('DELETE FROM calendar_events WHERE google_event_id = $1'),
+          ['g-1'],
+        );
+      });
+    });
+
+    describe('getMirrorRowByGoogleId', () => {
+      it('selects the row by google_event_id', async () => {
+        (connection.queryOne as jest.Mock).mockResolvedValueOnce({ id: 'mirror-1', created_by_id: 'user-1' });
+
+        const row = await service.getMirrorRowByGoogleId('g-1');
+
+        expect(row).toEqual({ id: 'mirror-1', created_by_id: 'user-1' });
+        expect(connection.queryOne).toHaveBeenCalledWith(
+          expect.stringContaining('WHERE google_event_id = $1'),
+          ['g-1'],
+        );
+      });
+    });
+  });
 });

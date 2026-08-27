@@ -415,6 +415,8 @@ export type Database = {
           event_title: string
           event_type: string | null
           family_id: string
+          google_calendar_id: string | null
+          google_event_id: string | null
           id: string
           location: string | null
           start_time: string | null
@@ -429,6 +431,8 @@ export type Database = {
           event_title: string
           event_type?: string | null
           family_id: string
+          google_calendar_id?: string | null
+          google_event_id?: string | null
           id?: string
           location?: string | null
           start_time?: string | null
@@ -443,6 +447,8 @@ export type Database = {
           event_title?: string
           event_type?: string | null
           family_id?: string
+          google_calendar_id?: string | null
+          google_event_id?: string | null
           id?: string
           location?: string | null
           start_time?: string | null
