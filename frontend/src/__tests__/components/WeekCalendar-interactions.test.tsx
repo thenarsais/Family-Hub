@@ -22,7 +22,7 @@ const originalFetch = global.fetch;
 
 function mockCalendar(overrides: Record<string, unknown> = {}) {
   (useCalendar as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-    upcomingEvents: [],
+    events: [],
     loading: false,
     tokenExpired: false,
     googleConnected: true,
@@ -128,7 +128,7 @@ describe('WeekCalendar — interactions', () => {
     };
 
     it('opens the modal with event details when an event is clicked', () => {
-      mockCalendar({ upcomingEvents: [event] });
+      mockCalendar({ events: [event] });
       render(<WeekCalendar />);
 
       fireEvent.click(screen.getByText('Team Standup'));
@@ -138,7 +138,7 @@ describe('WeekCalendar — interactions', () => {
     });
 
     it('closes the modal via the X button', () => {
-      mockCalendar({ upcomingEvents: [event] });
+      mockCalendar({ events: [event] });
       render(<WeekCalendar />);
 
       fireEvent.click(screen.getByText('Team Standup'));
@@ -150,7 +150,7 @@ describe('WeekCalendar — interactions', () => {
     });
 
     it('closes the modal via the Close button', () => {
-      mockCalendar({ upcomingEvents: [event] });
+      mockCalendar({ events: [event] });
       render(<WeekCalendar />);
 
       fireEvent.click(screen.getByText('Team Standup'));
@@ -170,7 +170,7 @@ describe('WeekCalendar — interactions', () => {
     };
 
     it('removes the event from view and posts the dismiss request without opening the modal', async () => {
-      mockCalendar({ upcomingEvents: [event] });
+      mockCalendar({ events: [event] });
       render(<WeekCalendar />);
 
       expect(screen.getByText('Team Standup')).toBeInTheDocument();
@@ -193,7 +193,7 @@ describe('WeekCalendar — interactions', () => {
 
     it('reverts the dismissal when the request fails', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
-      mockCalendar({ upcomingEvents: [event] });
+      mockCalendar({ events: [event] });
       render(<WeekCalendar />);
 
       fireEvent.click(screen.getByTitle('Dismiss event'));
@@ -208,7 +208,7 @@ describe('WeekCalendar — interactions', () => {
     it('does not dismiss when there is no authenticated user', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ user: null, isLoading: false });
-      mockCalendar({ upcomingEvents: [event] });
+      mockCalendar({ events: [event] });
       render(<WeekCalendar />);
 
       fireEvent.click(screen.getByTitle('Dismiss event'));
@@ -235,7 +235,7 @@ describe('WeekCalendar — interactions', () => {
 
   it('skips events whose calendar day is outside the loaded week map', () => {
     mockCalendar({
-      upcomingEvents: [{ id: 'far-future', summary: 'Way later', event_date: '2099-01-01', source: 'local' }],
+      events: [{ id: 'far-future', summary: 'Way later', event_date: '2099-01-01', source: 'local' }],
     });
 
     render(<WeekCalendar />);
@@ -245,7 +245,7 @@ describe('WeekCalendar — interactions', () => {
 
   it('skips events with no resolvable date', () => {
     mockCalendar({
-      upcomingEvents: [{ id: 'no-date', summary: 'Undated', source: 'local' }],
+      events: [{ id: 'no-date', summary: 'Undated', source: 'local' }],
     });
 
     expect(() => render(<WeekCalendar />)).not.toThrow();
@@ -254,11 +254,51 @@ describe('WeekCalendar — interactions', () => {
 
   it('falls back to a default title for an event with no summary/title fields', () => {
     mockCalendar({
-      upcomingEvents: [{ id: 'blank', event_date: '2026-08-22', source: 'local' }],
+      events: [{ id: 'blank', event_date: '2026-08-22', source: 'local' }],
     });
 
     render(<WeekCalendar />);
 
     expect(within(screen.getByTestId(`day-cell-2026-08-22`)).getByText('Untitled Event')).toBeInTheDocument();
+  });
+
+  describe('past events', () => {
+    // System time is 2026-08-22; the visible week is Aug 17–23.
+    const pastEvent = {
+      id: 'past-1',
+      summary: 'Monday Standup',
+      start: { dateTime: '2026-08-18T09:00:00-04:00', timeZone: 'America/New_York' },
+      source: 'google',
+      location: 'Room A',
+    };
+
+    it('renders a past event in the current week, muted', () => {
+      mockCalendar({ events: [pastEvent] });
+      render(<WeekCalendar />);
+
+      const cell = screen.getByTestId('day-cell-2026-08-18');
+      const eventEl = within(cell).getByText('Monday Standup').closest('div.group');
+      expect(eventEl?.className).toContain('opacity-60');
+    });
+
+    it('keeps a past event fully interactive (modal opens on click)', () => {
+      mockCalendar({ events: [pastEvent] });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('Monday Standup'));
+      expect(screen.getByText(/Room A/)).toBeInTheDocument();
+    });
+
+    it('does not mute a future event', () => {
+      mockCalendar({
+        events: [{ id: 'fut-1', summary: 'Sunday Brunch', start: { date: '2026-08-23' }, source: 'google' }],
+      });
+      render(<WeekCalendar />);
+
+      const eventEl = within(screen.getByTestId('day-cell-2026-08-23'))
+        .getByText('Sunday Brunch')
+        .closest('div.group');
+      expect(eventEl?.className).not.toContain('opacity-60');
+    });
   });
 });

@@ -10,6 +10,7 @@ interface CalendarEvent {
   startTime?: number;
   endTime?: number;
   allDay: boolean;
+  isPast?: boolean;
   type: 'google' | 'family' | 'reminder';
   priority: boolean;
   location?: string;
@@ -56,7 +57,7 @@ function getDateKeyWithTimezone(date: Date, timezone?: string): string {
 
 
 export function WeekCalendar() {
-  const { upcomingEvents, loading, tokenExpired, googleConnected, connectGoogle } = useCalendar();
+  const { events, loading, tokenExpired, googleConnected, connectGoogle } = useCalendar();
   const { user, isLoading: authLoading } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -153,20 +154,14 @@ export function WeekCalendar() {
       eventMap.set(dateKey, []);
     });
 
-    console.log('Organizing events. Total upcomingEvents:', upcomingEvents?.length || 0);
+    const todayKey = getDateKeyWithTimezone(new Date());
 
-    if (upcomingEvents) {
-      upcomingEvents.forEach((event: any) => {
-        if (dismissedEventIds.has(event.id)) {
-          console.log('Event dismissed:', event.id);
-          return;
-        }
+    if (events) {
+      events.forEach((event: any) => {
+        if (dismissedEventIds.has(event.id)) return;
 
         const eventStartDate = event.start?.dateTime || event.start?.date || event.event_date || event.startTime;
-        if (!eventStartDate) {
-          console.log('Event has no date:', event.id, event);
-          return;
-        }
+        if (!eventStartDate) return;
 
         // Google all-day events (start.date) and local family events
         // (event_date, a Postgres DATE column) are plain "YYYY-MM-DD"
@@ -181,8 +176,6 @@ export function WeekCalendar() {
           ? eventStartDate
           : getDateKeyWithTimezone(new Date(eventStartDate), event.start?.timeZone);
 
-        console.log('Processing event:', event.summary || event.title, 'for date:', dateKey);
-
         if (eventMap.has(dateKey)) {
           const calEvent: CalendarEvent = {
             id: event.id,
@@ -195,6 +188,7 @@ export function WeekCalendar() {
                 })
               : undefined,
             allDay: isDateOnly,
+            isPast: dateKey < todayKey,
             type: event.source === 'google' ? 'google' : 'family',
             priority: false,
             location: event.location,
@@ -332,7 +326,9 @@ export function WeekCalendar() {
                   dayEvents.map((event) => (
                     <div
                       key={event.id}
-                      className={`text-xs p-2 rounded border-l-3 hover:shadow-md transition group ${getEventColor(event.type)}`}
+                      className={`text-xs p-2 rounded border-l-3 hover:shadow-md transition group ${getEventColor(event.type)} ${
+                        event.isPast ? 'opacity-60' : ''
+                      }`}
                     >
                       <div className="flex items-start gap-1">
                         {event.priority && <Star className="w-3 h-3 flex-shrink-0 fill-current mt-0.5" />}
@@ -345,10 +341,7 @@ export function WeekCalendar() {
                         )}
                         <div
                           className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() => {
-                            console.log('Event clicked:', event);
-                            setSelectedEvent(event);
-                          }}
+                          onClick={() => setSelectedEvent(event)}
                         >
                           <p className="font-medium truncate">{event.title}</p>
                           {event.time && <p className="text-xs opacity-75">{event.time}</p>}
@@ -376,7 +369,6 @@ export function WeekCalendar() {
       {/* Event Detail Modal */}
       {selectedEvent && (
         <>
-          {console.log('Modal rendering for event:', selectedEvent.title)}
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
             <div className="flex items-start justify-between mb-4">

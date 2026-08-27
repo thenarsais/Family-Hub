@@ -61,7 +61,7 @@ describe('WeekCalendar — timezone handling', () => {
 
   it('places a Google all-day event on the correct calendar day', () => {
     (useCalendar as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      upcomingEvents: [
+      events: [
         {
           id: 'g-1',
           summary: 'Company Picnic',
@@ -82,7 +82,7 @@ describe('WeekCalendar — timezone handling', () => {
 
   it('places a local family event on the correct calendar day', () => {
     (useCalendar as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      upcomingEvents: [
+      events: [
         {
           id: 'l-1',
           event_title: 'Dentist Appointment',
@@ -103,7 +103,7 @@ describe('WeekCalendar — timezone handling', () => {
 
   it('still applies timezone conversion for timed Google events', () => {
     (useCalendar as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      upcomingEvents: [
+      events: [
         {
           id: 'g-2',
           summary: 'Standup',
