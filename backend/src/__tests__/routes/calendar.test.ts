@@ -211,15 +211,16 @@ describe('Calendar Routes', () => {
       expect(res.body.message).toBe('User ID required');
     });
 
-    it('should report connected when the token is usable (fresh expiry)', async () => {
+    it('reports connected AND still hands back an auth URL for a usable token', async () => {
       mockGoogleOAuthService.getUserToken.mockResolvedValueOnce({
         access_token: 'tok',
         expires_in: 3600,
       });
+      mockGoogleOAuthService.getAuthUrl.mockReturnValueOnce('https://accounts.google.com/auth');
 
       const res = await request(app).get('/api/calendar/auth/google').set('x-user-id', 'user-1').expect(200);
 
-      expect(res.body.data).toEqual({ connected: true, authUrl: null });
+      expect(res.body.data).toEqual({ connected: true, authUrl: 'https://accounts.google.com/auth' });
     });
 
     it('should report connected when expiring soon but a refresh_token exists', async () => {
@@ -228,6 +229,7 @@ describe('Calendar Routes', () => {
         expires_in: 60,
         refresh_token: 'refresh',
       });
+      mockGoogleOAuthService.getAuthUrl.mockReturnValueOnce('https://accounts.google.com/auth');
 
       const res = await request(app).get('/api/calendar/auth/google').set('x-user-id', 'user-1').expect(200);
 
