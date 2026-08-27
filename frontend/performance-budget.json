@@ -1,9 +1,9 @@
 {
   "description": "Frontend production bundle size budget (gzipped), measured from only the assets index.html actually references (the real initial page-load payload) -- NOT every file under dist/assets, which can also hold lazy chunks (e.g. Sentry, split out by a dynamic import() that only resolves once a real DSN is configured) that a user's browser never fetches unless that code path runs. An earlier version of check-bundle-budget.js summed the whole directory, which made a correct, intentional lazy-load fix look like a +114% regression (it was actually counting a 160KB chunk no real user was downloading). Update this file deliberately (`npm run check:bundle-budget -- --update-baseline`) when a PR intentionally grows the initial bundle, so the change is visible in review rather than the budget silently ratcheting up.",
-  "updated": "2026-08-25",
+  "updated": "2026-08-27",
   "toleranceRatio": 1.1,
   "budgets": {
-    "js_gzip_bytes": 85877,
-    "css_gzip_bytes": 5442
+    "js_gzip_bytes": 88751,
+    "css_gzip_bytes": 5775
   }
 }

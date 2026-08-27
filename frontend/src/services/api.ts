@@ -114,7 +114,7 @@ class ApiClient {
     return response.data;
   }
 
-  async updateUser(userId: string, data: Record<string, any>) {
+  async updateUser(userId: string, data: Record<string, unknown>) {
     const response = await this.client.put(`/users/${userId}`, data);
     return response.data;
   }
@@ -286,7 +286,7 @@ class ApiClient {
     return response.data;
   }
 
-  async controlSmartThingsDevice(deviceId: string, command: string, args?: any[]) {
+  async controlSmartThingsDevice(deviceId: string, command: string, args?: unknown[]) {
     const response = await this.client.put(`/api/smartthings/devices/${deviceId}`, {
       command,
       arguments: args,
@@ -304,7 +304,7 @@ class ApiClient {
     id: string;
     method: string;
     path: string;
-    body?: Record<string, any>;
+    body?: Record<string, unknown>;
   }>) {
     const response = await this.client.post('/batch', { operations });
     return response.data;

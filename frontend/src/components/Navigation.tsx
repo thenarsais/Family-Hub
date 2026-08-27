@@ -11,35 +11,35 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white dark:bg-gray-800 shadow-md dark:shadow-gray-900/40 border-b border-transparent dark:border-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center space-x-2">
             <span className="text-2xl">👨‍👩‍👧‍👦</span>
-            <span className="text-xl font-bold text-primary-600">Family Hub</span>
+            <span className="text-xl font-bold text-primary-600 dark:text-primary-400">Family Hub</span>
           </Link>
 
           {/* Menu */}
           <div className="flex items-center space-x-8">
             <Link
               to="/dashboard"
-              className="text-gray-600 hover:text-primary-600 transition-colors"
+              className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             >
               Dashboard
             </Link>
             <Link
               to="/activity"
-              className="text-gray-600 hover:text-primary-600 transition-colors"
+              className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             >
               Activity Board
             </Link>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-4 pl-8 border-l border-gray-200">
+            <div className="flex items-center space-x-4 pl-8 border-l border-gray-200 dark:border-gray-700">
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
               </div>
               <button
                 onClick={handleLogout}
