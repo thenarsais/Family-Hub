@@ -2,7 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles */
+/* ============================================================================
+   Henna & haldi — design tokens (T-00)
+   Every brand colour lives here as an "R G B" triplet; tailwind.config.js wraps
+   each in rgb(var(--c-x) / <alpha-value>). One utility set, two themes — only
+   the variables below change between light and .dark.
+   ========================================================================== */
+:root {
+  --c-paper: 242 237 225;   /* #F2EDE1 oat/linen ground */
+  --c-raised: 250 246 236;  /* #FAF6EC cards */
+  --c-ink: 42 33 27;        /* #2A211B henna-black */
+  --c-ink-2: 107 93 79;     /* #6B5D4F */
+  --c-ink-3: 154 139 121;   /* #9A8B79 */
+  --c-rule: 229 218 200;    /* #E5DAC8 hairline */
+  --c-rule-2: 214 200 176;  /* #D6C8B0 */
+
+  --c-accent: 166 90 60;        /* #A65A3C henna-brown */
+  --c-accent-strong: 138 71 44; /* #8A472C */
+  --c-accent-soft: 240 228 214; /* #F0E4D6 */
+  --c-haldi: 198 138 30;   /* #C68A1E turmeric ochre */
+  --c-leaf: 46 94 78;      /* #2E5E4E */
+  --c-pop: 168 45 107;     /* #A82D6B rare celebration magenta */
+
+  --c-ok: 47 125 87;
+  --c-warn: 176 114 22;
+  --c-alert: 178 75 60;
+
+  /* one colour per family member — locked 2026-09-03 */
+  --c-fam-krish: 188 66 56;      /* #BC4238 brick red */
+  --c-fam-karishma: 193 90 147;  /* #C15A93 magenta-pink */
+  --c-fam-priya: 122 75 140;     /* #7A4B8C plum purple */
+  --c-fam-anand: 58 110 165;     /* #3A6EA5 denim blue */
+  --c-fam-dada: 63 126 98;       /* #3F7E62 deep teal-green */
+  --c-fam-maa: 175 133 36;       /* #AF8524 amber gold */
+  --c-fam-all: 140 129 114;      /* #8C8172 warm stone (unassigned) */
+}
+
+:root.dark,
+.dark {
+  --c-paper: 32 27 22;      /* #201B16 umber night ground */
+  --c-raised: 42 36 29;     /* #2A241D */
+  --c-ink: 237 230 218;     /* #EDE6DA */
+  --c-ink-2: 168 154 136;   /* #A89A88 */
+  --c-ink-3: 124 111 94;    /* #7C6F5E */
+  --c-rule: 55 48 39;       /* #373027 */
+  --c-rule-2: 72 64 47;     /* #48402F */
+
+  --c-accent: 197 124 92;        /* #C57C5C */
+  --c-accent-strong: 209 138 106;/* #D18A6A */
+  --c-accent-soft: 51 42 32;     /* #332A20 */
+  --c-haldi: 219 165 63;   /* #DBA53F */
+  --c-leaf: 92 154 133;    /* #5C9A85 */
+  --c-pop: 200 92 147;     /* #C85C93 */
+
+  --c-ok: 100 185 140;
+  --c-warn: 214 154 82;
+  --c-alert: 217 112 95;
+
+  --c-fam-krish: 217 105 94;     /* #D9695E */
+  --c-fam-karishma: 216 137 183; /* #D889B7 */
+  --c-fam-priya: 167 131 188;    /* #A783BC */
+  --c-fam-anand: 110 155 203;    /* #6E9BCB */
+  --c-fam-dada: 102 176 142;     /* #66B08E */
+  --c-fam-maa: 214 166 63;       /* #D6A63F */
+  --c-fam-all: 169 155 134;      /* #A99B86 */
+}
+
+/* Base */
 * {
   @apply box-border;
 }
@@ -12,7 +78,7 @@ html {
 }
 
 body {
-  @apply bg-gray-50 text-gray-900 font-sans antialiased;
+  @apply bg-paper text-ink font-sans antialiased;
 }
 
 /* Utilities */
@@ -20,17 +86,20 @@ body {
   @apply mx-auto px-4 sm:px-6 lg:px-8;
 }
 
+/* `.font-display` (Bricolage Grotesque) is generated from theme.fontFamily.display */
+
 .btn {
-  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200
+         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
+         focus-visible:ring-offset-paper;
 }
 
 .btn-primary {
-  /* primary-700 keeps white text at ~5.9:1 (WCAG AA); 500/600 were ~2.5/3.9:1 */
-  @apply btn bg-primary-700 text-white hover:bg-primary-800;
+  @apply btn bg-accent text-white hover:bg-accent-strong;
 }
 
 .btn-secondary {
-  @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600;
+  @apply btn bg-raised text-ink border border-rule-2 hover:bg-accent-soft;
 }
 
 .btn-small {
@@ -42,19 +111,20 @@ body {
 }
 
 .card {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6;
+  @apply bg-raised text-ink rounded-card border border-rule shadow-sm p-6;
 }
 
 .card-hover {
-  @apply card hover:shadow-lg transition-shadow duration-200 cursor-pointer;
+  @apply card hover:border-rule-2 hover:shadow-md transition-all duration-200 cursor-pointer;
 }
 
 .input {
-  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500;
+  @apply w-full px-4 py-2 rounded-lg bg-raised text-ink border border-rule-2
+         focus:outline-none focus:ring-2 focus:ring-accent;
 }
 
 .label {
-  @apply block text-sm font-medium text-gray-700 mb-2;
+  @apply block text-sm font-medium text-ink-2 mb-2;
 }
 
 .badge {
@@ -62,19 +132,49 @@ body {
 }
 
 .badge-primary {
-  @apply badge bg-primary-100 text-primary-800;
+  @apply badge bg-accent-soft text-accent-strong;
 }
 
 .badge-success {
-  @apply badge bg-green-100 text-green-800;
+  @apply badge text-white;
+  background-color: rgb(var(--c-ok));
 }
 
 .badge-warning {
-  @apply badge bg-yellow-100 text-yellow-800;
+  @apply badge text-white;
+  background-color: rgb(var(--c-warn));
 }
 
 .badge-error {
-  @apply badge bg-red-100 text-red-800;
+  @apply badge text-white;
+  background-color: rgb(var(--c-alert));
+}
+
+/* ---------------------------------------------------------------------------
+   Mehndi border — an ornamental henna-style band top + bottom of the shell.
+   One henna-brown line, low opacity, seamless repeat. Set data-mehndi="off"
+   on <html> to hide it (settings toggle lands in T-01).
+   ------------------------------------------------------------------------- */
+.mehndi-band {
+  height: 40px;
+  background-repeat: repeat-x;
+  background-position: center;
+  background-size: auto 100%;
+  opacity: 0.42;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='120'%20height='52'%20viewBox='0%200%20120%2052'%3E%3Cg%20fill='none'%20stroke='%23a0673c'%20stroke-width='0.9'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M0,49%20H120'/%3E%3Cpath%20d='M0,46%20H120'/%3E%3Cpath%20d='M0,4%20H120'/%3E%3Cpath%20d='M0,46%20C4,34%209,31%2012,31%20C15,31%2020,34%2024,46%20C28,34%2033,31%2036,31%20C39,31%2044,34%2048,46%20C52,34%2057,31%2060,31%20C63,31%2068,34%2072,46%20C76,34%2081,31%2084,31%20C87,31%2092,34%2096,46%20C100,34%20105,31%20108,31%20C111,31%20116,34%20120,46'/%3E%3Cpath%20d='M3,46%20C6,37%209,35%2012,35%20C15,35%2018,37%2021,46%20M27,46%20C30,37%2033,35%2036,35%20C39,35%2042,37%2045,46%20M51,46%20C54,37%2057,35%2060,35%20C63,35%2066,37%2069,46%20M75,46%20C78,37%2081,35%2084,35%20C87,35%2090,37%2093,46%20M99,46%20C102,37%20105,35%20108,35%20C111,35%20114,37%20117,46'/%3E%3Cpath%20d='M0,44%20C-3.5,39%20-3.5,33%200,30%20C3.5,33%203.5,39%200,44'/%3E%3Cpath%20d='M120,44%20C116.5,39%20116.5,33%20120,30%20C123.5,33%20123.5,39%20120,44'/%3E%3Cpath%20d='M24,44%20C20.5,39%2020.5,33%2024,30%20C27.5,33%2027.5,39%2024,44%20M24,43%20L24,31'/%3E%3Cpath%20d='M48,44%20C44.5,39%2044.5,33%2048,30%20C51.5,33%2051.5,39%2048,44%20M48,43%20L48,31'/%3E%3Cpath%20d='M72,44%20C68.5,39%2068.5,33%2072,30%20C75.5,33%2075.5,39%2072,44%20M72,43%20L72,31'/%3E%3Cpath%20d='M96,44%20C92.5,39%2092.5,33%2096,30%20C99.5,33%2099.5,39%2096,44%20M96,43%20L96,31'/%3E%3Cpath%20d='M60,44%20C49,42%2042,30%2048,19%20C53,10%2067,10%2072,19%20C78,30%2071,42%2060,42'/%3E%3Cpath%20d='M60,40%20C52,38%2047,30%2050,22%20C54,15%2066,15%2070,22'/%3E%3Cpath%20d='M60,35%20C55,34%2052,29%2055,24'/%3E%3Cpath%20d='M52,31%20C56,29%2064,29%2068,31%20M51,27%20C56,25%2064,25%2069,27%20M53,23%20C57,22%2063,22%2067,23'/%3E%3Cpath%20d='M60,10%20C57,6%2062,3%2066,6'/%3E%3Cpath%20d='M36,44%20C28,42%2024,32%2029,24%20C33,18%2044,18%2046,25%20C48,31%2043,40%2036,40'/%3E%3Cpath%20d='M36,40%20C31,38%2028,32%2031,27'/%3E%3Cpath%20d='M30,33%20C33,31%2039,31%2041,33'/%3E%3Cpath%20d='M84,44%20C92,42%2096,32%2091,24%20C87,18%2076,18%2074,25%20C72,31%2077,40%2084,40'/%3E%3Cpath%20d='M84,40%20C89,38%2092,32%2089,27'/%3E%3Cpath%20d='M79,33%20C81,31%2087,31%2090,33'/%3E%3Cpath%20d='M24,29%20C20,29%2018,25%2021,23%20C24,21%2026,24%2024,26'/%3E%3Cpath%20d='M96,29%20C100,29%20102,25%2099,23%20C96,21%2094,24%2096,26'/%3E%3Cpath%20d='M12,4%20C10.5,7%2010.5,9%2012,10%20C13.5,9%2013.5,7%2012,4%20M36,4%20C34.5,7%2034.5,9%2036,10%20C37.5,9%2037.5,7%2036,4%20M60,4%20C58.5,7%2058.5,9%2060,10%20C61.5,9%2061.5,7%2060,4%20M84,4%20C82.5,7%2082.5,9%2084,10%20C85.5,9%2085.5,7%2084,4%20M108,4%20C106.5,7%20106.5,9%20108,10%20C109.5,9%20109.5,7%20108,4'/%3E%3C/g%3E%3Cg%20fill='%23a0673c'%20stroke='none'%3E%3Ccircle%20cx='12'%20cy='29'%20r='0.9'/%3E%3Ccircle%20cx='36'%20cy='21'%20r='0.8'/%3E%3Ccircle%20cx='60'%20cy='9'%20r='0.9'/%3E%3Ccircle%20cx='84'%20cy='21'%20r='0.8'/%3E%3Ccircle%20cx='108'%20cy='29'%20r='0.9'/%3E%3Ccircle%20cx='4'%20cy='47.5'%20r='0.6'/%3E%3Ccircle%20cx='20'%20cy='47.5'%20r='0.6'/%3E%3Ccircle%20cx='36'%20cy='47.5'%20r='0.6'/%3E%3Ccircle%20cx='52'%20cy='47.5'%20r='0.6'/%3E%3Ccircle%20cx='68'%20cy='47.5'%20r='0.6'/%3E%3Ccircle%20cx='84'%20cy='47.5'%20r='0.6'/%3E%3Ccircle%20cx='100'%20cy='47.5'%20r='0.6'/%3E%3Ccircle%20cx='116'%20cy='47.5'%20r='0.6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.dark .mehndi-band {
+  opacity: 0.3;
+}
+
+.mehndi-band--bottom {
+  transform: scaleY(-1);
+}
+
+html[data-mehndi='off'] .mehndi-band {
+  display: none;
 }
 
 /* Loading animation */
@@ -118,17 +218,17 @@ body {
   animation: slideUp 300ms ease-in-out;
 }
 
-/* Override media query dark mode when dark class is not present */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fadeIn,
+  .animate-slideUp {
+    animation: none;
+  }
+}
+
+/* Keep an explicit light ground when the OS is dark but the app is not in
+   .dark mode (useNightMode drives .dark deterministically). */
 @media (prefers-color-scheme: dark) {
   html:not(.dark) {
-    color-scheme: light !important;
-  }
-
-  html:not(.dark) body {
-    @apply bg-gray-50 !important;
-  }
-
-  html:not(.dark) [class*="min-h-screen"] {
-    @apply bg-gray-50 !important;
+    color-scheme: light;
   }
 }

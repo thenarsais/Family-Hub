@@ -28,12 +28,12 @@ function WidgetBody({
   if (loading) {
     return (
       <div className="py-6 flex justify-center" role="status" aria-label="Loading">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
       </div>
     );
   }
   if (isEmpty) {
-    return <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">{emptyText}</p>;
+    return <p className="text-ink-3 text-sm text-center py-4">{emptyText}</p>;
   }
   return <>{children}</>;
 }
@@ -104,8 +104,8 @@ export default function Dashboard() {
     <main className="container py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Welcome, {user?.name}!</h1>
-        <p className="text-gray-600 dark:text-gray-400">Here's your activity overview</p>
+        <h1 className="font-display text-4xl font-bold mb-2 text-ink">Welcome, {user?.name}!</h1>
+        <p className="text-ink-2">Here's your activity overview</p>
       </div>
 
       {/* Calendar Widget — primary dashboard focus, sits above everything else */}
@@ -115,11 +115,11 @@ export default function Dashboard() {
 
       {/* Stats Cards — derived from this week's activity */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="card bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900 dark:to-primary-800">
+        <div className="card bg-accent-soft border-accent/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">Points This Week</p>
-              <p className="text-4xl font-bold text-primary-700 dark:text-primary-300 mt-2">
+              <p className="text-ink-2 text-sm font-medium">Points This Week</p>
+              <p className="font-display text-4xl font-bold text-accent-strong mt-2">
                 {activityLoading ? '—' : pointsThisWeek}
               </p>
             </div>
@@ -127,11 +127,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900 dark:to-secondary-800">
+        <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">Activity Streak</p>
-              <p className="text-4xl font-bold text-secondary-700 dark:text-secondary-300 mt-2">
+              <p className="text-ink-2 text-sm font-medium">Activity Streak</p>
+              <p className="font-display text-4xl font-bold text-leaf mt-2">
                 {activityLoading ? '—' : `${streak} ${streak === 1 ? 'day' : 'days'}`}
               </p>
             </div>
@@ -139,11 +139,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="card bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900 dark:to-yellow-800">
+        <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">Reminders Due Soon</p>
-              <p className="text-4xl font-bold text-yellow-700 dark:text-yellow-300 mt-2">
+              <p className="text-ink-2 text-sm font-medium">Reminders Due Soon</p>
+              <p className="font-display text-4xl font-bold text-haldi mt-2">
                 {remindersLoading ? '—' : upcomingReminders.length}
               </p>
             </div>
