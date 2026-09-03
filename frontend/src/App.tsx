@@ -14,6 +14,7 @@ import NotFound from '@pages/NotFound';
 // Components (to be created)
 import ProtectedRoute from '@components/ProtectedRoute';
 import Navigation from '@components/Navigation';
+import MehndiBorder from '@components/shell/MehndiBorder';
 
 export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -36,33 +37,37 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:text-gray-100">
+      <div className="min-h-screen flex flex-col bg-paper text-ink">
+        <MehndiBorder edge="top" />
         {isAuthenticated && <Navigation />}
 
-        <Routes>
-          {/* Public routes */}
-          <Route
-            path="/login"
-            element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
-          />
-          <Route
-            path="/signup"
-            element={isAuthenticated ? <Navigate to="/dashboard" /> : <Signup />}
-          />
+        <div className="flex-1">
+          <Routes>
+            {/* Public routes */}
+            <Route
+              path="/login"
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+            />
+            <Route
+              path="/signup"
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Signup />}
+            />
 
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/activity" element={<ActivityBoard />} />
-            <Route path="/smartthings" element={<SmartHome />} />
-          </Route>
+            {/* Protected routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/activity" element={<ActivityBoard />} />
+              <Route path="/smartthings" element={<SmartHome />} />
+            </Route>
 
-          {/* Redirect root to dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" />} />
+            {/* Redirect root to dashboard */}
+            <Route path="/" element={<Navigate to="/dashboard" />} />
 
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
+        <MehndiBorder edge="bottom" />
       </div>
     </BrowserRouter>
   );
