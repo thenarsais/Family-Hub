@@ -57,8 +57,11 @@ export const FACTS: string[] = [
 ];
 
 export function factOfDay(date: Date = new Date()): string {
-  const start = Date.UTC(date.getFullYear(), 0, 0);
-  const diff = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - start;
-  const dayOfYear = Math.floor(diff / 86_400_000);
-  return FACTS[dayOfYear % FACTS.length];
+  // Day-of-year from the local calendar fields, compared in UTC so the result
+  // is immune to DST offsets and rolls over at the household's local midnight.
+  const startOfYear = Date.UTC(date.getFullYear(), 0, 0);
+  const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayOfYear = Math.round((today - startOfYear) / 86_400_000);
+  const i = ((dayOfYear % FACTS.length) + FACTS.length) % FACTS.length;
+  return FACTS[i];
 }
