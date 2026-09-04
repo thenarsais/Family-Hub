@@ -4598,7 +4598,9 @@ components:
 
     FamilyMember:
       type: object
-      description: Raw `family_members` table row (Tables<'family_members'>['Row']).
+      description: >-
+        A `family_members` table row, plus the member's `name` and `email` from
+        the joined `users` row (both null for a member with no linked user).
       required: [id, family_id, user_id, role]
       properties:
         id: { type: string, format: uuid }
@@ -4610,6 +4612,8 @@ components:
         joined_at: { type: [string, 'null'], format: date-time }
         created_at: { type: [string, 'null'], format: date-time }
         updated_at: { type: [string, 'null'], format: date-time }
+        name: { type: [string, 'null'] }
+        email: { type: [string, 'null'], format: email }
 
     FamilyWithMembers:
       allOf:

@@ -8,12 +8,26 @@ type Family = components['schemas']['Family'];
 type FamilySettings = components['schemas']['FamilySettings'];
 type FamilySettingsUpdate = components['schemas']['FamilySettingsUpdatable'];
 
+interface CreateFamilyInput {
+  name: string;
+  description?: string;
+}
+
+interface AddChildInput {
+  name: string;
+  email: string;
+  password: string;
+  birth_year: number;
+}
+
 interface UseFamilyReturn {
   family: Family | null;
   members: FamilyMember[];
   settings: FamilySettings | null;
   loading: boolean;
   error: string | null;
+  createFamily: (input: CreateFamilyInput) => Promise<Family>;
+  addChild: (input: AddChildInput) => Promise<void>;
   inviteMember: (email: string, role: FamilyMember["role"]) => Promise<string>;
   updateMemberRole: (memberId: string, role: FamilyMember["role"]) => Promise<void>;
   removeMember: (memberId: string) => Promise<void>;
@@ -56,6 +70,29 @@ export function useFamily(): UseFamilyReturn {
   useEffect(() => {
     fetchFamily();
   }, [user?.id]);
+
+  const createFamily = async (input: CreateFamilyInput): Promise<Family> => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    const response = await apiClient.post<ApiEnvelope<Family>>('/api/family', input, {
+      headers: { 'x-user-id': user.id },
+    });
+
+    const created = response.data?.data ?? null;
+    await fetchFamily();
+    if (!created) throw new Error('Family was created but not returned');
+    return created;
+  };
+
+  const addChild = async (input: AddChildInput): Promise<void> => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    await apiClient.post('/api/family/children', input, {
+      headers: { 'x-user-id': user.id },
+    });
+
+    await fetchFamily();
+  };
 
   const inviteMember = async (email: string, role: FamilyMember["role"]): Promise<string> => {
     if (!user?.id) throw new Error('User not authenticated');
@@ -111,6 +148,8 @@ export function useFamily(): UseFamilyReturn {
     settings,
     loading,
     error,
+    createFamily,
+    addChild,
     inviteMember,
     updateMemberRole,
     removeMember,
