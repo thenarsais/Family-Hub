@@ -73,16 +73,9 @@ describe('Dashboard quick-action navigation', () => {
     expect(mockNavigate).toHaveBeenCalledWith(path);
   });
 
-  it('the announcements widget "View All" button navigates to /announcements', async () => {
-    const user = userEvent.setup();
-    renderDashboard();
-    await waitForLoaded();
-
-    const viewAllButtons = screen.getAllByRole('button', { name: /view all$/i });
-    await user.click(viewAllButtons[0]);
-
-    expect(mockNavigate).toHaveBeenCalledWith('/announcements');
-  });
+  // Announcements is now the band under the top bar (T-00 PR 2), not a card, so
+  // there is no announcements "View All" — the quick-action button above covers
+  // navigation to /announcements.
 
   it('the reminders widget "View All" button navigates to /reminders', async () => {
     const user = userEvent.setup();
@@ -90,7 +83,7 @@ describe('Dashboard quick-action navigation', () => {
     await waitForLoaded();
 
     const viewAllButtons = screen.getAllByRole('button', { name: /view all$/i });
-    await user.click(viewAllButtons[1]);
+    await user.click(viewAllButtons[0]);
 
     expect(mockNavigate).toHaveBeenCalledWith('/reminders');
   });
