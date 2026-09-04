@@ -5,6 +5,13 @@ import crypto from 'crypto';
 
 export type Family = Database['public']['Tables']['families']['Row'];
 export type FamilyMember = Database['public']['Tables']['family_members']['Row'];
+
+/** A family_members row enriched with the joined user's name/email (both null
+ *  when the member has no linked users row). */
+export type FamilyMemberWithUser = FamilyMember & {
+  name: string | null;
+  email: string | null;
+};
 export type FamilySettings = Database['public']['Tables']['family_settings']['Row'];
 type FamilySettingsInsert = Database['public']['Tables']['family_settings']['Insert'];
 type FamilyInvitation = Database['public']['Tables']['family_invitations']['Row'];
@@ -111,10 +118,14 @@ class FamilyService {
   /**
    * Get family members
    */
-  async getFamilyMembers(familyId: string): Promise<FamilyMember[]> {
+  async getFamilyMembers(familyId: string): Promise<FamilyMemberWithUser[]> {
     try {
-      const result = await query<FamilyMember>(
-        `SELECT * FROM family_members WHERE family_id = $1 AND is_active = true ORDER BY role ASC`,
+      const result = await query<FamilyMemberWithUser>(
+        `SELECT fm.*, u.name, u.email
+           FROM family_members fm
+           LEFT JOIN users u ON u.id = fm.user_id
+          WHERE fm.family_id = $1 AND fm.is_active = true
+          ORDER BY fm.role ASC`,
         [familyId]
       );
       return result.rows;

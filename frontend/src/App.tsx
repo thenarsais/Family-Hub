@@ -9,6 +9,8 @@ import Login from '@pages/Login';
 import Signup from '@pages/Signup';
 import ActivityBoard from '@pages/ActivityBoard';
 import SmartHome from '@pages/SmartHome';
+import FamilyPage from '@pages/FamilyPage';
+import ProfilePage from '@pages/ProfilePage';
 import NotFound from '@pages/NotFound';
 
 // Components (to be created)
@@ -23,6 +25,15 @@ export default function App() {
   useEffect(() => {
     console.log('[APP] Initializing auth state from localStorage');
     useAuthStore.getState().initializeFromStorage();
+
+    // Apply the saved mehndi-border preference (toggled on the profile page)
+    try {
+      if (localStorage.getItem('fh:mehndi') === 'off') {
+        document.documentElement.dataset.mehndi = 'off';
+      }
+    } catch {
+      /* storage unavailable — keep the default (on) */
+    }
   }, []);
 
   if (isLoading) {
@@ -58,6 +69,8 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/activity" element={<ActivityBoard />} />
               <Route path="/smartthings" element={<SmartHome />} />
+              <Route path="/family" element={<FamilyPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
 
             {/* Redirect root to dashboard */}

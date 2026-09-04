@@ -2319,7 +2319,7 @@ export interface components {
             /** Format: date-time */
             updated_at?: string | null;
         };
-        /** @description Raw `family_members` table row (Tables<'family_members'>['Row']). */
+        /** @description A `family_members` table row, plus the member's `name` and `email` from the joined `users` row (both null for a member with no linked user). */
         FamilyMember: {
             /** Format: uuid */
             id: string;
@@ -2338,6 +2338,9 @@ export interface components {
             created_at?: string | null;
             /** Format: date-time */
             updated_at?: string | null;
+            name?: string | null;
+            /** Format: email */
+            email?: string | null;
         };
         FamilyWithMembers: components["schemas"]["Family"] & {
             member_count: number;

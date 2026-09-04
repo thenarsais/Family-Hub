@@ -257,8 +257,10 @@ export default function Dashboard() {
               <ul className="mt-2 space-y-1 text-sm">
                 {members.map((member) => (
                   <li key={member.id} className="flex justify-between">
-                    <span className="text-ink">{member.user_id}</span>
-                    <span className="text-ink-3 capitalize">{member.role}</span>
+                    <span className="text-ink truncate">
+                      {member.name || member.email || member.user_id}
+                    </span>
+                    <span className="text-ink-3 capitalize shrink-0 ml-2">{member.role}</span>
                   </li>
                 ))}
               </ul>

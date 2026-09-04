@@ -160,6 +160,75 @@ describe('useFamily', () => {
     });
   });
 
+  describe('createFamily', () => {
+    it('posts the new family, refetches, and returns it', async () => {
+      mockGetPaths(); // initial: no family
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { status: 'success', data: { id: 'family-9', name: 'Narsais' } },
+      });
+
+      const { result } = renderHook(() => useFamily());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      // after create, the refetch should see the new family
+      mockGetPaths({ family: { id: 'family-9', name: 'Narsais' } });
+
+      let created;
+      await act(async () => {
+        created = await result.current.createFamily({ name: 'Narsais', description: 'Home' });
+      });
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/api/family',
+        { name: 'Narsais', description: 'Home' },
+        { headers: { 'x-user-id': 'user-1' } }
+      );
+      expect(created).toEqual({ id: 'family-9', name: 'Narsais' });
+      expect(result.current.family).toEqual({ id: 'family-9', name: 'Narsais' });
+    });
+
+    it('throws when there is no authenticated user', async () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useFamily());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await expect(result.current.createFamily({ name: 'x' })).rejects.toThrow('User not authenticated');
+    });
+  });
+
+  describe('addChild', () => {
+    it('posts the child and refetches', async () => {
+      mockGetPaths({ family: { id: 'family-1' } });
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { status: 'success' } });
+
+      const { result } = renderHook(() => useFamily());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.addChild({
+          name: 'Krish',
+          email: 'krish@narsais.test',
+          password: 'temp1234',
+          birth_year: 2016,
+        });
+      });
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/api/family/children',
+        { name: 'Krish', email: 'krish@narsais.test', password: 'temp1234', birth_year: 2016 },
+        { headers: { 'x-user-id': 'user-1' } }
+      );
+    });
+
+    it('throws when there is no authenticated user', async () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useFamily());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await expect(
+        result.current.addChild({ name: 'x', email: 'x@y.z', password: 'p', birth_year: 2016 })
+      ).rejects.toThrow('User not authenticated');
+    });
+  });
+
   describe('updateSettings', () => {
     it('should patch and store the returned settings', async () => {
       mockGetPaths();

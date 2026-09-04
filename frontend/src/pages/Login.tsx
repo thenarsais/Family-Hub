@@ -32,7 +32,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent to-accent-strong">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+      <div className="bg-raised rounded-card shadow-xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-2">Family Hub</h1>
         <p className="text-center text-ink-2 mb-8">Sign in to your account</p>
 
