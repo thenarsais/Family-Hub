@@ -380,6 +380,55 @@ router.patch('/members/:memberId/role', async (req: Request, res: Response) => {
 });
 
 /**
+ * PATCH /api/family/members/:memberId/color
+ * Set or clear (color: null) a member's calendar colour key. Parents/admins only.
+ */
+const FAMILY_COLOR_KEYS = ['krish', 'karishma', 'priya', 'anand', 'dada', 'maa', 'all'];
+
+router.patch('/members/:memberId/color', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    const { memberId } = req.params;
+    const { color } = req.body ?? {};
+
+    if (!userId) {
+      return res.status(401).json({ status: 'error', message: 'User ID required' });
+    }
+
+    if (color !== null && !FAMILY_COLOR_KEYS.includes(color)) {
+      return res.status(400).json({
+        status: 'error',
+        message: `color must be null or one of: ${FAMILY_COLOR_KEYS.join(', ')}`,
+      });
+    }
+
+    const userFamily = await family.getUserFamily(userId);
+    if (!userFamily) {
+      return res.status(404).json({ status: 'error', message: 'No family found' });
+    }
+
+    const caller = userFamily.members.find((m) => m.user_id === userId);
+    if (!caller || !['admin', 'parent'].includes(caller.role)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Only a parent or admin can set calendar colours',
+      });
+    }
+
+    const updated = await family.updateMemberColor(userFamily.id, memberId as string, color);
+
+    res.json({ status: 'success', data: updated, timestamp: new Date().toISOString() });
+  } catch (error: unknown) {
+    console.error('Failed to update member colour:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update member colour',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
  * DELETE /api/family/members/:memberId
  * Remove member from family
  */

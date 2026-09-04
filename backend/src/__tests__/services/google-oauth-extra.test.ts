@@ -179,6 +179,86 @@ describe('GoogleOAuthService', () => {
     });
   });
 
+  describe('acceptEventIfInvited', () => {
+    const validToken = () =>
+      mockChain.single.mockResolvedValueOnce({
+        data: {
+          access_token: 'tok',
+          refresh_token: null,
+          token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        },
+        error: null,
+      });
+
+    it('returns no_token when the user has no stored token', async () => {
+      mockChain.single.mockResolvedValueOnce({ data: null, error: { message: 'not found' } });
+      const result = await service.acceptEventIfInvited(userId, 'cal-1', 'ev-1');
+      expect(result).toEqual({ accepted: false, reason: 'no_token' });
+    });
+
+    it('does not patch when the user is not an attendee', async () => {
+      validToken();
+      mockEventsGet.mockResolvedValueOnce({ data: { attendees: [{ email: 'other@x.com' }] } });
+      const result = await service.acceptEventIfInvited(userId, 'cal-1', 'ev-1');
+      expect(result).toEqual({ accepted: false, reason: 'not_an_attendee' });
+      expect(mockEventsPatch).not.toHaveBeenCalled();
+    });
+
+    it('patches the self attendee to accepted', async () => {
+      validToken();
+      mockEventsGet.mockResolvedValueOnce({
+        data: { attendees: [{ email: 'me@x.com', self: true, responseStatus: 'declined' }] },
+      });
+      mockEventsPatch.mockResolvedValueOnce({ data: {} });
+
+      const result = await service.acceptEventIfInvited(userId, 'cal-1', 'ev-1');
+
+      expect(result).toEqual({ accepted: true });
+      expect(mockEventsPatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requestBody: { attendees: [{ email: 'me@x.com', self: true, responseStatus: 'accepted' }] },
+        }),
+      );
+    });
+  });
+
+  describe('getConnectedEmail', () => {
+    const validToken = () =>
+      mockChain.single.mockResolvedValueOnce({
+        data: {
+          access_token: 'tok',
+          refresh_token: null,
+          token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        },
+        error: null,
+      });
+
+    it('returns null with no usable token', async () => {
+      mockChain.single.mockResolvedValueOnce({ data: null, error: { message: 'nope' } });
+      expect(await service.getConnectedEmail(userId)).toBeNull();
+    });
+
+    it('returns the primary calendar id', async () => {
+      validToken();
+      mockCalendarListList.mockResolvedValueOnce({
+        data: { items: [{ id: 'secondary@x.com' }, { id: 'priya@gmail.com', primary: true }] },
+      });
+      expect(await service.getConnectedEmail(userId)).toBe('priya@gmail.com');
+    });
+
+    it('falls back to the first calendar when none is flagged primary', async () => {
+      validToken();
+      mockCalendarListList.mockResolvedValueOnce({ data: { items: [{ id: 'only@x.com' }] } });
+      expect(await service.getConnectedEmail(userId)).toBe('only@x.com');
+    });
+
+    it('returns null (never throws) when the list call fails', async () => {
+      validToken();
+      mockCalendarListList.mockRejectedValueOnce(new Error('boom'));
+      expect(await service.getConnectedEmail(userId)).toBeNull();
+    });
+  });
+
   describe('exchangeCodeForToken', () => {
     it('should convert a successful token exchange to GoogleAuthToken', async () => {
       const expiryDate = Date.now() + 3600 * 1000;

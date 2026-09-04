@@ -26,10 +26,17 @@ function mockCalendar(overrides: Record<string, unknown> = {}) {
     loading: false,
     tokenExpired: false,
     googleConnected: true,
+    googleEmail: null,
+    dismissedIds: new Set<string>(),
+    dismissedEvents: [],
+    reconnectForSync: false,
     connectGoogle: vi.fn(),
+    disconnectGoogle: vi.fn().mockResolvedValue(undefined),
     createEvent: vi.fn().mockResolvedValue({}),
     updateEvent: vi.fn().mockResolvedValue({}),
     deleteEvent: vi.fn().mockResolvedValue(undefined),
+    dismissEvent: vi.fn().mockResolvedValue(undefined),
+    restoreEvent: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   });
 }
@@ -172,82 +179,46 @@ describe('WeekCalendar — interactions', () => {
       calendarId: 'cal-1',
     };
 
-    it('removes the event from view and posts the dismiss request without opening the modal', async () => {
-      mockCalendar({ events: [event] });
+    // The dismiss/restore mechanics (optimistic hide, revert, Google decline,
+    // reconnect reason) now live in useCalendar and are covered there. Here we
+    // only check WeekCalendar wires the ✕ button to the hook correctly.
+
+    it('calls dismissEvent(id, source, calendarId) without opening the modal', () => {
+      const dismissEvent = vi.fn().mockResolvedValue(undefined);
+      mockCalendar({ events: [event], dismissEvent });
       render(<WeekCalendar />);
 
-      expect(screen.getByText('Team Standup')).toBeInTheDocument();
       fireEvent.click(screen.getByTitle('Dismiss event'));
 
-      // Optimistic removal happens synchronously
-      expect(screen.queryByText('Team Standup')).not.toBeInTheDocument();
-      // Modal should not have opened (stopPropagation)
+      expect(dismissEvent).toHaveBeenCalledWith('g-1', 'google', 'cal-1');
       expect(screen.queryByRole('button', { name: '✕' })).not.toBeInTheDocument();
-
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/calendar/events/g-1/dismiss',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({ 'x-user-id': 'user-1' }),
-          body: JSON.stringify({ calendarId: 'cal-1', source: 'google' }),
-        })
-      );
     });
 
-    it('shows the reconnect prompt when Google decline needs updated access', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ data: { local: true, synced: false, reason: 'reconnect_required' } }),
-      }) as unknown as typeof fetch;
-      mockCalendar({ events: [event] });
-      render(<WeekCalendar />);
-
-      fireEvent.click(screen.getByTitle('Dismiss event'));
-
-      await vi.waitFor(() => {
-        expect(screen.getByText(/decline invites in Google/i)).toBeInTheDocument();
-      });
-    });
-
-    it('sends source:local for a family event', async () => {
+    it('passes source "local" for a family event', () => {
+      const dismissEvent = vi.fn().mockResolvedValue(undefined);
       mockCalendar({
-        events: [{ id: 'l-1', event_title: 'Chore', event_date: '2026-08-22', source: 'local', calendarId: 'family' }],
+        events: [
+          { id: 'l-1', event_title: 'Chore', event_date: '2026-08-22', source: 'local', calendarId: 'family' },
+        ],
+        dismissEvent,
       });
       render(<WeekCalendar />);
 
       fireEvent.click(screen.getByTitle('Dismiss event'));
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/calendar/events/l-1/dismiss',
-        expect.objectContaining({ body: JSON.stringify({ calendarId: 'family', source: 'local' }) })
-      );
+      expect(dismissEvent).toHaveBeenCalledWith('l-1', 'local', 'family');
     });
 
-    it('reverts the dismissal when the request fails', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('network error')) as unknown as typeof fetch;
-      mockCalendar({ events: [event] });
+    it('hides events whose id is in dismissedIds', () => {
+      mockCalendar({ events: [event], dismissedIds: new Set(['g-1']) });
       render(<WeekCalendar />);
-
-      fireEvent.click(screen.getByTitle('Dismiss event'));
       expect(screen.queryByText('Team Standup')).not.toBeInTheDocument();
-
-      // Flush the rejected dismiss-fetch microtask under fake timers
-      await vi.waitFor(() => {
-        expect(screen.getByText('Team Standup')).toBeInTheDocument();
-      });
     });
 
-    it('does not dismiss when there is no authenticated user', () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      (useAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({ user: null, isLoading: false });
-      mockCalendar({ events: [event] });
+    it('shows the reconnect prompt when the hook reports reconnectForSync', () => {
+      mockCalendar({ events: [event], reconnectForSync: true });
       render(<WeekCalendar />);
-
-      fireEvent.click(screen.getByTitle('Dismiss event'));
-
-      expect(consoleErrorSpy).toHaveBeenCalledWith('User not authenticated');
-      expect(global.fetch).not.toHaveBeenCalledWith('/api/calendar/events/g-1/dismiss', expect.anything());
-      consoleErrorSpy.mockRestore();
+      expect(screen.getByText(/decline invites in Google/i)).toBeInTheDocument();
     });
   });
 
@@ -434,22 +405,20 @@ describe('WeekCalendar — interactions', () => {
 
     it('dismiss (✕) on your own feature-created event is a local hide, not a Google decline', () => {
       asParent();
-      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) });
-      global.fetch = fetchSpy as unknown as typeof fetch;
+      const dismissEvent = vi.fn().mockResolvedValue(undefined);
       mockCalendar({
         events: [{
           id: 'g-4', summary: 'Mine to hide', source: 'google', type: 'google',
           start: { dateTime: '2026-08-22T10:00:00-04:00', timeZone: 'America/New_York' },
           google_event_id: 'g-4', created_by_id: 'user-1', calendarId: 'primary',
         }],
+        dismissEvent,
       });
       render(<WeekCalendar />);
 
       fireEvent.click(screen.getByTitle('Dismiss event'));
 
-      const dismissCall = fetchSpy.mock.calls.find(([url]) => String(url).endsWith('/g-4/dismiss'));
-      expect(dismissCall).toBeTruthy();
-      expect(JSON.parse(dismissCall![1].body)).toMatchObject({ source: 'local' });
+      expect(dismissEvent).toHaveBeenCalledWith('g-4', 'local', 'primary');
     });
   });
 });

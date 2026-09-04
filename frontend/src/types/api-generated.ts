@@ -1271,6 +1271,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calendar/dismissed/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Restore a dismissed event (undo a hide; re-accepts in Google when applicable)
+         * @description Removes the local hide. When `source=google` and the user had declined the invite, best-effort flips their Google RSVP back to `accepted` (FR-127). `calendarId` / `source` may be given as query params or in the request body.
+         */
+        delete: operations["restoreDismissedEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar/events/{id}/dismiss": {
         parameters: {
             query?: never;
@@ -1421,6 +1441,26 @@ export interface paths {
         head?: never;
         /** Update a family member's role */
         patch: operations["updateFamilyMemberRole"];
+        trace?: never;
+    };
+    "/api/family/members/{memberId}/color": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set or clear a family member's calendar colour key
+         * @description `memberId` is the member's user_id (same as the role endpoint). `color` is one of krish, karishma, priya, anand, dada, maa, all — or null to clear it. Parents/admins only.
+         */
+        patch: operations["updateFamilyMemberColor"];
         trace?: never;
     };
     "/api/family/members/{memberId}": {
@@ -2341,6 +2381,8 @@ export interface components {
             name?: string | null;
             /** Format: email */
             email?: string | null;
+            /** @description Calendar colour key (migration 006); null until a parent assigns one. */
+            color?: string | null;
         };
         FamilyWithMembers: components["schemas"]["Family"] & {
             member_count: number;
@@ -6317,6 +6359,11 @@ export interface operations {
                     "application/json": components["schemas"]["EnvelopeSuccess"] & {
                         data?: {
                             connected?: boolean;
+                            /**
+                             * Format: email
+                             * @description The connected Google account's primary-calendar address (FR-124); null when not connected or unreadable.
+                             */
+                            email?: string | null;
                             authUrl?: string | null;
                         };
                     };
@@ -6601,6 +6648,61 @@ export interface operations {
                             /** Format: date-time */
                             dismissed_at?: string;
                         }[];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    restoreDismissedEvent: {
+        parameters: {
+            query?: {
+                calendarId?: string;
+                source?: "google" | "local";
+            };
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Restored. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        data?: {
+                            local?: boolean;
+                            synced?: boolean;
+                            /** @enum {string} */
+                            action?: "accepted";
+                            reason?: string;
+                        };
                         /** Format: date-time */
                         timestamp?: string;
                     };
@@ -7267,6 +7369,82 @@ export interface operations {
             };
             /** @description Missing x-user-id. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No family found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateFamilyMemberColor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string|null} */
+                    color: "krish" | "karishma" | "priya" | "anand" | "dada" | "maa" | "all" | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["FamilyMember"];
+                    };
+                };
+            };
+            /** @description Invalid colour key. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller is not a parent/admin. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

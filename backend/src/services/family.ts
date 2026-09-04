@@ -7,10 +7,12 @@ export type Family = Database['public']['Tables']['families']['Row'];
 export type FamilyMember = Database['public']['Tables']['family_members']['Row'];
 
 /** A family_members row enriched with the joined user's name/email (both null
- *  when the member has no linked users row). */
+ *  when the member has no linked users row). `color` is the calendar colour
+ *  key (migration 006); null until a parent assigns one. */
 export type FamilyMemberWithUser = FamilyMember & {
   name: string | null;
   email: string | null;
+  color: string | null;
 };
 export type FamilySettings = Database['public']['Tables']['family_settings']['Row'];
 type FamilySettingsInsert = Database['public']['Tables']['family_settings']['Insert'];
@@ -244,6 +246,29 @@ class FamilyService {
       return result;
     } catch (error) {
       console.error('Failed to update member role:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Set (or clear, with null) a family member's calendar colour key.
+   * `memberId` is the member's user_id, matching updateMemberRole.
+   */
+  async updateMemberColor(
+    familyId: string,
+    memberId: string,
+    color: string | null,
+  ): Promise<FamilyMember | null> {
+    try {
+      const result = await queryOne<FamilyMember>(
+        `UPDATE family_members SET color = $1, updated_at = CURRENT_TIMESTAMP
+         WHERE family_id = $2 AND user_id = $3
+         RETURNING *`,
+        [color, familyId, memberId]
+      );
+      return result;
+    } catch (error) {
+      console.error('Failed to update member colour:', error);
       throw error;
     }
   }

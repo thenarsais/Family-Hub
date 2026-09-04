@@ -454,6 +454,52 @@ class GoogleOAuthService {
   }
 
   /**
+   * The inverse of declineEventIfInvited — used when a dismissed event is
+   * restored (FR-127). Flips this user's RSVP from 'declined' back to
+   * 'accepted' so the event reappears on their Google Calendar too.
+   */
+  async acceptEventIfInvited(
+    userId: string,
+    calendarId: string,
+    eventId: string,
+  ): Promise<{ accepted: boolean; reason?: 'no_token' | 'not_an_attendee' }> {
+    const calendar = await this.getAuthedCalendar(userId);
+    if (!calendar) return { accepted: false, reason: 'no_token' };
+
+    const { data: event } = await calendar.events.get({ calendarId, eventId });
+    const attendees = event.attendees ?? [];
+    const meIndex = attendees.findIndex((a) => a.self);
+    if (meIndex === -1) return { accepted: false, reason: 'not_an_attendee' };
+
+    attendees[meIndex].responseStatus = 'accepted';
+    await calendar.events.patch({
+      calendarId,
+      eventId,
+      sendUpdates: 'none',
+      requestBody: { attendees },
+    });
+    return { accepted: true };
+  }
+
+  /**
+   * The email address of the user's primary Google calendar (i.e. their
+   * Google account), for the "Connected as …" label. Returns null if there's
+   * no usable token or the primary calendar can't be identified.
+   */
+  async getConnectedEmail(userId: string): Promise<string | null> {
+    try {
+      const calendar = await this.getAuthedCalendar(userId);
+      if (!calendar) return null;
+      const { data } = await calendar.calendarList.list();
+      const primary = (data.items ?? []).find((c) => c.primary) ?? (data.items ?? [])[0];
+      return primary?.id ?? null;
+    } catch (error) {
+      console.warn(`Could not read connected Google email for user ${userId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Create an event on one of the user's Google calendars. Google is the
    * source of truth for events made through the dashboard form — the caller
    * mirrors the returned event into calendar_events afterwards.

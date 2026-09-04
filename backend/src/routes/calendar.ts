@@ -243,9 +243,13 @@ router.get('/auth/google', async (req: Request, res: Response) => {
     const connected = !!(existingToken?.access_token
       && (existingToken.expires_in > 300 || !!existingToken.refresh_token));
 
+    // Best-effort account label for the settings panel (FR-124). Never blocks
+    // the response — a token can be present but too stale to read calendarList.
+    const email = connected ? await googleOAuth.getConnectedEmail(userId) : null;
+
     res.json({
       status: 'success',
-      data: { connected, authUrl: googleOAuth.getAuthUrl(userId) },
+      data: { connected, email, authUrl: googleOAuth.getAuthUrl(userId) },
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
@@ -474,6 +478,68 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to dismiss event',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * DELETE /api/calendar/dismissed/:eventId
+ * Restore a previously dismissed event (FR-122). For a Google event the user
+ * had declined, best-effort flips their RSVP back to accepted (FR-127).
+ */
+router.delete('/dismissed/:eventId', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    const { eventId } = req.params;
+    const calendarId = (req.query.calendarId || (req.body && req.body.calendarId)) as
+      | string
+      | undefined;
+    const source = (req.query.source || (req.body && req.body.source)) as string | undefined;
+
+    if (!userId) {
+      return res.status(401).json({ status: 'error', message: 'User ID required' });
+    }
+    if (!eventId) {
+      return res.status(400).json({ status: 'error', message: 'Event ID required' });
+    }
+
+    const { error } = await require('../services/supabase')
+      .getSupabase()
+      .from('dismissed_events')
+      .delete()
+      .eq('user_id', userId)
+      .eq('event_id', eventId);
+
+    if (error) throw error;
+
+    let sync: { synced: boolean; action?: 'accepted'; reason?: string } = { synced: false };
+    if (source === 'google' && calendarId) {
+      try {
+        const result = await googleOAuth.acceptEventIfInvited(userId, calendarId, eventId as string);
+        sync = result.accepted
+          ? { synced: true, action: 'accepted' }
+          : { synced: false, reason: result.reason };
+      } catch (syncError: unknown) {
+        const status =
+          (syncError as { status?: number; code?: number })?.status ??
+          (syncError as { code?: number })?.code;
+        sync = { synced: false, reason: status === 403 ? 'reconnect_required' : 'google_error' };
+        console.warn('Google accept failed during restore:', getErrorMessage(syncError));
+      }
+    }
+
+    res.json({
+      status: 'success',
+      message: 'Event restored',
+      data: { local: true, ...sync },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to restore event:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to restore event',
       error: getErrorMessage(error),
     });
   }
