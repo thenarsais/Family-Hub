@@ -2,7 +2,7 @@ export default function ActivityBoard() {
   return (
     <div className="container py-8">
       <h1 className="text-4xl font-bold mb-2">Activity Board</h1>
-      <p className="text-gray-600 mb-8">
+      <p className="text-ink-2 mb-8">
         Complete activities to earn points and badges
       </p>
 
@@ -19,7 +19,7 @@ export default function ActivityBoard() {
           <div key={activity.name} className="card-hover">
             <div className="text-4xl mb-4">{activity.emoji}</div>
             <h2 className="text-xl font-bold mb-2">{activity.name}</h2>
-            <p className="text-gray-600 text-sm mb-4">{activity.description}</p>
+            <p className="text-ink-2 text-sm mb-4">{activity.description}</p>
             <button className="btn btn-primary text-sm">Start Activity</button>
           </div>
         ))}

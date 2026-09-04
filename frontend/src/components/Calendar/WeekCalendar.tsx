@@ -58,13 +58,13 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 function getEventColor(type: string): string {
   switch (type) {
     case 'google':
-      return 'bg-blue-100 border-blue-400 text-blue-900';
+      return 'bg-accent/10 border-accent/40 text-accent-strong';
     case 'family':
-      return 'bg-green-100 border-green-400 text-green-900';
+      return 'bg-leaf/10 border-leaf/40 text-leaf';
     case 'reminder':
-      return 'bg-yellow-100 border-yellow-400 text-yellow-900';
+      return 'bg-haldi/10 border-haldi/50 text-warn';
     default:
-      return 'bg-gray-100 border-gray-400 text-gray-900';
+      return 'bg-rule/40 border-rule-2 text-ink-2';
   }
 }
 
@@ -285,29 +285,29 @@ export function WeekCalendar() {
   if (loading) {
     return (
       <div className="card mb-8 p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading calendar...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+        <p className="mt-4 text-ink-2">Loading calendar...</p>
       </div>
     );
   }
 
   return (
-    <div className="card mb-8 bg-white dark:bg-gray-800 p-6">
+    <div className="card mb-8">
       {/* Token Expiration Alert */}
       {tokenExpired && (
-        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+        <div className="mb-6 p-4 bg-warn/10 border border-warn/40 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+              <p className="text-sm font-semibold text-warn">
                 🔐 Google Calendar authorization expired
               </p>
-              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+              <p className="text-xs text-warn mt-1">
                 Please re-authorize to sync your Google Calendar events
               </p>
             </div>
             <button
               onClick={() => connectGoogle()}
-              className="ml-4 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded transition"
+              className="ml-4 px-3 py-2 bg-warn hover:opacity-90 text-white text-sm font-medium rounded transition"
             >
               Re-authorize
             </button>
@@ -317,19 +317,19 @@ export function WeekCalendar() {
 
       {/* Not Connected Prompt */}
       {!tokenExpired && !googleConnected && (
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg">
+        <div className="mb-6 p-4 bg-accent-soft border border-accent/30 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+              <p className="text-sm font-semibold text-accent-strong">
                 📅 Google Calendar isn't connected
               </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+              <p className="text-xs text-accent-strong mt-1">
                 Connect it to see your Google events alongside your family calendar
               </p>
             </div>
             <button
               onClick={() => connectGoogle()}
-              className="ml-4 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition"
+              className="ml-4 px-3 py-2 bg-accent hover:bg-accent-strong text-white text-sm font-medium rounded transition"
             >
               Connect Google Calendar
             </button>
@@ -363,13 +363,13 @@ export function WeekCalendar() {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={goToPreviousWeek}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+          className="p-2 hover:bg-accent-soft rounded-lg transition"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
         <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-primary-600" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <Calendar className="w-5 h-5 text-accent" />
+          <h2 className="text-2xl font-bold text-ink font-display">
             {formatWeekRange()}
           </h2>
         </div>
@@ -385,7 +385,7 @@ export function WeekCalendar() {
           )}
           <button
             onClick={goToNextWeek}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            className="p-2 hover:bg-accent-soft rounded-lg transition"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -405,24 +405,24 @@ export function WeekCalendar() {
               data-testid={`day-cell-${dateKey}`}
               className={`group/day rounded-lg border-2 p-3 min-h-32 flex flex-col ${
                 isToday
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900 dark:border-primary-400'
-                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700'
+                  ? 'border-accent bg-accent-soft'
+                  : 'border-rule bg-paper'
               }`}
             >
               {/* Day Header */}
-              <div className="mb-3 pb-2 border-b border-gray-300 dark:border-gray-600 flex items-start justify-between">
+              <div className="mb-3 pb-2 border-b border-rule flex items-start justify-between">
                 <div>
-                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                  <div className="text-xs font-semibold text-ink-3 uppercase">
                     {DAYS[idx]}
                   </div>
-                  <div className={`text-lg font-bold ${isToday ? 'text-primary-600 dark:text-primary-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                  <div className={`text-lg font-bold ${isToday ? 'text-accent' : 'text-ink'}`}>
                     {day.getDate()}
                   </div>
                 </div>
                 {canManage && (
                   <button
                     onClick={() => setFormState({ mode: 'create', date: dateKey })}
-                    className="opacity-0 group-hover/day:opacity-100 transition text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
+                    className="opacity-0 group-hover/day:opacity-100 transition text-ink-3 hover:text-accent"
                     title={`Add event on ${dateKey}`}
                     aria-label={`Add event on ${dateKey}`}
                   >
@@ -434,7 +434,7 @@ export function WeekCalendar() {
               {/* Events */}
               <div className="flex-1 space-y-2 overflow-y-auto">
                 {dayEvents.length === 0 ? (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">No events</p>
+                  <p className="text-xs text-ink-3 italic">No events</p>
                 ) : (
                   dayEvents.map((event) => (
                     <div
@@ -472,7 +472,7 @@ export function WeekCalendar() {
                                 : 'google';
                             dismissEvent(event.id, source, event.calendarId);
                           }}
-                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition hover:text-red-500"
+                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition hover:text-alert"
                           title="Dismiss event"
                         >
                           <Ban className="w-3 h-3" />
@@ -491,7 +491,7 @@ export function WeekCalendar() {
       {selectedEvent && (
         <>
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+          <div className="bg-raised border border-rule rounded-card p-6 max-w-md w-full shadow-xl">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-2 flex-1">
                 <span
@@ -499,41 +499,41 @@ export function WeekCalendar() {
                   style={{ backgroundColor: selectedEvent.calendarColor || '#3b82f6' }}
                 ></span>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-bold text-ink">
                     {selectedEvent.title}
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  <p className="text-xs text-ink-3 uppercase tracking-wide">
                     📅 {selectedEvent.calendarName || 'Google Calendar'}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-2"
+                className="text-ink-3 hover:text-accent ml-2"
               >
                 ✕
               </button>
             </div>
 
             {selectedEvent.time && (
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              <p className="text-sm font-medium text-ink-2 mb-3">
                 🕐 {selectedEvent.time}
               </p>
             )}
 
             {selectedEvent.location && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              <p className="text-sm text-ink-2 mb-3">
                 📍 {selectedEvent.location}
               </p>
             )}
 
             {selectedEvent.description && (
-              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded">
+              <p className="text-sm text-ink-2 mb-4 p-3 bg-paper border border-rule rounded">
                 {selectedEvent.description}
               </p>
             )}
 
-            <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex gap-2 pt-4 border-t border-rule">
               <button className="flex-1 btn btn-secondary text-sm" onClick={() => setSelectedEvent(null)}>
                 Close
               </button>
@@ -550,7 +550,7 @@ export function WeekCalendar() {
                     Edit
                   </button>
                   <button
-                    className="btn text-sm flex items-center gap-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                    className="btn text-sm flex items-center gap-1 bg-alert text-white hover:opacity-90 disabled:opacity-60"
                     onClick={() => handleDelete(selectedEvent)}
                     disabled={deleting}
                   >

@@ -142,15 +142,15 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+      <div className="bg-raised rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-rule">
+          <h3 className="text-lg font-bold text-ink">
             {mode === 'edit' ? 'Edit event' : 'New event'}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="text-ink-3 hover:text-accent"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -170,7 +170,7 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <label className="flex items-center gap-2 text-sm text-ink-2">
             <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
             All day
           </label>
@@ -204,7 +204,7 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label" htmlFor="event-end-date">
-                End date <span className="text-gray-400 font-normal">(optional)</span>
+                End date <span className="text-ink-3 font-normal">(optional)</span>
               </label>
               <input
                 id="event-end-date"
@@ -217,7 +217,7 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
             {!allDay && (
               <div>
                 <label className="label" htmlFor="event-end-time">
-                  End time <span className="text-gray-400 font-normal">(optional)</span>
+                  End time <span className="text-ink-3 font-normal">(optional)</span>
                 </label>
                 <input
                   id="event-end-time"
@@ -257,13 +257,13 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
                 {attendees.map((email) => (
                   <span
                     key={email}
-                    className="inline-flex items-center gap-1 bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 text-xs rounded-full px-2 py-1"
+                    className="inline-flex items-center gap-1 bg-accent-soft text-accent-strong text-xs rounded-full px-2 py-1"
                   >
                     {email}
                     <button
                       type="button"
                       onClick={() => setAttendees((prev) => prev.filter((a) => a !== email))}
-                      className="hover:text-red-600"
+                      className="hover:text-alert"
                       aria-label={`Remove ${email}`}
                     >
                       <X className="w-3 h-3" />
@@ -285,7 +285,7 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
           </div>
 
           {attendees.length > 0 && (
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <label className="flex items-center gap-2 text-sm text-ink-2">
               <input
                 type="checkbox"
                 checked={sendInvites}
@@ -296,12 +296,12 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
           )}
 
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/40 rounded p-2">
+            <p className="text-sm text-alert bg-alert/10 rounded p-2">
               {error}
             </p>
           )}
 
-          <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex gap-2 pt-2 border-t border-rule">
             <button type="button" className="btn btn-secondary flex-1" onClick={onClose} disabled={submitting}>
               Cancel
             </button>

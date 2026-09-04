@@ -35,13 +35,13 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-600">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-accent to-accent-strong">
       <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-2">Family Hub</h1>
-        <p className="text-center text-gray-600 mb-8">Create your account</p>
+        <p className="text-center text-ink-2 mb-8">Create your account</p>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-alert/10 border border-alert/40 text-alert px-4 py-3 rounded mb-6">
             {error}
           </div>
         )}
@@ -104,9 +104,9 @@ export default function Signup() {
           </button>
         </form>
 
-        <p className="text-center text-gray-600 mt-6">
+        <p className="text-center text-ink-2 mt-6">
           Already have an account?{' '}
-          <Link to="/login" className="text-primary-700 hover:text-primary-800 font-medium">
+          <Link to="/login" className="text-accent hover:text-accent-strong font-medium">
             Sign in
           </Link>
         </p>

@@ -262,7 +262,7 @@ describe('WeekCalendar — interactions', () => {
     }).format(new Date());
     const todayCell = screen.getByTestId(`day-cell-${key}`);
 
-    expect(todayCell.className).toContain('border-primary-500');
+    expect(todayCell.className).toContain('border-accent');
   });
 
   it('skips events whose calendar day is outside the loaded week map', () => {
