@@ -22,8 +22,23 @@ export const FAMILY_COLORS: FamilyColor[] = [
 
 export const SHARED_COLOR: FamilyColor = { key: 'all', label: 'Warm stone', hex: '#8C8172' };
 
+/** Every assignable colour, for the calendar-settings picker. */
+export const ALL_FAMILY_COLORS: FamilyColor[] = [...FAMILY_COLORS, SHARED_COLOR];
+
 /** Colour for the Nth family member (0-based). Past the six named slots,
  *  everyone shares the neutral stone until T-01 lets you assign explicitly. */
 export function colorForIndex(index: number): FamilyColor {
   return FAMILY_COLORS[index] ?? SHARED_COLOR;
+}
+
+/** Resolve a member's colour: an explicit key wins, otherwise fall back to the
+ *  index-based default so the calendar always shows *something* per person. */
+export function resolveMemberColor(
+  colorKey: string | null | undefined,
+  index: number,
+): FamilyColor {
+  if (colorKey) {
+    return ALL_FAMILY_COLORS.find((c) => c.key === colorKey) ?? colorForIndex(index);
+  }
+  return colorForIndex(index);
 }

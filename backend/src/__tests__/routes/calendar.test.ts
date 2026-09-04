@@ -22,10 +22,12 @@ jest.mock('../../services/family', () => ({ getFamilyService: () => mockFamilySe
 const mockGoogleOAuthService = {
   getUserToken: jest.fn(),
   getAuthUrl: jest.fn(),
+  getConnectedEmail: jest.fn(),
   exchangeCodeForToken: jest.fn(),
   storeUserToken: jest.fn(),
   getCalendarEvents: jest.fn(),
   declineEventIfInvited: jest.fn(),
+  acceptEventIfInvited: jest.fn(),
   disconnectCalendar: jest.fn(),
   createEvent: jest.fn(),
   updateEvent: jest.fn(),
@@ -35,9 +37,11 @@ jest.mock('../../services/google-oauth', () => ({ getGoogleOAuthService: () => m
 
 const mockEq = jest.fn();
 const mockUpsert = jest.fn();
+const mockDelete = jest.fn().mockReturnThis();
 const mockSupabase = {
   from: jest.fn().mockReturnThis(),
   select: jest.fn().mockReturnThis(),
+  delete: mockDelete,
   eq: mockEq,
   upsert: mockUpsert,
 };
@@ -54,6 +58,7 @@ describe('Calendar Routes', () => {
     jest.resetAllMocks();
     mockSupabase.from.mockReturnThis();
     mockSupabase.select.mockReturnThis();
+    mockSupabase.delete.mockReturnThis();
   });
 
   describe('GET /api/calendar/events', () => {
@@ -224,10 +229,15 @@ describe('Calendar Routes', () => {
         expires_in: 3600,
       });
       mockGoogleOAuthService.getAuthUrl.mockReturnValueOnce('https://accounts.google.com/auth');
+      mockGoogleOAuthService.getConnectedEmail.mockResolvedValueOnce('priya@gmail.com');
 
       const res = await request(app).get('/api/calendar/auth/google').set('x-user-id', 'user-1').expect(200);
 
-      expect(res.body.data).toEqual({ connected: true, authUrl: 'https://accounts.google.com/auth' });
+      expect(res.body.data).toEqual({
+        connected: true,
+        email: 'priya@gmail.com',
+        authUrl: 'https://accounts.google.com/auth',
+      });
     });
 
     it('should report connected when expiring soon but a refresh_token exists', async () => {
@@ -249,7 +259,11 @@ describe('Calendar Routes', () => {
 
       const res = await request(app).get('/api/calendar/auth/google').set('x-user-id', 'user-1').expect(200);
 
-      expect(res.body.data).toEqual({ connected: false, authUrl: 'https://accounts.google.com/auth' });
+      expect(res.body.data).toEqual({
+        connected: false,
+        email: null,
+        authUrl: 'https://accounts.google.com/auth',
+      });
     });
 
     it('should return an auth URL when the token is expired with no refresh token', async () => {
@@ -495,6 +509,66 @@ describe('Calendar Routes', () => {
         .expect(200);
 
       expect(mockGoogleOAuthService.declineEventIfInvited).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('DELETE /api/calendar/dismissed/:eventId', () => {
+    // .delete().eq('user_id').eq('event_id') — first eq chains, second resolves.
+    const chainDelete = (result: { error: unknown }) => {
+      mockEq.mockReturnValueOnce(mockSupabase).mockResolvedValueOnce(result);
+    };
+
+    it('should require a user id', async () => {
+      const res = await request(app).delete('/api/calendar/dismissed/e1').expect(401);
+      expect(res.body.message).toBe('User ID required');
+    });
+
+    it('removes the dismissal row (local restore)', async () => {
+      chainDelete({ error: null });
+
+      const res = await request(app)
+        .delete('/api/calendar/dismissed/e1')
+        .set('x-user-id', 'user-1')
+        .expect(200);
+
+      expect(mockDelete).toHaveBeenCalled();
+      expect(res.body.data).toEqual({ local: true, synced: false });
+      expect(mockGoogleOAuthService.acceptEventIfInvited).not.toHaveBeenCalled();
+    });
+
+    it('re-accepts the invite in Google for a google event', async () => {
+      chainDelete({ error: null });
+      mockGoogleOAuthService.acceptEventIfInvited.mockResolvedValueOnce({ accepted: true });
+
+      const res = await request(app)
+        .delete('/api/calendar/dismissed/g1?calendarId=cal-1&source=google')
+        .set('x-user-id', 'user-1')
+        .expect(200);
+
+      expect(mockGoogleOAuthService.acceptEventIfInvited).toHaveBeenCalledWith('user-1', 'cal-1', 'g1');
+      expect(res.body.data).toEqual({ local: true, synced: true, action: 'accepted' });
+    });
+
+    it('reports reconnect_required when the Google write is rejected for scope', async () => {
+      chainDelete({ error: null });
+      mockGoogleOAuthService.acceptEventIfInvited.mockRejectedValueOnce({ status: 403 });
+
+      const res = await request(app)
+        .delete('/api/calendar/dismissed/g1?calendarId=cal-1&source=google')
+        .set('x-user-id', 'user-1')
+        .expect(200);
+
+      expect(res.body.data).toEqual({ local: true, synced: false, reason: 'reconnect_required' });
+    });
+
+    it('returns 500 when supabase returns an error', async () => {
+      chainDelete({ error: new Error('rls denied') });
+
+      const res = await request(app)
+        .delete('/api/calendar/dismissed/e1')
+        .set('x-user-id', 'user-1')
+        .expect(500);
+      expect(res.body.message).toBe('Failed to restore event');
     });
   });
 

@@ -2691,6 +2691,10 @@ paths:
                         type: object
                         properties:
                           connected: { type: boolean }
+                          email:
+                            type: [string, 'null']
+                            format: email
+                            description: "The connected Google account's primary-calendar address (FR-124); null when not connected or unreadable."
                           authUrl: { type: [string, 'null'] }
         '401':
           description: Missing user ID.
@@ -2895,6 +2899,54 @@ paths:
                         event_id: { type: string }
                         calendar_id: { type: [string, 'null'] }
                         dismissed_at: { type: string, format: date-time }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/dismissed/{eventId}:
+    delete:
+      tags: [Calendar]
+      summary: Restore a dismissed event (undo a hide; re-accepts in Google when applicable)
+      description: >
+        Removes the local hide. When `source=google` and the user had declined
+        the invite, best-effort flips their Google RSVP back to `accepted`
+        (FR-127). `calendarId` / `source` may be given as query params or in the
+        request body.
+      operationId: restoreDismissedEvent
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: calendarId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: source
+          in: query
+          required: false
+          schema: { type: string, enum: [google, local] }
+      responses:
+        '200':
+          description: Restored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    type: object
+                    properties:
+                      local: { type: boolean }
+                      synced: { type: boolean }
+                      action: { type: string, enum: [accepted] }
+                      reason: { type: string }
                   timestamp: { type: string, format: date-time }
         '401':
           description: Missing x-user-id.
@@ -3333,6 +3385,59 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '401':
           description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No family found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/family/members/{memberId}/color:
+    patch:
+      tags: [Family]
+      summary: Set or clear a family member's calendar colour key
+      description: >
+        `memberId` is the member's user_id (same as the role endpoint).
+        `color` is one of krish, karishma, priya, anand, dada, maa, all — or
+        null to clear it. Parents/admins only.
+      operationId: updateFamilyMemberColor
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [color]
+              properties:
+                color:
+                  type: [string, 'null']
+                  enum: [krish, karishma, priya, anand, dada, maa, all, null]
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/FamilyMember' }
+        '400':
+          description: Invalid colour key.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '403':
+          description: Caller is not a parent/admin.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '404':
           description: No family found.
@@ -4614,6 +4719,9 @@ components:
         updated_at: { type: [string, 'null'], format: date-time }
         name: { type: [string, 'null'] }
         email: { type: [string, 'null'], format: email }
+        color:
+          type: [string, 'null']
+          description: "Calendar colour key (migration 006); null until a parent assigns one."
 
     FamilyWithMembers:
       allOf:

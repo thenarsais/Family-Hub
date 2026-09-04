@@ -229,6 +229,34 @@ describe('useFamily', () => {
     });
   });
 
+  describe('updateMemberColor', () => {
+    it('patches the colour and updates local state', async () => {
+      mockGetPaths({ members: [{ id: 'm1', user_id: 'u2', role: 'child' }] });
+      (apiClient.patch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});
+
+      const { result } = renderHook(() => useFamily());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.updateMemberColor('u2', 'anand');
+      });
+
+      expect(apiClient.patch).toHaveBeenCalledWith(
+        '/api/family/members/u2/color',
+        { color: 'anand' },
+        { headers: { 'x-user-id': 'user-1' } }
+      );
+      expect((result.current.members[0] as { color?: string }).color).toBe('anand');
+    });
+
+    it('throws when there is no authenticated user', async () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useFamily());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await expect(result.current.updateMemberColor('u2', 'anand')).rejects.toThrow('User not authenticated');
+    });
+  });
+
   describe('updateSettings', () => {
     it('should patch and store the returned settings', async () => {
       mockGetPaths();

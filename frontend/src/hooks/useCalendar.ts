@@ -38,6 +38,12 @@ export interface GoogleEventInput {
   sendInvites?: boolean;
 }
 
+export interface DismissedEvent {
+  event_id: string;
+  calendar_id?: string | null;
+  dismissed_at?: string;
+}
+
 interface UseCalendarReturn {
   events: CalendarEvent[];
   upcomingEvents: CalendarEvent[];
@@ -45,9 +51,15 @@ interface UseCalendarReturn {
   error: string | null;
   tokenExpired: boolean;
   googleConnected: boolean;
+  googleEmail: string | null;
+  dismissedIds: Set<string>;
+  dismissedEvents: DismissedEvent[];
+  reconnectForSync: boolean;
   createEvent: (input: GoogleEventInput) => Promise<CalendarEvent>;
   updateEvent: (googleEventId: string, input: GoogleEventInput) => Promise<CalendarEvent>;
   deleteEvent: (googleEventId: string, sendInvites?: boolean) => Promise<void>;
+  dismissEvent: (eventId: string, source: 'google' | 'local', calendarId?: string) => Promise<void>;
+  restoreEvent: (eventId: string, source?: 'google' | 'local', calendarId?: string) => Promise<void>;
   connectGoogle: () => Promise<string>;
   disconnectGoogle: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -61,6 +73,10 @@ export function useCalendar(): UseCalendarReturn {
   const [error, setError] = useState<string | null>(null);
   const [tokenExpired, setTokenExpired] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState<string | null>(null);
+  const [dismissedEvents, setDismissedEvents] = useState<DismissedEvent[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [reconnectForSync, setReconnectForSync] = useState(false);
 
   const fetchEvents = async () => {
     try {
@@ -171,17 +187,43 @@ export function useCalendar(): UseCalendarReturn {
       if (!user?.id) return;
 
       try {
-        const authResponse = await apiClient.get<ApiEnvelope<{ connected?: boolean; authUrl?: string }>>('/api/calendar/auth/google', {
+        const authResponse = await apiClient.get<
+          ApiEnvelope<{ connected?: boolean; email?: string | null; authUrl?: string }>
+        >('/api/calendar/auth/google', {
           headers: { 'x-user-id': user.id },
         });
 
         setGoogleConnected(!!authResponse.data?.data?.connected);
+        setGoogleEmail(authResponse.data?.data?.email ?? null);
       } catch (err) {
         console.warn('Failed to check Google Calendar connection:', err);
       }
     };
 
     checkGoogleConnection();
+  }, [user?.id]);
+
+  // Load the user's dismissed (hidden) events — the settings panel lists them
+  // for restore, and WeekCalendar filters them out of the grid.
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.get<ApiEnvelope<DismissedEvent[]>>('/api/calendar/dismissed', {
+          headers: { 'x-user-id': user.id },
+        });
+        if (cancelled) return;
+        const list = res.data?.data ?? [];
+        setDismissedEvents(list);
+        setDismissedIds(new Set(list.map((d) => d.event_id)));
+      } catch (err) {
+        console.warn('Failed to load dismissed events:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   useEffect(() => {
@@ -228,6 +270,68 @@ export function useCalendar(): UseCalendarReturn {
 
     setEvents((prev) => prev.filter((e) => (e.google_event_id ?? e.id) !== googleEventId));
     await fetchEvents();
+  };
+
+  const dismissEvent = async (
+    eventId: string,
+    source: 'google' | 'local',
+    calendarId?: string,
+  ): Promise<void> => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    // optimistic
+    setDismissedIds((prev) => new Set(prev).add(eventId));
+
+    try {
+      const res = await apiClient.post<ApiEnvelope<{ reason?: string }>>(
+        `/api/calendar/events/${eventId}/dismiss`,
+        { calendarId, source },
+        { headers: { 'x-user-id': user.id } },
+      );
+      if (res.data?.data?.reason === 'reconnect_required') setReconnectForSync(true);
+      setDismissedEvents((prev) =>
+        prev.some((d) => d.event_id === eventId)
+          ? prev
+          : [...prev, { event_id: eventId, calendar_id: calendarId, dismissed_at: new Date().toISOString() }],
+      );
+    } catch (err) {
+      // revert
+      setDismissedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(eventId);
+        return next;
+      });
+      throw err;
+    }
+  };
+
+  const restoreEvent = async (
+    eventId: string,
+    source?: 'google' | 'local',
+    calendarId?: string,
+  ): Promise<void> => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    const prevIds = dismissedIds;
+    const prevList = dismissedEvents;
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(eventId);
+      return next;
+    });
+    setDismissedEvents((prev) => prev.filter((d) => d.event_id !== eventId));
+
+    try {
+      await apiClient.delete(`/api/calendar/dismissed/${eventId}`, {
+        headers: { 'x-user-id': user.id },
+        params: { calendarId, source },
+      });
+      await fetchEvents();
+    } catch (err) {
+      setDismissedIds(prevIds);
+      setDismissedEvents(prevList);
+      throw err;
+    }
   };
 
   const connectGoogle = async (): Promise<string> => {
@@ -295,9 +399,15 @@ export function useCalendar(): UseCalendarReturn {
     error,
     tokenExpired,
     googleConnected,
+    googleEmail,
+    dismissedIds,
+    dismissedEvents,
+    reconnectForSync,
     createEvent,
     updateEvent,
     deleteEvent,
+    dismissEvent,
+    restoreEvent,
     connectGoogle,
     disconnectGoogle,
     refresh: fetchEvents,

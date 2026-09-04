@@ -9,6 +9,7 @@ const mockFamilyService = {
   addMember: jest.fn(),
   acceptInvitation: jest.fn(),
   updateMemberRole: jest.fn(),
+  updateMemberColor: jest.fn(),
   removeMember: jest.fn(),
   getFamilySettings: jest.fn(),
   updateFamilySettings: jest.fn(),
@@ -410,6 +411,72 @@ describe('Family Routes', () => {
 
       expect(mockFamilyService.updateMemberRole).toHaveBeenCalledWith('family-1', 'm1', 'parent');
       expect(res.body.data).toEqual({ id: 'm1', role: 'parent' });
+    });
+  });
+
+  describe('PATCH /api/family/members/:memberId/color', () => {
+    it('should require a user id', async () => {
+      const res = await request(app)
+        .patch('/api/family/members/u2/color')
+        .send({ color: 'krish' })
+        .expect(401);
+      expect(res.body.message).toBe('User ID required');
+    });
+
+    it('rejects an unknown colour key with 400', async () => {
+      const res = await request(app)
+        .patch('/api/family/members/u2/color')
+        .set('x-user-id', 'user-1')
+        .send({ color: 'chartreuse' })
+        .expect(400);
+      expect(res.body.message).toMatch(/color must be null or one of/);
+    });
+
+    it('returns 403 for a non parent/admin caller', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({
+        id: 'family-1',
+        members: [{ user_id: 'user-1', role: 'child' }],
+      });
+
+      const res = await request(app)
+        .patch('/api/family/members/u2/color')
+        .set('x-user-id', 'user-1')
+        .send({ color: 'krish' })
+        .expect(403);
+      expect(res.body.message).toMatch(/parent or admin/);
+    });
+
+    it('sets a colour for a parent caller', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({
+        id: 'family-1',
+        members: [{ user_id: 'user-1', role: 'parent' }],
+      });
+      mockFamilyService.updateMemberColor.mockResolvedValueOnce({ user_id: 'u2', color: 'anand' });
+
+      const res = await request(app)
+        .patch('/api/family/members/u2/color')
+        .set('x-user-id', 'user-1')
+        .send({ color: 'anand' })
+        .expect(200);
+
+      expect(mockFamilyService.updateMemberColor).toHaveBeenCalledWith('family-1', 'u2', 'anand');
+      expect(res.body.data).toEqual({ user_id: 'u2', color: 'anand' });
+    });
+
+    it('accepts null to clear the colour', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({
+        id: 'family-1',
+        members: [{ user_id: 'user-1', role: 'admin' }],
+      });
+      mockFamilyService.updateMemberColor.mockResolvedValueOnce({ user_id: 'u2', color: null });
+
+      await request(app)
+        .patch('/api/family/members/u2/color')
+        .set('x-user-id', 'user-1')
+        .send({ color: null })
+        .expect(200);
+
+      expect(mockFamilyService.updateMemberColor).toHaveBeenCalledWith('family-1', 'u2', null);
     });
   });
 

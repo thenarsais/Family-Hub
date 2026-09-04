@@ -215,6 +215,33 @@ describe('FamilyService', () => {
     });
   });
 
+  describe('updateMemberColor', () => {
+    it('updates and returns the member', async () => {
+      const updated = { user_id: 'user-1', color: 'anand' };
+      (connection.queryOne as jest.Mock).mockResolvedValueOnce(updated);
+
+      const result = await service.updateMemberColor('family-1', 'user-1', 'anand');
+
+      expect(connection.queryOne).toHaveBeenCalledWith(expect.stringContaining('SET color = $1'), [
+        'anand',
+        'family-1',
+        'user-1',
+      ]);
+      expect(result).toEqual(updated);
+    });
+
+    it('passes null through to clear the colour', async () => {
+      (connection.queryOne as jest.Mock).mockResolvedValueOnce({ user_id: 'user-1', color: null });
+      await service.updateMemberColor('family-1', 'user-1', null);
+      expect(connection.queryOne).toHaveBeenCalledWith(expect.any(String), [null, 'family-1', 'user-1']);
+    });
+
+    it('rethrows on failure', async () => {
+      (connection.queryOne as jest.Mock).mockRejectedValueOnce(new Error('db down'));
+      await expect(service.updateMemberColor('family-1', 'user-1', 'maa')).rejects.toThrow('db down');
+    });
+  });
+
   describe('removeMember', () => {
     it('should soft-delete the member', async () => {
       (connection.query as jest.Mock).mockResolvedValueOnce({});

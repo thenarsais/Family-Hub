@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2, Settings } from 'lucide-react';
 import { useCalendar } from '@hooks/useCalendar';
 import { useAuth } from '@hooks/useAuth';
 import { EventForm, type EventFormValues, type EventFormInitial } from './EventForm';
+import { CalendarSettings } from './CalendarSettings';
 
 interface CalendarEvent {
   id: string;
@@ -86,18 +87,26 @@ function getDateKeyWithTimezone(date: Date, timezone?: string): string {
 
 
 export function WeekCalendar() {
+  const cal = useCalendar();
   const {
     events, loading, tokenExpired, googleConnected, connectGoogle,
     createEvent, updateEvent, deleteEvent,
-  } = useCalendar();
-  const { user, isLoading: authLoading } = useAuth();
+  } = cal;
+  const googleEmail = cal.googleEmail ?? null;
+  const dismissedEventIds: Set<string> = cal.dismissedIds ?? new Set();
+  const dismissedEvents = cal.dismissedEvents ?? [];
+  const reconnectForSync = cal.reconnectForSync ?? false;
+  const dismissEvent =
+    cal.dismissEvent ?? (async () => undefined);
+  const restoreEvent =
+    cal.restoreEvent ?? (async () => undefined);
+  const disconnectGoogle =
+    cal.disconnectGoogle ?? (async () => undefined);
+  const { user } = useAuth();
   const canManage = user?.role === 'parent' || user?.role === 'admin';
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [dismissedEventIds, setDismissedEventIds] = useState<Set<string>>(new Set());
-  // Set when a Google dismiss couldn't decline the invite because the stored
-  // token predates the calendar.events scope — prompts a reconnect.
-  const [reconnectForSync, setReconnectForSync] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // Event form: closed | create (optional pre-filled date) | edit (an event).
   const [formState, setFormState] = useState<
     | { mode: 'closed' }
@@ -127,59 +136,11 @@ export function WeekCalendar() {
     }
   };
 
-  const dismissEvent = async (eventId: string, source: 'google' | 'local', calendarId?: string) => {
-    if (!user?.id) {
-      console.error('User not authenticated');
-      return;
-    }
-
-    setDismissedEventIds(prev => new Set([...prev, eventId]));
-
-    try {
-      const res = await fetch(`/api/calendar/events/${eventId}/dismiss`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': user.id },
-        body: JSON.stringify({ calendarId, source }),
-      });
-      const body = await res.json().catch(() => null);
-      if (body?.data?.reason === 'reconnect_required') {
-        setReconnectForSync(true);
-      }
-    } catch (error) {
-      console.error('Failed to dismiss event:', error);
-      // Revert UI state on error
-      setDismissedEventIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(eventId);
-        return newSet;
-      });
-    }
+  const handleDismiss = (eventId: string, source: 'google' | 'local', calendarId?: string) => {
+    dismissEvent(eventId, source, calendarId).catch((err) =>
+      console.error('Failed to dismiss event:', err),
+    );
   };
-
-  // Load dismissed events once user is authenticated
-  useEffect(() => {
-    // Wait for auth to load and user to be available
-    if (authLoading || !user?.id) {
-      return;
-    }
-
-    const loadDismissedEvents = async () => {
-      try {
-        const response = await fetch('/api/calendar/dismissed', {
-          headers: { 'x-user-id': user.id },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          const ids = new Set<string>(data.data?.map((d: any) => d.event_id) || []);
-          setDismissedEventIds(ids);
-        }
-      } catch (error) {
-        console.error('Failed to load dismissed events:', error);
-      }
-    };
-
-    loadDismissedEvents();
-  }, [user?.id, authLoading]);
 
   // Get start of week (Monday)
   const getWeekStart = (date: Date) => {
@@ -339,19 +300,19 @@ export function WeekCalendar() {
 
       {/* Reconnect for two-way sync */}
       {reconnectForSync && (
-        <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900 border border-amber-200 dark:border-amber-700 rounded-lg">
+        <div className="mb-6 p-4 bg-warn/10 border border-warn/40 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+              <p className="text-sm font-semibold text-warn">
                 🔁 Reconnect to decline invites in Google
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              <p className="text-xs text-warn mt-1">
                 The event was hidden here, but declining it in your Google Calendar needs updated access.
               </p>
             </div>
             <button
               onClick={() => connectGoogle()}
-              className="ml-4 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded transition"
+              className="ml-4 px-3 py-2 bg-warn hover:opacity-90 text-white text-sm font-medium rounded transition"
             >
               Reconnect
             </button>
@@ -383,6 +344,14 @@ export function WeekCalendar() {
               Add event
             </button>
           )}
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="p-2 hover:bg-accent-soft rounded-lg transition text-ink-2 hover:text-accent"
+            aria-label="Calendar settings"
+            title="Calendar settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
           <button
             onClick={goToNextWeek}
             className="p-2 hover:bg-accent-soft rounded-lg transition"
@@ -470,7 +439,7 @@ export function WeekCalendar() {
                               isEditableBy(event, user?.id) || event.type !== 'google'
                                 ? 'local'
                                 : 'google';
-                            dismissEvent(event.id, source, event.calendarId);
+                            handleDismiss(event.id, source, event.calendarId);
                           }}
                           className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition hover:text-alert"
                           title="Dismiss event"
@@ -572,6 +541,25 @@ export function WeekCalendar() {
           initialDate={formState.mode === 'create' ? formState.date : undefined}
           onSubmit={handleFormSubmit}
           onClose={() => setFormState({ mode: 'closed' })}
+        />
+      )}
+
+      {settingsOpen && (
+        <CalendarSettings
+          googleConnected={googleConnected}
+          googleEmail={googleEmail}
+          onConnect={connectGoogle}
+          onDisconnect={disconnectGoogle}
+          dismissedEvents={dismissedEvents}
+          eventTitleFor={(id) => {
+            const e = events.find((ev: { id: string }) => ev.id === id) as
+              | { summary?: string; event_title?: string; title?: string }
+              | undefined;
+            return e?.summary || e?.event_title || e?.title;
+          }}
+          onRestore={restoreEvent}
+          canManage={canManage}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
     </div>

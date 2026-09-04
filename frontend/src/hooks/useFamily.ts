@@ -30,6 +30,7 @@ interface UseFamilyReturn {
   addChild: (input: AddChildInput) => Promise<void>;
   inviteMember: (email: string, role: FamilyMember["role"]) => Promise<string>;
   updateMemberRole: (memberId: string, role: FamilyMember["role"]) => Promise<void>;
+  updateMemberColor: (memberId: string, color: string | null) => Promise<void>;
   removeMember: (memberId: string) => Promise<void>;
   updateSettings: (settings: FamilySettingsUpdate) => Promise<void>;
   refresh: () => Promise<void>;
@@ -120,6 +121,20 @@ export function useFamily(): UseFamilyReturn {
     );
   };
 
+  const updateMemberColor = async (memberId: string, color: string | null): Promise<void> => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    await apiClient.patch(
+      `/api/family/members/${memberId}/color`,
+      { color },
+      { headers: { 'x-user-id': user.id } },
+    );
+
+    setMembers((prev) =>
+      prev.map((m) => (m.user_id === memberId ? { ...m, color } : m)),
+    );
+  };
+
   const removeMember = async (memberId: string): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
@@ -152,6 +167,7 @@ export function useFamily(): UseFamilyReturn {
     addChild,
     inviteMember,
     updateMemberRole,
+    updateMemberColor,
     removeMember,
     updateSettings,
     refresh: fetchFamily,

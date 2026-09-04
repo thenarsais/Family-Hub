@@ -21,6 +21,8 @@ function mockFetchEventsCalls(overrides: {
   upcoming?: unknown[];
   google?: unknown[];
   googleError?: { response?: { status: number } };
+  auth?: { connected?: boolean; email?: string | null };
+  dismissed?: unknown[];
 } = {}) {
   (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
     if (path === '/api/calendar/events') {
@@ -34,7 +36,10 @@ function mockFetchEventsCalls(overrides: {
       return Promise.resolve({ data: { data: overrides.google ?? [] } });
     }
     if (path === '/api/calendar/auth/google') {
-      return Promise.resolve({ data: { data: { connected: false } } });
+      return Promise.resolve({ data: { data: overrides.auth ?? { connected: false } } });
+    }
+    if (path === '/api/calendar/dismissed') {
+      return Promise.resolve({ data: { data: overrides.dismissed ?? [] } });
     }
     return Promise.reject(new Error(`unexpected path ${path}`));
   });
@@ -388,6 +393,130 @@ describe('useCalendar', () => {
       });
 
       expect(result.current.events).toHaveLength(1);
+    });
+  });
+
+  describe('connected account + dismissed list (T-01)', () => {
+    it('exposes the connected Google email from the auth check', async () => {
+      mockFetchEventsCalls({ auth: { connected: true, email: 'priya@gmail.com' } });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.googleConnected).toBe(true);
+      expect(result.current.googleEmail).toBe('priya@gmail.com');
+    });
+
+    it('loads the dismissed events into state and an id set', async () => {
+      mockFetchEventsCalls({ dismissed: [{ event_id: 'g1', calendar_id: 'cal-1' }] });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.dismissedEvents).toHaveLength(1));
+
+      expect(result.current.dismissedIds.has('g1')).toBe(true);
+    });
+  });
+
+  describe('dismissEvent', () => {
+    it('optimistically hides, posts, and records the row', async () => {
+      mockFetchEventsCalls();
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { data: { local: true } },
+      });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.dismissEvent('g1', 'google', 'cal-1');
+      });
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/api/calendar/events/g1/dismiss',
+        { calendarId: 'cal-1', source: 'google' },
+        { headers: { 'x-user-id': 'user-1' } }
+      );
+      expect(result.current.dismissedIds.has('g1')).toBe(true);
+      expect(result.current.dismissedEvents.some((d) => d.event_id === 'g1')).toBe(true);
+    });
+
+    it('sets reconnectForSync when the dismiss reports it', async () => {
+      mockFetchEventsCalls();
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { data: { reason: 'reconnect_required' } },
+      });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.dismissEvent('g1', 'google', 'cal-1');
+      });
+
+      expect(result.current.reconnectForSync).toBe(true);
+    });
+
+    it('reverts the optimistic hide and rethrows when the post fails', async () => {
+      mockFetchEventsCalls();
+      (apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('network'));
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await expect(result.current.dismissEvent('g1', 'google')).rejects.toThrow('network');
+      });
+
+      expect(result.current.dismissedIds.has('g1')).toBe(false);
+    });
+
+    it('throws when there is no authenticated user', async () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await expect(result.current.dismissEvent('g1', 'local')).rejects.toThrow('User not authenticated');
+    });
+  });
+
+  describe('restoreEvent', () => {
+    it('removes the id, deletes on the server, and refetches', async () => {
+      mockFetchEventsCalls({ dismissed: [{ event_id: 'g1', calendar_id: 'cal-1' }] });
+      (apiClient.delete as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { data: {} } });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.dismissedIds.has('g1')).toBe(true));
+
+      await act(async () => {
+        await result.current.restoreEvent('g1', 'google', 'cal-1');
+      });
+
+      expect(apiClient.delete).toHaveBeenCalledWith(
+        '/api/calendar/dismissed/g1',
+        { headers: { 'x-user-id': 'user-1' }, params: { calendarId: 'cal-1', source: 'google' } }
+      );
+      expect(result.current.dismissedIds.has('g1')).toBe(false);
+      expect(result.current.dismissedEvents).toHaveLength(0);
+    });
+
+    it('restores the list and rethrows when the delete fails', async () => {
+      mockFetchEventsCalls({ dismissed: [{ event_id: 'g1' }] });
+      (apiClient.delete as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('boom'));
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.dismissedIds.has('g1')).toBe(true));
+
+      await act(async () => {
+        await expect(result.current.restoreEvent('g1')).rejects.toThrow('boom');
+      });
+
+      expect(result.current.dismissedIds.has('g1')).toBe(true);
+    });
+
+    it('throws when there is no authenticated user', async () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await expect(result.current.restoreEvent('g1')).rejects.toThrow('User not authenticated');
     });
   });
 });

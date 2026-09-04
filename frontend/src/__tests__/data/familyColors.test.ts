@@ -1,4 +1,10 @@
-import { FAMILY_COLORS, SHARED_COLOR, colorForIndex } from '@/data/familyColors';
+import {
+  FAMILY_COLORS,
+  SHARED_COLOR,
+  ALL_FAMILY_COLORS,
+  colorForIndex,
+  resolveMemberColor,
+} from '@/data/familyColors';
 
 describe('familyColors', () => {
   it('has six named member colours, all distinct hex values', () => {
@@ -16,5 +22,23 @@ describe('familyColors', () => {
   it('falls back to the shared stone colour past the named slots', () => {
     expect(colorForIndex(6)).toBe(SHARED_COLOR);
     expect(colorForIndex(99)).toBe(SHARED_COLOR);
+  });
+
+  it('ALL_FAMILY_COLORS is the six named slots plus the shared stone', () => {
+    expect(ALL_FAMILY_COLORS).toHaveLength(7);
+    expect(ALL_FAMILY_COLORS[6]).toBe(SHARED_COLOR);
+  });
+
+  describe('resolveMemberColor', () => {
+    it('uses an explicit key when set', () => {
+      expect(resolveMemberColor('priya', 0).key).toBe('priya');
+      expect(resolveMemberColor('all', 2).key).toBe('all');
+    });
+
+    it('falls back to the index default when the key is null/unknown', () => {
+      expect(resolveMemberColor(null, 3)).toBe(FAMILY_COLORS[3]);
+      expect(resolveMemberColor(undefined, 0)).toBe(FAMILY_COLORS[0]);
+      expect(resolveMemberColor('bogus', 1)).toBe(FAMILY_COLORS[1]);
+    });
   });
 });
