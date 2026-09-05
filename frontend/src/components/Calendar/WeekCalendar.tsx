@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2, S
 import { useCalendar, type EventAssignment } from '@hooks/useCalendar';
 import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
+import { useCalendarView, CALENDAR_VIEWS, type CalendarView } from '@hooks/useCalendarView';
 import { EventForm, type EventFormValues, type EventFormInitial } from './EventForm';
 import { CalendarSettings } from './CalendarSettings';
 import { PersonDots } from './PersonDots';
@@ -89,6 +90,49 @@ function getDateKeyWithTimezone(date: Date, timezone?: string): string {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Date-range helpers for the FR-145 view toggle                      */
+/* ------------------------------------------------------------------ */
+
+function addDays(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+// Monday-based start of the week containing `date`.
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+}
+
+// The 42-cell (6-week) grid for the month containing `date`, starting on the
+// Monday on or before the 1st.
+function getMonthGridDays(date: Date): Date[] {
+  const first = new Date(date.getFullYear(), date.getMonth(), 1);
+  const start = getWeekStart(first);
+  return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+}
+
+// The set of visible days for a given view.
+function daysForView(view: CalendarView, currentDate: Date): Date[] {
+  switch (view) {
+    case 'day':
+      return [new Date(currentDate)];
+    case 'month':
+      return getMonthGridDays(currentDate);
+    case 'schedule':
+      // A rolling window from today; ScheduleView only renders days with events.
+      return Array.from({ length: 45 }, (_, i) => addDays(currentDate, i));
+    case 'week':
+    default: {
+      const ws = getWeekStart(currentDate);
+      return Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+    }
+  }
+}
 
 export function WeekCalendar() {
   const cal = useCalendar();
@@ -111,6 +155,7 @@ export function WeekCalendar() {
     cal.setEventPeople ?? (async () => undefined);
   const { user } = useAuth();
   const { members } = useFamily();
+  const { view, setView } = useCalendarView(user?.id ?? 'anon');
   const canManage = user?.role === 'parent' || user?.role === 'admin';
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -164,46 +209,55 @@ export function WeekCalendar() {
     );
   };
 
-  // Get start of week (Monday)
-  const getWeekStart = (date: Date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(d.setDate(diff));
-  };
+  // Own form-created event → local hide only. The Ban button is one misclick
+  // from firing Google cancellation emails; real removal is the Delete button.
+  const dismissSourceFor = (event: CalendarEvent): 'google' | 'local' =>
+    isEditableBy(event, user?.id) || event.type !== 'google' ? 'local' : 'google';
 
-  const weekStart = getWeekStart(currentDate);
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
+  const viewDays = daysForView(view, currentDate);
 
-  const goToPreviousWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() - 7);
-    setCurrentDate(d);
-  };
-
-  const goToNextWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + 7);
-    setCurrentDate(d);
-  };
-
-  const formatWeekRange = () => {
-    const start = weekDays[0];
-    const end = weekDays[6];
-    return `Week of ${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-  };
-
-  const organizeEventsByDay = (): Map<string, CalendarEvent[]> => {
-    const eventMap = new Map<string, CalendarEvent[]>();
-
-    weekDays.forEach((day) => {
-      const dateKey = getDateKeyWithTimezone(day);
-      eventMap.set(dateKey, []);
+  const step = (dir: -1 | 1) => {
+    setCurrentDate((cur) => {
+      switch (view) {
+        case 'day':
+          return addDays(cur, dir);
+        case 'month': {
+          const d = new Date(cur);
+          d.setMonth(d.getMonth() + dir);
+          return d;
+        }
+        case 'schedule':
+          return addDays(cur, dir * 14);
+        case 'week':
+        default:
+          return addDays(cur, dir * 7);
+      }
     });
+  };
+
+  const rangeLabel = (): string => {
+    if (view === 'day') {
+      return currentDate.toLocaleDateString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric',
+      });
+    }
+    if (view === 'month') {
+      return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    if (view === 'schedule') {
+      const end = addDays(currentDate, 44);
+      return `From ${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        + ` – ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    }
+    const ws = getWeekStart(currentDate);
+    const we = addDays(ws, 6);
+    return `Week of ${ws.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+      + ` - ${we.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  };
+
+  const organizeEventsByDays = (days: Date[]): Map<string, CalendarEvent[]> => {
+    const eventMap = new Map<string, CalendarEvent[]>();
+    days.forEach((day) => eventMap.set(getDateKeyWithTimezone(day), []));
 
     const todayKey = getDateKeyWithTimezone(new Date());
 
@@ -253,8 +307,8 @@ export function WeekCalendar() {
     }
 
     // Sort events: starred first, then others
-    eventMap.forEach((events) => {
-      events.sort((a, b) => {
+    eventMap.forEach((evs) => {
+      evs.sort((a, b) => {
         if (a.priority !== b.priority) return b.priority ? 1 : -1;
         return 0;
       });
@@ -263,7 +317,249 @@ export function WeekCalendar() {
     return eventMap;
   };
 
-  const eventsByDay = organizeEventsByDay();
+  const eventsByDay = organizeEventsByDays(viewDays);
+
+  /* ---------------------------------------------------------------- */
+  /* Shared renderers                                                 */
+  /* ---------------------------------------------------------------- */
+
+  // The full event chip (Week + Day views). Markup kept stable — tests match
+  // on `div.group`, the colour classes and the "Dismiss event" title.
+  const renderChip = (event: CalendarEvent) => (
+    <div
+      key={event.id}
+      className={`text-xs p-2 rounded border-l-3 hover:shadow-md transition group ${getEventColor(event.type)} ${
+        event.isPast ? 'opacity-60' : ''
+      }`}
+    >
+      <div className="flex items-start gap-1">
+        {event.priority && <Star className="w-3 h-3 flex-shrink-0 fill-current mt-0.5" />}
+        {event.calendarColor && (
+          <div
+            className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
+            style={{ backgroundColor: event.calendarColor }}
+            title={event.calendarName}
+          />
+        )}
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          onClick={() => setSelectedEvent(event)}
+        >
+          <div className="flex items-center gap-1">
+            <p className="font-medium truncate">{event.title}</p>
+            <PersonDots people={eventPeople.get(event.id)} members={members} />
+          </div>
+          {event.time && <p className="text-xs opacity-75">{event.time}</p>}
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDismiss(event.id, dismissSourceFor(event), event.calendarId);
+          }}
+          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition hover:text-alert"
+          title="Dismiss event"
+        >
+          <Ban className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  );
+
+  // A one-line chip for the dense Month grid: title + dots, opens the modal.
+  const renderMiniChip = (event: CalendarEvent) => (
+    <button
+      key={event.id}
+      onClick={() => setSelectedEvent(event)}
+      className={`w-full text-left text-xs px-1.5 py-0.5 rounded border-l-2 truncate flex items-center gap-1 ${getEventColor(
+        event.type,
+      )} ${event.isPast ? 'opacity-60' : ''}`}
+    >
+      {event.time && <span className="tabular-nums opacity-75 shrink-0">{event.time.replace(/:00 /, ' ')}</span>}
+      <span className="truncate">{event.title}</span>
+      <PersonDots people={eventPeople.get(event.id)} members={members} />
+    </button>
+  );
+
+  const addButtonForDay = (dateKey: string) =>
+    canManage && (
+      <button
+        onClick={() => setFormState({ mode: 'create', date: dateKey })}
+        className="opacity-0 group-hover/day:opacity-100 transition text-ink-3 hover:text-accent"
+        title={`Add event on ${dateKey}`}
+        aria-label={`Add event on ${dateKey}`}
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+    );
+
+  const todayStr = new Date().toDateString();
+
+  const renderWeek = () => (
+    <div className="grid grid-cols-7 gap-3">
+      {viewDays.map((day, idx) => {
+        const dateKey = getDateKeyWithTimezone(day);
+        const dayEvents = eventsByDay.get(dateKey) || [];
+        const isToday = todayStr === day.toDateString();
+
+        return (
+          <div
+            key={idx}
+            data-testid={`day-cell-${dateKey}`}
+            className={`group/day rounded-lg border-2 p-3 min-h-32 flex flex-col ${
+              isToday ? 'border-accent bg-accent-soft' : 'border-rule bg-paper'
+            }`}
+          >
+            <div className="mb-3 pb-2 border-b border-rule flex items-start justify-between">
+              <div>
+                <div className="text-xs font-semibold text-ink-3 uppercase">{DAYS[idx]}</div>
+                <div className={`text-lg font-bold ${isToday ? 'text-accent' : 'text-ink'}`}>
+                  {day.getDate()}
+                </div>
+              </div>
+              {addButtonForDay(dateKey)}
+            </div>
+
+            <div className="flex-1 space-y-2 overflow-y-auto">
+              {dayEvents.length === 0 ? (
+                <p className="text-xs text-ink-3 italic">No events</p>
+              ) : (
+                dayEvents.map((event) => renderChip(event))
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderDay = () => {
+    const day = viewDays[0];
+    const dateKey = getDateKeyWithTimezone(day);
+    const dayEvents = eventsByDay.get(dateKey) || [];
+    const isToday = todayStr === day.toDateString();
+
+    return (
+      <div
+        data-testid={`day-cell-${dateKey}`}
+        className={`group/day rounded-lg border-2 p-4 ${
+          isToday ? 'border-accent bg-accent-soft' : 'border-rule bg-paper'
+        }`}
+      >
+        <div className="mb-4 pb-2 border-b border-rule flex items-center justify-between">
+          <div className={`text-xl font-bold font-display ${isToday ? 'text-accent' : 'text-ink'}`}>
+            {day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </div>
+          {addButtonForDay(dateKey)}
+        </div>
+        <div className="space-y-2">
+          {dayEvents.length === 0 ? (
+            <p className="text-sm text-ink-3 italic">No events</p>
+          ) : (
+            dayEvents.map((event) => renderChip(event))
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMonth = () => {
+    const monthIdx = currentDate.getMonth();
+    return (
+      <div>
+        <div className="grid grid-cols-7 gap-2 mb-1">
+          {DAYS.map((d) => (
+            <div key={d} className="text-xs font-semibold text-ink-3 uppercase text-center">
+              {d}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {viewDays.map((day, idx) => {
+            const dateKey = getDateKeyWithTimezone(day);
+            const dayEvents = eventsByDay.get(dateKey) || [];
+            const isToday = todayStr === day.toDateString();
+            const inMonth = day.getMonth() === monthIdx;
+
+            return (
+              <div
+                key={idx}
+                data-testid={`day-cell-${dateKey}`}
+                className={`group/day rounded-lg border p-1.5 min-h-24 flex flex-col ${
+                  isToday
+                    ? 'border-accent bg-accent-soft'
+                    : inMonth
+                      ? 'border-rule bg-paper'
+                      : 'border-rule/50 bg-paper/40 text-ink-3'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span
+                    className={`text-sm font-semibold ${
+                      isToday ? 'text-accent' : inMonth ? 'text-ink' : 'text-ink-3'
+                    }`}
+                  >
+                    {day.getDate()}
+                  </span>
+                  {addButtonForDay(dateKey)}
+                </div>
+                <div className="flex-1 space-y-0.5 overflow-hidden">
+                  {dayEvents.slice(0, 3).map((event) => renderMiniChip(event))}
+                  {dayEvents.length > 3 && (
+                    <button
+                      onClick={() => {
+                        setCurrentDate(new Date(day));
+                        setView('day');
+                      }}
+                      className="text-xs text-accent hover:text-accent-strong font-medium px-1.5"
+                    >
+                      +{dayEvents.length - 3} more
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderSchedule = () => {
+    const withEvents = viewDays
+      .map((day) => ({ day, dateKey: getDateKeyWithTimezone(day) }))
+      .map(({ day, dateKey }) => ({ day, dateKey, evs: eventsByDay.get(dateKey) || [] }))
+      .filter(({ evs }) => evs.length > 0);
+
+    if (withEvents.length === 0) {
+      return <p className="text-sm text-ink-3 italic py-8 text-center">Nothing scheduled in this window.</p>;
+    }
+
+    return (
+      <div className="divide-y divide-rule">
+        {withEvents.map(({ day, dateKey, evs }) => {
+          const isToday = todayStr === day.toDateString();
+          return (
+            <div key={dateKey} className="py-3 flex gap-4">
+              <div className="w-16 shrink-0 text-right">
+                <div className={`text-xs uppercase font-semibold ${isToday ? 'text-accent' : 'text-ink-3'}`}>
+                  {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                </div>
+                <div className={`text-lg font-bold font-display ${isToday ? 'text-accent' : 'text-ink'}`}>
+                  {day.getDate()}
+                </div>
+                <div className="text-xs text-ink-3">
+                  {day.toLocaleDateString('en-US', { month: 'short' })}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                {evs.map((event) => renderChip(event))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -342,21 +638,36 @@ export function WeekCalendar() {
         </div>
       )}
 
-      {/* Week Navigation */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Navigation + view toggle */}
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <button
-          onClick={goToPreviousWeek}
+          onClick={() => step(-1)}
           className="p-2 hover:bg-accent-soft rounded-lg transition"
+          aria-label="Previous"
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-accent" />
-          <h2 className="text-2xl font-bold text-ink font-display">
-            {formatWeekRange()}
+        <div className="flex items-center gap-2 min-w-0">
+          <Calendar className="w-5 h-5 text-accent shrink-0" />
+          <h2 className="text-2xl font-bold text-ink font-display truncate">
+            {rangeLabel()}
           </h2>
         </div>
         <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-rule overflow-hidden" role="group" aria-label="Calendar view">
+            {CALENDAR_VIEWS.map((v) => (
+              <button
+                key={v.key}
+                onClick={() => setView(v.key)}
+                aria-pressed={view === v.key}
+                className={`px-2.5 py-1.5 text-sm font-medium transition ${
+                  view === v.key ? 'bg-accent text-white' : 'bg-paper text-ink-2 hover:bg-accent-soft'
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
           {canManage && (
             <button
               onClick={() => setFormState({ mode: 'create' })}
@@ -375,111 +686,19 @@ export function WeekCalendar() {
             <Settings className="w-5 h-5" />
           </button>
           <button
-            onClick={goToNextWeek}
+            onClick={() => step(1)}
             className="p-2 hover:bg-accent-soft rounded-lg transition"
+            aria-label="Next"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
         </div>
       </div>
 
-      {/* Simple Calendar Grid */}
-      <div className="grid grid-cols-7 gap-3">
-        {weekDays.map((day, idx) => {
-          const dateKey = getDateKeyWithTimezone(day);
-          const dayEvents = eventsByDay.get(dateKey) || [];
-          const isToday = new Date().toDateString() === day.toDateString();
-
-          return (
-            <div
-              key={idx}
-              data-testid={`day-cell-${dateKey}`}
-              className={`group/day rounded-lg border-2 p-3 min-h-32 flex flex-col ${
-                isToday
-                  ? 'border-accent bg-accent-soft'
-                  : 'border-rule bg-paper'
-              }`}
-            >
-              {/* Day Header */}
-              <div className="mb-3 pb-2 border-b border-rule flex items-start justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-ink-3 uppercase">
-                    {DAYS[idx]}
-                  </div>
-                  <div className={`text-lg font-bold ${isToday ? 'text-accent' : 'text-ink'}`}>
-                    {day.getDate()}
-                  </div>
-                </div>
-                {canManage && (
-                  <button
-                    onClick={() => setFormState({ mode: 'create', date: dateKey })}
-                    className="opacity-0 group-hover/day:opacity-100 transition text-ink-3 hover:text-accent"
-                    title={`Add event on ${dateKey}`}
-                    aria-label={`Add event on ${dateKey}`}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Events */}
-              <div className="flex-1 space-y-2 overflow-y-auto">
-                {dayEvents.length === 0 ? (
-                  <p className="text-xs text-ink-3 italic">No events</p>
-                ) : (
-                  dayEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className={`text-xs p-2 rounded border-l-3 hover:shadow-md transition group ${getEventColor(event.type)} ${
-                        event.isPast ? 'opacity-60' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-1">
-                        {event.priority && <Star className="w-3 h-3 flex-shrink-0 fill-current mt-0.5" />}
-                        {event.calendarColor && (
-                          <div
-                            className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
-                            style={{ backgroundColor: event.calendarColor }}
-                            title={event.calendarName}
-                          />
-                        )}
-                        <div
-                          className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() => setSelectedEvent(event)}
-                        >
-                          <div className="flex items-center gap-1">
-                            <p className="font-medium truncate">{event.title}</p>
-                            <PersonDots people={eventPeople.get(event.id)} members={members} />
-                          </div>
-                          {event.time && <p className="text-xs opacity-75">{event.time}</p>}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Your own form-created event: local-hide only. The
-                            // Ban button is one misclick from firing Google
-                            // cancellation emails — real removal is the Delete
-                            // button in the detail modal.
-                            const source =
-                              isEditableBy(event, user?.id) || event.type !== 'google'
-                                ? 'local'
-                                : 'google';
-                            handleDismiss(event.id, source, event.calendarId);
-                          }}
-                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition hover:text-alert"
-                          title="Dismiss event"
-                        >
-                          <Ban className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {view === 'week' && renderWeek()}
+      {view === 'day' && renderDay()}
+      {view === 'month' && renderMonth()}
+      {view === 'schedule' && renderSchedule()}
 
       {/* Event Detail Modal */}
       {selectedEvent && (

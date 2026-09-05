@@ -26,6 +26,7 @@ const originalFetch = global.fetch;
 describe('WeekCalendar — timezone handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    try { window.localStorage.clear(); } catch { /* storage disabled */ }
     vi.useFakeTimers();
     // Noon local time, safely inside the same calendar day in every
     // timezone, so "today" is unambiguous regardless of the system TZ this
