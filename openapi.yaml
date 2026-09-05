@@ -3014,6 +3014,92 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
 
+  /api/calendar/people:
+    get:
+      tags: [Calendar]
+      summary: List every per-event person tag for the caller's family (FR-153)
+      description: >
+        One row per (event, family member) assignment. The client maps them by
+        `event_id` and renders the coloured Going/Maybe dots after each event
+        title. `event_id` is the Google event id, or a local `calendar_events`
+        UUID as text.
+      operationId: listEventPeople
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: All person tags for the family.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/EventPerson' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/events/{eventId}/people:
+    put:
+      tags: [Calendar]
+      summary: Replace the person tags for one event (FR-153, parents/admins only)
+      description: >
+        Sends the full desired set of assignments for the event; the server
+        diffs it (delete-all then insert). An empty `people` array clears the
+        event. Rejects a `familyMemberId` that isn't a member of the caller's
+        family.
+      operationId: setEventPeople
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string, description: "Google event ID, or local event UUID." }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventPeopleInput' }
+      responses:
+        '200':
+          description: The new set of person tags.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/EventPerson' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Body isn't an array, an unknown familyMemberId, or a bad role.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '403':
+          description: Caller is not a parent/admin.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
   /api/calendar/google/events/{id}:
     patch:
       tags: [Calendar]
@@ -4685,6 +4771,34 @@ components:
           description: "Attendee email addresses. Each is validated for shape."
         sendInvites: { type: boolean, default: true, description: "false → sendUpdates: none (no invite/update/cancellation emails)." }
         calendarId: { type: string, default: primary, description: "Reserved for a future calendar picker; only 'primary' is used today." }
+
+    EventPerson:
+      type: object
+      description: >
+        Raw `event_people` table row (migration 007, FR-153). One family member's
+        Going/Maybe assignment to an event.
+      required: [id, family_id, event_id, family_member_id, role]
+      properties:
+        id: { type: string, format: uuid }
+        family_id: { type: string, format: uuid }
+        event_id: { type: string, description: "Google event id, or a local calendar_events UUID as text." }
+        family_member_id: { type: string, format: uuid }
+        role: { type: string, enum: [going, maybe] }
+        created_at: { type: [string, 'null'], format: date-time }
+
+    EventPeopleInput:
+      type: object
+      description: "Body for PUT /api/calendar/events/{eventId}/people — the full desired set of assignments (replace-all)."
+      required: [people]
+      properties:
+        people:
+          type: array
+          items:
+            type: object
+            required: [familyMemberId, role]
+            properties:
+              familyMemberId: { type: string, format: uuid }
+              role: { type: string, enum: [going, maybe] }
 
     # ---------------- Family ----------------
     Family:

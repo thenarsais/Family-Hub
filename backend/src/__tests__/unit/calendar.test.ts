@@ -226,4 +226,66 @@ describe('CalendarService', () => {
       });
     });
   });
+
+  describe('event people (FR-153)', () => {
+    describe('getEventPeople', () => {
+      it('selects every row for the family', async () => {
+        const rows = [{ id: 'p1', event_id: 'g-1', family_member_id: 'm1', role: 'going' }];
+        (connection.query as jest.Mock).mockResolvedValueOnce({ rows });
+
+        const result = await service.getEventPeople('family-1');
+
+        expect(result).toEqual(rows);
+        const [sql, params] = (connection.query as jest.Mock).mock.calls[0];
+        expect(sql).toContain('FROM event_people');
+        expect(sql).toContain('WHERE family_id = $1');
+        expect(params).toEqual(['family-1']);
+      });
+    });
+
+    describe('setEventPeople', () => {
+      it('deletes the existing rows and skips the insert for an empty set', async () => {
+        (connection.query as jest.Mock).mockResolvedValueOnce({});
+
+        const result = await service.setEventPeople('family-1', 'user-1', 'g-1', []);
+
+        expect(result).toEqual([]);
+        expect(connection.query).toHaveBeenCalledTimes(1);
+        const [sql, params] = (connection.query as jest.Mock).mock.calls[0];
+        expect(sql).toContain('DELETE FROM event_people');
+        expect(params).toEqual(['family-1', 'g-1']);
+      });
+
+      it('replaces the set: delete then a single multi-row insert', async () => {
+        (connection.query as jest.Mock)
+          .mockResolvedValueOnce({}) // delete
+          .mockResolvedValueOnce({ rows: [{ id: 'p1' }, { id: 'p2' }] }); // insert
+
+        const result = await service.setEventPeople('family-1', 'user-1', 'g-1', [
+          { familyMemberId: 'm1', role: 'going' },
+          { familyMemberId: 'm2', role: 'maybe' },
+        ]);
+
+        expect(result).toEqual([{ id: 'p1' }, { id: 'p2' }]);
+        const [sql, params] = (connection.query as jest.Mock).mock.calls[1];
+        expect(sql).toContain('INSERT INTO event_people');
+        expect(params.slice(0, 3)).toEqual(['family-1', 'g-1', 'user-1']);
+        expect(params).toEqual(['family-1', 'g-1', 'user-1', 'm1', 'going', 'm2', 'maybe']);
+      });
+
+      it('de-dupes a repeated family member (last write wins)', async () => {
+        (connection.query as jest.Mock)
+          .mockResolvedValueOnce({})
+          .mockResolvedValueOnce({ rows: [{ id: 'p1' }] });
+
+        await service.setEventPeople('family-1', 'user-1', 'g-1', [
+          { familyMemberId: 'm1', role: 'going' },
+          { familyMemberId: 'm1', role: 'maybe' },
+        ]);
+
+        const params = (connection.query as jest.Mock).mock.calls[1][1];
+        expect(params).toEqual(['family-1', 'g-1', 'user-1', 'm1', 'maybe']);
+      });
+    });
+  });
 });
