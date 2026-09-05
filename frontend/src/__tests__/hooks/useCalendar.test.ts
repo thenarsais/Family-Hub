@@ -8,6 +8,7 @@ vi.mock('@/services/api', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
   },
@@ -23,6 +24,7 @@ function mockFetchEventsCalls(overrides: {
   googleError?: { response?: { status: number } };
   auth?: { connected?: boolean; email?: string | null };
   dismissed?: unknown[];
+  people?: unknown[];
 } = {}) {
   (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
     if (path === '/api/calendar/events') {
@@ -40,6 +42,9 @@ function mockFetchEventsCalls(overrides: {
     }
     if (path === '/api/calendar/dismissed') {
       return Promise.resolve({ data: { data: overrides.dismissed ?? [] } });
+    }
+    if (path === '/api/calendar/people') {
+      return Promise.resolve({ data: { data: overrides.people ?? [] } });
     }
     return Promise.reject(new Error(`unexpected path ${path}`));
   });
@@ -517,6 +522,93 @@ describe('useCalendar', () => {
       const { result } = renderHook(() => useCalendar());
       await waitFor(() => expect(result.current.loading).toBe(false));
       await expect(result.current.restoreEvent('g1')).rejects.toThrow('User not authenticated');
+    });
+  });
+
+  describe('event people (FR-153)', () => {
+    it('loads the family person tags into a map keyed by event id', async () => {
+      mockFetchEventsCalls({
+        people: [
+          { id: 'p1', event_id: 'g1', family_member_id: 'm1', role: 'going' },
+          { id: 'p2', event_id: 'g1', family_member_id: 'm2', role: 'maybe' },
+          { id: 'p3', event_id: 'e2', family_member_id: 'm1', role: 'going' },
+        ],
+      });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.eventPeople.size).toBe(2));
+
+      expect(result.current.eventPeople.get('g1')).toEqual([
+        { familyMemberId: 'm1', role: 'going' },
+        { familyMemberId: 'm2', role: 'maybe' },
+      ]);
+      expect(result.current.eventPeople.get('e2')).toEqual([
+        { familyMemberId: 'm1', role: 'going' },
+      ]);
+    });
+
+    it('optimistically sets people and PUTs the full list', async () => {
+      mockFetchEventsCalls();
+      (apiClient.put as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { data: [] } });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.setEventPeople('g1', [{ familyMemberId: 'm1', role: 'going' }]);
+      });
+
+      expect(apiClient.put).toHaveBeenCalledWith(
+        '/api/calendar/events/g1/people',
+        { people: [{ familyMemberId: 'm1', role: 'going' }] },
+        { headers: { 'x-user-id': 'user-1' } },
+      );
+      expect(result.current.eventPeople.get('g1')).toEqual([
+        { familyMemberId: 'm1', role: 'going' },
+      ]);
+    });
+
+    it('drops the event from the map when set to an empty list', async () => {
+      mockFetchEventsCalls({
+        people: [{ id: 'p1', event_id: 'g1', family_member_id: 'm1', role: 'going' }],
+      });
+      (apiClient.put as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { data: [] } });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.eventPeople.get('g1')).toBeDefined());
+
+      await act(async () => {
+        await result.current.setEventPeople('g1', []);
+      });
+
+      expect(result.current.eventPeople.has('g1')).toBe(false);
+    });
+
+    it('reverts the optimistic update and rethrows when the PUT fails', async () => {
+      mockFetchEventsCalls({
+        people: [{ id: 'p1', event_id: 'g1', family_member_id: 'm1', role: 'going' }],
+      });
+      (apiClient.put as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('boom'));
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.eventPeople.get('g1')).toBeDefined());
+
+      await act(async () => {
+        await expect(
+          result.current.setEventPeople('g1', [{ familyMemberId: 'm2', role: 'maybe' }]),
+        ).rejects.toThrow('boom');
+      });
+
+      expect(result.current.eventPeople.get('g1')).toEqual([
+        { familyMemberId: 'm1', role: 'going' },
+      ]);
+    });
+
+    it('setEventPeople throws when there is no authenticated user', async () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await expect(result.current.setEventPeople('g1', [])).rejects.toThrow('User not authenticated');
     });
   });
 });

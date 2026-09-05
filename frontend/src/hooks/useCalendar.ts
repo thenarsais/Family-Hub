@@ -5,6 +5,14 @@ import { useAuth } from './useAuth';
 
 type LocalCalendarEvent = components['schemas']['CalendarEvent'];
 type GoogleCalendarEvent = components['schemas']['GoogleCalendarEvent'];
+type EventPerson = components['schemas']['EventPerson'];
+
+// FR-153: one family member's Going/Maybe assignment to an event, as the UI
+// carries it (the family_member_id + role slice of an EventPerson row).
+export interface EventAssignment {
+  familyMemberId: string;
+  role: 'going' | 'maybe';
+}
 
 // The hook merges the local (`/api/calendar/events`) and Google
 // (`/api/calendar/google/events`) feeds into one list, tagging each with its
@@ -55,6 +63,9 @@ interface UseCalendarReturn {
   dismissedIds: Set<string>;
   dismissedEvents: DismissedEvent[];
   reconnectForSync: boolean;
+  /** event_id → the members assigned to that event (FR-153). */
+  eventPeople: Map<string, EventAssignment[]>;
+  setEventPeople: (eventId: string, people: EventAssignment[]) => Promise<void>;
   createEvent: (input: GoogleEventInput) => Promise<CalendarEvent>;
   updateEvent: (googleEventId: string, input: GoogleEventInput) => Promise<CalendarEvent>;
   deleteEvent: (googleEventId: string, sendInvites?: boolean) => Promise<void>;
@@ -77,6 +88,7 @@ export function useCalendar(): UseCalendarReturn {
   const [dismissedEvents, setDismissedEvents] = useState<DismissedEvent[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [reconnectForSync, setReconnectForSync] = useState(false);
+  const [eventPeople, setEventPeopleState] = useState<Map<string, EventAssignment[]>>(new Map());
 
   const fetchEvents = async () => {
     try {
@@ -226,6 +238,31 @@ export function useCalendar(): UseCalendarReturn {
     };
   }, [user?.id]);
 
+  // Load the family's per-event person tags (FR-153). The calendar looks each
+  // event up by id to render the coloured Going/Maybe dots.
+  const fetchEventPeople = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await apiClient.get<ApiEnvelope<EventPerson[]>>('/api/calendar/people', {
+        headers: { 'x-user-id': user.id },
+      });
+      const rows = res.data?.data ?? [];
+      const map = new Map<string, EventAssignment[]>();
+      for (const r of rows) {
+        const list = map.get(r.event_id) ?? [];
+        list.push({ familyMemberId: r.family_member_id, role: r.role });
+        map.set(r.event_id, list);
+      }
+      setEventPeopleState(map);
+    } catch (err) {
+      console.warn('Failed to load event people:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchEventPeople();
+  }, [user?.id]);
+
   useEffect(() => {
     fetchEvents();
   }, [user?.id]);
@@ -334,6 +371,31 @@ export function useCalendar(): UseCalendarReturn {
     }
   };
 
+  // Replace the whole set of people for an event (FR-153). Optimistic: the map
+  // updates immediately, reverts on failure.
+  const setEventPeople = async (eventId: string, people: EventAssignment[]): Promise<void> => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    const prev = eventPeople;
+    setEventPeopleState((cur) => {
+      const next = new Map(cur);
+      if (people.length === 0) next.delete(eventId);
+      else next.set(eventId, people);
+      return next;
+    });
+
+    try {
+      await apiClient.put(
+        `/api/calendar/events/${eventId}/people`,
+        { people },
+        { headers: { 'x-user-id': user.id } },
+      );
+    } catch (err) {
+      setEventPeopleState(prev);
+      throw err;
+    }
+  };
+
   const connectGoogle = async (): Promise<string> => {
     try {
       let userId = user?.id;
@@ -403,6 +465,8 @@ export function useCalendar(): UseCalendarReturn {
     dismissedIds,
     dismissedEvents,
     reconnectForSync,
+    eventPeople,
+    setEventPeople,
     createEvent,
     updateEvent,
     deleteEvent,

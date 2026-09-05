@@ -1311,6 +1311,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calendar/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List every per-event person tag for the caller's family (FR-153)
+         * @description One row per (event, family member) assignment. The client maps them by `event_id` and renders the coloured Going/Maybe dots after each event title. `event_id` is the Google event id, or a local `calendar_events` UUID as text.
+         */
+        get: operations["listEventPeople"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calendar/events/{eventId}/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace the person tags for one event (FR-153, parents/admins only)
+         * @description Sends the full desired set of assignments for the event; the server diffs it (delete-all then insert). An empty `people` array clears the event. Rejects a `familyMemberId` that isn't a member of the caller's family.
+         */
+        put: operations["setEventPeople"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar/google/events/{id}": {
         parameters: {
             query?: never;
@@ -2343,6 +2383,30 @@ export interface components {
              * @default primary
              */
             calendarId: string;
+        };
+        /** @description Raw `event_people` table row (migration 007, FR-153). One family member's Going/Maybe assignment to an event. */
+        EventPerson: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            family_id: string;
+            /** @description Google event id, or a local calendar_events UUID as text. */
+            event_id: string;
+            /** Format: uuid */
+            family_member_id: string;
+            /** @enum {string} */
+            role: "going" | "maybe";
+            /** Format: date-time */
+            created_at?: string | null;
+        };
+        /** @description Body for PUT /api/calendar/events/{eventId}/people — the full desired set of assignments (replace-all). */
+        EventPeopleInput: {
+            people: {
+                /** Format: uuid */
+                familyMemberId: string;
+                /** @enum {string} */
+                role: "going" | "maybe";
+            }[];
         };
         /** @description Raw `families` table row (Tables<'families'>['Row']). */
         Family: {
@@ -6791,6 +6855,138 @@ export interface operations {
             };
             /** @description Missing x-user-id. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listEventPeople: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All person tags for the family. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        data?: components["schemas"]["EventPerson"][];
+                        count?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller has no family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    setEventPeople: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventPeopleInput"];
+            };
+        };
+        responses: {
+            /** @description The new set of person tags. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        data?: components["schemas"]["EventPerson"][];
+                        count?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Body isn't an array, an unknown familyMemberId, or a bad role. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller is not a parent/admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller has no family. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

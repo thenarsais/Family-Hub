@@ -4,6 +4,17 @@ import type { Database } from '../types/database';
 export type CalendarEvent = Database['public']['Tables']['calendar_events']['Row'];
 type CalendarEventInsert = Database['public']['Tables']['calendar_events']['Insert'];
 
+// FR-153 (migration 007). One row = "this family member is going/maybe to this
+// event". `event_id` is the Google event id or a local calendar_events UUID.
+export interface EventPersonRow {
+  id: string;
+  family_id: string;
+  event_id: string;
+  family_member_id: string;
+  role: 'going' | 'maybe';
+  created_at: string | null;
+}
+
 // PATCH /api/calendar/events/:id passes req.body straight through with no
 // validation -- this whitelist is what stands between an arbitrary request
 // body and a raw SQL UPDATE statement.
@@ -248,6 +259,64 @@ class CalendarService {
       `SELECT * FROM calendar_events WHERE google_event_id = $1`,
       [googleEventId],
     );
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* FR-153: per-event person tags (event_people, migration 007)            */
+  /* ---------------------------------------------------------------------- */
+
+  /**
+   * All person tags for a family. Small enough to fetch in one go — the
+   * client maps them by `event_id` (the Google event id, or a local
+   * calendar_events UUID as text).
+   */
+  async getEventPeople(familyId: string): Promise<EventPersonRow[]> {
+    const result = await query<EventPersonRow>(
+      `SELECT id, family_id, event_id, family_member_id, role, created_at
+         FROM event_people
+        WHERE family_id = $1`,
+      [familyId],
+    );
+    return result.rows;
+  }
+
+  /**
+   * Replace the whole set of person tags for one event. The caller sends the
+   * full desired list; an empty list clears the event. Returns the new rows.
+   */
+  async setEventPeople(
+    familyId: string,
+    userId: string,
+    eventId: string,
+    people: { familyMemberId: string; role: 'going' | 'maybe' }[],
+  ): Promise<EventPersonRow[]> {
+    await query(`DELETE FROM event_people WHERE family_id = $1 AND event_id = $2`, [
+      familyId,
+      eventId,
+    ]);
+
+    if (people.length === 0) return [];
+
+    // De-dupe on family_member_id (last write wins) so the UNIQUE constraint
+    // can't trip on a malformed request body.
+    const byMember = new Map<string, 'going' | 'maybe'>();
+    for (const p of people) byMember.set(p.familyMemberId, p.role);
+
+    const values: unknown[] = [familyId, eventId, userId];
+    const tuples: string[] = [];
+    let i = 4;
+    for (const [memberId, role] of byMember) {
+      tuples.push(`($1, $2, $${i++}, $${i++}, $3)`);
+      values.push(memberId, role);
+    }
+
+    const result = await query<EventPersonRow>(
+      `INSERT INTO event_people (family_id, event_id, family_member_id, role, created_by_id)
+       VALUES ${tuples.join(', ')}
+       RETURNING id, family_id, event_id, family_member_id, role, created_at`,
+      values,
+    );
+    return result.rows;
   }
 
   /**

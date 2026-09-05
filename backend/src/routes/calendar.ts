@@ -546,6 +546,106 @@ router.delete('/dismissed/:eventId', async (req: Request, res: Response) => {
 });
 
 /* -------------------------------------------------------------------------- */
+/* FR-153: per-event person tags (Going / Maybe)                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /api/calendar/people
+ * Every person tag for the caller's family. The client maps them by event_id
+ * and renders the coloured dots after each event title.
+ */
+router.get('/people', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) {
+      return res.status(401).json({ status: 'error', message: 'User ID required' });
+    }
+
+    const userFamily = await family.getUserFamily(userId);
+    if (!userFamily) {
+      return res.status(404).json({ status: 'error', message: 'No family found' });
+    }
+
+    const people = await calendar.getEventPeople(userFamily.id);
+
+    res.json({
+      status: 'success',
+      data: people,
+      count: people.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to fetch event people:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch event people',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * PUT /api/calendar/events/:eventId/people
+ * Replace the whole set of person tags for one event. Body:
+ *   { people: [{ familyMemberId, role: 'going' | 'maybe' }] }
+ * An empty array clears the event. Parents/admins only (matches the event
+ * create/edit gate); a member editing only their own RSVP is a later refinement.
+ */
+router.put('/events/:eventId/people', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string | undefined;
+    const { eventId } = req.params;
+    const gate = await requireParent(userId);
+    if ('fail' in gate) {
+      return res.status(gate.fail.status).json({ status: 'error', message: gate.fail.message });
+    }
+    if (!eventId) {
+      return res.status(400).json({ status: 'error', message: 'Event ID required' });
+    }
+
+    const rawPeople = (req.body || {}).people;
+    if (!Array.isArray(rawPeople)) {
+      return res.status(400).json({ status: 'error', message: 'people must be an array' });
+    }
+
+    const validMemberIds = new Set((gate.family!.members || []).map((m) => m.id));
+    const people: { familyMemberId: string; role: 'going' | 'maybe' }[] = [];
+    for (const entry of rawPeople) {
+      const familyMemberId = typeof entry?.familyMemberId === 'string' ? entry.familyMemberId : '';
+      const role = entry?.role;
+      if (!familyMemberId || !validMemberIds.has(familyMemberId)) {
+        return res.status(400).json({
+          status: 'error',
+          message: `familyMemberId "${familyMemberId}" is not a member of this family`,
+        });
+      }
+      if (role !== 'going' && role !== 'maybe') {
+        return res.status(400).json({ status: 'error', message: "role must be 'going' or 'maybe'" });
+      }
+      people.push({ familyMemberId, role });
+    }
+
+    const rows = await calendar.setEventPeople(
+      gate.family!.id, userId as string, eventId as string, people,
+    );
+
+    res.json({
+      status: 'success',
+      data: rows,
+      count: rows.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to set event people:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to set event people',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/* -------------------------------------------------------------------------- */
 /* Google Calendar create / edit / delete (B-lite)                            */
 /*                                                                            */
 /* Google is the source of truth. Each of these writes to the caller's Google */

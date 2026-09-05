@@ -11,6 +11,8 @@ const mockCalendarService = {
   updateMirrorByGoogleId: jest.fn(),
   deleteMirrorByGoogleId: jest.fn(),
   getMirrorRowByGoogleId: jest.fn(),
+  getEventPeople: jest.fn(),
+  setEventPeople: jest.fn(),
 };
 jest.mock('../../services/calendar', () => ({ getCalendarService: () => mockCalendarService }));
 
@@ -752,6 +754,116 @@ describe('Calendar Routes', () => {
         .delete('/api/calendar/google/events/g-1').set('x-user-id', 'user-1').expect(200);
       expect(res.body.data.alreadyGone).toBe(true);
       expect(mockCalendarService.deleteMirrorByGoogleId).toHaveBeenCalledWith('g-1');
+    });
+  });
+
+  describe('GET /api/calendar/people', () => {
+    it('requires a user id', async () => {
+      await request(app).get('/api/calendar/people').expect(401);
+    });
+
+    it('404s when the user has no family', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(null);
+      await request(app).get('/api/calendar/people').set('x-user-id', 'user-1').expect(404);
+    });
+
+    it('returns the family person tags', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({ id: 'family-1' });
+      mockCalendarService.getEventPeople.mockResolvedValueOnce([
+        { id: 'p1', event_id: 'g-1', family_member_id: 'm1', role: 'going' },
+      ]);
+
+      const res = await request(app)
+        .get('/api/calendar/people').set('x-user-id', 'user-1').expect(200);
+      expect(mockCalendarService.getEventPeople).toHaveBeenCalledWith('family-1');
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0].role).toBe('going');
+    });
+  });
+
+  describe('PUT /api/calendar/events/:eventId/people', () => {
+    const parentFamily = {
+      id: 'family-1',
+      members: [
+        { id: 'm1', user_id: 'user-1', role: 'parent' },
+        { id: 'm2', user_id: 'user-2', role: 'child' },
+      ],
+    };
+
+    it('403s for a non-parent', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({
+        id: 'family-1', members: [{ id: 'm2', user_id: 'user-1', role: 'child' }],
+      });
+      await request(app)
+        .put('/api/calendar/events/g-1/people')
+        .set('x-user-id', 'user-1')
+        .send({ people: [] })
+        .expect(403);
+    });
+
+    it('400s when people is not an array', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      await request(app)
+        .put('/api/calendar/events/g-1/people')
+        .set('x-user-id', 'user-1')
+        .send({ people: 'nope' })
+        .expect(400);
+    });
+
+    it('400s on an unknown familyMemberId', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      await request(app)
+        .put('/api/calendar/events/g-1/people')
+        .set('x-user-id', 'user-1')
+        .send({ people: [{ familyMemberId: 'stranger', role: 'going' }] })
+        .expect(400);
+    });
+
+    it('400s on a bad role', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      await request(app)
+        .put('/api/calendar/events/g-1/people')
+        .set('x-user-id', 'user-1')
+        .send({ people: [{ familyMemberId: 'm1', role: 'perhaps' }] })
+        .expect(400);
+    });
+
+    it('replaces the set and returns the new rows', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.setEventPeople.mockResolvedValueOnce([
+        { id: 'p1', event_id: 'g-1', family_member_id: 'm1', role: 'going' },
+        { id: 'p2', event_id: 'g-1', family_member_id: 'm2', role: 'maybe' },
+      ]);
+
+      const res = await request(app)
+        .put('/api/calendar/events/g-1/people')
+        .set('x-user-id', 'user-1')
+        .send({ people: [
+          { familyMemberId: 'm1', role: 'going' },
+          { familyMemberId: 'm2', role: 'maybe' },
+        ] })
+        .expect(200);
+
+      expect(mockCalendarService.setEventPeople).toHaveBeenCalledWith(
+        'family-1', 'user-1', 'g-1',
+        [
+          { familyMemberId: 'm1', role: 'going' },
+          { familyMemberId: 'm2', role: 'maybe' },
+        ],
+      );
+      expect(res.body.data).toHaveLength(2);
+    });
+
+    it('accepts an empty array to clear the event', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockCalendarService.setEventPeople.mockResolvedValueOnce([]);
+
+      const res = await request(app)
+        .put('/api/calendar/events/g-1/people')
+        .set('x-user-id', 'user-1')
+        .send({ people: [] })
+        .expect(200);
+      expect(res.body.data).toEqual([]);
     });
   });
 });

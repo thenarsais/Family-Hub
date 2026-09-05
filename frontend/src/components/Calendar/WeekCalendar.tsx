@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2, Settings } from 'lucide-react';
-import { useCalendar } from '@hooks/useCalendar';
+import { useCalendar, type EventAssignment } from '@hooks/useCalendar';
 import { useAuth } from '@hooks/useAuth';
+import { useFamily } from '@hooks/useFamily';
 import { EventForm, type EventFormValues, type EventFormInitial } from './EventForm';
 import { CalendarSettings } from './CalendarSettings';
+import { PersonDots } from './PersonDots';
+import { PersonPicker } from './PersonPicker';
 
 interface CalendarEvent {
   id: string;
@@ -36,7 +39,7 @@ function isEditableBy(event: CalendarEvent, userId?: string): boolean {
   return !!event.google_event_id && !!userId && event.created_by_id === userId;
 }
 
-function toFormInitial(event: CalendarEvent): EventFormInitial {
+function toFormInitial(event: CalendarEvent, people: EventAssignment[] = []): EventFormInitial {
   const startRaw = event.start?.dateTime || event.start?.date || '';
   const endRaw = event.end?.dateTime || event.end?.date || '';
   return {
@@ -51,6 +54,7 @@ function toFormInitial(event: CalendarEvent): EventFormInitial {
     attendees: (event.attendees ?? [])
       .filter((a) => a.self !== true && !!a.email)
       .map((a) => a.email as string),
+    people,
   };
 }
 
@@ -102,7 +106,11 @@ export function WeekCalendar() {
     cal.restoreEvent ?? (async () => undefined);
   const disconnectGoogle =
     cal.disconnectGoogle ?? (async () => undefined);
+  const eventPeople: Map<string, EventAssignment[]> = cal.eventPeople ?? new Map();
+  const setEventPeople =
+    cal.setEventPeople ?? (async () => undefined);
   const { user } = useAuth();
+  const { members } = useFamily();
   const canManage = user?.role === 'parent' || user?.role === 'admin';
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -116,10 +124,24 @@ export function WeekCalendar() {
   const [deleting, setDeleting] = useState(false);
 
   const handleFormSubmit = async (values: EventFormValues) => {
+    let eventId: string | undefined;
     if (formState.mode === 'edit' && formState.event.google_event_id) {
       await updateEvent(formState.event.google_event_id, values);
+      eventId = formState.event.id;
     } else {
-      await createEvent(values);
+      const created = await createEvent(values);
+      eventId =
+        (created as { google_event_id?: string }).google_event_id ??
+        (created as { id?: string }).id;
+    }
+    // The event is saved in Google either way — a failure to write the person
+    // tags shouldn't wedge the form open.
+    if (eventId) {
+      try {
+        await setEventPeople(eventId, values.people);
+      } catch (err) {
+        console.error('Failed to save event people:', err);
+      }
     }
   };
 
@@ -425,7 +447,10 @@ export function WeekCalendar() {
                           className="flex-1 min-w-0 cursor-pointer"
                           onClick={() => setSelectedEvent(event)}
                         >
-                          <p className="font-medium truncate">{event.title}</p>
+                          <div className="flex items-center gap-1">
+                            <p className="font-medium truncate">{event.title}</p>
+                            <PersonDots people={eventPeople.get(event.id)} members={members} />
+                          </div>
                           {event.time && <p className="text-xs opacity-75">{event.time}</p>}
                         </div>
                         <button
@@ -502,6 +527,29 @@ export function WeekCalendar() {
               </p>
             )}
 
+            {members.length > 0 && (canManage || (eventPeople.get(selectedEvent.id)?.length ?? 0) > 0) && (
+              <div className="mb-4">
+                <p className="text-xs text-ink-3 uppercase tracking-wide mb-2">Who's going?</p>
+                {canManage ? (
+                  <PersonPicker
+                    members={members}
+                    value={eventPeople.get(selectedEvent.id) ?? []}
+                    onChange={(next) => {
+                      setEventPeople(selectedEvent.id, next).catch((err) =>
+                        console.error('Failed to update event people:', err),
+                      );
+                    }}
+                  />
+                ) : (
+                  <PersonDots
+                    people={eventPeople.get(selectedEvent.id)}
+                    members={members}
+                    size="md"
+                  />
+                )}
+              </div>
+            )}
+
             <div className="flex gap-2 pt-4 border-t border-rule">
               <button className="flex-1 btn btn-secondary text-sm" onClick={() => setSelectedEvent(null)}>
                 Close
@@ -537,8 +585,13 @@ export function WeekCalendar() {
       {formState.mode !== 'closed' && (
         <EventForm
           mode={formState.mode}
-          initial={formState.mode === 'edit' ? toFormInitial(formState.event) : undefined}
+          initial={
+            formState.mode === 'edit'
+              ? toFormInitial(formState.event, eventPeople.get(formState.event.id))
+              : undefined
+          }
           initialDate={formState.mode === 'create' ? formState.date : undefined}
+          members={members}
           onSubmit={handleFormSubmit}
           onClose={() => setFormState({ mode: 'closed' })}
         />

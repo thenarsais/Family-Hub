@@ -31,6 +31,15 @@ export function colorForIndex(index: number): FamilyColor {
   return FAMILY_COLORS[index] ?? SHARED_COLOR;
 }
 
+/** Inline style for a person dot (FR-153): the member's colour, dimmed to 45%
+ *  for a "maybe". */
+export function memberDotStyle(hex: string, role: 'going' | 'maybe'): {
+  backgroundColor: string;
+  opacity: number;
+} {
+  return { backgroundColor: hex, opacity: role === 'maybe' ? 0.45 : 1 };
+}
+
 /** Resolve a member's colour: an explicit key wins, otherwise fall back to the
  *  index-based default so the calendar always shows *something* per person. */
 export function resolveMemberColor(

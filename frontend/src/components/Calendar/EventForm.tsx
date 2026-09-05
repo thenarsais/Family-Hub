@@ -1,5 +1,10 @@
 import { useState, useMemo, type FormEvent, type KeyboardEvent } from 'react';
 import { X } from 'lucide-react';
+import type { components } from '@/types/api-generated';
+import type { EventAssignment } from '@hooks/useCalendar';
+import { PersonPicker } from './PersonPicker';
+
+type FamilyMember = components['schemas']['FamilyMember'];
 
 export interface EventFormValues {
   summary: string;
@@ -13,6 +18,8 @@ export interface EventFormValues {
   timeZone: string;
   attendees: string[];
   sendInvites: boolean;
+  /** FR-153: Going/Maybe assignments to write after the event is saved. */
+  people: EventAssignment[];
 }
 
 export interface EventFormInitial {
@@ -26,6 +33,7 @@ export interface EventFormInitial {
   endDate?: string;
   endTime?: string;
   attendees?: string[];
+  people?: EventAssignment[];
 }
 
 interface EventFormProps {
@@ -33,6 +41,8 @@ interface EventFormProps {
   initial?: EventFormInitial;
   /** Pre-fills the date in create mode when a day cell's "+" was used. */
   initialDate?: string;
+  /** Family roster for the "Who's this for?" picker (FR-153). */
+  members?: FamilyMember[];
   onSubmit: (values: EventFormValues) => Promise<void>;
   onClose: () => void;
 }
@@ -51,7 +61,7 @@ function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: EventFormProps) {
+export function EventForm({ mode, initial, initialDate, members = [], onSubmit, onClose }: EventFormProps) {
   const [summary, setSummary] = useState(initial?.summary ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [location, setLocation] = useState(initial?.location ?? '');
@@ -62,6 +72,7 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
   const [endTime, setEndTime] = useState(initial?.endTime ?? '');
   const [attendees, setAttendees] = useState<string[]>(initial?.attendees ?? []);
   const [attendeeDraft, setAttendeeDraft] = useState('');
+  const [people, setPeople] = useState<EventAssignment[]>(initial?.people ?? []);
   const [sendInvites, setSendInvites] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,6 +143,7 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
         timeZone,
         attendees: finalAttendees,
         sendInvites,
+        people,
       });
       onClose();
     } catch (err) {
@@ -293,6 +305,13 @@ export function EventForm({ mode, initial, initialDate, onSubmit, onClose }: Eve
               />
               Send invitation emails
             </label>
+          )}
+
+          {members.length > 0 && (
+            <div>
+              <label className="label">Who's this for?</label>
+              <PersonPicker members={members} value={people} onChange={setPeople} disabled={submitting} />
+            </div>
           )}
 
           {error && (
