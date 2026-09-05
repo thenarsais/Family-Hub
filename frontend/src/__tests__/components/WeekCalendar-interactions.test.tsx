@@ -44,6 +44,7 @@ function mockCalendar(overrides: Record<string, unknown> = {}) {
 describe('WeekCalendar — interactions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    try { window.localStorage.clear(); } catch { /* storage disabled */ }
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-22T12:00:00'));
 
@@ -419,6 +420,99 @@ describe('WeekCalendar — interactions', () => {
       fireEvent.click(screen.getByTitle('Dismiss event'));
 
       expect(dismissEvent).toHaveBeenCalledWith('g-4', 'local', 'primary');
+    });
+  });
+
+  describe('view toggle (FR-145)', () => {
+    const cells = (c: HTMLElement) => c.querySelectorAll('[data-testid^="day-cell-"]');
+
+    it('defaults to the week view (7 day cells)', () => {
+      mockCalendar();
+      const { container } = render(<WeekCalendar />);
+      expect(cells(container)).toHaveLength(7);
+    });
+
+    it('switches to the day view — a single cell for the current date', () => {
+      mockCalendar();
+      const { container } = render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Day' }));
+
+      expect(cells(container)).toHaveLength(1);
+      expect(screen.getByTestId('day-cell-2026-08-22')).toBeInTheDocument();
+      expect(screen.queryByTestId('day-cell-2026-08-21')).not.toBeInTheDocument();
+    });
+
+    it('switches to the month view — a 42-cell grid', () => {
+      mockCalendar();
+      const { container } = render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Month' }));
+
+      expect(cells(container)).toHaveLength(42);
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/August 2026/);
+    });
+
+    it('schedule view lists only days that have events', () => {
+      mockCalendar({
+        events: [{ id: 'g-1', summary: 'Recital', start: { date: '2026-08-25' }, source: 'google' }],
+      });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Schedule' }));
+
+      expect(screen.getByText('Recital')).toBeInTheDocument();
+      expect(screen.queryAllByText(/no events/i)).toHaveLength(0);
+    });
+
+    it('schedule view shows an empty-state when the window has no events', () => {
+      mockCalendar();
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Schedule' }));
+
+      expect(screen.getByText(/nothing scheduled/i)).toBeInTheDocument();
+    });
+
+    it('remembers the chosen view across a re-render', () => {
+      mockCalendar();
+      const { container, rerender } = render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Month' }));
+      expect(cells(container)).toHaveLength(42);
+
+      rerender(<WeekCalendar />);
+      expect(cells(container)).toHaveLength(42);
+    });
+
+    it('prev/next steps one day at a time in the day view', () => {
+      mockCalendar();
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Day' }));
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/Aug 22/);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/Aug 23/);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+      expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/Aug 21/);
+    });
+
+    it('"+N more" in the month view opens that day in the day view', () => {
+      mockCalendar({
+        events: Array.from({ length: 5 }, (_, i) => ({
+          id: `e${i}`, summary: `Event ${i}`, start: { date: '2026-08-22' }, source: 'google',
+        })),
+      });
+      const { container } = render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Month' }));
+      fireEvent.click(screen.getByRole('button', { name: /\+2 more/ }));
+
+      expect(cells(container)).toHaveLength(1);
+      expect(screen.getByTestId('day-cell-2026-08-22')).toBeInTheDocument();
     });
   });
 });
