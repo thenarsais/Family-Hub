@@ -13,7 +13,13 @@ interface UseMealPlannerReturn {
   loading: boolean;
   error: string | null;
   updateMeal: (day: string, mealType: string, meal: string) => Promise<void>;
+  /** The plan row for a calendar date, matched by weekday name (FR-150). */
+  mealForDate: (date: Date) => Meal | undefined;
 }
+
+const WEEKDAY_NAMES = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+];
 
 export function useMealPlanner(): UseMealPlannerReturn {
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -96,10 +102,16 @@ export function useMealPlanner(): UseMealPlannerReturn {
     ));
   };
 
+  const mealForDate = (date: Date): Meal | undefined => {
+    const name = WEEKDAY_NAMES[date.getDay()];
+    return meals.find((m) => m.day === name);
+  };
+
   return {
     meals,
     loading,
     error,
-    updateMeal
+    updateMeal,
+    mealForDate,
   };
 }
