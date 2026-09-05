@@ -515,4 +515,34 @@ describe('WeekCalendar — interactions', () => {
       expect(screen.getByTestId('day-cell-2026-08-22')).toBeInTheDocument();
     });
   });
+
+  describe('meals line (FR-150)', () => {
+    // useMealPlanner is unmocked — its mock plan has Saturday dinner
+    // "Family potluck" and Monday dinner "Pasta primavera". System time is
+    // Sat 2026-08-22, so the visible week (Aug 17–23) contains both.
+
+    it('shows a day\'s dinner under the week grid', () => {
+      mockCalendar();
+      render(<WeekCalendar />);
+
+      expect(within(screen.getByTestId('day-cell-2026-08-22')).getByText('Family potluck')).toBeInTheDocument();
+      expect(within(screen.getByTestId('day-cell-2026-08-17')).getByText('Pasta primavera')).toBeInTheDocument();
+    });
+
+    it('shows the dinner in the day view', () => {
+      mockCalendar();
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Day' }));
+      expect(within(screen.getByTestId('day-cell-2026-08-22')).getByText('Family potluck')).toBeInTheDocument();
+    });
+
+    it('shows a compact meals line in the month grid', () => {
+      mockCalendar();
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Month' }));
+      expect(within(screen.getByTestId('day-cell-2026-08-22')).getByText('Family potluck')).toBeInTheDocument();
+    });
+  });
 });

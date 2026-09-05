@@ -4,10 +4,12 @@ import { useCalendar, type EventAssignment } from '@hooks/useCalendar';
 import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
 import { useCalendarView, CALENDAR_VIEWS, type CalendarView } from '@hooks/useCalendarView';
+import { useMealPlanner } from '@hooks/useMealPlanner';
 import { EventForm, type EventFormValues, type EventFormInitial } from './EventForm';
 import { CalendarSettings } from './CalendarSettings';
 import { PersonDots } from './PersonDots';
 import { PersonPicker } from './PersonPicker';
+import { MealsLine } from './MealsLine';
 
 interface CalendarEvent {
   id: string;
@@ -156,6 +158,7 @@ export function WeekCalendar() {
   const { user } = useAuth();
   const { members } = useFamily();
   const { view, setView } = useCalendarView(user?.id ?? 'anon');
+  const { mealForDate } = useMealPlanner();
   const canManage = user?.role === 'parent' || user?.role === 'admin';
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -426,6 +429,7 @@ export function WeekCalendar() {
                 dayEvents.map((event) => renderChip(event))
               )}
             </div>
+            <MealsLine meal={mealForDate(day)} />
           </div>
         );
       })}
@@ -458,6 +462,7 @@ export function WeekCalendar() {
             dayEvents.map((event) => renderChip(event))
           )}
         </div>
+        <MealsLine meal={mealForDate(day)} />
       </div>
     );
   };
@@ -516,6 +521,7 @@ export function WeekCalendar() {
                     </button>
                   )}
                 </div>
+                {inMonth && <MealsLine meal={mealForDate(day)} variant="compact" />}
               </div>
             );
           })}
