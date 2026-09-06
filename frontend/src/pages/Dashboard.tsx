@@ -5,6 +5,7 @@ import { WeekCalendar } from '../components/Calendar';
 import { AnnouncementsBand } from '../components/shell/AnnouncementsBand';
 import { FactOfDayBand } from '../components/shell/FactOfDayBand';
 import { DashboardCard } from '../components/shell/DashboardCard';
+import { ShoppingWidget } from '../components/shell/ShoppingWidget';
 import { WeatherCard } from '../components/Weather/WeatherCard';
 import { DressForWeather } from '../components/Weather/DressForWeather';
 import { useAuth } from '../hooks/useAuth';
@@ -86,7 +87,14 @@ export default function Dashboard() {
   const { currentMonth, goals, loading: energyLoading } = useEnergy();
   const { family, members, loading: familyLoading } = useFamily();
   const { activity, loading: activityLoading } = useActivityLog();
-  const { items: shoppingItems, loading: shoppingLoading } = useShoppingList();
+  const {
+    items: shoppingItems,
+    loading: shoppingLoading,
+    addItem: addShoppingItem,
+    toggleItem: toggleShoppingItem,
+    removeItem: removeShoppingItem,
+    clearChecked: clearCheckedShopping,
+  } = useShoppingList();
   const { weather, loading: weatherLoading, error: weatherError, location: weatherLocation } = useWeather();
 
   const caller = members.find((m) => m.user_id === user?.id);
@@ -118,7 +126,7 @@ export default function Dashboard() {
     activeGoal && activeGoal.target_kwh
       ? Math.min(100, Math.round((currentMonth / activeGoal.target_kwh) * 100))
       : 0;
-  const pendingShopping = shoppingItems.filter((i) => !i.completed).length;
+  const pendingShopping = shoppingItems.filter((i) => !i.checked).length;
 
   const cardProps = (id: string) => ({
     id,
@@ -198,22 +206,14 @@ export default function Dashboard() {
           </button>
         }
       >
-        <WidgetBody
-          loading={shoppingLoading}
-          isEmpty={shoppingItems.length === 0}
-          emptyText="No items on the list"
-        >
-          <p className="text-sm text-ink-2 mb-3">
-            {pendingShopping} of {shoppingItems.length} item{shoppingItems.length === 1 ? '' : 's'}{' '}
-            still needed
-          </p>
-          <ul className="space-y-1 text-sm">
-            {shoppingItems.map((item) => (
-              <li key={item.id} className={item.completed ? 'line-through text-ink-3' : 'text-ink'}>
-                {item.quantity} {item.unit} {item.name}
-              </li>
-            ))}
-          </ul>
+        <WidgetBody loading={shoppingLoading} isEmpty={false} emptyText="">
+          <ShoppingWidget
+            items={shoppingItems}
+            onAdd={addShoppingItem}
+            onToggle={toggleShoppingItem}
+            onRemove={removeShoppingItem}
+            onClearChecked={clearCheckedShopping}
+          />
         </WidgetBody>
       </DashboardCard>
     ),

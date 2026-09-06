@@ -114,6 +114,8 @@ tags:
     description: Family announcements/messaging (x-user-id auth).
   - name: Reminders
     description: Scheduled reminders and dismissal (x-user-id auth).
+  - name: Shopping
+    description: The shared family shopping list (x-user-id auth; family-scoped).
   - name: Energy
     description: Energy usage tracking and goals (x-user-id auth for goal endpoints; usage/summary endpoints are unauthenticated).
   - name: Calendar
@@ -2128,6 +2130,173 @@ paths:
                           read_count: { type: integer }
         '400':
           description: Missing announcement ID.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # SHOPPING (x-user-id, family-scoped)
+  # ================================================================
+  /api/shopping:
+    get:
+      tags: [Shopping]
+      summary: The caller's family shopping list (pending first, checked at the bottom)
+      operationId: listShoppingItems
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Shopping items.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ShoppingItem' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Shopping]
+      summary: Add a line item
+      operationId: addShoppingItem
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ShoppingItem' }
+        '400':
+          description: Missing item name.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: The user has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/shopping/checked:
+    delete:
+      tags: [Shopping]
+      summary: Clear every checked item for the family
+      operationId: clearCheckedShoppingItems
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Cleared.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          removed: { type: integer }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/shopping/{id}:
+    patch:
+      tags: [Shopping]
+      summary: Set an item's checked flag
+      operationId: setShoppingItemChecked
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [checked]
+              properties:
+                checked: { type: boolean }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ShoppingItem' }
+        '400':
+          description: checked (boolean) missing from body.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No item with that id in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Shopping]
+      summary: Remove one item
+      operationId: removeShoppingItem
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Item removed" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No item with that id in the caller's family.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -4663,6 +4832,20 @@ components:
           properties:
             is_read: { type: boolean }
             reader_count: { type: integer, description: "Currently always 0 — marked TODO in source, not yet implemented." }
+
+    # ---------------- Shopping ----------------
+    ShoppingItem:
+      type: object
+      description: Raw `shopping_items` table row (migration 009).
+      required: [id, family_id, name, checked]
+      properties:
+        id: { type: string, format: uuid }
+        family_id: { type: string, format: uuid }
+        name: { type: string }
+        checked: { type: boolean }
+        added_by_id: { type: [string, 'null'], format: uuid }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
 
     # ---------------- Reminders ----------------
     Reminder:
