@@ -5,7 +5,7 @@ const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: mockUseAuth }));
 
 vi.mock('@/services/api', () => ({
-  apiClient: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
+  apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 
 import { apiClient } from '@/services/api';
@@ -133,6 +133,45 @@ describe('useAnnouncements', () => {
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       await expect(result.current.deleteAnnouncement('a1')).rejects.toThrow('User not authenticated');
+    });
+  });
+
+  describe('updateAnnouncement', () => {
+    it('PATCHes and merges the result into state, keeping pinned-first order', async () => {
+      (apiClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { status: 'success', data: [
+          { id: 'a1', is_pinned: true, created_at: '2026-01-02' },
+          { id: 'a2', is_pinned: false, created_at: '2026-01-03' },
+        ] },
+      });
+      (apiClient.patch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { status: 'success', data: { id: 'a2', is_pinned: true, created_at: '2026-01-03' } },
+      });
+
+      const { result } = renderHook(() => useAnnouncements());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.updateAnnouncement('a2', { is_pinned: true });
+      });
+
+      expect(apiClient.patch).toHaveBeenCalledWith(
+        '/api/announcements/a2',
+        { is_pinned: true },
+        { headers: { 'x-user-id': 'user-1' } },
+      );
+      // a2 was just pinned and is newer → it sorts to the front
+      expect(result.current.announcements.map((a) => a.id)).toEqual(['a2', 'a1']);
+    });
+
+    it('should throw when there is no authenticated user', async () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useAnnouncements());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await expect(result.current.updateAnnouncement('a1', { title: 'x' })).rejects.toThrow(
+        'User not authenticated',
+      );
     });
   });
 

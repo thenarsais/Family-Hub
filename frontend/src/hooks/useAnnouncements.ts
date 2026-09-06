@@ -23,6 +23,15 @@ interface UseAnnouncementsReturn {
       expires_at?: string;
     },
   ) => Promise<Announcement>;
+  updateAnnouncement: (
+    announcementId: string,
+    updates: Partial<
+      Pick<
+        Announcement,
+        'title' | 'message' | 'is_pinned' | 'announcement_type' | 'priority' | 'target_audience' | 'expires_at'
+      >
+    >,
+  ) => Promise<Announcement>;
   markAsRead: (announcementId: string) => Promise<void>;
   deleteAnnouncement: (announcementId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -92,6 +101,31 @@ export function useAnnouncements(): UseAnnouncementsReturn {
     }
   };
 
+  const updateAnnouncement = async (
+    announcementId: string,
+    updates: Partial<Announcement>,
+  ): Promise<Announcement> => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    const response = await apiClient.patch<ApiEnvelope<Announcement>>(
+      `/api/announcements/${announcementId}`,
+      updates,
+      { headers: { 'x-user-id': user.id } },
+    );
+
+    const updated = response.data?.data;
+    setAnnouncements((prev) =>
+      prev
+        .map((a) => (a.id === announcementId ? { ...a, ...updated } : a))
+        // keep pinned-first / newest ordering the list endpoint uses
+        .sort((a, b) => {
+          if (!!a.is_pinned !== !!b.is_pinned) return a.is_pinned ? -1 : 1;
+          return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+        }),
+    );
+    return updated;
+  };
+
   const markAsRead = async (announcementId: string): Promise<void> => {
     try {
       if (!user?.id) {
@@ -137,6 +171,7 @@ export function useAnnouncements(): UseAnnouncementsReturn {
     loading,
     error,
     createAnnouncement,
+    updateAnnouncement,
     markAsRead,
     deleteAnnouncement,
     refresh: fetchAnnouncements,
