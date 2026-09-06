@@ -118,8 +118,8 @@ connections and Tailscale's edge terminates TLS and forwards to `localhost:3000`
    and enable **Funnel** (Settings → Funnel, or an ACL `nodeAttrs` entry
    granting `funnel` to the box).
 4. Bring the API up first (step 3), then:
-   `sudo tailscale funnel --bg 443`
-   (forwards public `:443` → `http://localhost:3000`). Confirm with
+   `sudo tailscale funnel --bg 3000`
+   (exposes local `:3000` on the tailnet's public HTTPS `:443`). Confirm with
    `tailscale funnel status` — it prints the `https://<box>.<tailnet>.ts.net`
    URL. **That URL is stable** as long as the machine name and tailnet name
    don't change. Note it down — it's `BACKEND_URL` and `VITE_API_URL`.
