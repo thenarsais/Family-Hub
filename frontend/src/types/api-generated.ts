@@ -994,6 +994,41 @@ export interface paths {
         patch: operations["setShoppingItemChecked"];
         trace?: never;
     };
+    "/api/meals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's family meal plan across a date range (default rolling 7 days from today) */
+        get: operations["listMealPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meals/{date}/{slot}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set one meal slot (upsert; a blank text clears the slot) */
+        put: operations["setMealSlot"];
+        post?: never;
+        /** Clear one meal slot */
+        delete: operations["clearMealSlot"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reminders": {
         parameters: {
             query?: never;
@@ -2282,6 +2317,24 @@ export interface components {
             checked: boolean;
             /** Format: uuid */
             added_by_id?: string | null;
+            /** Format: date-time */
+            created_at?: string | null;
+            /** Format: date-time */
+            updated_at?: string | null;
+        };
+        /** @description One meal-plan slot row (migration 010). `plan_date` is a real calendar date, `YYYY-MM-DD`. */
+        MealPlanEntry: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            family_id: string;
+            /** Format: date */
+            plan_date: string;
+            /** @enum {string} */
+            slot: "breakfast" | "lunch" | "dinner" | "snack";
+            text: string;
+            /** Format: uuid */
+            updated_by_id?: string | null;
             /** Format: date-time */
             created_at?: string | null;
             /** Format: date-time */
@@ -5939,6 +5992,180 @@ export interface operations {
             };
             /** @description No item with that id in the caller's family. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listMealPlan: {
+        parameters: {
+            query?: {
+                start?: string;
+                end?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Meal plan slot rows. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["MealPlanEntry"][];
+                        range?: {
+                            /** Format: date */
+                            start?: string;
+                            /** Format: date */
+                            end?: string;
+                        };
+                    };
+                };
+            };
+            /** @description start/end not YYYY-MM-DD. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    setMealSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+                slot: "breakfast" | "lunch" | "dinner" | "snack";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Blank/whitespace clears the slot. */
+                    text: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Slot set, or cleared (data is null). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["MealPlanEntry"] | null;
+                    };
+                };
+            };
+            /** @description Bad date, slot, or missing text. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    clearMealSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+                slot: "breakfast" | "lunch" | "dinner" | "snack";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared (idempotent — 200 even if the slot was already empty). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Slot cleared";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid date or slot. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

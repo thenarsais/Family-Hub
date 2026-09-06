@@ -76,6 +76,20 @@ vi.mock('@/hooks/useShoppingList', () => ({
     clearChecked: vi.fn(),
   }),
 }));
+vi.mock('@/hooks/useMealPlanner', () => ({
+  MEAL_SLOTS: ['breakfast', 'lunch', 'dinner', 'snack'],
+  useMealPlanner: () => ({
+    meals: [
+      { date: '2026-08-17', day: 'Monday', breakfast: '', lunch: '', dinner: 'Tacos', snack: '' },
+      { date: '2026-08-18', day: 'Tuesday', breakfast: 'Oatmeal', lunch: '', dinner: '', snack: '' },
+    ],
+    loading: false,
+    error: null,
+    updateMeal: vi.fn(),
+    mealForDate: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
 
 const renderDashboard = () =>
   render(

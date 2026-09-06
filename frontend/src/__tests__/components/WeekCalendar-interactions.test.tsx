@@ -18,6 +18,30 @@ import { useAuth } from '@hooks/useAuth';
 vi.mock('@hooks/useCalendar');
 vi.mock('@hooks/useAuth');
 
+// Meal planner is a real (networked) hook now — stub it with a fixed plan so
+// the FR-150 meals-line assertions stay deterministic.
+const MEAL_PLAN: Record<string, { breakfast: string; lunch: string; dinner: string; snack: string }> = {
+  '2026-08-17': { breakfast: '', lunch: '', dinner: 'Pasta primavera', snack: '' },
+  '2026-08-22': { breakfast: '', lunch: '', dinner: 'Family potluck', snack: '' },
+};
+vi.mock('@hooks/useMealPlanner', () => ({
+  MEAL_SLOTS: ['breakfast', 'lunch', 'dinner', 'snack'],
+  useMealPlanner: () => ({
+    meals: [],
+    loading: false,
+    error: null,
+    updateMeal: vi.fn(),
+    refresh: vi.fn(),
+    mealForDate: (date: Date) => {
+      const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+        date.getDate(),
+      ).padStart(2, '0')}`;
+      const slots = MEAL_PLAN[iso];
+      return slots ? { date: iso, day: '', ...slots } : undefined;
+    },
+  }),
+}));
+
 const originalFetch = global.fetch;
 
 function mockCalendar(overrides: Record<string, unknown> = {}) {
@@ -517,7 +541,7 @@ describe('WeekCalendar — interactions', () => {
   });
 
   describe('meals line (FR-150)', () => {
-    // useMealPlanner is unmocked — its mock plan has Saturday dinner
+    // useMealPlanner is stubbed (see top of file) with Saturday dinner
     // "Family potluck" and Monday dinner "Pasta primavera". System time is
     // Sat 2026-08-22, so the visible week (Aug 17–23) contains both.
 
