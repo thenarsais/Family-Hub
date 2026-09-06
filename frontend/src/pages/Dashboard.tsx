@@ -1,11 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Calendar, Zap, Users, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Bell, Calendar, Zap, Users, ShoppingCart, TrendingUp, UtensilsCrossed } from 'lucide-react';
 import { WeekCalendar } from '../components/Calendar';
 import { AnnouncementsBand } from '../components/shell/AnnouncementsBand';
 import { FactOfDayBand } from '../components/shell/FactOfDayBand';
 import { DashboardCard } from '../components/shell/DashboardCard';
 import { ShoppingWidget } from '../components/shell/ShoppingWidget';
+import { MealPlannerCard } from '../components/shell/MealPlannerCard';
 import { WeatherCard } from '../components/Weather/WeatherCard';
 import { DressForWeather } from '../components/Weather/DressForWeather';
 import { useAuth } from '../hooks/useAuth';
@@ -15,6 +16,7 @@ import { useEnergy } from '../hooks/useEnergy';
 import { useFamily } from '../hooks/useFamily';
 import { useActivityLog } from '../hooks/useActivityLog';
 import { useShoppingList } from '../hooks/useShoppingList';
+import { useMealPlanner } from '../hooks/useMealPlanner';
 import { useCardOrder } from '../hooks/useCardOrder';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -22,7 +24,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** The dashboard's reorderable cards, in their out-of-the-box order. The first
  *  few sit in the column beside the calendar; the rest flow into a row below
  *  it — the calendar keeps its hero size either way (FR-131). */
-const CARD_IDS = ['reminders', 'shopping', 'activity', 'family', 'energy', 'weather', 'dress'] as const;
+const CARD_IDS = ['reminders', 'shopping', 'activity', 'family', 'energy', 'weather', 'dress', 'meals'] as const;
 const COLUMN_COUNT = 3;
 
 /** Picks loading / empty / content for a widget body so the page can render
@@ -96,6 +98,7 @@ export default function Dashboard() {
     clearChecked: clearCheckedShopping,
   } = useShoppingList();
   const { weather, loading: weatherLoading, error: weatherError, location: weatherLocation } = useWeather();
+  const { meals, loading: mealsLoading, updateMeal } = useMealPlanner();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -127,6 +130,10 @@ export default function Dashboard() {
       ? Math.min(100, Math.round((currentMonth / activeGoal.target_kwh) * 100))
       : 0;
   const pendingShopping = shoppingItems.filter((i) => !i.checked).length;
+  const plannedMealCount = meals.reduce(
+    (n, m) => n + [m.breakfast, m.lunch, m.dinner, m.snack].filter(Boolean).length,
+    0,
+  );
 
   const cardProps = (id: string) => ({
     id,
@@ -154,6 +161,19 @@ export default function Dashboard() {
         loading={weatherLoading}
         error={weatherError}
       />
+    ),
+
+    meals: (
+      <DashboardCard
+        {...cardProps('meals')}
+        title="Meal Planner"
+        icon={<UtensilsCrossed className="w-5 h-5 text-leaf" aria-hidden="true" />}
+        count={mealsLoading ? undefined : `${plannedMealCount} planned`}
+      >
+        <WidgetBody loading={mealsLoading} isEmpty={false} emptyText="">
+          <MealPlannerCard meals={meals} onSetSlot={updateMeal} />
+        </WidgetBody>
+      </DashboardCard>
     ),
 
     reminders: (

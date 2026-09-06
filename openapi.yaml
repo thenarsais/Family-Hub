@@ -116,6 +116,8 @@ tags:
     description: Scheduled reminders and dismissal (x-user-id auth).
   - name: Shopping
     description: The shared family shopping list (x-user-id auth; family-scoped).
+  - name: Meals
+    description: The family meal planner (x-user-id auth; family-scoped; one row per date + slot).
   - name: Energy
     description: Energy usage tracking and goals (x-user-id auth for goal endpoints; usage/summary endpoints are unauthenticated).
   - name: Calendar
@@ -2297,6 +2299,134 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '404':
           description: No item with that id in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # MEALS (x-user-id, family-scoped)
+  # ================================================================
+  /api/meals:
+    get:
+      tags: [Meals]
+      summary: The caller's family meal plan across a date range (default rolling 7 days from today)
+      operationId: listMealPlan
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: start
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: end
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Meal plan slot rows.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/MealPlanEntry' }
+                      range:
+                        type: object
+                        properties:
+                          start: { type: string, format: date }
+                          end: { type: string, format: date }
+        '400':
+          description: start/end not YYYY-MM-DD.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/meals/{date}/{slot}:
+    put:
+      tags: [Meals]
+      summary: Set one meal slot (upsert; a blank text clears the slot)
+      operationId: setMealSlot
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema: { type: string, format: date }
+        - name: slot
+          in: path
+          required: true
+          schema: { type: string, enum: [breakfast, lunch, dinner, snack] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, description: "Blank/whitespace clears the slot." }
+      responses:
+        '200':
+          description: Slot set, or cleared (data is null).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        oneOf:
+                          - $ref: '#/components/schemas/MealPlanEntry'
+                          - type: 'null'
+        '400':
+          description: Bad date, slot, or missing text.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Meals]
+      summary: Clear one meal slot
+      operationId: clearMealSlot
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema: { type: string, format: date }
+        - name: slot
+          in: path
+          required: true
+          schema: { type: string, enum: [breakfast, lunch, dinner, snack] }
+      responses:
+        '200':
+          description: Cleared (idempotent — 200 even if the slot was already empty).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Slot cleared" }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid date or slot.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -4844,6 +4974,21 @@ components:
         name: { type: string }
         checked: { type: boolean }
         added_by_id: { type: [string, 'null'], format: uuid }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+
+    # ---------------- Meals ----------------
+    MealPlanEntry:
+      type: object
+      description: One meal-plan slot row (migration 010). `plan_date` is a real calendar date, `YYYY-MM-DD`.
+      required: [id, family_id, plan_date, slot, text]
+      properties:
+        id: { type: string, format: uuid }
+        family_id: { type: string, format: uuid }
+        plan_date: { type: string, format: date }
+        slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
+        text: { type: string }
+        updated_by_id: { type: [string, 'null'], format: uuid }
         created_at: { type: [string, 'null'], format: date-time }
         updated_at: { type: [string, 'null'], format: date-time }
 

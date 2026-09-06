@@ -17,6 +17,7 @@ import remindersRoutes from './routes/reminders';
 import energyRoutes from './routes/energy';
 import calendarRoutes from './routes/calendar';
 import shoppingRoutes from './routes/shopping';
+import mealsRoutes from './routes/meals';
 import familyRoutes from './routes/family';
 import activityLogRoutes from './routes/activity-log';
 import { responseFormatter } from './middleware/response-formatter';
@@ -172,6 +173,9 @@ app.use('/api/calendar', calendarRoutes);
 
 // Shopping list endpoints: the shared family shopping list
 app.use('/api/shopping', shoppingRoutes);
+
+// Meal planner endpoints: the family meal plan (FR-015/089)
+app.use('/api/meals', mealsRoutes);
 
 // Family management endpoints: Members, roles, settings
 app.use('/api/family', familyRoutes);

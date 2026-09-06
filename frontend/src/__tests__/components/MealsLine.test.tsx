@@ -3,11 +3,12 @@ import { MealsLine } from '@/components/Calendar/MealsLine';
 import type { Meal } from '@/hooks/useMealPlanner';
 
 const meal: Meal = {
+  date: '2026-08-17',
   day: 'Monday',
   breakfast: 'Oatmeal',
   lunch: 'Chicken salad',
   dinner: 'Pasta primavera',
-  plannedBy: 'Mom',
+  snack: 'Apple',
 };
 
 describe('MealsLine', () => {
@@ -18,7 +19,9 @@ describe('MealsLine', () => {
 
   it('renders nothing when every slot is empty', () => {
     const { container } = render(
-      <MealsLine meal={{ day: 'Tue', breakfast: '', lunch: '', dinner: '', plannedBy: '' }} />,
+      <MealsLine
+        meal={{ date: '2026-08-18', day: 'Tue', breakfast: '', lunch: '', dinner: '', snack: '' }}
+      />,
     );
     expect(container.firstChild).toBeNull();
   });
