@@ -191,7 +191,7 @@ describe('WeekCalendar — interactions', () => {
 
       fireEvent.click(screen.getByTitle('Dismiss event'));
 
-      expect(dismissEvent).toHaveBeenCalledWith('g-1', 'google', 'cal-1');
+      expect(dismissEvent).toHaveBeenCalledWith('g-1', 'google', 'cal-1', undefined);
       expect(screen.queryByRole('button', { name: '✕' })).not.toBeInTheDocument();
     });
 
@@ -207,7 +207,7 @@ describe('WeekCalendar — interactions', () => {
 
       fireEvent.click(screen.getByTitle('Dismiss event'));
 
-      expect(dismissEvent).toHaveBeenCalledWith('l-1', 'local', 'family');
+      expect(dismissEvent).toHaveBeenCalledWith('l-1', 'local', 'family', undefined);
     });
 
     it('hides events whose id is in dismissedIds', () => {
@@ -419,7 +419,7 @@ describe('WeekCalendar — interactions', () => {
 
       fireEvent.click(screen.getByTitle('Dismiss event'));
 
-      expect(dismissEvent).toHaveBeenCalledWith('g-4', 'local', 'primary');
+      expect(dismissEvent).toHaveBeenCalledWith('g-4', 'local', 'primary', undefined);
     });
   });
 
@@ -543,6 +543,69 @@ describe('WeekCalendar — interactions', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Month' }));
       expect(within(screen.getByTestId('day-cell-2026-08-22')).getByText('Family potluck')).toBeInTheDocument();
+    });
+  });
+
+  describe('recurring dismiss scope (FR-126)', () => {
+    const recurring = {
+      id: 'occ-1',
+      summary: 'Weekly Standup',
+      start: { date: '2026-08-20' },
+      source: 'google',
+      calendarId: 'primary',
+      recurringEventId: 'rid-1',
+    };
+
+    it('✕ on a recurring event opens the scope prompt instead of dismissing', () => {
+      const dismissEvent = vi.fn().mockResolvedValue(undefined);
+      mockCalendar({ events: [recurring], dismissEvent });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByTitle('Dismiss event'));
+
+      expect(screen.getByRole('dialog', { name: /hide recurring event/i })).toBeInTheDocument();
+      expect(dismissEvent).not.toHaveBeenCalled();
+    });
+
+    it('"This event" hides just the occurrence (still declines in Google)', () => {
+      const dismissEvent = vi.fn().mockResolvedValue(undefined);
+      mockCalendar({ events: [recurring], dismissEvent });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByTitle('Dismiss event'));
+      fireEvent.click(screen.getByRole('button', { name: /^this event$/i }));
+
+      expect(dismissEvent).toHaveBeenCalledWith('occ-1', 'google', 'primary', { scope: 'occurrence' });
+      expect(screen.queryByRole('dialog', { name: /hide recurring event/i })).not.toBeInTheDocument();
+    });
+
+    it('"All events in the series" dismisses the whole series locally', () => {
+      const dismissEvent = vi.fn().mockResolvedValue(undefined);
+      mockCalendar({ events: [recurring], dismissEvent });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByTitle('Dismiss event'));
+      fireEvent.click(screen.getByRole('button', { name: /all events in the series/i }));
+
+      expect(dismissEvent).toHaveBeenCalledWith('occ-1', 'local', 'primary', {
+        scope: 'series',
+        recurringEventId: 'rid-1',
+      });
+    });
+
+    it('hides every occurrence whose recurringEventId is in dismissedSeriesIds', () => {
+      mockCalendar({
+        events: [
+          { ...recurring, id: 'occ-1', start: { date: '2026-08-18' } },
+          { ...recurring, id: 'occ-2', start: { date: '2026-08-20' } },
+          { id: 'other', summary: 'One-off', start: { date: '2026-08-19' }, source: 'google' },
+        ],
+        dismissedSeriesIds: new Set(['rid-1']),
+      });
+      render(<WeekCalendar />);
+
+      expect(screen.queryByText('Weekly Standup')).not.toBeInTheDocument();
+      expect(screen.getByText('One-off')).toBeInTheDocument();
     });
   });
 });

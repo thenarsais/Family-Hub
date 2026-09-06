@@ -438,7 +438,7 @@ describe('useCalendar', () => {
 
       expect(apiClient.post).toHaveBeenCalledWith(
         '/api/calendar/events/g1/dismiss',
-        { calendarId: 'cal-1', source: 'google' },
+        { calendarId: 'cal-1', source: 'google', scope: 'occurrence', recurringEventId: undefined },
         { headers: { 'x-user-id': 'user-1' } }
       );
       expect(result.current.dismissedIds.has('g1')).toBe(true);
@@ -480,6 +480,84 @@ describe('useCalendar', () => {
       const { result } = renderHook(() => useCalendar());
       await waitFor(() => expect(result.current.loading).toBe(false));
       await expect(result.current.dismissEvent('g1', 'local')).rejects.toThrow('User not authenticated');
+    });
+  });
+
+  describe('recurring series dismiss (FR-126)', () => {
+    it('splits the loaded dismissed list into occurrence and series id sets', async () => {
+      mockFetchEventsCalls({
+        dismissed: [
+          { event_id: 'occ-1', calendar_id: 'cal-1', scope: 'occurrence' },
+          { event_id: 'rid-9', calendar_id: 'cal-1', scope: 'series' },
+        ],
+      });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.dismissedEvents).toHaveLength(2));
+
+      expect(result.current.dismissedIds.has('occ-1')).toBe(true);
+      expect(result.current.dismissedIds.has('rid-9')).toBe(false);
+      expect(result.current.dismissedSeriesIds.has('rid-9')).toBe(true);
+    });
+
+    it('posts scope=series with the recurringEventId and tracks it in the series set', async () => {
+      mockFetchEventsCalls();
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { data: { local: true, scope: 'series' } },
+      });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.dismissEvent('occ-42', 'local', 'cal-1', {
+          scope: 'series',
+          recurringEventId: 'rid-1',
+        });
+      });
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/api/calendar/events/occ-42/dismiss',
+        { calendarId: 'cal-1', source: 'local', scope: 'series', recurringEventId: 'rid-1' },
+        { headers: { 'x-user-id': 'user-1' } },
+      );
+      expect(result.current.dismissedSeriesIds.has('rid-1')).toBe(true);
+      expect(result.current.dismissedIds.has('occ-42')).toBe(false);
+      expect(result.current.dismissedEvents.some((d) => d.event_id === 'rid-1' && d.scope === 'series')).toBe(true);
+    });
+
+    it('reverts the series set when the post fails', async () => {
+      mockFetchEventsCalls();
+      (apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('network'));
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await expect(
+          result.current.dismissEvent('occ-42', 'local', 'cal-1', { scope: 'series', recurringEventId: 'rid-1' }),
+        ).rejects.toThrow('network');
+      });
+
+      expect(result.current.dismissedSeriesIds.has('rid-1')).toBe(false);
+    });
+
+    it('restore of a series drops it from the series set and passes scope through', async () => {
+      mockFetchEventsCalls({ dismissed: [{ event_id: 'rid-1', calendar_id: 'cal-1', scope: 'series' }] });
+      (apiClient.delete as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { data: {} } });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.dismissedSeriesIds.has('rid-1')).toBe(true));
+
+      await act(async () => {
+        await result.current.restoreEvent('rid-1', 'google', 'cal-1', 'series');
+      });
+
+      expect(apiClient.delete).toHaveBeenCalledWith(
+        '/api/calendar/dismissed/rid-1',
+        { headers: { 'x-user-id': 'user-1' }, params: { calendarId: 'cal-1', source: 'google', scope: 'series' } },
+      );
+      expect(result.current.dismissedSeriesIds.has('rid-1')).toBe(false);
     });
   });
 

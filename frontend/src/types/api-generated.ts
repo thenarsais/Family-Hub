@@ -1283,7 +1283,7 @@ export interface paths {
         post?: never;
         /**
          * Restore a dismissed event (undo a hide; re-accepts in Google when applicable)
-         * @description Removes the local hide. When `source=google` and the user had declined the invite, best-effort flips their Google RSVP back to `accepted` (FR-127). `calendarId` / `source` may be given as query params or in the request body.
+         * @description Removes the local hide. When `source=google` and the user had declined the invite, best-effort flips their Google RSVP back to `accepted` (FR-127) — skipped for `scope=series` (nothing was declined). `calendarId` / `source` / `scope` may be given as query params or in the request body. For a series, `eventId` is Google's recurringEventId.
          */
         delete: operations["restoreDismissedEvent"];
         options?: never;
@@ -1302,7 +1302,7 @@ export interface paths {
         put?: never;
         /**
          * Dismiss an event from the calendar view (local hide + Google decline when invited)
-         * @description Always records a local hide so the event stays out of this user's Family Hub calendar. When `source` is `google` and the connected user is an attendee of the event, also sets their RSVP to `declined` in Google Calendar (requires the `calendar.events` OAuth scope — a token predating it yields `reason: reconnect_required`).
+         * @description Always records a local hide so the event stays out of this user's Family Hub calendar. When `source` is `google`, `scope` is `occurrence`, and the connected user is an attendee of the event, also sets their RSVP to `declined` in Google Calendar (requires the `calendar.events` OAuth scope — a token predating it yields `reason: reconnect_required`). A `scope: series` dismiss (FR-126) hides every occurrence of the recurring event and is a local hide only — no Google call.
          */
         post: operations["dismissCalendarEvent"];
         delete?: never;
@@ -2339,6 +2339,8 @@ export interface components {
                 date?: string | null;
             } | null;
             location?: string | null;
+            /** @description Set on an expanded instance of a recurring event (singleEvents:true) — the id of the series master. FR-126 dismisses a whole series by this id. */
+            recurringEventId?: string | null;
             attendees?: {
                 email?: string;
             }[] | null;
@@ -6707,10 +6709,16 @@ export interface operations {
                         /** @constant */
                         status?: "success";
                         data?: {
+                            /** @description An occurrence id, or (when scope=series) Google's recurringEventId. */
                             event_id?: string;
                             calendar_id?: string | null;
                             /** Format: date-time */
                             dismissed_at?: string;
+                            /**
+                             * @description series → every occurrence of this recurring event is hidden (FR-126).
+                             * @enum {string}
+                             */
+                            scope?: "occurrence" | "series";
                         }[];
                         /** Format: date-time */
                         timestamp?: string;
@@ -6742,6 +6750,7 @@ export interface operations {
             query?: {
                 calendarId?: string;
                 source?: "google" | "local";
+                scope?: "occurrence" | "series";
             };
             header?: never;
             path: {
@@ -6811,6 +6820,14 @@ export interface operations {
                      * @enum {string}
                      */
                     source?: "google" | "local";
+                    /**
+                     * @description `series` (FR-126) hides every occurrence of the recurring event; requires `recurringEventId`. Local hide only.
+                     * @default occurrence
+                     * @enum {string}
+                     */
+                    scope?: "occurrence" | "series";
+                    /** @description Google's series-master id. Required when `scope` is `series`; the dismissed_events row is keyed by it. */
+                    recurringEventId?: string;
                 };
             };
         };
@@ -6829,6 +6846,8 @@ export interface operations {
                         data?: {
                             /** @constant */
                             local?: true;
+                            /** @enum {string} */
+                            scope?: "occurrence" | "series";
                             /** @description True only when the invite was declined in Google. */
                             synced?: boolean;
                             /** @enum {string} */

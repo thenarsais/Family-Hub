@@ -472,7 +472,7 @@ describe('Calendar Routes', () => {
         .expect(200);
 
       expect(mockGoogleOAuthService.declineEventIfInvited).toHaveBeenCalledWith('user-1', 'cal-1', 'g1');
-      expect(res.body.data).toEqual({ local: true, synced: true, action: 'declined' });
+      expect(res.body.data).toEqual({ local: true, scope: 'occurrence', synced: true, action: 'declined' });
     });
 
     it('local-hides only when the user is not an attendee of the google event', async () => {
@@ -485,7 +485,7 @@ describe('Calendar Routes', () => {
         .send({ calendarId: 'cal-1', source: 'google' })
         .expect(200);
 
-      expect(res.body.data).toEqual({ local: true, synced: false, reason: 'not_an_attendee' });
+      expect(res.body.data).toEqual({ local: true, scope: 'occurrence', synced: false, reason: 'not_an_attendee' });
     });
 
     it('reports reconnect_required when the Google write is rejected for scope', async () => {
@@ -498,7 +498,7 @@ describe('Calendar Routes', () => {
         .send({ calendarId: 'cal-1', source: 'google' })
         .expect(200);
 
-      expect(res.body.data).toEqual({ local: true, synced: false, reason: 'reconnect_required' });
+      expect(res.body.data).toEqual({ local: true, scope: 'occurrence', synced: false, reason: 'reconnect_required' });
     });
 
     it('does not touch Google for a local event', async () => {
@@ -511,6 +511,43 @@ describe('Calendar Routes', () => {
         .expect(200);
 
       expect(mockGoogleOAuthService.declineEventIfInvited).not.toHaveBeenCalled();
+    });
+
+    // FR-126 — series scope
+    it('series dismiss keys the row by recurringEventId and is a local hide only', async () => {
+      mockUpsert.mockResolvedValueOnce({ error: null });
+
+      const res = await request(app)
+        .post('/api/calendar/events/occ-42/dismiss')
+        .set('x-user-id', 'user-1')
+        .send({ calendarId: 'cal-1', source: 'google', scope: 'series', recurringEventId: 'rid-1' })
+        .expect(200);
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 'user-1', event_id: 'rid-1', scope: 'series' }),
+        { onConflict: 'user_id,event_id' },
+      );
+      expect(mockGoogleOAuthService.declineEventIfInvited).not.toHaveBeenCalled();
+      expect(res.body.data).toEqual({ local: true, scope: 'series', synced: false });
+    });
+
+    it('400s when scope is series without a recurringEventId', async () => {
+      const res = await request(app)
+        .post('/api/calendar/events/occ-42/dismiss')
+        .set('x-user-id', 'user-1')
+        .send({ source: 'google', scope: 'series' })
+        .expect(400);
+      expect(res.body.message).toMatch(/recurringEventId/);
+      expect(mockUpsert).not.toHaveBeenCalled();
+    });
+
+    it('400s on an unknown scope', async () => {
+      const res = await request(app)
+        .post('/api/calendar/events/occ-42/dismiss')
+        .set('x-user-id', 'user-1')
+        .send({ scope: 'sideways' })
+        .expect(400);
+      expect(res.body.message).toMatch(/scope/);
     });
   });
 
@@ -561,6 +598,18 @@ describe('Calendar Routes', () => {
         .expect(200);
 
       expect(res.body.data).toEqual({ local: true, synced: false, reason: 'reconnect_required' });
+    });
+
+    it('series restore does not re-accept in Google (FR-126)', async () => {
+      chainDelete({ error: null });
+
+      const res = await request(app)
+        .delete('/api/calendar/dismissed/rid-1?calendarId=cal-1&source=google&scope=series')
+        .set('x-user-id', 'user-1')
+        .expect(200);
+
+      expect(mockGoogleOAuthService.acceptEventIfInvited).not.toHaveBeenCalled();
+      expect(res.body.data).toEqual({ local: true, synced: false });
     });
 
     it('returns 500 when supabase returns an error', async () => {

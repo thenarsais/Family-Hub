@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2, Settings } from 'lucide-react';
-import { useCalendar, type EventAssignment } from '@hooks/useCalendar';
+import { useCalendar, type EventAssignment, type DismissOpts } from '@hooks/useCalendar';
 import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
 import { useCalendarView, CALENDAR_VIEWS, type CalendarView } from '@hooks/useCalendarView';
@@ -33,6 +33,9 @@ interface CalendarEvent {
   created_by_id?: string;
   google_event_id?: string;
   google_calendar_id?: string;
+  // Set on an expanded occurrence of a recurring Google event — the series
+  // master id. Its presence enables the "this / whole series" dismiss prompt.
+  recurringEventId?: string;
   attendees?: Array<{ email?: string; self?: boolean }>;
 }
 
@@ -144,6 +147,7 @@ export function WeekCalendar() {
   } = cal;
   const googleEmail = cal.googleEmail ?? null;
   const dismissedEventIds: Set<string> = cal.dismissedIds ?? new Set();
+  const dismissedSeriesIds: Set<string> = cal.dismissedSeriesIds ?? new Set();
   const dismissedEvents = cal.dismissedEvents ?? [];
   const reconnectForSync = cal.reconnectForSync ?? false;
   const dismissEvent =
@@ -170,6 +174,8 @@ export function WeekCalendar() {
     | { mode: 'edit'; event: CalendarEvent }
   >({ mode: 'closed' });
   const [deleting, setDeleting] = useState(false);
+  // FR-126: the ✕ on a recurring event opens this prompt instead of dismissing.
+  const [dismissPrompt, setDismissPrompt] = useState<CalendarEvent | null>(null);
 
   const handleFormSubmit = async (values: EventFormValues) => {
     let eventId: string | undefined;
@@ -206,10 +212,24 @@ export function WeekCalendar() {
     }
   };
 
-  const handleDismiss = (eventId: string, source: 'google' | 'local', calendarId?: string) => {
-    dismissEvent(eventId, source, calendarId).catch((err) =>
+  const handleDismiss = (
+    eventId: string,
+    source: 'google' | 'local',
+    calendarId?: string,
+    opts?: DismissOpts,
+  ) => {
+    dismissEvent(eventId, source, calendarId, opts).catch((err) =>
       console.error('Failed to dismiss event:', err),
     );
+  };
+
+  // ✕ on a recurring occurrence → ask the scope; anything else dismisses now.
+  const onDismissClick = (event: CalendarEvent) => {
+    if (event.recurringEventId) {
+      setDismissPrompt(event);
+    } else {
+      handleDismiss(event.id, dismissSourceFor(event), event.calendarId);
+    }
   };
 
   // Own form-created event → local hide only. The Ban button is one misclick
@@ -267,6 +287,8 @@ export function WeekCalendar() {
     if (events) {
       events.forEach((event: any) => {
         if (dismissedEventIds.has(event.id)) return;
+        // FR-126: a whole recurring series was dismissed → hide every occurrence.
+        if (event.recurringEventId && dismissedSeriesIds.has(event.recurringEventId)) return;
 
         const eventStartDate = event.start?.dateTime || event.start?.date || event.event_date || event.startTime;
         if (!eventStartDate) return;
@@ -357,7 +379,7 @@ export function WeekCalendar() {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            handleDismiss(event.id, dismissSourceFor(event), event.calendarId);
+            onDismissClick(event);
           }}
           className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition hover:text-alert"
           title="Dismiss event"
@@ -705,6 +727,62 @@ export function WeekCalendar() {
       {view === 'day' && renderDay()}
       {view === 'month' && renderMonth()}
       {view === 'schedule' && renderSchedule()}
+
+      {/* Dismiss scope prompt for a recurring event (FR-126) */}
+      {dismissPrompt && (
+        <div
+          className="fixed inset-0 z-50 bg-ink/40 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Hide recurring event"
+          onClick={() => setDismissPrompt(null)}
+        >
+          <div
+            className="bg-raised border border-rule rounded-card p-6 max-w-sm w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-display text-lg font-bold text-ink mb-1">Hide this event?</h3>
+            <p className="text-sm text-ink-2 mb-4">
+              <span className="font-medium text-ink">{dismissPrompt.title}</span> repeats.
+              Hide just this one, or every occurrence?
+            </p>
+            <div className="space-y-2">
+              <button
+                className="btn btn-secondary w-full"
+                onClick={() => {
+                  handleDismiss(
+                    dismissPrompt.id,
+                    dismissSourceFor(dismissPrompt),
+                    dismissPrompt.calendarId,
+                    { scope: 'occurrence' },
+                  );
+                  setDismissPrompt(null);
+                }}
+              >
+                This event
+              </button>
+              <button
+                className="btn btn-primary w-full"
+                onClick={() => {
+                  handleDismiss(dismissPrompt.id, 'local', dismissPrompt.calendarId, {
+                    scope: 'series',
+                    recurringEventId: dismissPrompt.recurringEventId,
+                  });
+                  setDismissPrompt(null);
+                }}
+              >
+                All events in the series
+              </button>
+              <button
+                className="w-full text-sm text-ink-3 hover:text-accent py-1"
+                onClick={() => setDismissPrompt(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Event Detail Modal */}
       {selectedEvent && (

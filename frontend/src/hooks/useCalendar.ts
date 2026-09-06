@@ -46,10 +46,20 @@ export interface GoogleEventInput {
   sendInvites?: boolean;
 }
 
+export type DismissScope = 'occurrence' | 'series';
+
 export interface DismissedEvent {
   event_id: string;
   calendar_id?: string | null;
   dismissed_at?: string;
+  /** 'series' → event_id is a recurringEventId and every occurrence is hidden (FR-126). */
+  scope?: DismissScope;
+}
+
+export interface DismissOpts {
+  scope?: DismissScope;
+  /** Required when scope === 'series' — Google's series-master id. */
+  recurringEventId?: string;
 }
 
 interface UseCalendarReturn {
@@ -61,6 +71,8 @@ interface UseCalendarReturn {
   googleConnected: boolean;
   googleEmail: string | null;
   dismissedIds: Set<string>;
+  /** recurringEventIds whose whole series is hidden (FR-126). */
+  dismissedSeriesIds: Set<string>;
   dismissedEvents: DismissedEvent[];
   reconnectForSync: boolean;
   /** event_id → the members assigned to that event (FR-153). */
@@ -69,8 +81,8 @@ interface UseCalendarReturn {
   createEvent: (input: GoogleEventInput) => Promise<CalendarEvent>;
   updateEvent: (googleEventId: string, input: GoogleEventInput) => Promise<CalendarEvent>;
   deleteEvent: (googleEventId: string, sendInvites?: boolean) => Promise<void>;
-  dismissEvent: (eventId: string, source: 'google' | 'local', calendarId?: string) => Promise<void>;
-  restoreEvent: (eventId: string, source?: 'google' | 'local', calendarId?: string) => Promise<void>;
+  dismissEvent: (eventId: string, source: 'google' | 'local', calendarId?: string, opts?: DismissOpts) => Promise<void>;
+  restoreEvent: (eventId: string, source?: 'google' | 'local', calendarId?: string, scope?: DismissScope) => Promise<void>;
   connectGoogle: () => Promise<string>;
   disconnectGoogle: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -87,6 +99,7 @@ export function useCalendar(): UseCalendarReturn {
   const [googleEmail, setGoogleEmail] = useState<string | null>(null);
   const [dismissedEvents, setDismissedEvents] = useState<DismissedEvent[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [dismissedSeriesIds, setDismissedSeriesIds] = useState<Set<string>>(new Set());
   const [reconnectForSync, setReconnectForSync] = useState(false);
   const [eventPeople, setEventPeopleState] = useState<Map<string, EventAssignment[]>>(new Map());
 
@@ -228,7 +241,8 @@ export function useCalendar(): UseCalendarReturn {
         if (cancelled) return;
         const list = res.data?.data ?? [];
         setDismissedEvents(list);
-        setDismissedIds(new Set(list.map((d) => d.event_id)));
+        setDismissedIds(new Set(list.filter((d) => d.scope !== 'series').map((d) => d.event_id)));
+        setDismissedSeriesIds(new Set(list.filter((d) => d.scope === 'series').map((d) => d.event_id)));
       } catch (err) {
         console.warn('Failed to load dismissed events:', err);
       }
@@ -313,31 +327,50 @@ export function useCalendar(): UseCalendarReturn {
     eventId: string,
     source: 'google' | 'local',
     calendarId?: string,
+    opts?: DismissOpts,
   ): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
+    const scope: DismissScope = opts?.scope ?? 'occurrence';
+    const isSeries = scope === 'series';
+    // For a series dismiss the row is keyed by the recurringEventId, and that's
+    // the id the grid filters on (FR-126).
+    const rowId = isSeries ? (opts?.recurringEventId ?? eventId) : eventId;
+
     // optimistic
-    setDismissedIds((prev) => new Set(prev).add(eventId));
+    if (isSeries) {
+      setDismissedSeriesIds((prev) => new Set(prev).add(rowId));
+    } else {
+      setDismissedIds((prev) => new Set(prev).add(rowId));
+    }
 
     try {
       const res = await apiClient.post<ApiEnvelope<{ reason?: string }>>(
         `/api/calendar/events/${eventId}/dismiss`,
-        { calendarId, source },
+        { calendarId, source, scope, recurringEventId: opts?.recurringEventId },
         { headers: { 'x-user-id': user.id } },
       );
       if (res.data?.data?.reason === 'reconnect_required') setReconnectForSync(true);
       setDismissedEvents((prev) =>
-        prev.some((d) => d.event_id === eventId)
+        prev.some((d) => d.event_id === rowId)
           ? prev
-          : [...prev, { event_id: eventId, calendar_id: calendarId, dismissed_at: new Date().toISOString() }],
+          : [...prev, { event_id: rowId, calendar_id: calendarId, scope, dismissed_at: new Date().toISOString() }],
       );
     } catch (err) {
       // revert
-      setDismissedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(eventId);
-        return next;
-      });
+      if (isSeries) {
+        setDismissedSeriesIds((prev) => {
+          const next = new Set(prev);
+          next.delete(rowId);
+          return next;
+        });
+      } else {
+        setDismissedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(rowId);
+          return next;
+        });
+      }
       throw err;
     }
   };
@@ -346,26 +379,39 @@ export function useCalendar(): UseCalendarReturn {
     eventId: string,
     source?: 'google' | 'local',
     calendarId?: string,
+    scope?: DismissScope,
   ): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
+    const isSeries = scope === 'series';
     const prevIds = dismissedIds;
+    const prevSeriesIds = dismissedSeriesIds;
     const prevList = dismissedEvents;
-    setDismissedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(eventId);
-      return next;
-    });
+
+    if (isSeries) {
+      setDismissedSeriesIds((prev) => {
+        const next = new Set(prev);
+        next.delete(eventId);
+        return next;
+      });
+    } else {
+      setDismissedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(eventId);
+        return next;
+      });
+    }
     setDismissedEvents((prev) => prev.filter((d) => d.event_id !== eventId));
 
     try {
       await apiClient.delete(`/api/calendar/dismissed/${eventId}`, {
         headers: { 'x-user-id': user.id },
-        params: { calendarId, source },
+        params: { calendarId, source, scope },
       });
       await fetchEvents();
     } catch (err) {
       setDismissedIds(prevIds);
+      setDismissedSeriesIds(prevSeriesIds);
       setDismissedEvents(prevList);
       throw err;
     }
@@ -463,6 +509,7 @@ export function useCalendar(): UseCalendarReturn {
     googleConnected,
     googleEmail,
     dismissedIds,
+    dismissedSeriesIds,
     dismissedEvents,
     reconnectForSync,
     eventPeople,
