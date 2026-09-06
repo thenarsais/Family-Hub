@@ -3,7 +3,7 @@
 # This repo is an npm-workspaces monorepo (backend + frontend share one root
 # package-lock.json); there's no valid standalone lockfile scoped to just
 # `backend/`, so the build context has to be the repo root, not `./backend`.
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ COPY backend/tsconfig.json ./backend/tsconfig.json
 RUN npm run build --workspace=backend
 
 # Production stage
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 

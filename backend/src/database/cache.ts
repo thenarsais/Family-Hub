@@ -20,6 +20,14 @@ export async function initRedis(): Promise<void> {
   try {
     redisClient = createClient({
       url: process.env.REDIS_URL || 'redis://localhost:6379',
+      socket: {
+        // node-redis v5+ retries the initial connect indefinitely by default,
+        // so `connect()` would hang forever when Redis is down instead of
+        // rejecting. Give up after a few tries so the catch below can disable
+        // caching and the app boots without it.
+        connectTimeout: 5000,
+        reconnectStrategy: (retries) => (retries >= 3 ? false : Math.min(retries * 200, 1000)),
+      },
     });
 
     redisClient.on('error', (err) => {
@@ -32,6 +40,8 @@ export async function initRedis(): Promise<void> {
 
     await redisClient.connect();
   } catch (error) {
+    // reconnectStrategy returned false, so the client has already given up and
+    // closed itself; just drop the reference.
     console.warn('⚠️  Redis connection failed, caching disabled:', error);
     redisClient = null;
   }
