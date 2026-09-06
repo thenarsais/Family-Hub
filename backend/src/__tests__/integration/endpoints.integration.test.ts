@@ -126,9 +126,9 @@ describe('API Endpoints Integration Tests', () => {
   });
 
   describe('Badges Endpoint', () => {
-    it('should have /badges endpoint', async () => {
+    it('should have /api/badges endpoint', async () => {
       try {
-        const response = await fetch(`${baseURL}/badges`);
+        const response = await fetch(`${baseURL}/api/badges`);
         // Will fail without auth token, but should exist
         expect([200, 400, 401, 403]).toContain(response.status);
       } catch (error) {

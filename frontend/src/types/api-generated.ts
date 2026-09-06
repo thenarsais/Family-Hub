@@ -136,7 +136,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/signup": {
+    "/api/auth/signup": {
         parameters: {
             query?: never;
             header?: never;
@@ -161,7 +161,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/login": {
+    "/api/auth/login": {
         parameters: {
             query?: never;
             header?: never;
@@ -178,7 +178,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/logout": {
+    "/api/auth/logout": {
         parameters: {
             query?: never;
             header?: never;
@@ -198,7 +198,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/auth/me": {
+    "/api/auth/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -218,7 +218,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/me": {
+    "/api/users/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -238,7 +238,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/{id}": {
+    "/api/users/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -257,7 +257,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/{parentId}/children": {
+    "/api/users/{parentId}/children": {
         parameters: {
             query?: never;
             header?: never;
@@ -274,7 +274,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users/role/parents": {
+    "/api/users/role/parents": {
         parameters: {
             query?: never;
             header?: never;
@@ -291,7 +291,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users": {
+    "/api/users": {
         parameters: {
             query?: never;
             header?: never;
@@ -308,7 +308,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/badges": {
+    "/api/badges": {
         parameters: {
             query?: never;
             header?: never;
@@ -325,7 +325,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/badges/{id}": {
+    "/api/badges/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -342,7 +342,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/badges/category/{category}": {
+    "/api/badges/category/{category}": {
         parameters: {
             query?: never;
             header?: never;
@@ -359,7 +359,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/badges/users/{userId}": {
+    "/api/badges/users/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -379,7 +379,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/badges/users/{userId}/detailed": {
+    "/api/badges/users/{userId}/detailed": {
         parameters: {
             query?: never;
             header?: never;
@@ -396,7 +396,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/badges/users/{userId}/badges/{badgeId}": {
+    "/api/badges/users/{userId}/badges/{badgeId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -414,7 +414,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/badges/users/{userId}/range": {
+    "/api/badges/users/{userId}/range": {
         parameters: {
             query?: never;
             header?: never;
@@ -431,7 +431,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/users/{userId}": {
+    "/api/points/users/{userId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -452,7 +452,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/users/{userId}/history": {
+    "/api/points/users/{userId}/history": {
         parameters: {
             query?: never;
             header?: never;
@@ -469,7 +469,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/users/{userId}/breakdown": {
+    "/api/points/users/{userId}/breakdown": {
         parameters: {
             query?: never;
             header?: never;
@@ -486,7 +486,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/users/{userId}/range": {
+    "/api/points/users/{userId}/range": {
         parameters: {
             query?: never;
             header?: never;
@@ -503,7 +503,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/users/{userId}/today": {
+    "/api/points/users/{userId}/today": {
         parameters: {
             query?: never;
             header?: never;
@@ -520,7 +520,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/users/{userId}/week": {
+    "/api/points/users/{userId}/week": {
         parameters: {
             query?: never;
             header?: never;
@@ -537,7 +537,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/users/{userId}/month": {
+    "/api/points/users/{userId}/month": {
         parameters: {
             query?: never;
             header?: never;
@@ -554,7 +554,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/users/{userId}/subtract": {
+    "/api/points/users/{userId}/subtract": {
         parameters: {
             query?: never;
             header?: never;
@@ -571,7 +571,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/points/leaderboard": {
+    "/api/points/leaderboard": {
         parameters: {
             query?: never;
             header?: never;

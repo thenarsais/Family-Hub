@@ -129,17 +129,17 @@ app.get('/health', (req, res) => {
 // API ROUTES
 // ================================================
 
-// Auth endpoints: POST /auth/signup, POST /auth/login, POST /auth/logout, GET /auth/me
-app.use('/auth', authRoutes);
+// Auth endpoints: POST /api/auth/signup, POST /api/auth/login, POST /api/auth/logout, GET /api/auth/me
+app.use('/api/auth', authRoutes);
 
-// User endpoints: GET /users, GET /users/:id, PUT /users/:id, DELETE /users/:id
-app.use('/users', userRoutes);
+// User endpoints: GET /api/users, GET /api/users/:id, PUT /api/users/:id, DELETE /api/users/:id
+app.use('/api/users', userRoutes);
 
-// Badge endpoints: GET /badges, GET /badges/:id, POST/DELETE user badges
-app.use('/badges', badgeRoutes);
+// Badge endpoints: GET /api/badges, GET /api/badges/:id, POST/DELETE user badges
+app.use('/api/badges', badgeRoutes);
 
 // Points endpoints: GET/POST user points, leaderboard
-app.use('/points', pointsRoutes);
+app.use('/api/points', pointsRoutes);
 
 // SmartThings endpoints: Devices, control, status
 app.use('/api/smartthings', smartthingsRoutes);

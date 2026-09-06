@@ -55,7 +55,7 @@ class ApiClient {
         if (error.response?.status === 401) {
           // Only redirect on auth endpoint failures, not on feature endpoints
           const url = error.config?.url || '';
-          const isAuthEndpoint = url.includes('/auth/') || url.includes('/login');
+          const isAuthEndpoint = url.includes('/api/auth/') || url.includes('/login');
 
           if (isAuthEndpoint) {
             console.error('[API] *** CRITICAL: Got 401 error from:', error.config?.url);
@@ -76,7 +76,7 @@ class ApiClient {
 
   // ============ Auth ============
   async signup(email: string, password: string, name: string) {
-    const response = await this.client.post('/auth/signup', {
+    const response = await this.client.post('/api/auth/signup', {
       email,
       password,
       name,
@@ -85,7 +85,7 @@ class ApiClient {
   }
 
   async login(email: string, password: string) {
-    const response = await this.client.post('/auth/login', {
+    const response = await this.client.post('/api/auth/login', {
       email,
       password,
     });
@@ -93,62 +93,62 @@ class ApiClient {
   }
 
   async logout() {
-    return this.client.post('/auth/logout');
+    return this.client.post('/api/auth/logout');
   }
 
   async getCurrentUser() {
-    const response = await this.client.get('/auth/me');
+    const response = await this.client.get('/api/auth/me');
     return response.data;
   }
 
   // ============ Users ============
   async getUsers(limit = 20, offset = 0) {
-    const response = await this.client.get('/users', {
+    const response = await this.client.get('/api/users', {
       params: { limit, offset },
     });
     return response.data;
   }
 
   async getUserById(userId: string) {
-    const response = await this.client.get(`/users/${userId}`);
+    const response = await this.client.get(`/api/users/${userId}`);
     return response.data;
   }
 
   async updateUser(userId: string, data: Record<string, unknown>) {
-    const response = await this.client.put(`/users/${userId}`, data);
+    const response = await this.client.put(`/api/users/${userId}`, data);
     return response.data;
   }
 
   // ============ Badges ============
   async getBadges(limit = 50, offset = 0) {
-    const response = await this.client.get('/badges', {
+    const response = await this.client.get('/api/badges', {
       params: { limit, offset },
     });
     return response.data;
   }
 
   async getBadgeById(badgeId: string) {
-    const response = await this.client.get(`/badges/${badgeId}`);
+    const response = await this.client.get(`/api/badges/${badgeId}`);
     return response.data;
   }
 
   async getBadgesByCategory(category: string) {
-    const response = await this.client.get(`/badges/category/${category}`);
+    const response = await this.client.get(`/api/badges/category/${category}`);
     return response.data;
   }
 
   async getUserBadges(userId: string) {
-    const response = await this.client.get(`/badges/users/${userId}`);
+    const response = await this.client.get(`/api/badges/users/${userId}`);
     return response.data;
   }
 
   async getUserBadgesDetailed(userId: string) {
-    const response = await this.client.get(`/badges/users/${userId}/detailed`);
+    const response = await this.client.get(`/api/badges/users/${userId}/detailed`);
     return response.data;
   }
 
   async awardBadge(userId: string, badgeId: string, reason?: string) {
-    const response = await this.client.post(`/badges/users/${userId}/badges/${badgeId}`, {
+    const response = await this.client.post(`/api/badges/users/${userId}/badges/${badgeId}`, {
       reason,
     });
     return response.data;
@@ -156,39 +156,39 @@ class ApiClient {
 
   // ============ Points ============
   async getUserPoints(userId: string) {
-    const response = await this.client.get(`/points/users/${userId}`);
+    const response = await this.client.get(`/api/points/users/${userId}`);
     return response.data;
   }
 
   async getPointsHistory(userId: string, limit = 20, offset = 0) {
-    const response = await this.client.get(`/points/users/${userId}/history`, {
+    const response = await this.client.get(`/api/points/users/${userId}/history`, {
       params: { limit, offset },
     });
     return response.data;
   }
 
   async getPointsBreakdown(userId: string) {
-    const response = await this.client.get(`/points/users/${userId}/breakdown`);
+    const response = await this.client.get(`/api/points/users/${userId}/breakdown`);
     return response.data;
   }
 
   async getPointsToday(userId: string) {
-    const response = await this.client.get(`/points/users/${userId}/today`);
+    const response = await this.client.get(`/api/points/users/${userId}/today`);
     return response.data;
   }
 
   async getPointsWeek(userId: string) {
-    const response = await this.client.get(`/points/users/${userId}/week`);
+    const response = await this.client.get(`/api/points/users/${userId}/week`);
     return response.data;
   }
 
   async getPointsMonth(userId: string) {
-    const response = await this.client.get(`/points/users/${userId}/month`);
+    const response = await this.client.get(`/api/points/users/${userId}/month`);
     return response.data;
   }
 
   async awardPoints(userId: string, points: number, activityType: string, description?: string) {
-    const response = await this.client.post(`/points/users/${userId}`, {
+    const response = await this.client.post(`/api/points/users/${userId}`, {
       points,
       activity_type: activityType,
       description,
@@ -197,7 +197,7 @@ class ApiClient {
   }
 
   async getLeaderboard(limit = 10, period = 'week') {
-    const response = await this.client.get('/points/leaderboard', {
+    const response = await this.client.get('/api/points/leaderboard', {
       params: { limit, period },
     });
     return response.data;
