@@ -53,4 +53,4 @@ for i in $(seq 1 30); do
 done
 
 docker image prune -f >/dev/null 2>&1 || true
-ok "Done. Test: curl -fsS https://api.example.com/health"
+ok "Done. Test: curl -fsS \"\$BACKEND_URL/health\"  (your https://<box>.<tailnet>.ts.net/health)"
