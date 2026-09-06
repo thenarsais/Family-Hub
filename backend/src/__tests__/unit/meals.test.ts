@@ -88,4 +88,72 @@ describe('MealPlanService', () => {
       expect(await service.clearSlot('user-1', '2026-08-17', 'lunch')).toBe(false);
     });
   });
+
+  describe('meal library (FR-133)', () => {
+    describe('getLibrary', () => {
+      it('returns [] with no family', async () => {
+        queryOne.mockResolvedValueOnce(null);
+        expect(await service.getLibrary('u1')).toEqual([]);
+        expect(query).not.toHaveBeenCalled();
+      });
+
+      it('scopes to family_id, ordered by name', async () => {
+        queryOne.mockResolvedValueOnce(FAMILY);
+        query.mockResolvedValueOnce({ rows: [{ id: 'l1', name: 'Apples' }], rowCount: 1 });
+        const rows = await service.getLibrary('u1');
+        expect(rows).toEqual([{ id: 'l1', name: 'Apples' }]);
+        expect(query.mock.calls[0][0]).toMatch(/ORDER BY name ASC/);
+        expect(query.mock.calls[0][1]).toEqual(['fam-1']);
+      });
+    });
+
+    describe('addLibraryItem', () => {
+      it('returns null with no family', async () => {
+        queryOne.mockResolvedValueOnce(null);
+        expect(await service.addLibraryItem('u1', 'Tacos', 'dinner')).toBeNull();
+      });
+
+      it('upserts a trimmed name + slot tagged with family + user', async () => {
+        queryOne.mockResolvedValueOnce(FAMILY).mockResolvedValueOnce({ id: 'l2', name: 'Tacos' });
+        const row = await service.addLibraryItem('u1', '  Tacos  ', 'dinner');
+        expect(row).toEqual({ id: 'l2', name: 'Tacos' });
+        expect(queryOne.mock.calls[1][0]).toMatch(/ON CONFLICT \(family_id, name\)/);
+        expect(queryOne.mock.calls[1][1]).toEqual(['fam-1', 'Tacos', 'dinner', 'u1']);
+      });
+    });
+
+    describe('updateLibraryItem', () => {
+      it('passes name + a flag for whether defaultSlot was supplied', async () => {
+        queryOne.mockResolvedValueOnce(FAMILY).mockResolvedValueOnce({ id: 'l1', name: 'X' });
+        await service.updateLibraryItem('u1', 'l1', { name: '  X  ', defaultSlot: null });
+        // [name, hasDefaultSlotFlag, defaultSlotValue, id, familyId]
+        expect(queryOne.mock.calls[1][1]).toEqual(['X', true, null, 'l1', 'fam-1']);
+      });
+
+      it('flag is false when defaultSlot is omitted', async () => {
+        queryOne.mockResolvedValueOnce(FAMILY).mockResolvedValueOnce({ id: 'l1' });
+        await service.updateLibraryItem('u1', 'l1', { name: 'Y' });
+        expect(queryOne.mock.calls[1][1]).toEqual(['Y', false, null, 'l1', 'fam-1']);
+      });
+
+      it('returns null with no family', async () => {
+        queryOne.mockResolvedValueOnce(null);
+        expect(await service.updateLibraryItem('u1', 'l1', { name: 'Z' })).toBeNull();
+      });
+    });
+
+    describe('removeLibraryItem', () => {
+      it('is true when a row was deleted, scoped to family', async () => {
+        queryOne.mockResolvedValueOnce(FAMILY);
+        query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+        expect(await service.removeLibraryItem('u1', 'l1')).toBe(true);
+        expect(query.mock.calls[0][1]).toEqual(['l1', 'fam-1']);
+      });
+
+      it('is false with no family', async () => {
+        queryOne.mockResolvedValueOnce(null);
+        expect(await service.removeLibraryItem('u1', 'l1')).toBe(false);
+      });
+    });
+  });
 });

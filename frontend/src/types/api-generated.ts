@@ -1011,6 +1011,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/meals/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's family saved-meals list (FR-133) */
+        get: operations["listMealLibrary"];
+        put?: never;
+        /** Add a saved meal (upserts on name) */
+        post: operations["addMealLibraryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meals/library/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a saved meal */
+        delete: operations["removeMealLibraryItem"];
+        options?: never;
+        head?: never;
+        /** Rename or re-slot a saved meal */
+        patch: operations["updateMealLibraryItem"];
+        trace?: never;
+    };
     "/api/meals/{date}/{slot}": {
         parameters: {
             query?: never;
@@ -2125,7 +2161,7 @@ export interface components {
             birth_year?: number | null;
             is_under_13?: boolean | null;
         };
-        /** @description Subset returned by GET /users/me. */
+        /** @description Subset returned by GET /api/users/me. */
         UserProfileFull: {
             id?: string;
             email?: string;
@@ -2137,7 +2173,7 @@ export interface components {
             /** Format: date-time */
             updated_at?: string;
         };
-        /** @description Subset returned by GET/PUT /users/{id}. */
+        /** @description Subset returned by GET/PUT /api/users/{id}. */
         UserProfileBasic: {
             id?: string;
             email?: string;
@@ -2335,6 +2371,22 @@ export interface components {
             text: string;
             /** Format: uuid */
             updated_by_id?: string | null;
+            /** Format: date-time */
+            created_at?: string | null;
+            /** Format: date-time */
+            updated_at?: string | null;
+        };
+        /** @description One saved meal in the family library (migration 011, FR-133). */
+        MealLibraryItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            family_id: string;
+            name: string;
+            /** @enum {string|null} */
+            default_slot?: "breakfast" | "lunch" | "dinner" | "snack" | null;
+            /** Format: uuid */
+            created_by_id?: string | null;
             /** Format: date-time */
             created_at?: string | null;
             /** Format: date-time */
@@ -6050,6 +6102,236 @@ export interface operations {
             };
             /** @description Missing x-user-id. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listMealLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved meals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["MealLibraryItem"][];
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    addMealLibraryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** @enum {string|null} */
+                    defaultSlot?: "breakfast" | "lunch" | "dinner" | "snack" | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Created (or refreshed). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["MealLibraryItem"];
+                    };
+                };
+            };
+            /** @description Missing name or bad defaultSlot. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description The user has no family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    removeMealLibraryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Removed";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No item with that id in the caller's family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateMealLibraryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    /** @enum {string|null} */
+                    defaultSlot?: "breakfast" | "lunch" | "dinner" | "snack" | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["MealLibraryItem"];
+                    };
+                };
+            };
+            /** @description Nothing to update. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No item with that id in the caller's family. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

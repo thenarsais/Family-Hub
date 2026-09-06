@@ -90,6 +90,18 @@ vi.mock('@/hooks/useMealPlanner', () => ({
     refresh: vi.fn(),
   }),
 }));
+vi.mock('@/hooks/useMealLibrary', () => ({
+  useMealLibrary: () => ({
+    library: [],
+    loading: false,
+    error: null,
+    addToLibrary: vi.fn(),
+    renameLibraryItem: vi.fn(),
+    setLibraryItemSlot: vi.fn(),
+    removeFromLibrary: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
 
 const renderDashboard = () =>
   render(

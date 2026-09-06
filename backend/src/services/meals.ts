@@ -14,6 +14,16 @@ export interface MealPlanRow {
   updated_at: string;
 }
 
+export interface MealLibraryRow {
+  id: string;
+  family_id: string;
+  name: string;
+  default_slot: MealSlot | null;
+  created_by_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const isValidDate = (s: unknown): s is string => typeof s === 'string' && DATE_RE.test(s);
 export const isValidSlot = (s: unknown): s is MealSlot => MEAL_SLOTS.includes(s as MealSlot);
@@ -88,6 +98,81 @@ class MealPlanService {
     const result = await query(
       `DELETE FROM meal_plans WHERE family_id = $1 AND plan_date = $2 AND slot = $3`,
       [familyId, date, slot]
+    );
+    return result.rowCount > 0;
+  }
+
+  // ---------------- meal library (FR-133) ----------------
+
+  /** The family's saved-meals list, alphabetical. */
+  async getLibrary(userId: string): Promise<MealLibraryRow[]> {
+    const familyId = await this.familyIdForUser(userId);
+    if (!familyId) return [];
+
+    const result = await query<MealLibraryRow>(
+      `SELECT * FROM meal_library WHERE family_id = $1 ORDER BY name ASC`,
+      [familyId]
+    );
+    return result.rows;
+  }
+
+  /**
+   * Add a saved meal. Upserts on (family_id, name) so re-adding an existing
+   * name just refreshes its default_slot instead of erroring. Returns null when
+   * the caller has no family.
+   */
+  async addLibraryItem(
+    userId: string,
+    name: string,
+    defaultSlot: MealSlot | null
+  ): Promise<MealLibraryRow | null> {
+    const familyId = await this.familyIdForUser(userId);
+    if (!familyId) return null;
+
+    return queryOne<MealLibraryRow>(
+      `INSERT INTO meal_library (family_id, name, default_slot, created_by_id)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (family_id, name)
+       DO UPDATE SET default_slot = EXCLUDED.default_slot, updated_at = now()
+       RETURNING *`,
+      [familyId, name.trim(), defaultSlot, userId]
+    );
+  }
+
+  /** Rename / re-slot one saved meal. Returns null when nothing matched. */
+  async updateLibraryItem(
+    userId: string,
+    id: string,
+    updates: { name?: string; defaultSlot?: MealSlot | null }
+  ): Promise<MealLibraryRow | null> {
+    const familyId = await this.familyIdForUser(userId);
+    if (!familyId) return null;
+
+    return queryOne<MealLibraryRow>(
+      `UPDATE meal_library
+       SET name = COALESCE($1, name),
+           default_slot = CASE WHEN $2::boolean THEN $3 ELSE default_slot END,
+           updated_at = now()
+       WHERE id = $4 AND family_id = $5
+       RETURNING *`,
+      [
+        updates.name?.trim() ?? null,
+        Object.prototype.hasOwnProperty.call(updates, 'defaultSlot'),
+        updates.defaultSlot ?? null,
+        id,
+        familyId,
+      ]
+    );
+  }
+
+  /** Delete one saved meal. Returns true when a row was removed. */
+  async removeLibraryItem(userId: string, id: string): Promise<boolean> {
+    const familyId = await this.familyIdForUser(userId);
+    if (!familyId) return false;
+
+    const result = await query(
+      `DELETE FROM meal_library WHERE id = $1 AND family_id = $2`,
+      [id, familyId]
     );
     return result.rowCount > 0;
   }

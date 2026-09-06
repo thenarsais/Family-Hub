@@ -2350,6 +2350,148 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
 
+  /api/meals/library:
+    get:
+      tags: [Meals]
+      summary: The caller's family saved-meals list (FR-133)
+      operationId: listMealLibrary
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Saved meals.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/MealLibraryItem' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Meals]
+      summary: Add a saved meal (upserts on name)
+      operationId: addMealLibraryItem
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                defaultSlot:
+                  type: [string, 'null']
+                  enum: [breakfast, lunch, dinner, snack, null]
+      responses:
+        '201':
+          description: Created (or refreshed).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/MealLibraryItem' }
+        '400':
+          description: Missing name or bad defaultSlot.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: The user has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/meals/library/{id}:
+    patch:
+      tags: [Meals]
+      summary: Rename or re-slot a saved meal
+      operationId: updateMealLibraryItem
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                defaultSlot:
+                  type: [string, 'null']
+                  enum: [breakfast, lunch, dinner, snack, null]
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/MealLibraryItem' }
+        '400':
+          description: Nothing to update.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No item with that id in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Meals]
+      summary: Remove a saved meal
+      operationId: removeMealLibraryItem
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Removed" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No item with that id in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
   /api/meals/{date}/{slot}:
     put:
       tags: [Meals]
@@ -4989,6 +5131,19 @@ components:
         slot: { type: string, enum: [breakfast, lunch, dinner, snack] }
         text: { type: string }
         updated_by_id: { type: [string, 'null'], format: uuid }
+        created_at: { type: [string, 'null'], format: date-time }
+        updated_at: { type: [string, 'null'], format: date-time }
+
+    MealLibraryItem:
+      type: object
+      description: One saved meal in the family library (migration 011, FR-133).
+      required: [id, family_id, name]
+      properties:
+        id: { type: string, format: uuid }
+        family_id: { type: string, format: uuid }
+        name: { type: string }
+        default_slot: { type: [string, 'null'], enum: [breakfast, lunch, dinner, snack, null] }
+        created_by_id: { type: [string, 'null'], format: uuid }
         created_at: { type: [string, 'null'], format: date-time }
         updated_at: { type: [string, 'null'], format: date-time }
 
