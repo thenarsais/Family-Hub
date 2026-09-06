@@ -1,555 +1,183 @@
-# Deployment Guide
-## Family Hub Backend - Production Deployment
+# Deployment Plan (FR-118)
 
-**Last Updated:** 2026-07-07  
-**Status:** Production Ready ✅
-
----
-
-## 📋 Table of Contents
-
-1. [Prerequisites](#prerequisites)
-2. [Environment Configuration](#environment-configuration)
-3. [Health Checks](#health-checks)
-4. [Docker Deployment](#docker-deployment)
-5. [Kubernetes Deployment](#kubernetes-deployment)
-6. [Monitoring & Logging](#monitoring--logging)
-7. [Performance Tuning](#performance-tuning)
-8. [Security Checklist](#security-checklist)
-9. [Troubleshooting](#troubleshooting)
+Status: **planned, not yet executed.** This is the output of the FR-118 planning
+session (2026-09-06). It records the decisions and the runbook; nothing is
+deployed until the home box exists.
 
 ---
 
-## Prerequisites
+## Decisions
 
-- Node.js 18+ (or Docker for containerized deployment)
-- PostgreSQL 13+ database
-- Redis 6+ for caching
-- Supabase account with service role key
-- Docker & Docker Compose (optional)
-- Kubernetes cluster (optional)
+| Question | Decision |
+|---|---|
+| Reach from outside the home? | **Yes** — family phones need it on cellular. |
+| Backend host | **A home mini-PC** (to be purchased — small always-on Linux box). |
+| Frontend host | **Cloudflare Pages** (free static host, auto-deploys from `main`). |
+| Public ingress for the backend | **Cloudflare Tunnel** (`cloudflared` on the box → public HTTPS hostname, no port-forwarding, home IP never exposed). |
+| Database | **Supabase managed Postgres**, prod project. Only work is applying migrations 001–010. |
+| Deploy trigger | **Split** — frontend auto (Pages builds on push); backend **manual scripted** (`./scripts/deploy.sh` on the box). Rationale below. |
+| Redis | **Yes, a tiny container.** The prod env check (`config/environment.ts`) requires `REDIS_URL`; a 5 MB `redis:7-alpine` alongside the API satisfies it and gives real cross-restart caching for weather/dictionary. |
 
----
+### Why manual backend deploy
 
-## Environment Configuration
-
-### Required Environment Variables
-
-```bash
-# Core
-ENVIRONMENT=production
-NODE_ENV=production
-PORT=3000
-API_URL=https://api.familyhub.com
-
-# Database
-DATABASE_URL=postgresql://user:password@host:5432/familyhub
-DB_POOL_SIZE=20
-DB_CONNECTION_TIMEOUT=5000
-DB_IDLE_TIMEOUT=30000
-
-# Cache
-REDIS_URL=redis://user:password@host:6379
-REDIS_TTL=300
-
-# Authentication
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-JWT_SECRET=your-super-secret-jwt-key-min-32-chars
-
-# Security
-BCRYPT_ROUNDS=10
-ALLOWED_ORIGINS=https://app.familyhub.com,https://www.familyhub.com
-CORS_ORIGINS=https://app.familyhub.com,https://www.familyhub.com
-
-# External APIs
-MERRIAM_WEBSTER_API_KEY=your-key-here
-OPENWEATHER_API_KEY=your-key-here
-SENDGRID_API_KEY=your-key-here
-SENDGRID_FROM_EMAIL=noreply@familyhub.com
-
-# Performance
-COMPRESSION_ENABLED=true
-COMPRESSION_LEVEL=6
-COMPRESSION_THRESHOLD=1024
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-
-# Versioning
-API_VERSION=1.0.0
-```
-
-### Environment Variable Security
-
-- **Never commit** `.env` files to git
-- Use **AWS Secrets Manager**, **HashiCorp Vault**, or similar in production
-- Rotate secrets regularly
-- Audit access to secrets
-- Use separate keys for staging/production
+The box is internet-facing (via the tunnel). Putting a GitHub deploy key or a
+self-hosted runner on it widens the attack surface and adds a failure mode, for
+a project where the backend changes land maybe once a week. A 20-second
+`ssh box 'cd ~/family-hub && ./scripts/deploy.sh'` is more robust. Upgrade path
+if that ever chafes: publish a GHCR image from CI and have the box pull it via a
+`cloudflared`-routed webhook, or add a self-hosted runner.
 
 ---
 
-## Health Checks
+## Architecture
 
-### Endpoints
-
-| Endpoint | Purpose | Response |
-|----------|---------|----------|
-| `GET /health` | Liveness probe | Returns `200` if running |
-| `GET /ready` | Readiness probe | Returns `200` if ready to serve |
-| `GET /startup` | Startup probe | Returns `200` after initialization |
-| `GET /metrics` | Prometheus metrics | Prometheus format metrics |
-| `GET /info` | Application info | Version, uptime, endpoints |
-
-### Check Current Status
-
-```bash
-curl http://localhost:3000/health
-# Returns: {"status":"ok","timestamp":"...","uptime":123.45}
-
-curl http://localhost:3000/ready
-# Returns readiness status with all checks
-
-curl http://localhost:3000/metrics
-# Returns Prometheus metrics
 ```
+                     ┌─────────────  Cloudflare (free plan)  ─────────────┐
+                     │                                                     │
+   family phones ───►│  Cloudflare Pages            Cloudflare Tunnel      │
+   wall display ────►│  hub.<domain>                api.<domain>           │
+   (anywhere, HTTPS) │  (static SPA, built from     (cloudflared daemon    │
+                     │   the repo on push to main)   on the home box)      │
+                     └───────┬──────────────────────────────┬─────────────┘
+                             │ VITE_API_URL = api.<domain>  │
+                             │                              ▼
+                             │                    ┌──────────────────────┐
+                             │                    │  Home mini-PC (Linux)│
+                             │                    │  Docker:             │
+                             │                    │   • family-hub-api   │
+                             │                    │   • redis            │
+                             │                    │   • cloudflared      │
+                             │                    └──────────┬───────────┘
+                             │                               │ DATABASE_URL / SUPABASE_*
+                             ▼                               ▼
+                    (browser also talks         ┌──────────────────────────┐
+                     directly to Supabase       │  Supabase (managed)      │
+                     for auth via the anon key) │  prod project            │
+                                                │  migrations 001–010      │
+                                                └──────────────────────────┘
+```
+
+Everything the family hits is `*.<domain>` behind Cloudflare, TLS terminated by
+Cloudflare. The home box has **no inbound ports open** — `cloudflared` makes only
+outbound connections.
 
 ---
 
-## Docker Deployment
+## What you need to acquire / decide
 
-### Build Image
-
-```bash
-docker build -t familyhub-api:latest .
-docker tag familyhub-api:latest familyhub-api:1.0.0
-```
-
-### Run Container
-
-```bash
-docker run \
-  --env-file .env.production \
-  -p 3000:3000 \
-  --health-cmd="curl -f http://localhost:3000/health || exit 1" \
-  --health-interval=30s \
-  --health-timeout=10s \
-  --health-retries=3 \
-  familyhub-api:latest
-```
-
-### Docker Compose
-
-```yaml
-version: '3.8'
-
-services:
-  api:
-    image: familyhub-api:latest
-    container_name: family-hub-api
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env.production
-    depends_on:
-      - postgres
-      - redis
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: familyhub
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  redis_data:
-```
+- [ ] **A domain.** ~$10/yr. Put it on Cloudflare (free plan). Without one you
+      can still ship on `*.pages.dev` + a `*.cfargotunnel.com` hostname, but a
+      real domain is cleaner for the OAuth redirect URI and for the family to
+      remember. **This is the one recurring cost.**
+- [ ] **The mini-PC.** Target spec: 4 GB RAM, an x86-64 or ARM64 CPU, ~30 GB
+      disk, wired ethernet, runs Linux (Debian/Ubuntu Server or Raspberry Pi
+      OS). A Raspberry Pi 5 (8 GB) or any refurbished mini-PC (~$120–200)
+      covers it comfortably — the API idles well under 512 MB.
+- [ ] **Confirm the prod Supabase project.** `family-hub-dev` is dev-only.
+      There is a separate prod project (paused/restored 2026-09-04); confirm it
+      is live and grab its `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and the
+      session-pooler `DATABASE_URL`.
+- [ ] **Rotate the OpenWeather API key** — the current one was pasted in chat.
 
 ---
 
-## Kubernetes Deployment
+## Runbook
 
-### ConfigMap (Non-sensitive config)
+### 1. Cloudflare + domain (one-time)
 
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: familyhub-config
-  namespace: production
-data:
-  ENVIRONMENT: "production"
-  NODE_ENV: "production"
-  PORT: "3000"
-  API_VERSION: "1.0.0"
-```
+1. Add the domain to Cloudflare (free plan), update the registrar's nameservers.
+2. Decide the two hostnames, e.g. `hub.example.com` (frontend) and
+   `api.example.com` (backend).
 
-### Secret (Sensitive data)
+### 2. Supabase prod (one-time)
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: familyhub-secrets
-  namespace: production
-type: Opaque
-stringData:
-  SUPABASE_URL: "https://your-project.supabase.co"
-  SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  DATABASE_URL: "postgresql://..."
-  REDIS_URL: "redis://..."
-  JWT_SECRET: "your-secret-key"
-```
+1. Confirm the prod project is unpaused.
+2. Apply migrations **001 → 010** in order (the same one-off `pg` script used
+   for dev, pointed at the prod `DATABASE_URL`). Skip `003_seed_demo_users.sql`
+   — that seeds demo accounts, not wanted in prod.
+3. Verify `NOTIFY pgrst, 'reload schema'` ran (last line of the recent
+   migrations) or restart PostgREST from the Supabase dashboard.
+4. Note the RLS/GRANT caveats in the `supabase-rls-permissions` memory — verify
+   `service_role` has table grants on the live prod DB before trusting it.
 
-### Deployment
+### 3. Frontend — Cloudflare Pages (one-time, then automatic)
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: familyhub-api
-  namespace: production
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: familyhub-api
-  template:
-    metadata:
-      labels:
-        app: familyhub-api
-    spec:
-      containers:
-      - name: api
-        image: familyhub-api:1.0.0
-        ports:
-        - containerPort: 3000
-        envFrom:
-        - configMapRef:
-            name: familyhub-config
-        - secretRef:
-            name: familyhub-secrets
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 2
-        startupProbe:
-          httpGet:
-            path: /startup
-            port: 3000
-          failureThreshold: 30
-          periodSeconds: 10
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: familyhub-api
-  namespace: production
-spec:
-  selector:
-    app: familyhub-api
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 3000
-  type: LoadBalancer
-```
-
----
-
-## Monitoring & Logging
-
-### Log Levels
-
-```bash
-# Development
-ENVIRONMENT=development  # Shows all logs
-
-# Production
-ENVIRONMENT=production   # Error and warning only
-```
-
-### Log Aggregation
-
-Logs should be forwarded to:
-- Datadog
-- Splunk
-- ELK Stack
-- CloudWatch
-- GCP Logging
-
-### Performance Monitoring
-
-```bash
-curl http://localhost:3000/performance/summary
-# Returns query, request, and compression statistics
-
-curl http://localhost:3000/performance/health
-# Returns detailed health metrics
-```
-
-### Prometheus Metrics
-
-```bash
-curl http://localhost:3000/metrics
-# Format: Prometheus text format
-# Includes: uptime, memory usage, Node.js version
-```
-
----
-
-## Performance Tuning
-
-### Database Optimization
-
-1. Create recommended indexes:
-   ```bash
-   curl -X POST http://localhost:3000/performance/index-sql
+1. Create a Pages project, connect the GitHub repo, branch `main`.
+2. Build settings:
+   - Build command: `npm ci && npm run build --workspace=frontend`
+   - Build output directory: `frontend/dist`
+   - Root directory: repo root (the build is workspace-aware)
+3. Environment variables (Production):
    ```
-
-2. Monitor query performance:
-   ```bash
-   curl http://localhost:3000/performance/queries
+   VITE_API_URL=https://api.example.com
+   VITE_SUPABASE_URL=<prod supabase url>
+   VITE_SUPABASE_ANON_KEY=<prod anon key>
+   VITE_SENTRY_DSN=<optional>
    ```
+4. Assign the custom domain `hub.example.com` to the Pages project.
+5. From here, every push to `main` rebuilds and deploys the frontend. No action.
 
-3. Check for N+1 queries:
-   ```bash
-   curl http://localhost:3000/performance/queries/n-plus-one
-   ```
+### 4. Backend — the home box (one-time)
 
-### Caching Strategy
+1. Install Docker + the compose plugin. Install `cloudflared`
+   (`cloudflared service install` with a tunnel token from the Cloudflare
+   Zero-Trust dashboard).
+2. In the Cloudflare tunnel config, route `api.example.com` → `http://localhost:3000`.
+3. `git clone` the repo to `~/family-hub`.
+4. `cp backend/.env.production.example backend/.env.production` and fill it in
+   (see that file for every key). This file is gitignored — it never leaves the
+   box.
+5. `./scripts/deploy.sh` — builds the image, starts `api` + `redis`, waits for
+   the healthcheck.
+6. Smoke-test: `curl https://api.example.com/health` from a phone on cellular.
 
-- Set `REDIS_TTL=300` for 5-minute cache
-- Increase for stable data
-- Monitor cache hit rates
+### 5. Google OAuth (one-time)
 
-### Compression
+1. In Google Cloud Console → the existing OAuth client, add
+   `https://api.example.com/auth/google/callback` to **Authorized redirect
+   URIs** (the legacy root path is intentional — see FR-119 / T-19; it 302s to
+   the calendar callback).
+2. Set `BACKEND_URL=https://api.example.com` in `backend/.env.production` so the
+   backend builds that exact redirect URI.
+3. Each family member re-runs "Connect Google Calendar" once against prod.
 
-- Enable: `COMPRESSION_ENABLED=true`
-- Level: `COMPRESSION_LEVEL=6` (balance speed/compression)
-- Threshold: `COMPRESSION_THRESHOLD=1024` (min size to compress)
+### 6. Ongoing deploys
 
-### Rate Limiting
-
-- Window: `RATE_LIMIT_WINDOW_MS=900000` (15 min)
-- Requests: `RATE_LIMIT_MAX_REQUESTS=100` per window
-
----
-
-## Security Checklist
-
-- [ ] All environment variables set and validated
-- [ ] JWT_SECRET changed from default
-- [ ] CORS_ORIGINS restricted to production domains
-- [ ] HTTPS enabled (TLS 1.2+)
-- [ ] SSL certificates from trusted CA
-- [ ] HSTS headers enabled
-- [ ] CORS properly configured
-- [ ] Rate limiting enabled
-- [ ] Input validation in place
-- [ ] SQL injection prevention verified
-- [ ] XSS protection enabled
-- [ ] CSRF tokens (if applicable)
-- [ ] Secrets rotated regularly
-- [ ] Audit logging enabled
-- [ ] Access logs monitored
+- **Frontend:** merge to `main` → Cloudflare Pages rebuilds. Nothing to do.
+- **Backend:** `ssh box 'cd ~/family-hub && ./scripts/deploy.sh'`. The script
+  does `git pull`, rebuilds the image, and restarts with a healthcheck gate.
+- **DB migrations:** a new `backend/migrations/NNN_*.sql` must be applied to prod
+  by hand (same `pg` script) as part of that backend deploy — the app does not
+  auto-migrate.
 
 ---
 
-## Deployment Steps
+## Wall display
 
-### 1. Pre-deployment Checks
-
-```bash
-npm run build        # Build TypeScript
-npm run test         # Run tests (if available)
-npm run lint         # Lint code
-```
-
-### 2. Database Migrations
-
-```bash
-npm run migrate      # Apply all pending migrations
-```
-
-### 3. Create Backup
-
-```bash
-# Backup current database
-pg_dump familyhub > backup-$(date +%s).sql
-```
-
-### 4. Deploy API
-
-```bash
-# Option 1: Docker Compose
-docker-compose -f docker-compose.prod.yml up -d
-
-# Option 2: Kubernetes
-kubectl apply -f k8s/deployment.yaml
-kubectl rollout status deployment/familyhub-api -n production
-
-# Option 3: Direct
-npm run build && npm start
-```
-
-### 5. Verify Deployment
-
-```bash
-# Check health
-curl https://api.familyhub.com/health
-
-# Check readiness
-curl https://api.familyhub.com/ready
-
-# Check info
-curl https://api.familyhub.com/info
-
-# Monitor logs
-docker logs family-hub-api
-# or
-kubectl logs -f deployment/familyhub-api -n production
-```
-
-### 6. Smoke Tests
-
-```bash
-# Test key endpoints
-curl https://api.familyhub.com/health
-curl https://api.familyhub.com/badges
-curl https://api.familyhub.com/performance/health
-```
+The kitchen screen is a browser in kiosk mode pointed at `https://hub.example.com`.
+The device-auth / profile-picker / parent-PIN model for it is **T-14**, a
+separate task that depends on this deploy existing.
 
 ---
 
-## Rollback Procedure
+## Deliberately out of scope
 
-If deployment fails:
-
-```bash
-# Docker Compose
-docker-compose down
-docker-compose -f docker-compose.prod.yml.backup up -d
-
-# Kubernetes
-kubectl rollout undo deployment/familyhub-api -n production
-
-# Direct
-git checkout previous-version
-npm run build && npm start
-```
+- The dev `docker-compose.yml` (Postgres, Redis, ELK, Prometheus, Grafana) is a
+  local tooling stack and is **not** used in prod. `docker-compose.prod.yml` is
+  the prod file. Slimming the dev one is a separate cleanup.
+- `.github/workflows/deploy.yml` (Swarm/SSH stubs) stays disabled — the split
+  trigger above replaces it. Delete or rewrite it in a later pass.
+- CDN/edge caching, blue-green, autoscaling — a single household does not need
+  any of it.
 
 ---
 
-## Troubleshooting
+## Costs
 
-### Container won't start
-
-```bash
-# Check logs
-docker logs family-hub-api
-
-# Check environment variables
-docker exec family-hub-api env
-
-# Verify database connection
-docker exec family-hub-api curl -f http://localhost:3000/ready
-```
-
-### High memory usage
-
-```bash
-# Check memory metrics
-curl http://localhost:3000/metrics | grep memory
-
-# Reduce pool sizes
-DB_POOL_SIZE=10
-REDIS_TTL=60
-```
-
-### Slow queries
-
-```bash
-# Get slow query analysis
-curl http://localhost:3000/performance/queries/slow
-
-# Get recommendations
-curl http://localhost:3000/performance/queries
-```
-
-### Rate limit issues
-
-Adjust limits based on load:
-
-```bash
-RATE_LIMIT_MAX_REQUESTS=500  # Increase limit
-RATE_LIMIT_WINDOW_MS=60000   # Shorter window
-```
-
----
-
-## Production Checklist
-
-- [ ] Environment variables configured
-- [ ] Database backed up
-- [ ] Redis configured
-- [ ] Health checks responding
-- [ ] Metrics endpoint working
-- [ ] Logs aggregating
-- [ ] Monitoring alerts set up
-- [ ] Backup/restore tested
-- [ ] Rollback plan documented
-- [ ] Team trained on deployment
-- [ ] On-call runbook prepared
-- [ ] Load testing completed
-
----
-
-## Support
-
-For deployment issues, refer to:
-- [API Documentation](./API.md) (and [`openapi.yaml`](../openapi.yaml), the source of truth)
-- [Testing Guide](./TESTING_API.md)
-- [Architecture Guide](../backend/README.md)
-
----
-
-**Status:** Production Ready ✅  
-**Last Tested:** 2026-07-07  
-**Next Review:** 2026-07-14
+| Item | Cost |
+|---|---|
+| Domain | ~$10 / year |
+| Cloudflare (Pages + Tunnel + DNS) | $0 (free plan) |
+| Supabase | $0 while under the free tier's limits; $25/mo Pro if PITR backups or the paused-project timeout become a problem |
+| Mini-PC | ~$120–200 one-time + a few $/yr electricity |
+| **Recurring** | **~$10/yr** (domain), everything else free unless Supabase Pro |
