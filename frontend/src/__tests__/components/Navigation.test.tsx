@@ -10,6 +10,11 @@ const { mockUseAuth, mockNavigate } = vi.hoisted(() => ({
 }));
 
 vi.mock('@hooks/useAuth', () => ({ useAuth: mockUseAuth }));
+// The top bar reads weather for the temp chip; stub it so this suite doesn't
+// fire a real (unmocked) fetch that logs during teardown.
+vi.mock('@hooks/useWeather', () => ({
+  useWeather: () => ({ weather: null, loading: false, error: null, units: 'imperial', location: 'Denver' }),
+}));
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
@@ -61,5 +66,63 @@ describe('Navigation', () => {
 
     expect(logout).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/login');
+  });
+
+  describe('night-mode toggle', () => {
+    it('is absent when no handler is passed', () => {
+      render(
+        <MemoryRouter>
+          <Navigation />
+        </MemoryRouter>,
+      );
+      expect(screen.queryByRole('button', { name: /toggle night mode/i })).not.toBeInTheDocument();
+    });
+
+    it('shows a sun in light mode and a moon in dark mode, and calls the handler', async () => {
+      const onToggle = vi.fn();
+      const user = userEvent.setup();
+      const { rerender } = render(
+        <MemoryRouter>
+          <Navigation isNightMode={false} onToggleNightMode={onToggle} />
+        </MemoryRouter>,
+      );
+
+      const btn = screen.getByRole('button', { name: /toggle night mode/i });
+      expect(btn).toHaveAttribute('aria-pressed', 'false');
+      await user.click(btn);
+      expect(onToggle).toHaveBeenCalledTimes(1);
+
+      rerender(
+        <MemoryRouter>
+          <Navigation isNightMode onToggleNightMode={onToggle} />
+        </MemoryRouter>,
+      );
+      expect(screen.getByRole('button', { name: /toggle night mode/i })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    });
+
+    it('the title reflects Auto vs an active override', () => {
+      const { rerender } = render(
+        <MemoryRouter>
+          <Navigation isNightMode={false} isNightOverridden={false} onToggleNightMode={vi.fn()} />
+        </MemoryRouter>,
+      );
+      expect(screen.getByRole('button', { name: /toggle night mode/i })).toHaveAttribute(
+        'title',
+        expect.stringMatching(/auto/i),
+      );
+
+      rerender(
+        <MemoryRouter>
+          <Navigation isNightMode isNightOverridden onToggleNightMode={vi.fn()} />
+        </MemoryRouter>,
+      );
+      expect(screen.getByRole('button', { name: /toggle night mode/i })).toHaveAttribute(
+        'title',
+        expect.stringMatching(/until the next 9pm\/6am/i),
+      );
+    });
   });
 });

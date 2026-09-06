@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { useNightMode } from '@hooks/useNightMode';
 import { useAuthStore } from '@stores/authStore';
 
 // Entry-point pages stay eager (they're on the first-paint path).
@@ -38,6 +39,8 @@ function Lazy({ children }: { children: ReactNode }) {
 
 export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
+  // Drives .dark on <html> app-wide (Auto schedule + temporary manual override).
+  const { isNightMode, isOverridden, toggleNightMode } = useNightMode();
 
   // Initialize auth state from localStorage on app load (only once)
   useEffect(() => {
@@ -62,7 +65,13 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen flex flex-col bg-paper text-ink">
         <MehndiBorder edge="top" />
-        {isAuthenticated && <Navigation />}
+        {isAuthenticated && (
+          <Navigation
+            isNightMode={isNightMode}
+            isNightOverridden={isOverridden}
+            onToggleNightMode={toggleNightMode}
+          />
+        )}
 
         <div className="flex-1">
           <Routes>
