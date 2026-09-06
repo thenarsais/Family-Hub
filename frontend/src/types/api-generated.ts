@@ -941,6 +941,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shopping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's family shopping list (pending first, checked at the bottom) */
+        get: operations["listShoppingItems"];
+        put?: never;
+        /** Add a line item */
+        post: operations["addShoppingItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shopping/checked": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Clear every checked item for the family */
+        delete: operations["clearCheckedShoppingItems"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shopping/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove one item */
+        delete: operations["removeShoppingItem"];
+        options?: never;
+        head?: never;
+        /** Set an item's checked flag */
+        patch: operations["setShoppingItemChecked"];
+        trace?: never;
+    };
     "/api/reminders": {
         parameters: {
             query?: never;
@@ -2218,6 +2271,21 @@ export interface components {
             is_read: boolean;
             /** @description Currently always 0 — marked TODO in source, not yet implemented. */
             reader_count: number;
+        };
+        /** @description Raw `shopping_items` table row (migration 009). */
+        ShoppingItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            family_id: string;
+            name: string;
+            checked: boolean;
+            /** Format: uuid */
+            added_by_id?: string | null;
+            /** Format: date-time */
+            created_at?: string | null;
+            /** Format: date-time */
+            updated_at?: string | null;
         };
         /** @description Raw `reminders` table row (Tables<'reminders'>['Row']). */
         Reminder: {
@@ -5603,6 +5671,274 @@ export interface operations {
             };
             /** @description Missing announcement ID. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listShoppingItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Shopping items. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["ShoppingItem"][];
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    addShoppingItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["ShoppingItem"];
+                    };
+                };
+            };
+            /** @description Missing item name. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description The user has no family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    clearCheckedShoppingItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: {
+                            removed?: number;
+                        };
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    removeShoppingItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Item removed";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No item with that id in the caller's family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    setShoppingItemChecked: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    checked: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["ShoppingItem"];
+                    };
+                };
+            };
+            /** @description checked (boolean) missing from body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No item with that id in the caller's family. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

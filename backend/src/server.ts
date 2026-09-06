@@ -16,6 +16,7 @@ import announcementsRoutes from './routes/announcements';
 import remindersRoutes from './routes/reminders';
 import energyRoutes from './routes/energy';
 import calendarRoutes from './routes/calendar';
+import shoppingRoutes from './routes/shopping';
 import familyRoutes from './routes/family';
 import activityLogRoutes from './routes/activity-log';
 import { responseFormatter } from './middleware/response-formatter';
@@ -168,6 +169,9 @@ app.get('/auth/google/callback', (req, res) => {
 
 // Calendar endpoints: Family events & scheduling
 app.use('/api/calendar', calendarRoutes);
+
+// Shopping list endpoints: the shared family shopping list
+app.use('/api/shopping', shoppingRoutes);
 
 // Family management endpoints: Members, roles, settings
 app.use('/api/family', familyRoutes);

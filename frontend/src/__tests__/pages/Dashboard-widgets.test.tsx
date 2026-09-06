@@ -63,12 +63,17 @@ vi.mock('@/hooks/useActivityLog', () => ({
   }),
 }));
 vi.mock('@/hooks/useShoppingList', () => ({
+  QUICK_ADD_ITEMS: ['Bananas', 'Coffee'],
   useShoppingList: () => ({
     items: [
-      { id: 's1', name: 'Milk', quantity: 2, unit: 'gal', completed: false },
-      { id: 's2', name: 'Eggs', quantity: 1, unit: 'dozen', completed: true },
+      { id: 's1', name: 'Milk', checked: false, addedById: null, createdAt: null },
+      { id: 's2', name: 'Eggs', checked: true, addedById: null, createdAt: null },
     ],
     loading: false,
+    addItem: vi.fn(),
+    toggleItem: vi.fn(),
+    removeItem: vi.fn(),
+    clearChecked: vi.fn(),
   }),
 }));
 
@@ -87,7 +92,8 @@ describe('Dashboard widgets (populated)', () => {
     expect(screen.getByText('120 kWh')).toBeInTheDocument();
     expect(screen.getByText('The Narsais')).toBeInTheDocument();
     expect(screen.getByText('Completed a chore')).toBeInTheDocument();
-    expect(screen.getByText(/2 gal Milk/)).toBeInTheDocument();
+    expect(screen.getByText('Milk')).toBeInTheDocument();
+    expect(screen.getByText('1 of 2 items still needed')).toBeInTheDocument();
   });
 
   it('derives "points this week" from the last 7 days of activity only', () => {
