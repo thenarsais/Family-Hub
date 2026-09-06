@@ -1,14 +1,27 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useWeather } from '@hooks/useWeather';
 import { useClock, formatClockDate, formatClockTime } from '@hooks/useClock';
 
+interface NavigationProps {
+  isNightMode?: boolean;
+  /** true while a manual override is holding (vs following the Auto schedule). */
+  isNightOverridden?: boolean;
+  onToggleNightMode?: () => void;
+}
+
 /**
  * Top bar (T-00 / FR-151) — always on: brand, live clock + date, outdoor temp,
- * and the profile chip. The chip is the seat of the future profile switcher
- * (T-13/T-14); for now it shows who's signed in and holds Logout.
+ * the night-mode toggle, and the profile chip. The chip is the seat of the
+ * future profile switcher (T-13/T-14); for now it shows who's signed in and
+ * holds Logout.
  */
-export default function Navigation() {
+export default function Navigation({
+  isNightMode = false,
+  isNightOverridden = false,
+  onToggleNightMode,
+}: NavigationProps) {
   const { user, logout } = useAuth();
   const { weather, location: weatherLocation } = useWeather();
   const navigate = useNavigate();
@@ -69,6 +82,33 @@ export default function Navigation() {
             >
               Family
             </Link>
+
+            {onToggleNightMode && (
+              <button
+                type="button"
+                onClick={onToggleNightMode}
+                aria-pressed={isNightMode}
+                title={
+                  isNightOverridden
+                    ? `${isNightMode ? 'Dark' : 'Light'} until the next 9pm/6am — tap to flip`
+                    : `Auto (${isNightMode ? 'dark' : 'light'} right now) — tap for a temporary override`
+                }
+                aria-label="Toggle night mode"
+                className="p-2 rounded-lg text-ink-2 hover:text-accent hover:bg-accent-soft transition-colors relative"
+              >
+                {isNightMode ? (
+                  <Moon className="w-5 h-5" aria-hidden="true" />
+                ) : (
+                  <Sun className="w-5 h-5" aria-hidden="true" />
+                )}
+                {isNightOverridden && (
+                  <span
+                    className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-haldi"
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
+            )}
 
             <div className="flex items-center gap-3 pl-4 sm:border-l border-rule">
               <Link
