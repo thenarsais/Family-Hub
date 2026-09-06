@@ -1,0 +1,59 @@
+# Production stack for the home mini-PC (FR-118 — see docs/DEPLOYMENT.md).
+#
+# Just the API + a small Redis. Postgres is Supabase (managed, off-box);
+# cloudflared runs as a host service, not a compose service, so it survives
+# `docker compose down`. The dev docker-compose.yml (ELK/Prometheus/Grafana)
+# is NOT used here.
+#
+#   ./scripts/deploy.sh      # build + (re)start
+#   docker compose -f docker-compose.prod.yml logs -f api
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: family-hub-api:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000" # localhost only — cloudflared is the sole ingress
+    env_file:
+      - backend/.env.production
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health',r=>{if(r.statusCode!==200)process.exit(1)}).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --appendonly no --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+volumes:
+  redis_data:
