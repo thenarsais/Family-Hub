@@ -11,6 +11,7 @@ import ActivityBoard from '@pages/ActivityBoard';
 import SmartHome from '@pages/SmartHome';
 import FamilyPage from '@pages/FamilyPage';
 import ProfilePage from '@pages/ProfilePage';
+import AnnouncementsPage from '@pages/AnnouncementsPage';
 import NotFound from '@pages/NotFound';
 
 // Components (to be created)
@@ -71,6 +72,7 @@ export default function App() {
               <Route path="/smartthings" element={<SmartHome />} />
               <Route path="/family" element={<FamilyPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/announcements" element={<AnnouncementsPage />} />
             </Route>
 
             {/* Redirect root to dashboard */}
