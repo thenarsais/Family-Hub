@@ -1,9 +1,9 @@
 # Production stack for the home mini-PC (FR-118 — see docs/DEPLOYMENT.md).
 #
-# Just the API + a small Redis. Postgres is Supabase (managed, off-box);
-# cloudflared runs as a host service, not a compose service, so it survives
-# `docker compose down`. The dev docker-compose.yml (ELK/Prometheus/Grafana)
-# is NOT used here.
+# Just the API + a small Redis. Postgres is Supabase (managed, off-box); the
+# public ingress is Tailscale Funnel (`tailscale funnel 443` → localhost:3000),
+# which runs as a host service, not a compose service. The dev
+# docker-compose.yml (ELK/Prometheus/Grafana) is NOT used here.
 #
 #   ./scripts/deploy.sh      # build + (re)start
 #   docker compose -f docker-compose.prod.yml logs -f api
