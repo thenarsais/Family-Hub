@@ -3881,6 +3881,11 @@ paths:
           in: path
           required: true
           schema: { type: string }
+        - name: units
+          in: query
+          required: false
+          schema: { type: string, enum: [metric, imperial], default: imperial }
+          description: "imperial = °F + mph (default); metric = °C + m/s."
       responses:
         '200':
           description: Weather.
@@ -3915,6 +3920,11 @@ paths:
           in: query
           required: true
           schema: { type: number }
+        - name: units
+          in: query
+          required: false
+          schema: { type: string, enum: [metric, imperial], default: imperial }
+          description: "imperial = °F + mph (default); metric = °C + m/s."
       responses:
         '200':
           description: Weather.
@@ -3945,6 +3955,11 @@ paths:
           in: path
           required: true
           schema: { type: string }
+        - name: units
+          in: query
+          required: false
+          schema: { type: string, enum: [metric, imperial], default: imperial }
+          description: "imperial = °F + mph (default); metric = °C + m/s."
       responses:
         '200':
           description: Forecast.
@@ -4958,10 +4973,10 @@ components:
       type: object
       properties:
         location: { type: string }
-        temperature: { type: number, description: "Celsius, rounded." }
-        feelsLike: { type: number }
-        humidity: { type: number }
-        windSpeed: { type: number }
+        temperature: { type: number, description: "Rounded. Unit follows the request's ?units — °F by default, °C when units=metric." }
+        feelsLike: { type: number, description: "Same unit as temperature." }
+        humidity: { type: number, description: "Percent." }
+        windSpeed: { type: number, description: "mph by default, m/s when units=metric." }
         description: { type: string }
         icon: { type: string, description: "An emoji character, not an icon code/URL." }
         timestamp: { type: string, format: date-time }

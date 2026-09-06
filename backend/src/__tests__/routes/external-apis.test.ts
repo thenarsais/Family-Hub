@@ -150,8 +150,18 @@ describe('External APIs Routes', () => {
       (weather.getCurrentWeatherByCoords as jest.Mock).mockResolvedValueOnce({ location: '47.6, -122.3' });
 
       const res = await request(app).get('/api/external/weather/coords?lat=47.6&lon=-122.3').set('Authorization', AUTH).expect(200);
-      expect(weather.getCurrentWeatherByCoords).toHaveBeenCalledWith(47.6, -122.3);
+      expect(weather.getCurrentWeatherByCoords).toHaveBeenCalledWith(47.6, -122.3, 'imperial');
       expect(res.body.location).toBe('47.6, -122.3');
+    });
+
+    it('forwards ?units=metric to the service', async () => {
+      (weather.getCurrentWeatherByCoords as jest.Mock).mockResolvedValueOnce({ location: 'x' });
+
+      await request(app)
+        .get('/api/external/weather/coords?lat=1&lon=2&units=metric')
+        .set('Authorization', AUTH)
+        .expect(200);
+      expect(weather.getCurrentWeatherByCoords).toHaveBeenCalledWith(1, 2, 'metric');
     });
   });
 

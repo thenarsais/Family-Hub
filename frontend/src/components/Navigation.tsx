@@ -10,7 +10,7 @@ import { useClock, formatClockDate, formatClockTime } from '@hooks/useClock';
  */
 export default function Navigation() {
   const { user, logout } = useAuth();
-  const { weather } = useWeather();
+  const { weather, location: weatherLocation } = useWeather();
   const navigate = useNavigate();
   const now = useClock();
 
@@ -46,7 +46,7 @@ export default function Navigation() {
             <span className="text-ink font-semibold">
               {typeof temp === 'number' ? `${Math.round(temp)}°` : '—'}
             </span>
-            <span>Denver</span>
+            <span>{weatherLocation}</span>
           </div>
 
           {/* Right cluster */}

@@ -5,7 +5,10 @@ import { WeekCalendar } from '../components/Calendar';
 import { AnnouncementsBand } from '../components/shell/AnnouncementsBand';
 import { FactOfDayBand } from '../components/shell/FactOfDayBand';
 import { DashboardCard } from '../components/shell/DashboardCard';
+import { WeatherCard } from '../components/Weather/WeatherCard';
+import { DressForWeather } from '../components/Weather/DressForWeather';
 import { useAuth } from '../hooks/useAuth';
+import { useWeather } from '../hooks/useWeather';
 import { useReminders } from '../hooks/useReminders';
 import { useEnergy } from '../hooks/useEnergy';
 import { useFamily } from '../hooks/useFamily';
@@ -18,7 +21,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** The dashboard's reorderable cards, in their out-of-the-box order. The first
  *  few sit in the column beside the calendar; the rest flow into a row below
  *  it — the calendar keeps its hero size either way (FR-131). */
-const CARD_IDS = ['reminders', 'shopping', 'activity', 'family', 'energy'] as const;
+const CARD_IDS = ['reminders', 'shopping', 'activity', 'family', 'energy', 'weather', 'dress'] as const;
 const COLUMN_COUNT = 3;
 
 /** Picks loading / empty / content for a widget body so the page can render
@@ -84,6 +87,7 @@ export default function Dashboard() {
   const { family, members, loading: familyLoading } = useFamily();
   const { activity, loading: activityLoading } = useActivityLog();
   const { items: shoppingItems, loading: shoppingLoading } = useShoppingList();
+  const { weather, loading: weatherLoading, error: weatherError, location: weatherLocation } = useWeather();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -125,6 +129,25 @@ export default function Dashboard() {
   });
 
   const CARDS: Record<string, ReactNode> = {
+    weather: (
+      <WeatherCard
+        {...cardProps('weather')}
+        weather={weather}
+        loading={weatherLoading}
+        error={weatherError}
+        location={weatherLocation}
+      />
+    ),
+
+    dress: (
+      <DressForWeather
+        {...cardProps('dress')}
+        weather={weather}
+        loading={weatherLoading}
+        error={weatherError}
+      />
+    ),
+
     reminders: (
       <DashboardCard
         {...cardProps('reminders')}

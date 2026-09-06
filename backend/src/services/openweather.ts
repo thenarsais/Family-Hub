@@ -13,6 +13,10 @@ import * as cache from '../database/cache';
 const OW_API_KEY = process.env.OPENWEATHER_API_KEY || 'demo';
 const OW_BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
+// 'imperial' → °F + mph (the default, this is a US household), 'metric' → °C + m/s.
+export type WeatherUnits = 'metric' | 'imperial';
+const DEFAULT_UNITS: WeatherUnits = 'imperial';
+
 interface WeatherData {
   location: string;
   temperature: number;
@@ -57,12 +61,15 @@ interface OpenWeatherForecastResponse {
 /**
  * Get current weather by city name
  */
-export async function getCurrentWeatherByCity(city: string): Promise<WeatherData | null> {
+export async function getCurrentWeatherByCity(
+  city: string,
+  units: WeatherUnits = DEFAULT_UNITS,
+): Promise<WeatherData | null> {
   if (!city || city.length === 0) {
     return null;
   }
 
-  const cacheKey = `weather:current:${city.toLowerCase()}`;
+  const cacheKey = `weather:current:${city.toLowerCase()}:${units}`;
 
   // Cache for 10 minutes (weather changes frequently)
   const cached = await cache.get<WeatherData>(cacheKey);
@@ -72,7 +79,7 @@ export async function getCurrentWeatherByCity(city: string): Promise<WeatherData
 
   try {
     const response = await fetch(
-      `${OW_BASE_URL}/weather?q=${encodeURIComponent(city)}&units=metric&appid=${OW_API_KEY}`
+      `${OW_BASE_URL}/weather?q=${encodeURIComponent(city)}&units=${units}&appid=${OW_API_KEY}`
     );
 
     if (!response.ok) {
@@ -109,9 +116,10 @@ export async function getCurrentWeatherByCity(city: string): Promise<WeatherData
  */
 export async function getCurrentWeatherByCoords(
   lat: number,
-  lon: number
+  lon: number,
+  units: WeatherUnits = DEFAULT_UNITS,
 ): Promise<WeatherData | null> {
-  const cacheKey = `weather:current:${lat}:${lon}`;
+  const cacheKey = `weather:current:${lat}:${lon}:${units}`;
 
   const cached = await cache.get<WeatherData>(cacheKey);
   if (cached) {
@@ -120,7 +128,7 @@ export async function getCurrentWeatherByCoords(
 
   try {
     const response = await fetch(
-      `${OW_BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${OW_API_KEY}`
+      `${OW_BASE_URL}/weather?lat=${lat}&lon=${lon}&units=${units}&appid=${OW_API_KEY}`
     );
 
     if (!response.ok) {
@@ -154,12 +162,15 @@ export async function getCurrentWeatherByCoords(
 /**
  * Get 5-day forecast
  */
-export async function getForecast(city: string): Promise<ForecastItem[] | null> {
+export async function getForecast(
+  city: string,
+  units: WeatherUnits = DEFAULT_UNITS,
+): Promise<ForecastItem[] | null> {
   if (!city || city.length === 0) {
     return null;
   }
 
-  const cacheKey = `weather:forecast:${city.toLowerCase()}`;
+  const cacheKey = `weather:forecast:${city.toLowerCase()}:${units}`;
 
   const cached = await cache.get<ForecastItem[]>(cacheKey);
   if (cached) {
@@ -168,7 +179,7 @@ export async function getForecast(city: string): Promise<ForecastItem[] | null> 
 
   try {
     const response = await fetch(
-      `${OW_BASE_URL}/forecast?q=${encodeURIComponent(city)}&units=metric&appid=${OW_API_KEY}`
+      `${OW_BASE_URL}/forecast?q=${encodeURIComponent(city)}&units=${units}&appid=${OW_API_KEY}`
     );
 
     if (!response.ok) {
