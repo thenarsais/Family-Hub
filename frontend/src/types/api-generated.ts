@@ -2535,10 +2535,13 @@ export interface components {
         };
         WeatherData: {
             location?: string;
-            /** @description Celsius, rounded. */
+            /** @description Rounded. Unit follows the request's ?units — °F by default, °C when units=metric. */
             temperature?: number;
+            /** @description Same unit as temperature. */
             feelsLike?: number;
+            /** @description Percent. */
             humidity?: number;
+            /** @description mph by default, m/s when units=metric. */
             windSpeed?: number;
             description?: string;
             /** @description An emoji character, not an icon code/URL. */
@@ -8201,7 +8204,10 @@ export interface operations {
     };
     getWeatherByCity: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description imperial = °F + mph (default); metric = °C + m/s. */
+                units?: "metric" | "imperial";
+            };
             header?: never;
             path: {
                 city: string;
@@ -8262,6 +8268,8 @@ export interface operations {
             query: {
                 lat: number;
                 lon: number;
+                /** @description imperial = °F + mph (default); metric = °C + m/s. */
+                units?: "metric" | "imperial";
             };
             header?: never;
             path?: never;
@@ -8318,7 +8326,10 @@ export interface operations {
     };
     getWeatherForecast: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description imperial = °F + mph (default); metric = °C + m/s. */
+                units?: "metric" | "imperial";
+            };
             header?: never;
             path: {
                 city: string;

@@ -55,7 +55,17 @@ describe('OpenWeatherService', () => {
         description: 'clear sky',
         icon: '☀️',
       });
-      expect(cache.set).toHaveBeenCalledWith('weather:current:seattle', result, 600);
+      expect(cache.set).toHaveBeenCalledWith('weather:current:seattle:imperial', result, 600);
+      expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('units=imperial');
+    });
+
+    it('honours a metric units request (own cache key + query)', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => mockCurrentResponse });
+
+      const result = await getCurrentWeatherByCity('Seattle', 'metric');
+
+      expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('units=metric');
+      expect(cache.set).toHaveBeenCalledWith('weather:current:seattle:metric', result, 600);
     });
 
     it('should fall back to the requested city name when the response has none', async () => {
@@ -107,7 +117,7 @@ describe('OpenWeatherService', () => {
       const result = await getCurrentWeatherByCoords(47.6, -122.3);
 
       expect(result?.location).toBe('47.6, -122.3');
-      expect(cache.set).toHaveBeenCalledWith('weather:current:47.6:-122.3', result, 600);
+      expect(cache.set).toHaveBeenCalledWith('weather:current:47.6:-122.3:imperial', result, 600);
     });
 
     it('should return null when the response is not ok', async () => {
@@ -167,7 +177,7 @@ describe('OpenWeatherService', () => {
 
       expect(result).toHaveLength(5);
       expect(result?.[0]).toMatchObject({ high: 10, low: 2, precipChance: 42, icon: '☀️' });
-      expect(cache.set).toHaveBeenCalledWith('weather:forecast:seattle', result, 3600);
+      expect(cache.set).toHaveBeenCalledWith('weather:forecast:seattle:imperial', result, 3600);
     });
 
     it('should default precipChance to 0 when pop is absent', async () => {

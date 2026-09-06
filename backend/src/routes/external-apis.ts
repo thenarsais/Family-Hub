@@ -113,8 +113,13 @@ router.get('/dictionary/search', verifyAuth, async (req: Request, res: Response)
 // OPENWEATHER
 // ================================================
 
+/** ?units=metric|imperial — anything else (or absent) falls back to imperial (°F/mph). */
+function unitsFromQuery(req: Request): 'metric' | 'imperial' {
+  return req.query.units === 'metric' ? 'metric' : 'imperial';
+}
+
 /**
- * GET /weather/city/:city
+ * GET /weather/city/:city?units=metric|imperial
  * Get current weather for a city
  */
 router.get('/weather/city/:city', verifyAuth, async (req: Request, res: Response) => {
@@ -125,7 +130,7 @@ router.get('/weather/city/:city', verifyAuth, async (req: Request, res: Response
       return res.status(400).json({ error: 'City parameter is required' });
     }
 
-    const weatherData = await weather.getCurrentWeatherByCity(city);
+    const weatherData = await weather.getCurrentWeatherByCity(city, unitsFromQuery(req));
 
     if (!weatherData) {
       return res.status(404).json({ error: `Weather not found for city "${city}"` });
@@ -154,7 +159,7 @@ router.get('/weather/coords', verifyAuth, async (req: Request, res: Response) =>
       return res.status(400).json({ error: 'Valid lat and lon coordinates required' });
     }
 
-    const weatherData = await weather.getCurrentWeatherByCoords(lat, lon);
+    const weatherData = await weather.getCurrentWeatherByCoords(lat, lon, unitsFromQuery(req));
 
     if (!weatherData) {
       return res.status(503).json({ error: 'Unable to fetch weather data' });
@@ -182,7 +187,7 @@ router.get('/weather/forecast/:city', verifyAuth, async (req: Request, res: Resp
       return res.status(400).json({ error: 'City parameter is required' });
     }
 
-    const forecast = await weather.getForecast(city);
+    const forecast = await weather.getForecast(city, unitsFromQuery(req));
 
     if (!forecast || forecast.length === 0) {
       return res.status(404).json({ error: `Forecast not found for city "${city}"` });
