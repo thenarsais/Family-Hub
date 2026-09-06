@@ -134,7 +134,7 @@ describe('API Service', () => {
     it('should clear tokens and redirect on a 401 from an auth endpoint', async () => {
       const error = {
         response: { status: 401 },
-        config: { url: '/auth/login' },
+        config: { url: '/api/auth/login' },
       };
 
       await expect(responseErrorInterceptor(error)).rejects.toBe(error);
@@ -175,7 +175,7 @@ describe('API Service', () => {
 
       await apiClient.login('test@example.com', 'password123');
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth/login', {
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/auth/login', {
         email: 'test@example.com',
         password: 'password123',
       });
@@ -186,7 +186,7 @@ describe('API Service', () => {
 
       await apiClient.getBadges(10, 5);
 
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/badges', {
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/badges', {
         params: { limit: 10, offset: 5 },
       });
     });

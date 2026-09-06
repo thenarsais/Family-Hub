@@ -326,7 +326,7 @@ paths:
   # ================================================================
   # AUTH
   # ================================================================
-  /auth/signup:
+  /api/auth/signup:
     post:
       tags: [Auth]
       summary: Register a new parent/admin user
@@ -384,7 +384,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LegacyErrorBody'
 
-  /auth/login:
+  /api/auth/login:
     post:
       tags: [Auth]
       summary: Authenticate and return a Supabase session
@@ -437,7 +437,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/LegacyErrorBody' }
 
-  /auth/logout:
+  /api/auth/logout:
     post:
       tags: [Auth]
       summary: Sign out the current Supabase session
@@ -472,7 +472,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/LegacyErrorBody' }
 
-  /auth/me:
+  /api/auth/me:
     get:
       tags: [Auth]
       summary: Get current authenticated user (real token verification)
@@ -509,7 +509,7 @@ paths:
   # ================================================================
   # USERS
   # ================================================================
-  /users/me:
+  /api/users/me:
     get:
       tags: [Users]
       summary: Get current user's profile by explicit userId query param
@@ -543,7 +543,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /users/{id}:
+  /api/users/{id}:
     get:
       tags: [Users]
       summary: Get user by ID
@@ -626,7 +626,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /users/{parentId}/children:
+  /api/users/{parentId}/children:
     get:
       tags: [Users]
       summary: List a parent's children (via linked_accounts join)
@@ -663,7 +663,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /users/role/parents:
+  /api/users/role/parents:
     get:
       tags: [Users]
       summary: List all parent users
@@ -695,7 +695,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /users:
+  /api/users:
     get:
       tags: [Users]
       summary: List all users (admin)
@@ -730,7 +730,7 @@ paths:
   # ================================================================
   # BADGES
   # ================================================================
-  /badges:
+  /api/badges:
     get:
       tags: [Badges]
       summary: List all available badges
@@ -755,7 +755,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /badges/{id}:
+  /api/badges/{id}:
     get:
       tags: [Badges]
       summary: Get a badge by ID
@@ -785,7 +785,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /badges/category/{category}:
+  /api/badges/category/{category}:
     get:
       tags: [Badges]
       summary: List badges in a category
@@ -823,7 +823,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /badges/users/{userId}:
+  /api/badges/users/{userId}:
     get:
       tags: [Badges]
       summary: List badges earned by a user
@@ -859,7 +859,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /badges/users/{userId}/detailed:
+  /api/badges/users/{userId}/detailed:
     get:
       tags: [Badges]
       summary: List badges earned by a user, with full badge details joined in
@@ -900,7 +900,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /badges/users/{userId}/badges/{badgeId}:
+  /api/badges/users/{userId}/badges/{badgeId}:
     post:
       tags: [Badges]
       summary: Award a badge to a user
@@ -964,7 +964,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /badges/users/{userId}/range:
+  /api/badges/users/{userId}/range:
     get:
       tags: [Badges]
       summary: List badges earned by a user within a date range
@@ -1012,7 +1012,7 @@ paths:
   # ================================================================
   # POINTS
   # ================================================================
-  /points/users/{userId}:
+  /api/points/users/{userId}:
     get:
       tags: [Points]
       summary: Get a user's total points
@@ -1079,7 +1079,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /points/users/{userId}/history:
+  /api/points/users/{userId}/history:
     get:
       tags: [Points]
       summary: Get points transaction history
@@ -1117,7 +1117,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /points/users/{userId}/breakdown:
+  /api/points/users/{userId}/breakdown:
     get:
       tags: [Points]
       summary: Get points breakdown by activity type
@@ -1149,7 +1149,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /points/users/{userId}/range:
+  /api/points/users/{userId}/range:
     get:
       tags: [Points]
       summary: Get total points earned within a date range
@@ -1186,7 +1186,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /points/users/{userId}/today:
+  /api/points/users/{userId}/today:
     get:
       tags: [Points]
       summary: Get points earned today
@@ -1212,7 +1212,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /points/users/{userId}/week:
+  /api/points/users/{userId}/week:
     get:
       tags: [Points]
       summary: Get points earned this week
@@ -1238,7 +1238,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /points/users/{userId}/month:
+  /api/points/users/{userId}/month:
     get:
       tags: [Points]
       summary: Get points earned this month
@@ -1264,7 +1264,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /points/users/{userId}/subtract:
+  /api/points/users/{userId}/subtract:
     post:
       tags: [Points]
       summary: Deduct points from a user (penalty)
@@ -1303,7 +1303,7 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/LegacyErrorBody' } } }
 
-  /points/leaderboard:
+  /api/points/leaderboard:
     get:
       tags: [Points]
       summary: Get top users by total points
@@ -4788,7 +4788,7 @@ components:
 
     UserProfileFull:
       type: object
-      description: Subset returned by GET /users/me.
+      description: Subset returned by GET /api/users/me.
       properties:
         id: { type: string }
         email: { type: string }
@@ -4800,7 +4800,7 @@ components:
 
     UserProfileBasic:
       type: object
-      description: Subset returned by GET/PUT /users/{id}.
+      description: Subset returned by GET/PUT /api/users/{id}.
       properties:
         id: { type: string }
         email: { type: string }

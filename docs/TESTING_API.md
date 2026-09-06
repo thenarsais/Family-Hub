@@ -24,7 +24,7 @@ Expected: `{"status":"ok","timestamp":"...","environment":"local"}`
 
 #### 1.1 Signup
 ```bash
-curl -X POST http://localhost:3000/auth/signup \
+curl -X POST http://localhost:3000/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
     "email": "testuser@example.com",
@@ -42,7 +42,7 @@ Expected: `201 Created` with user object
 
 #### 1.2 Login
 ```bash
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "testuser@example.com",
@@ -58,7 +58,7 @@ Expected: `200 OK` with `access_token`
 
 #### 1.3 Get Current User
 ```bash
-curl -X GET http://localhost:3000/auth/me \
+curl -X GET http://localhost:3000/api/auth/me \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -68,7 +68,7 @@ Expected: `200 OK` with user profile
 
 #### 1.4 Logout
 ```bash
-curl -X POST http://localhost:3000/auth/logout \
+curl -X POST http://localhost:3000/api/auth/logout \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"access_token": "$TOKEN"}'
 ```
@@ -91,7 +91,7 @@ Expected: `200 OK` with users array
 
 #### 2.2 Get Specific User
 ```bash
-curl -X GET http://localhost:3000/users/$USER_ID \
+curl -X GET http://localhost:3000/api/users/$USER_ID \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -101,7 +101,7 @@ Expected: `200 OK` with single user
 
 #### 2.3 Get Current User Profile
 ```bash
-curl -X GET "http://localhost:3000/users/me?userId=$USER_ID" \
+curl -X GET "http://localhost:3000/api/users/me?userId=$USER_ID" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -111,7 +111,7 @@ Expected: `200 OK` with extended user info
 
 #### 2.4 Update User
 ```bash
-curl -X PUT http://localhost:3000/users/$USER_ID \
+curl -X PUT http://localhost:3000/api/users/$USER_ID \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -140,7 +140,7 @@ Expected: `200 OK` with badges array (25 badges)
 
 #### 3.2 Get Single Badge
 ```bash
-curl -X GET http://localhost:3000/badges/$BADGE_ID \
+curl -X GET http://localhost:3000/api/badges/$BADGE_ID \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -150,7 +150,7 @@ Expected: `200 OK` with badge details
 
 #### 3.3 Get Badges by Category
 ```bash
-curl -X GET http://localhost:3000/badges/category/achievement \
+curl -X GET http://localhost:3000/api/badges/category/achievement \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -160,7 +160,7 @@ Expected: `200 OK` with filtered badges
 
 #### 3.4 Get User Badges
 ```bash
-curl -X GET http://localhost:3000/badges/users/$USER_ID \
+curl -X GET http://localhost:3000/api/badges/users/$USER_ID \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -170,7 +170,7 @@ Expected: `200 OK` (empty array initially)
 
 #### 3.5 Award Badge to User
 ```bash
-curl -X POST http://localhost:3000/users/$USER_ID/badges/$BADGE_ID \
+curl -X POST http://localhost:3000/api/users/$USER_ID/badges/$BADGE_ID \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -180,7 +180,7 @@ Expected: `201 Created` with earned badge
 
 #### 3.6 Get User Badges with Details
 ```bash
-curl -X GET http://localhost:3000/badges/users/$USER_ID/detailed \
+curl -X GET http://localhost:3000/api/badges/users/$USER_ID/detailed \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -190,7 +190,7 @@ Expected: `200 OK` with detailed badge info
 
 #### 3.7 Get Badges by Date Range
 ```bash
-curl -X GET "http://localhost:3000/badges/users/$USER_ID/range?start=2026-07-01T00:00:00Z&end=2026-07-08T23:59:59Z" \
+curl -X GET "http://localhost:3000/api/badges/users/$USER_ID/range?start=2026-07-01T00:00:00Z&end=2026-07-08T23:59:59Z" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -200,7 +200,7 @@ Expected: `200 OK` with badges in range
 
 #### 3.8 Revoke Badge
 ```bash
-curl -X DELETE http://localhost:3000/users/$USER_ID/badges/$BADGE_ID \
+curl -X DELETE http://localhost:3000/api/users/$USER_ID/badges/$BADGE_ID \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -212,7 +212,7 @@ Expected: `200 OK` with revoke message
 
 #### 4.1 Get User Total Points
 ```bash
-curl -X GET http://localhost:3000/points/users/$USER_ID \
+curl -X GET http://localhost:3000/api/points/users/$USER_ID \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -222,7 +222,7 @@ Expected: `200 OK` with total points (0 initially)
 
 #### 4.2 Add Points
 ```bash
-curl -X POST http://localhost:3000/points/users/$USER_ID \
+curl -X POST http://localhost:3000/api/points/users/$USER_ID \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -238,7 +238,7 @@ Expected: `201 Created` with points entry
 
 #### 4.3 Get Points History
 ```bash
-curl -X GET "http://localhost:3000/points/users/$USER_ID/history?limit=10" \
+curl -X GET "http://localhost:3000/api/points/users/$USER_ID/history?limit=10" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -248,7 +248,7 @@ Expected: `200 OK` with history array
 
 #### 4.4 Get Points Breakdown
 ```bash
-curl -X GET http://localhost:3000/points/users/$USER_ID/breakdown \
+curl -X GET http://localhost:3000/api/points/users/$USER_ID/breakdown \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -258,7 +258,7 @@ Expected: `200 OK` with breakdown by activity type
 
 #### 4.5 Get Points Today
 ```bash
-curl -X GET http://localhost:3000/points/users/$USER_ID/today \
+curl -X GET http://localhost:3000/api/points/users/$USER_ID/today \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -268,7 +268,7 @@ Expected: `200 OK` with today's points
 
 #### 4.6 Get Points This Week
 ```bash
-curl -X GET http://localhost:3000/points/users/$USER_ID/week \
+curl -X GET http://localhost:3000/api/points/users/$USER_ID/week \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -278,7 +278,7 @@ Expected: `200 OK` with week total
 
 #### 4.7 Get Points This Month
 ```bash
-curl -X GET http://localhost:3000/points/users/$USER_ID/month \
+curl -X GET http://localhost:3000/api/points/users/$USER_ID/month \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -288,7 +288,7 @@ Expected: `200 OK` with month total
 
 #### 4.8 Get Points by Date Range
 ```bash
-curl -X GET "http://localhost:3000/points/users/$USER_ID/range?start=2026-07-01T00:00:00Z&end=2026-07-08T23:59:59Z" \
+curl -X GET "http://localhost:3000/api/points/users/$USER_ID/range?start=2026-07-01T00:00:00Z&end=2026-07-08T23:59:59Z" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -298,7 +298,7 @@ Expected: `200 OK` with points in range
 
 #### 4.9 Subtract Points
 ```bash
-curl -X POST http://localhost:3000/points/users/$USER_ID/subtract \
+curl -X POST http://localhost:3000/api/points/users/$USER_ID/subtract \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
@@ -313,7 +313,7 @@ Expected: `201 Created` with deduction info
 
 #### 4.10 Get Leaderboard
 ```bash
-curl -X GET "http://localhost:3000/points/leaderboard?limit=5" \
+curl -X GET "http://localhost:3000/api/points/leaderboard?limit=5" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -381,38 +381,38 @@ Expected: `404 Not Found`
 
 ```
 AUTHENTICATION
-[ ] POST /auth/signup - Create user
-[ ] POST /auth/login - Get token
-[ ] GET /auth/me - Get profile
-[ ] POST /auth/logout - Logout
+[ ] POST /api/auth/signup - Create user
+[ ] POST /api/auth/login - Get token
+[ ] GET /api/auth/me - Get profile
+[ ] POST /api/auth/logout - Logout
 
 USERS
 [ ] GET /users - List all
-[ ] GET /users/:id - Get one
-[ ] GET /users/me - Get profile
-[ ] PUT /users/:id - Update
+[ ] GET /api/users/:id - Get one
+[ ] GET /api/users/me - Get profile
+[ ] PUT /api/users/:id - Update
 
 BADGES
 [ ] GET /badges - List all
-[ ] GET /badges/:id - Get one
-[ ] GET /badges/category/:cat - Filter
-[ ] GET /badges/users/:id - User badges
-[ ] POST /users/:id/badges/:bid - Award
-[ ] GET /badges/users/:id/detailed - Detailed
-[ ] GET /badges/users/:id/range - Date range
-[ ] DELETE /users/:id/badges/:bid - Revoke
+[ ] GET /api/badges/:id - Get one
+[ ] GET /api/badges/category/:cat - Filter
+[ ] GET /api/badges/users/:id - User badges
+[ ] POST /api/users/:id/badges/:bid - Award
+[ ] GET /api/badges/users/:id/detailed - Detailed
+[ ] GET /api/badges/users/:id/range - Date range
+[ ] DELETE /api/users/:id/badges/:bid - Revoke
 
 POINTS
-[ ] GET /points/users/:id - Total
-[ ] GET /points/users/:id/history - History
-[ ] GET /points/users/:id/breakdown - Breakdown
-[ ] GET /points/users/:id/range - Date range
-[ ] GET /points/users/:id/today - Today
-[ ] GET /points/users/:id/week - Week
-[ ] GET /points/users/:id/month - Month
-[ ] POST /points/users/:id - Add points
-[ ] POST /points/users/:id/subtract - Deduct
-[ ] GET /points/leaderboard - Top users
+[ ] GET /api/points/users/:id - Total
+[ ] GET /api/points/users/:id/history - History
+[ ] GET /api/points/users/:id/breakdown - Breakdown
+[ ] GET /api/points/users/:id/range - Date range
+[ ] GET /api/points/users/:id/today - Today
+[ ] GET /api/points/users/:id/week - Week
+[ ] GET /api/points/users/:id/month - Month
+[ ] POST /api/points/users/:id - Add points
+[ ] POST /api/points/users/:id/subtract - Deduct
+[ ] GET /api/points/leaderboard - Top users
 
 ERROR CASES
 [ ] Invalid token returns 401

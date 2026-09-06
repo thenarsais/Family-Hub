@@ -72,7 +72,7 @@ out of scope for this pass, which documents behavior as it is.
 
 | Group | Mechanism | Real strength |
 |---|---|---|
-| `auth`, `users`, `badges`, `points`, `external-apis` | `Authorization: Bearer <token>` header | Presence-checked only. `GET /auth/me` is the sole exception — it actually calls `supabase.auth.getUser(token)`. |
+| `auth`, `users`, `badges`, `points`, `external-apis` | `Authorization: Bearer <token>` header | Presence-checked only. `GET /api/auth/me` is the sole exception — it actually calls `supabase.auth.getUser(token)`. |
 | `chores`, `learning`, `announcements`, `reminders`, `energy`, `calendar`, `family`, `activity-log` | `x-user-id` header | Trusted as-is, no verification at all. A few endpoints within these same route files skip the check entirely — see individual endpoint notes below and in `openapi.yaml` (e.g. `GET /api/energy/usage`, `GET /api/energy/summary`, `GET /api/energy/current-month`, `POST /api/activity/log`, and the PATCH/DELETE-by-id endpoints in `announcements`/`reminders`/`calendar`). |
 | `smartthings`, `performance`, `deployment`, `health` | None | Open. |
 
@@ -101,10 +101,10 @@ Each group below links to its tag in `openapi.yaml`. "Auth" column values:
 |---|---|---|---|
 | Health | `/health`, `/api` | none | Liveness checks. See the `/health` shadowing note above. |
 | Deployment | `/ready`, `/startup`, `/metrics`, `/info`, `/config` | none | Readiness/startup probes, Prometheus metrics, app info, redacted config (config blocked in prod). |
-| Auth | `/auth/*` | Bearer (signup/login exempt) | Signup (parents/admins only — children can't self-register, see COPPA note below), login, logout, current-user. |
-| Users | `/users/*` | Bearer | Profile CRUD, parent→children lookup, admin listing. |
-| Badges | `/badges/*` | Bearer | Badge catalog, per-user award/revoke, date-range queries. Some GETs fall back to hardcoded demo data (`demo_mode: true`) if the DB call throws — see `GET /badges/users/{userId}`. |
-| Points | `/points/*` | Bearer | Points ledger (`activity_points` table): totals, history, breakdown, leaderboard, award/deduct. |
+| Auth | `/api/auth/*` | Bearer (signup/login exempt) | Signup (parents/admins only — children can't self-register, see COPPA note below), login, logout, current-user. |
+| Users | `/api/users/*` | Bearer | Profile CRUD, parent→children lookup, admin listing. |
+| Badges | `/api/badges/*` | Bearer | Badge catalog, per-user award/revoke, date-range queries. Some GETs fall back to hardcoded demo data (`demo_mode: true`) if the DB call throws — see `GET /api/badges/users/{userId}`. |
+| Points | `/api/points/*` | Bearer | Points ledger (`activity_points` table): totals, history, breakdown, leaderboard, award/deduct. |
 | SmartThings | `/api/smartthings/*` | none | Device listing/control/discovery. Uses a hand-rolled `smartthings_devices` table — **not** the Supabase `smart_devices` table in `types/database.ts`. |
 | Chores | `/api/chores/*` | x-user-id | Create/list/complete chores, progress + points summaries. Uses a hand-rolled `chores`/`chore_completions` schema (user_id/name/time_slot/points_value/enabled) — **not** the Supabase `chores` table (which has completely different columns: child_id/priority/status/due_date). |
 | Learning | `/api/learning/*` | x-user-id | Lesson completion, quiz answers, phase/overall stats. Same drift issue as Chores: hand-rolled `learning_progress`/`learning_quiz_answers` tables, different columns than the Supabase-generated `learning_progress` type. |
@@ -119,7 +119,7 @@ Each group below links to its tag in `openapi.yaml`. "Auth" column values:
 
 ### COPPA note (children accounts)
 
-`POST /auth/signup` explicitly rejects `role: 'child'` — self-registration
+`POST /api/auth/signup` explicitly rejects `role: 'child'` — self-registration
 of a child account is not possible. The only way to create one is
 `POST /api/family/children`, callable only by an existing parent/admin
 member of a family (403 otherwise). This is FRAMEWORK.md Decision #29.

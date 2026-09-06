@@ -43,7 +43,7 @@ describe('API Service — method delegation', () => {
     it('signup posts to /auth/signup', async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({ data: { user: {} } });
       await apiClient.signup('a@b.com', 'pw', 'Alice');
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth/signup', {
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/auth/signup', {
         email: 'a@b.com',
         password: 'pw',
         name: 'Alice',
@@ -53,13 +53,13 @@ describe('API Service — method delegation', () => {
     it('logout posts to /auth/logout', async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({});
       await apiClient.logout();
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth/logout');
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/auth/logout');
     });
 
     it('getCurrentUser gets /auth/me and unwraps data', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: { user: { id: 'u1' } } });
       const result = await apiClient.getCurrentUser();
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/auth/me');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/auth/me');
       expect(result).toEqual({ user: { id: 'u1' } });
     });
   });
@@ -68,19 +68,19 @@ describe('API Service — method delegation', () => {
     it('getUsers with default pagination', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getUsers();
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/users', { params: { limit: 20, offset: 0 } });
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/users', { params: { limit: 20, offset: 0 } });
     });
 
     it('getUserById', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: { id: 'u1' } });
       await apiClient.getUserById('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/users/u1');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/users/u1');
     });
 
     it('updateUser', async () => {
       mockAxiosInstance.put.mockResolvedValueOnce({ data: { id: 'u1' } });
       await apiClient.updateUser('u1', { name: 'New' });
-      expect(mockAxiosInstance.put).toHaveBeenCalledWith('/users/u1', { name: 'New' });
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith('/api/users/u1', { name: 'New' });
     });
   });
 
@@ -88,31 +88,31 @@ describe('API Service — method delegation', () => {
     it('getBadgeById', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: { id: 'b1' } });
       await apiClient.getBadgeById('b1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/badges/b1');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/badges/b1');
     });
 
     it('getBadgesByCategory', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getBadgesByCategory('chores');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/badges/category/chores');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/badges/category/chores');
     });
 
     it('getUserBadges', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getUserBadges('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/badges/users/u1');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/badges/users/u1');
     });
 
     it('getUserBadgesDetailed', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getUserBadgesDetailed('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/badges/users/u1/detailed');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/badges/users/u1/detailed');
     });
 
     it('awardBadge', async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({ data: {} });
       await apiClient.awardBadge('u1', 'b1', 'great job');
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/badges/users/u1/badges/b1', {
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/badges/users/u1/badges/b1', {
         reason: 'great job',
       });
     });
@@ -122,13 +122,13 @@ describe('API Service — method delegation', () => {
     it('getUserPoints', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getUserPoints('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/points/users/u1');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/points/users/u1');
     });
 
     it('getPointsHistory with default pagination', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getPointsHistory('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/points/users/u1/history', {
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/points/users/u1/history', {
         params: { limit: 20, offset: 0 },
       });
     });
@@ -136,31 +136,31 @@ describe('API Service — method delegation', () => {
     it('getPointsBreakdown', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getPointsBreakdown('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/points/users/u1/breakdown');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/points/users/u1/breakdown');
     });
 
     it('getPointsToday', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getPointsToday('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/points/users/u1/today');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/points/users/u1/today');
     });
 
     it('getPointsWeek', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getPointsWeek('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/points/users/u1/week');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/points/users/u1/week');
     });
 
     it('getPointsMonth', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: {} });
       await apiClient.getPointsMonth('u1');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/points/users/u1/month');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/points/users/u1/month');
     });
 
     it('awardPoints', async () => {
       mockAxiosInstance.post.mockResolvedValueOnce({ data: {} });
       await apiClient.awardPoints('u1', 25, 'chore', 'cleaned room');
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/points/users/u1', {
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/points/users/u1', {
         points: 25,
         activity_type: 'chore',
         description: 'cleaned room',
@@ -170,7 +170,7 @@ describe('API Service — method delegation', () => {
     it('getLeaderboard with defaults', async () => {
       mockAxiosInstance.get.mockResolvedValueOnce({ data: [] });
       await apiClient.getLeaderboard();
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/points/leaderboard', {
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/points/leaderboard', {
         params: { limit: 10, period: 'week' },
       });
     });
