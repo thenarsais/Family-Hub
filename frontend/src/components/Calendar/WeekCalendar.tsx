@@ -5,11 +5,14 @@ import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
 import { useCalendarView, CALENDAR_VIEWS, type CalendarView } from '@hooks/useCalendarView';
 import { useMealPlanner } from '@hooks/useMealPlanner';
+import { useMealLibrary } from '@hooks/useMealLibrary';
 import { EventForm, type EventFormValues, type EventFormInitial } from './EventForm';
 import { CalendarSettings } from './CalendarSettings';
 import { PersonDots } from './PersonDots';
 import { PersonPicker } from './PersonPicker';
 import { MealsLine } from './MealsLine';
+import { MealDayEditor } from './MealDayEditor';
+import { MealLibraryStrip } from './MealLibraryStrip';
 
 interface CalendarEvent {
   id: string;
@@ -162,7 +165,8 @@ export function WeekCalendar() {
   const { user } = useAuth();
   const { members } = useFamily();
   const { view, setView } = useCalendarView(user?.id ?? 'anon');
-  const { mealForDate } = useMealPlanner();
+  const { mealForDate, updateMeal } = useMealPlanner();
+  const mealLib = useMealLibrary();
   const canManage = user?.role === 'parent' || user?.role === 'admin';
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -484,7 +488,31 @@ export function WeekCalendar() {
             dayEvents.map((event) => renderChip(event))
           )}
         </div>
-        <MealsLine meal={mealForDate(day)} />
+        {(() => {
+          const meal = mealForDate(day);
+          // Editable only within the planner's rolling window (mealForDate
+          // returns a row for those days). Outside it, keep the read-only line.
+          return meal ? (
+            <div className="mt-4 pt-3 border-t border-rule/60">
+              <p className="text-xs font-semibold text-ink-3 mb-2">Meals</p>
+              <MealDayEditor
+                meal={meal}
+                dateLabel={day.toLocaleDateString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric' })}
+                onSetSlot={updateMeal}
+                onSaveToLibrary={(name, slot) => mealLib.addToLibrary(name, slot)}
+              />
+              <MealLibraryStrip
+                library={mealLib.library}
+                onAdd={mealLib.addToLibrary}
+                onRename={mealLib.renameLibraryItem}
+                onRemove={mealLib.removeFromLibrary}
+                className="mt-3"
+              />
+            </div>
+          ) : (
+            <MealsLine meal={undefined} />
+          );
+        })()}
       </div>
     );
   };

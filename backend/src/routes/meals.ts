@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getMealPlanService, isValidDate, isValidSlot } from '../services/meals';
+import { getMealPlanService, isValidDate, isValidSlot, type MealSlot } from '../services/meals';
 import { getErrorMessage } from '../utils/errors';
 import { normalizeBody } from '../middleware/normalize-body';
 
@@ -52,6 +52,147 @@ router.get('/', async (req: Request, res: Response) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch meal plan',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+// ---------------- meal library (FR-133) ----------------
+// Declared before the /:date/:slot routes so `/library` isn't parsed as a date.
+
+/** Parse a slot from the body; undefined = not supplied, null = explicitly cleared. */
+function slotFromBody(body: Record<string, unknown>): MealSlot | null | undefined {
+  if (!('defaultSlot' in body)) return undefined;
+  const v = body.defaultSlot;
+  if (v === null || v === '') return null;
+  return isValidSlot(v) ? v : undefined;
+}
+
+/**
+ * GET /api/meals/library
+ * The caller's family saved-meals list.
+ */
+router.get('/library', async (req: Request, res: Response) => {
+  const userId = requireUser(req, res);
+  if (!userId) return;
+
+  try {
+    const items = await meals.getLibrary(userId);
+    res.json({
+      status: 'success',
+      data: items,
+      count: items.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to fetch meal library:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch meal library',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * POST /api/meals/library
+ * Add a saved meal. Body: { name, defaultSlot? }. Upserts on the name.
+ */
+router.post('/library', async (req: Request, res: Response) => {
+  const userId = requireUser(req, res);
+  if (!userId) return;
+
+  const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+  if (!name) {
+    return res.status(400).json({ status: 'error', message: 'name required' });
+  }
+  const slot = slotFromBody(req.body);
+  if (slot === undefined && 'defaultSlot' in req.body && req.body.defaultSlot != null) {
+    return res.status(400).json({ status: 'error', message: 'defaultSlot must be a valid slot' });
+  }
+
+  try {
+    const item = await meals.addLibraryItem(userId, name, slot ?? null);
+    if (!item) {
+      return res.status(404).json({ status: 'error', message: 'No family for this user' });
+    }
+    res.status(201).json({
+      status: 'success',
+      data: item,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to add meal library item:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to add meal library item',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * PATCH /api/meals/library/:id
+ * Rename / re-slot a saved meal. Body: { name?, defaultSlot? }.
+ */
+router.patch('/library/:id', async (req: Request, res: Response) => {
+  const userId = requireUser(req, res);
+  if (!userId) return;
+
+  const updates: { name?: string; defaultSlot?: MealSlot | null } = {};
+  if (typeof req.body.name === 'string' && req.body.name.trim()) {
+    updates.name = req.body.name.trim();
+  }
+  const slot = slotFromBody(req.body);
+  if (slot !== undefined) updates.defaultSlot = slot;
+
+  if (updates.name === undefined && updates.defaultSlot === undefined) {
+    return res.status(400).json({ status: 'error', message: 'nothing to update' });
+  }
+
+  try {
+    const item = await meals.updateLibraryItem(userId, req.params.id as string, updates);
+    if (!item) {
+      return res.status(404).json({ status: 'error', message: 'Item not found' });
+    }
+    res.json({
+      status: 'success',
+      data: item,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to update meal library item:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update meal library item',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * DELETE /api/meals/library/:id
+ * Remove a saved meal.
+ */
+router.delete('/library/:id', async (req: Request, res: Response) => {
+  const userId = requireUser(req, res);
+  if (!userId) return;
+
+  try {
+    const ok = await meals.removeLibraryItem(userId, req.params.id as string);
+    if (!ok) {
+      return res.status(404).json({ status: 'error', message: 'Item not found' });
+    }
+    res.json({
+      status: 'success',
+      message: 'Removed',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to remove meal library item:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to remove meal library item',
       error: getErrorMessage(error),
     });
   }
