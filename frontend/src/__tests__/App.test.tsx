@@ -2,6 +2,12 @@ import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '@/App';
 
+// AnnouncementsPage / FamilyPage / ProfilePage aren't navigated to in this
+// suite, but they're lazy() in App — stub them so a chunk fetch never happens.
+vi.mock('@pages/AnnouncementsPage', () => ({ default: () => <div>Announcements Page</div> }));
+vi.mock('@pages/FamilyPage', () => ({ default: () => <div>Family Page</div> }));
+vi.mock('@pages/ProfilePage', () => ({ default: () => <div>Profile Page</div> }));
+
 const { mockUseAuth, mockInitializeFromStorage } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockInitializeFromStorage: vi.fn(),
@@ -110,13 +116,14 @@ describe('App', () => {
     expect(screen.getByText('Signup Page')).toBeInTheDocument();
   });
 
-  it('should render protected pages when authenticated', () => {
+  it('should render protected pages when authenticated (lazy route)', async () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
     setPath('/activity');
 
     render(<App />);
 
-    expect(screen.getByText('Activity Page')).toBeInTheDocument();
+    // ActivityBoard is lazy() — it streams in behind a Suspense spinner.
+    expect(await screen.findByText('Activity Page')).toBeInTheDocument();
   });
 
   it('should redirect the root path to /dashboard', () => {

@@ -1,23 +1,40 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { useAuthStore } from '@stores/authStore';
 
-// Pages (to be created)
+// Entry-point pages stay eager (they're on the first-paint path).
 import Dashboard from '@pages/Dashboard';
 import Login from '@pages/Login';
 import Signup from '@pages/Signup';
-import ActivityBoard from '@pages/ActivityBoard';
-import SmartHome from '@pages/SmartHome';
-import FamilyPage from '@pages/FamilyPage';
-import ProfilePage from '@pages/ProfilePage';
-import AnnouncementsPage from '@pages/AnnouncementsPage';
 import NotFound from '@pages/NotFound';
 
-// Components (to be created)
+// Secondary pages are reached only by navigation — split each into its own
+// chunk so it isn't in the initial bundle.
+const ActivityBoard = lazy(() => import('@pages/ActivityBoard'));
+const SmartHome = lazy(() => import('@pages/SmartHome'));
+const FamilyPage = lazy(() => import('@pages/FamilyPage'));
+const ProfilePage = lazy(() => import('@pages/ProfilePage'));
+const AnnouncementsPage = lazy(() => import('@pages/AnnouncementsPage'));
+
 import ProtectedRoute from '@components/ProtectedRoute';
 import Navigation from '@components/Navigation';
 import MehndiBorder from '@components/shell/MehndiBorder';
+
+function Spinner() {
+  return (
+    <div className="flex items-center justify-center min-h-screen" role="status" aria-label="Loading">
+      <div className="animate-spin">
+        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full"></div>
+      </div>
+    </div>
+  );
+}
+
+/** Wraps a lazily-loaded page so its chunk can stream in behind a spinner. */
+function Lazy({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<Spinner />}>{children}</Suspense>;
+}
 
 export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -38,13 +55,7 @@ export default function App() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin">
-          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full"></div>
-        </div>
-      </div>
-    );
+    return <Spinner />;
   }
 
   return (
@@ -68,11 +79,11 @@ export default function App() {
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/activity" element={<ActivityBoard />} />
-              <Route path="/smartthings" element={<SmartHome />} />
-              <Route path="/family" element={<FamilyPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/announcements" element={<AnnouncementsPage />} />
+              <Route path="/activity" element={<Lazy><ActivityBoard /></Lazy>} />
+              <Route path="/smartthings" element={<Lazy><SmartHome /></Lazy>} />
+              <Route path="/family" element={<Lazy><FamilyPage /></Lazy>} />
+              <Route path="/profile" element={<Lazy><ProfilePage /></Lazy>} />
+              <Route path="/announcements" element={<Lazy><AnnouncementsPage /></Lazy>} />
             </Route>
 
             {/* Redirect root to dashboard */}
