@@ -2896,9 +2896,10 @@ paths:
                     items:
                       type: object
                       properties:
-                        event_id: { type: string }
+                        event_id: { type: string, description: "An occurrence id, or (when scope=series) Google's recurringEventId." }
                         calendar_id: { type: [string, 'null'] }
                         dismissed_at: { type: string, format: date-time }
+                        scope: { type: string, enum: [occurrence, series], description: "series → every occurrence of this recurring event is hidden (FR-126)." }
                   timestamp: { type: string, format: date-time }
         '401':
           description: Missing x-user-id.
@@ -2914,8 +2915,9 @@ paths:
       description: >
         Removes the local hide. When `source=google` and the user had declined
         the invite, best-effort flips their Google RSVP back to `accepted`
-        (FR-127). `calendarId` / `source` may be given as query params or in the
-        request body.
+        (FR-127) — skipped for `scope=series` (nothing was declined).
+        `calendarId` / `source` / `scope` may be given as query params or in the
+        request body. For a series, `eventId` is Google's recurringEventId.
       operationId: restoreDismissedEvent
       security: [{ userIdHeader: [] }]
       parameters:
@@ -2931,6 +2933,10 @@ paths:
           in: query
           required: false
           schema: { type: string, enum: [google, local] }
+        - name: scope
+          in: query
+          required: false
+          schema: { type: string, enum: [occurrence, series] }
       responses:
         '200':
           description: Restored.
@@ -2961,17 +2967,19 @@ paths:
       summary: Dismiss an event from the calendar view (local hide + Google decline when invited)
       description: >
         Always records a local hide so the event stays out of this user's Family
-        Hub calendar. When `source` is `google` and the connected user is an
-        attendee of the event, also sets their RSVP to `declined` in Google
-        Calendar (requires the `calendar.events` OAuth scope — a token predating
-        it yields `reason: reconnect_required`).
+        Hub calendar. When `source` is `google`, `scope` is `occurrence`, and the
+        connected user is an attendee of the event, also sets their RSVP to
+        `declined` in Google Calendar (requires the `calendar.events` OAuth scope
+        — a token predating it yields `reason: reconnect_required`). A
+        `scope: series` dismiss (FR-126) hides every occurrence of the recurring
+        event and is a local hide only — no Google call.
       operationId: dismissCalendarEvent
       security: [{ userIdHeader: [] }]
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, description: "Local event UUID or Google event ID." }
+          schema: { type: string, description: "Local event UUID or Google event ID (an occurrence id for a recurring event)." }
       requestBody:
         content:
           application/json:
@@ -2983,6 +2991,14 @@ paths:
                   type: string
                   enum: [google, local]
                   description: "Origin of the event. `google` enables the two-way decline; anything else is a local hide only."
+                scope:
+                  type: string
+                  enum: [occurrence, series]
+                  default: occurrence
+                  description: "`series` (FR-126) hides every occurrence of the recurring event; requires `recurringEventId`. Local hide only."
+                recurringEventId:
+                  type: string
+                  description: "Google's series-master id. Required when `scope` is `series`; the dismissed_events row is keyed by it."
       responses:
         '200':
           description: Dismissed.
@@ -2997,6 +3013,7 @@ paths:
                     type: object
                     properties:
                       local: { type: boolean, const: true }
+                      scope: { type: string, enum: [occurrence, series] }
                       synced: { type: boolean, description: "True only when the invite was declined in Google." }
                       action: { type: string, enum: [declined] }
                       reason:
@@ -4741,6 +4758,7 @@ components:
             dateTime: { type: [string, 'null'] }
             date: { type: [string, 'null'] }
         location: { type: [string, 'null'] }
+        recurringEventId: { type: [string, 'null'], description: "Set on an expanded instance of a recurring event (singleEvents:true) — the id of the series master. FR-126 dismisses a whole series by this id." }
         attendees:
           type: [array, 'null']
           items: { type: object, properties: { email: { type: string } } }

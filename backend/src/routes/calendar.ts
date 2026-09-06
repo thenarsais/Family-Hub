@@ -390,7 +390,7 @@ router.get('/dismissed', async (req: Request, res: Response) => {
 
     const { data, error } = await require('../services/supabase').getSupabase()
       .from('dismissed_events')
-      .select('event_id, calendar_id, dismissed_at')
+      .select('event_id, calendar_id, dismissed_at, scope')
       .eq('user_id', userId);
 
     if (error) throw error;
@@ -418,7 +418,8 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
     const { id } = req.params;
-    const { calendarId, source } = req.body || {};
+    const { calendarId, source, recurringEventId } = req.body || {};
+    const scope = (req.body || {}).scope ?? 'occurrence';
 
     if (!userId) {
       return res.status(401).json({
@@ -434,14 +435,33 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
       });
     }
 
+    if (scope !== 'occurrence' && scope !== 'series') {
+      return res.status(400).json({
+        status: 'error',
+        message: "scope must be 'occurrence' or 'series'",
+      });
+    }
+
+    // FR-126: a 'series' dismiss hides EVERY occurrence of a recurring event —
+    // the row is keyed by Google's recurringEventId, and it's a local hide only
+    // (no Google decline; that would touch recurrence semantics for everyone).
+    const isSeries = scope === 'series';
+    if (isSeries && (typeof recurringEventId !== 'string' || !recurringEventId)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'recurringEventId is required when scope is "series"',
+      });
+    }
+
     // Local hide: always recorded, so the event stays out of this user's
     // Family Hub calendar regardless of what happens with Google below.
     const { error } = await require('../services/supabase').getSupabase()
       .from('dismissed_events')
       .upsert({
         user_id: userId,
-        event_id: id,
+        event_id: isSeries ? recurringEventId : id,
         calendar_id: calendarId,
+        scope,
         dismissed_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,event_id',
@@ -449,11 +469,11 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
 
     if (error) throw error;
 
-    // Two-way sync: for a Google event the user is invited to, also decline
-    // the invite in their Google Calendar. Owned / uninvited / local events
-    // are a local hide only.
+    // Two-way sync: for a single Google event the user is invited to, also
+    // decline the invite in their Google Calendar. Owned / uninvited / local
+    // events — and every 'series' dismiss — are a local hide only.
     let sync: { synced: boolean; action?: 'declined'; reason?: string } = { synced: false };
-    if (source === 'google' && calendarId) {
+    if (!isSeries && source === 'google' && calendarId) {
       try {
         const result = await googleOAuth.declineEventIfInvited(userId, calendarId, id as string);
         sync = result.declined
@@ -470,7 +490,7 @@ router.post('/events/:id/dismiss', async (req: Request, res: Response) => {
     res.json({
       status: 'success',
       message: 'Event dismissed successfully',
-      data: { local: true, ...sync },
+      data: { local: true, scope, ...sync },
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
@@ -496,6 +516,7 @@ router.delete('/dismissed/:eventId', async (req: Request, res: Response) => {
       | string
       | undefined;
     const source = (req.query.source || (req.body && req.body.source)) as string | undefined;
+    const scope = (req.query.scope || (req.body && req.body.scope)) as string | undefined;
 
     if (!userId) {
       return res.status(401).json({ status: 'error', message: 'User ID required' });
@@ -513,8 +534,10 @@ router.delete('/dismissed/:eventId', async (req: Request, res: Response) => {
 
     if (error) throw error;
 
+    // A 'series' restore only un-hides occurrences locally — nothing was
+    // declined in Google, so there's nothing to re-accept.
     let sync: { synced: boolean; action?: 'accepted'; reason?: string } = { synced: false };
-    if (source === 'google' && calendarId) {
+    if (scope !== 'series' && source === 'google' && calendarId) {
       try {
         const result = await googleOAuth.acceptEventIfInvited(userId, calendarId, eventId as string);
         sync = result.accepted

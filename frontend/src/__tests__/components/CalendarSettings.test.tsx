@@ -59,7 +59,26 @@ describe('CalendarSettings', () => {
 
     expect(screen.getByText('Soccer practice')).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: /restore/i }));
-    await waitFor(() => expect(onRestore).toHaveBeenCalledWith('g1', 'google', 'cal-1'));
+    await waitFor(() => expect(onRestore).toHaveBeenCalledWith('g1', 'google', 'cal-1', undefined));
+  });
+
+  it('shows a "whole series" tag for a series dismissal and restores it', async () => {
+    const onRestore = vi.fn().mockResolvedValue(undefined);
+    render(
+      <CalendarSettings
+        {...baseProps}
+        onRestore={onRestore}
+        dismissedEvents={[{ event_id: 'rid-1', calendar_id: 'cal-1', scope: 'series' }]}
+        eventTitleFor={() => undefined}
+      />
+    );
+
+    expect(screen.getByText(/whole series/i)).toBeInTheDocument();
+    expect(screen.getByText(/Recurring series/i)).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: /restore/i }));
+    await waitFor(() =>
+      expect(onRestore).toHaveBeenCalledWith('rid-1', 'google', 'cal-1', 'series'),
+    );
   });
 
   it('shows the empty state when nothing is hidden', () => {

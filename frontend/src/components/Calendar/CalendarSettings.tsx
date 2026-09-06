@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, RotateCcw } from 'lucide-react';
 import { useFamily } from '@hooks/useFamily';
 import { ALL_FAMILY_COLORS, resolveMemberColor } from '@/data/familyColors';
-import type { DismissedEvent } from '@hooks/useCalendar';
+import type { DismissedEvent, DismissScope } from '@hooks/useCalendar';
 
 interface Props {
   googleConnected: boolean;
@@ -11,7 +11,12 @@ interface Props {
   onDisconnect: () => Promise<void>;
   dismissedEvents: DismissedEvent[];
   eventTitleFor: (id: string) => string | undefined;
-  onRestore: (eventId: string, source?: 'google' | 'local', calendarId?: string) => Promise<void>;
+  onRestore: (
+    eventId: string,
+    source?: 'google' | 'local',
+    calendarId?: string,
+    scope?: DismissScope,
+  ) => Promise<void>;
   canManage: boolean;
   onClose: () => void;
 }
@@ -112,7 +117,12 @@ export function CalendarSettings({
                 {dismissedEvents.map((d) => (
                   <li key={d.event_id} className="flex items-center justify-between gap-3 py-2">
                     <span className="text-sm text-ink truncate">
-                      {eventTitleFor(d.event_id) || d.event_id}
+                      {d.scope === 'series'
+                        ? eventTitleFor(d.event_id) || 'Recurring series'
+                        : eventTitleFor(d.event_id) || d.event_id}
+                      {d.scope === 'series' && (
+                        <span className="text-ink-3 font-normal"> · whole series</span>
+                      )}
                     </span>
                     <button
                       className="shrink-0 flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-strong disabled:opacity-50"
@@ -123,6 +133,7 @@ export function CalendarSettings({
                             d.event_id,
                             d.calendar_id ? 'google' : 'local',
                             d.calendar_id ?? undefined,
+                            d.scope,
                           ),
                         )
                       }

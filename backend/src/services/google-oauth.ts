@@ -18,6 +18,9 @@ export interface GoogleCalendarEvent {
   end?: { dateTime?: string | null; date?: string | null } | null;
   location?: string | null;
   attendees?: Array<{ email?: string }> | null;
+  // Present on an expanded instance of a recurring event (singleEvents:true) —
+  // the id of the series master. FR-126 uses it to dismiss a whole series.
+  recurringEventId?: string | null;
   calendarId?: string;
   calendarName?: string;
   calendarColor?: string;
