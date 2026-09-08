@@ -43,7 +43,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Check CI/CD pipeline status
         id: check
@@ -78,7 +78,7 @@ jobs:
       url: https://staging-api.familyhub.com
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Deploy to staging
         run: |
@@ -138,7 +138,7 @@ jobs:
       url: https://api.familyhub.com
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Create deployment
         uses: actions/github-script@v9
@@ -232,7 +232,7 @@ jobs:
       name: production
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Rollback to previous version
         run: |
