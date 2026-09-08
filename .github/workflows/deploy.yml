@@ -43,7 +43,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Check CI/CD pipeline status
         id: check
@@ -78,7 +78,7 @@ jobs:
       url: https://staging-api.familyhub.com
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Deploy to staging
         run: |
@@ -107,10 +107,11 @@ jobs:
           echo "✅ Staging smoke tests passed"
 
       - name: Notify Slack (Staging)
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v4
         if: always()
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_STAGING }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_STAGING }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🚀 Staging Deployment",
@@ -138,7 +139,7 @@ jobs:
       url: https://api.familyhub.com
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Create deployment
         uses: actions/github-script@v9
@@ -202,10 +203,11 @@ jobs:
           echo "✅ Production health verified"
 
       - name: Notify Slack (Production)
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v4
         if: always()
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_PRODUCTION }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_PRODUCTION }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🚀 Production Deployment",
@@ -232,7 +234,7 @@ jobs:
       name: production
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Rollback to previous version
         run: |
@@ -246,9 +248,10 @@ jobs:
           echo "✅ Rollback completed"
 
       - name: Notify team
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v4
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_ALERTS }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_ALERTS }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🔴 DEPLOYMENT ROLLBACK",
