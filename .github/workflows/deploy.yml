@@ -107,7 +107,7 @@ jobs:
           echo "✅ Staging smoke tests passed"
 
       - name: Notify Slack (Staging)
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v4
         if: always()
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_STAGING }}
@@ -202,7 +202,7 @@ jobs:
           echo "✅ Production health verified"
 
       - name: Notify Slack (Production)
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v4
         if: always()
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_PRODUCTION }}
@@ -246,7 +246,7 @@ jobs:
           echo "✅ Rollback completed"
 
       - name: Notify team
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@v4
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK_ALERTS }}
           payload: |
