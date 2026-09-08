@@ -6,6 +6,7 @@ import App from '@/App';
 // suite, but they're lazy() in App — stub them so a chunk fetch never happens.
 vi.mock('@pages/AnnouncementsPage', () => ({ default: () => <div>Announcements Page</div> }));
 vi.mock('@pages/RemindersPage', () => ({ default: () => <div>Reminders Page</div> }));
+vi.mock('@pages/ShoppingListPage', () => ({ default: () => <div>Shopping List Page</div> }));
 vi.mock('@pages/FamilyPage', () => ({ default: () => <div>Family Page</div> }));
 vi.mock('@pages/ProfilePage', () => ({ default: () => <div>Profile Page</div> }));
 
@@ -134,6 +135,15 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('Reminders Page')).toBeInTheDocument();
+  });
+
+  it('should render the shopping list page at /shopping-list when authenticated', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    setPath('/shopping-list');
+
+    render(<App />);
+
+    expect(await screen.findByText('Shopping List Page')).toBeInTheDocument();
   });
 
   it('should redirect the root path to /dashboard', () => {
