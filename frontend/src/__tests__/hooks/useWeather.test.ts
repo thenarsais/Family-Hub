@@ -6,7 +6,7 @@ vi.mock('@/services/api', () => ({
 }));
 
 import { apiClient } from '@/services/api';
-import { useWeather } from '@/hooks/useWeather';
+import { useWeather, WEATHER_CITIES } from '@/hooks/useWeather';
 
 const mockGet = apiClient.get as ReturnType<typeof vi.fn>;
 
@@ -63,6 +63,18 @@ describe('useWeather', () => {
     expect(cityCall?.[1]).toEqual({ params: { units: 'imperial' } });
     const fcCall = mockGet.mock.calls.find(([p]) => p.includes('/weather/forecast/'));
     expect(fcCall?.[0]).toContain('/weather/forecast/80241');
+  });
+
+  it('fetches a non-home city by index and returns its label (FR-092)', async () => {
+    wireOk();
+    const cleveland = WEATHER_CITIES[1];
+    const { result } = renderHook(() => useWeather(1));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.location).toBe(cleveland.label);
+    const cityCall = mockGet.mock.calls.find(([p]) => p.includes('/weather/city/'));
+    expect(cityCall?.[0]).toContain(`/weather/city/${encodeURIComponent(cleveland.query)}`);
   });
 
   it('surfaces an error and leaves weather null when a request fails', async () => {
