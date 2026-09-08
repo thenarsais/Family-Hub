@@ -398,12 +398,16 @@ export default function RemindersPage() {
         </button>
       </form>
 
+      {error && (
+        <p className="text-sm text-alert bg-alert/10 rounded p-2">
+          Couldn&apos;t load your reminders: {error}
+        </p>
+      )}
+
       {loading ? (
         <div className="py-6 flex justify-center" role="status" aria-label="Loading">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />
         </div>
-      ) : error ? (
-        <p className="text-sm text-alert">{error}</p>
       ) : (
         <>
           {section('Due now', due, 'active', 'Nothing due right now.')}
