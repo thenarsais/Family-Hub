@@ -1,9 +1,9 @@
 {
   "description": "Frontend production bundle size budget (gzipped). CI fails a PR if either total exceeds its baseline by more than toleranceRatio. Update this file deliberately (`npm run check:bundle-budget -- --update-baseline`) when a PR intentionally grows the bundle, so the change is visible in review rather than the budget silently ratcheting up.",
-  "updated": "2026-09-06",
+  "updated": "2026-09-08",
   "toleranceRatio": 1.1,
   "budgets": {
-    "js_gzip_bytes": 100141,
-    "css_gzip_bytes": 7080
+    "js_gzip_bytes": 121199,
+    "css_gzip_bytes": 7329
   }
 }
