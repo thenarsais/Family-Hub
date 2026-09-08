@@ -25,13 +25,30 @@ interface AuthStore {
   initializeFromStorage: () => void;
 }
 
+/**
+ * Read the persisted session synchronously, at store-creation time, so `token`
+ * and `user` are already correct on the very first render. If this waited for a
+ * mount effect, App and ProtectedRoute would run their route guards against the
+ * empty initial state first and bounce a hard-loaded protected URL to
+ * /login → /dashboard before the session ever loaded.
+ */
+function readStoredAuth(): { token: string | null; user: User | null } {
+  try {
+    const token = localStorage.getItem('auth_token');
+    const rawUser = localStorage.getItem('auth_user');
+    return { token: token || null, user: rawUser ? (JSON.parse(rawUser) as User) : null };
+  } catch {
+    return { token: null, user: null };
+  }
+}
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
-  user: null,
-  token: null,
+  ...readStoredAuth(),
   isLoading: false,
   error: null,
 
-  // Initialize store from localStorage
+  // Re-read from localStorage. State is already hydrated at creation time
+  // (readStoredAuth above); App still calls this on mount as a safety re-sync.
   initializeFromStorage: () => {
     try {
       const storedToken = localStorage.getItem('auth_token');

@@ -237,4 +237,34 @@ describe('authStore', () => {
       expect(useAuthStore.getState().token).toBeNull();
     });
   });
+
+  describe('hydration at creation', () => {
+    // The store reads localStorage synchronously when it's created, so the very
+    // first render already has the session — route guards don't run against an
+    // empty state and bounce a hard-loaded protected URL to /login → /dashboard.
+    it('populates token and user from localStorage without calling initializeFromStorage', async () => {
+      window.localStorage.setItem('auth_token', 'tok-hydrate');
+      window.localStorage.setItem(
+        'auth_user',
+        JSON.stringify({ id: 'u9', email: 'h@b.com', name: 'H', role: 'parent', created_at: '2026-01-01' }),
+      );
+
+      vi.resetModules();
+      const { useAuthStore: freshStore } = await import('@/stores/authStore');
+
+      expect(freshStore.getState().token).toBe('tok-hydrate');
+      expect(freshStore.getState().user?.id).toBe('u9');
+      expect(freshStore.getState().isLoading).toBe(false);
+    });
+
+    it('falls back to nulls when localStorage is empty or unavailable', async () => {
+      window.localStorage.clear();
+
+      vi.resetModules();
+      const { useAuthStore: freshStore } = await import('@/stores/authStore');
+
+      expect(freshStore.getState().token).toBeNull();
+      expect(freshStore.getState().user).toBeNull();
+    });
+  });
 });
