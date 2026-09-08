@@ -35,6 +35,8 @@ vi.mock('@/hooks/useAnnouncements', () => ({
 vi.mock('@/hooks/useReminders', () => ({
   useReminders: () => ({
     upcomingReminders: [{ id: 'r1', title: 'Dentist', scheduled_time: day(-1) }],
+    dueReminders: [],
+    dismissReminder: vi.fn(),
     loading: false,
   }),
 }));

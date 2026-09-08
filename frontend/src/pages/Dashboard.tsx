@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Calendar, Zap, Users, ShoppingCart, TrendingUp, UtensilsCrossed } from 'lucide-react';
 import { WeekCalendar } from '../components/Calendar';
 import { AnnouncementsBand } from '../components/shell/AnnouncementsBand';
+import { RemindersDueBand } from '../components/shell/RemindersDueBand';
 import { FactOfDayBand } from '../components/shell/FactOfDayBand';
 import { DashboardCard } from '../components/shell/DashboardCard';
 import { ShoppingWidget } from '../components/shell/ShoppingWidget';
@@ -196,7 +197,14 @@ export default function Dashboard() {
           >
             {upcomingReminders.map((reminder) => (
               <div key={reminder.id} className="p-3 rounded-lg bg-paper border border-rule">
-                <p className="font-medium text-sm text-ink">{reminder.title}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm text-ink truncate">{reminder.title}</p>
+                  {reminder.assignee_name && (
+                    <span className="shrink-0 text-[0.65rem] font-semibold uppercase tracking-wide text-ink-3 border border-rule-2 rounded px-1">
+                      {reminder.assignee_name}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-ink-3">
                   {new Date(reminder.scheduled_time).toLocaleString([], {
                     weekday: 'short',
@@ -360,6 +368,7 @@ export default function Dashboard() {
   return (
     <main>
       <AnnouncementsBand canPost={canManage} familyId={family?.id} />
+      <RemindersDueBand />
       <FactOfDayBand canShuffle={canManage} />
 
       <div className="container py-6 space-y-6">

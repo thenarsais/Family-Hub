@@ -5,6 +5,7 @@ import App from '@/App';
 // AnnouncementsPage / FamilyPage / ProfilePage aren't navigated to in this
 // suite, but they're lazy() in App — stub them so a chunk fetch never happens.
 vi.mock('@pages/AnnouncementsPage', () => ({ default: () => <div>Announcements Page</div> }));
+vi.mock('@pages/RemindersPage', () => ({ default: () => <div>Reminders Page</div> }));
 vi.mock('@pages/FamilyPage', () => ({ default: () => <div>Family Page</div> }));
 vi.mock('@pages/ProfilePage', () => ({ default: () => <div>Profile Page</div> }));
 
@@ -124,6 +125,15 @@ describe('App', () => {
 
     // ActivityBoard is lazy() — it streams in behind a Suspense spinner.
     expect(await screen.findByText('Activity Page')).toBeInTheDocument();
+  });
+
+  it('should render the reminders page at /reminders when authenticated', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    setPath('/reminders');
+
+    render(<App />);
+
+    expect(await screen.findByText('Reminders Page')).toBeInTheDocument();
   });
 
   it('should redirect the root path to /dashboard', () => {
