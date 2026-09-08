@@ -20,7 +20,7 @@
     "test:watch": "jest --watch --maxWorkers=1",
     "test:coverage": "jest --coverage --passWithNoTests --maxWorkers=2",
     "test:smoke": "ts-node --transpile-only tests/smoke.test.ts",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "format": "echo \"Formatting code...\" && exit 0",
     "format:check": "echo \"Checking format...\" && exit 0",
     "validate": "npm run lint && npm run build && npm run test",
@@ -48,6 +48,7 @@
     "zod": "^4.5.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
@@ -55,15 +56,14 @@
     "@types/pg": "^8.23.1",
     "@types/redis": "^4.0.10",
     "@types/supertest": "^7.2.1",
-    "@typescript-eslint/eslint-plugin": "^8.67.0",
-    "@typescript-eslint/parser": "^8.67.0",
-    "eslint": "^8.57.1",
-    "eslint-plugin-local-rules": "^3.0.2",
+    "eslint": "^9.39.5",
+    "globals": "^16.5.0",
     "jest": "^30.5.1",
     "nodemon": "^3.1.14",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0"
   }
 }
