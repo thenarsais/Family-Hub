@@ -16,7 +16,7 @@ const RECURRENCE_OPTIONS: { value: Recurrence; label: string }[] = [
 ];
 
 /** ISO instant -> value for an <input type="datetime-local"> in local time. */
-function isoToLocalInput(iso?: string | null): string {
+export function isoToLocalInput(iso?: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -24,13 +24,13 @@ function isoToLocalInput(iso?: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function localInputToIso(local: string): string | null {
+export function localInputToIso(local: string): string | null {
   if (!local) return null;
   const d = new Date(local);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-function whenLabel(iso?: string | null): string {
+export function whenLabel(iso?: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -191,11 +191,7 @@ export default function RemindersPage() {
             </select>
           </div>
           <div className="flex gap-2">
-            <button
-              className="btn btn-primary btn-small"
-              onClick={() => saveEdit(r.id)}
-              disabled={!editTitle.trim() || !editWhen}
-            >
+            <button className="btn btn-primary btn-small" onClick={() => saveEdit(r.id)}>
               Save
             </button>
             <button className="btn btn-secondary btn-small" onClick={() => setEditingId(null)}>
@@ -319,7 +315,6 @@ export default function RemindersPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={120}
-            required
           />
         </div>
         <div>
@@ -345,7 +340,6 @@ export default function RemindersPage() {
               className="input w-auto"
               value={when}
               onChange={(e) => setWhen(e.target.value)}
-              required
             />
           </div>
           <div>
@@ -399,11 +393,7 @@ export default function RemindersPage() {
           </div>
         </div>
         {formErr && <p className="text-sm text-alert bg-alert/10 rounded p-2">{formErr}</p>}
-        <button
-          type="submit"
-          className="btn btn-primary btn-small"
-          disabled={busy || !title.trim() || !when}
-        >
+        <button type="submit" className="btn btn-primary btn-small" disabled={busy}>
           {busy ? 'Adding…' : 'Add reminder'}
         </button>
       </form>

@@ -47,12 +47,27 @@ describe('RemindersDueBand', () => {
     expect(screen.getAllByRole('button', { name: 'Done' })).toHaveLength(2);
   });
 
-  it('calls dismissReminder when Done is clicked', async () => {
+  it('calls dismissReminder when Done is clicked and disables the button', async () => {
+    let resolve!: () => void;
+    mockDismiss.mockReturnValueOnce(new Promise<void>((r) => { resolve = r; }));
     withDue([{ id: 'r1', title: 'Take out trash', assignee_name: 'Sam' }]);
     renderBand();
 
     await userEvent.click(screen.getByRole('button', { name: 'Done' }));
 
     expect(mockDismiss).toHaveBeenCalledWith('r1');
+    expect(screen.getByRole('button', { name: 'Done' })).toBeDisabled();
+    resolve();
+  });
+
+  it('re-enables the button when the dismiss call fails', async () => {
+    mockDismiss.mockRejectedValueOnce(new Error('offline'));
+    withDue([{ id: 'r1', title: 'Take out trash', assignee_name: 'Sam' }]);
+    renderBand();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+    await screen.findByRole('button', { name: 'Done' });
+    expect(screen.getByRole('button', { name: 'Done' })).toBeEnabled();
   });
 });
