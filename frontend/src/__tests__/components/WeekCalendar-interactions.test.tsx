@@ -205,6 +205,34 @@ describe('WeekCalendar — interactions', () => {
 
       expect(screen.queryByText(/Conference Room A/)).not.toBeInTheDocument();
     });
+
+    it('the Hide button dismisses the event and closes the modal', () => {
+      const dismissEvent = vi.fn().mockResolvedValue(undefined);
+      mockCalendar({ events: [{ ...event, calendarId: 'cal-1' }], dismissEvent });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('Team Standup'));
+      fireEvent.click(screen.getByRole('button', { name: /^hide$/i }));
+
+      expect(dismissEvent).toHaveBeenCalledWith('g-1', 'google', 'cal-1', undefined);
+      expect(screen.queryByText(/Conference Room A/)).not.toBeInTheDocument();
+    });
+
+    it('Hide on a recurring event opens the scope prompt instead of dismissing', () => {
+      const dismissEvent = vi.fn().mockResolvedValue(undefined);
+      mockCalendar({
+        events: [{ ...event, calendarId: 'primary', recurringEventId: 'rid-1' }],
+        dismissEvent,
+      });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('Team Standup'));
+      fireEvent.click(screen.getByRole('button', { name: /^hide$/i }));
+
+      expect(dismissEvent).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog', { name: /hide recurring event/i })).toBeInTheDocument();
+      expect(screen.queryByText(/Conference Room A/)).not.toBeInTheDocument();
+    });
   });
 
   describe('dismissing an event', () => {
