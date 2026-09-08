@@ -18,6 +18,7 @@ const FamilyPage = lazy(() => import('@pages/FamilyPage'));
 const ProfilePage = lazy(() => import('@pages/ProfilePage'));
 const AnnouncementsPage = lazy(() => import('@pages/AnnouncementsPage'));
 const RemindersPage = lazy(() => import('@pages/RemindersPage'));
+const ShoppingListPage = lazy(() => import('@pages/ShoppingListPage'));
 
 import ProtectedRoute from '@components/ProtectedRoute';
 import Navigation from '@components/Navigation';
@@ -95,6 +96,7 @@ export default function App() {
               <Route path="/profile" element={<Lazy><ProfilePage /></Lazy>} />
               <Route path="/announcements" element={<Lazy><AnnouncementsPage /></Lazy>} />
               <Route path="/reminders" element={<Lazy><RemindersPage /></Lazy>} />
+              <Route path="/shopping-list" element={<Lazy><ShoppingListPage /></Lazy>} />
             </Route>
 
             {/* Redirect root to dashboard */}
