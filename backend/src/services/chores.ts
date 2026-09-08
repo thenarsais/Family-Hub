@@ -1,6 +1,7 @@
 import { query, queryOne } from '../database/connection';
 import * as PointsRepository from '../database/repositories/PointsRepository';
 import type { ActivityPoints } from '../database/repositories/PointsRepository';
+import { applyMultiplier, getDailyStreak } from './streaks';
 
 export type TimeSlot = 'morning' | 'afternoon' | 'evening';
 
@@ -248,15 +249,25 @@ export class ChoreService {
     );
     if (!completion) throw new Error('Failed to record chore completion');
 
+    // FR-035 daily-streak bonus — the row is in now, so today counts.
+    const streak = await getDailyStreak(userId, tz);
+    const earned = applyMultiplier(chore.points_value, streak);
+    if (earned !== chore.points_value) {
+      await query(`UPDATE chore_completions SET points_earned = $1 WHERE id = $2`, [
+        earned,
+        completion.id,
+      ]);
+    }
+
     // The one real points ledger (activity_points) -- see 002_chores_and_learning_schema.sql.
-    await PointsRepository.addPoints(userId, chore.points_value, 'chore', `Completed: ${choreId}`);
+    await PointsRepository.addPoints(userId, earned, 'chore', `Completed: ${choreId}`);
 
     return {
       id: completion.id,
       choreId: completion.chore_id,
       userId: completion.user_id,
       completedAt: new Date(completion.completed_at),
-      pointsEarned: completion.points_earned,
+      pointsEarned: earned,
     };
   }
 

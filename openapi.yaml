@@ -108,6 +108,8 @@ tags:
     description: Smart-home device listing/control (no auth; uses a hand-rolled device table, not Supabase smart_devices).
   - name: Chores
     description: Chore creation/completion/progress (x-user-id auth; uses a hand-rolled chores schema, not Supabase chores).
+  - name: Habits
+    description: Habit tracking (weekly target + streak) and the daily mood check-in (x-user-id auth; hand-rolled schema, migration 013).
   - name: Learning
     description: Lesson completion, quizzes, learning stats (x-user-id auth; hand-rolled schema, not Supabase learning_progress).
   - name: Announcements
@@ -1807,6 +1809,313 @@ paths:
                   timestamp: { type: string, format: date-time }
         '401':
           description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # HABITS + MOOD (x-user-id)
+  # ================================================================
+  /api/habits:
+    get:
+      tags: [Habits]
+      summary: List habits with this week's progress and streak
+      description: >-
+        `scope=mine` (default) — the caller's enabled habits, for the board.
+        `scope=family` — every family member's habits including disabled ones,
+        with the assignee name, for the parent Manage panel.
+      operationId: listHabits
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: scope
+          in: query
+          schema: { type: string, enum: [mine, family], default: mine }
+      responses:
+        '200':
+          description: Habits.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  habits:
+                    type: array
+                    items: { $ref: '#/components/schemas/HabitWithStatus' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Habits]
+      summary: Create a habit
+      description: >-
+        `assigneeId` defaults to the caller and is stored as the habit's
+        `userId`; it must be an active member of the caller's family.
+      operationId: createHabit
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, weeklyTarget, pointsValue]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                weeklyTarget: { type: integer, minimum: 1, maximum: 7 }
+                pointsValue: { type: number, minimum: 1 }
+                assigneeId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Habit created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Habit created successfully" }
+                  habit: { $ref: '#/components/schemas/Habit' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing/invalid fields, or `assigneeId` is not a family member.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/habits/{habitId}:
+    patch:
+      tags: [Habits]
+      summary: Edit a habit
+      description: >-
+        title / description / weeklyTarget / pointsValue / enabled. Family-scoped:
+        the caller must share a family with the habit's assignee.
+      operationId: updateHabit
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: habitId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: [string, 'null'] }
+                weeklyTarget: { type: integer, minimum: 1, maximum: 7 }
+                pointsValue: { type: number, minimum: 1 }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Habit updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Habit updated successfully" }
+                  habit: { $ref: '#/components/schemas/Habit' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid weeklyTarget / pointsValue.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such habit in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/habits/{habitId}/complete:
+    post:
+      tags: [Habits]
+      summary: Mark a habit done for today and award its (streak-scaled) points
+      description: >-
+        One completion per family-local day. Points are the habit's
+        `pointsValue` scaled by the caller's daily streak (FR-035): ×1.1 at a
+        3-day streak, ×1.2 at 7+.
+      operationId: completeHabit
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: habitId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Completion recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Habit completed" }
+                  pointsEarned: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Habit not found (or not the caller's).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '409':
+          description: Already completed today.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Habits]
+      summary: Undo today's completion of a habit
+      description: Removes today's completion and reverses the points award.
+      operationId: undoHabitCompletion
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: habitId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Completion undone.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Habit completion undone" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Nothing to undo today.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/habits/mood/today:
+    get:
+      tags: [Habits]
+      summary: The caller's mood entry for the family-local today
+      operationId: getTodayMood
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Today's mood, or null if not yet logged.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  mood:
+                    oneOf:
+                      - { $ref: '#/components/schemas/MoodEntry' }
+                      - { type: 'null' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/habits/mood:
+    post:
+      tags: [Habits]
+      summary: Record (or replace) the caller's mood for today
+      description: >-
+        One row per member per family-local day; posting again before midnight
+        overwrites it.
+      operationId: setMood
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mood]
+              properties:
+                mood: { type: string, enum: [great, good, ok, low, sad] }
+                emoji: { type: string }
+                note: { type: string }
+      responses:
+        '200':
+          description: Mood recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Mood recorded" }
+                  mood: { $ref: '#/components/schemas/MoodEntry' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid mood value.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/habits/mood/history:
+    get:
+      tags: [Habits]
+      summary: Family mood history for the parent heatmap (FR-149)
+      description: >-
+        One entry per member per family-local day for the last `days` days.
+        Parents/admins only.
+      operationId: getFamilyMoodHistory
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: days
+          in: query
+          schema: { type: integer, default: 35, minimum: 1, maximum: 180 }
+      responses:
+        '200':
+          description: Mood days.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  history:
+                    type: array
+                    items: { $ref: '#/components/schemas/MoodDay' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '403':
+          description: Caller is not a parent/admin.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -5242,6 +5551,64 @@ components:
         dailyPoints: { type: integer }
         weeklyPoints: { type: integer }
         monthlyPoints: { type: integer }
+
+    # ---------------- Habits + mood (hand-rolled schema, migration 013) ----------------
+    Habit:
+      type: object
+      description: >-
+        From HabitService's raw-Postgres `habits` table (migration 013) — NOT
+        the Supabase-era `habits` shape in types/database.ts. user_id is the
+        assignee; weekly_target is the "N of 7 days this week" goal.
+      required: [id, userId, title, weeklyTarget, pointsValue, enabled, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        weeklyTarget: { type: integer, minimum: 1, maximum: 7 }
+        pointsValue: { type: integer }
+        enabled: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    HabitWithStatus:
+      description: >-
+        A `Habit` plus this week's progress — what `GET /api/habits` returns.
+        `weekCompletions` counts the family-local current week (Mon–Sun);
+        `completedToday` / `completionId` reflect today; `weekStreak` is
+        consecutive weeks that met `weeklyTarget`.
+      allOf:
+        - $ref: '#/components/schemas/Habit'
+        - type: object
+          required: [weekCompletions, completedToday, weekStreak]
+          properties:
+            assigneeName: { type: [string, 'null'] }
+            weekCompletions: { type: integer }
+            completedToday: { type: boolean }
+            completionId: { type: [string, 'null'], format: uuid }
+            weekStreak: { type: integer }
+
+    MoodEntry:
+      type: object
+      required: [id, userId, mood, recordedAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        mood: { type: string, enum: [great, good, ok, low, sad] }
+        emoji: { type: string }
+        note: { type: string }
+        recordedAt: { type: string, format: date-time }
+
+    MoodDay:
+      type: object
+      description: One member's mood for one family-local day — the FR-149 heatmap unit.
+      required: [userId, day, mood]
+      properties:
+        userId: { type: string, format: uuid }
+        assigneeName: { type: [string, 'null'] }
+        day: { type: string, format: date }
+        mood: { type: string, enum: [great, good, ok, low, sad] }
+        emoji: { type: [string, 'null'] }
 
     # ---------------- Learning (hand-rolled schema) ----------------
     LearningProgressEntry:
