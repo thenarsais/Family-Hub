@@ -3,6 +3,7 @@ import { UserPlus, Mail, Trash2, ChevronDown } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
 import { colorForIndex } from '@/data/familyColors';
+import MoodHeatmap from '@components/family/MoodHeatmap';
 import type { components } from '@/types/api-generated';
 
 type Role = components['schemas']['FamilyMember']['role'];
@@ -363,6 +364,9 @@ export default function FamilyPage() {
           </div>
         </section>
       )}
+
+      {/* Mood pattern heatmap (FR-149) — parents only */}
+      {canManage && <MoodHeatmap />}
 
       {/* Settings */}
       {canManage && settings && (
