@@ -251,6 +251,37 @@ export async function subtractPoints(
 }
 
 /**
+ * Delete the most recent points entry matching (user, activity type, reason).
+ * Used to reverse an award cleanly on undo — as if it never happened, rather
+ * than leaving a +N / −N pair in the ledger. Returns whether a row was removed.
+ */
+export async function removePoints(
+  userId: string,
+  activityType: string,
+  reason: string
+): Promise<boolean> {
+  const removed = await queryOne<{ id: string }>(
+    `DELETE FROM activity_points
+     WHERE id = (
+       SELECT id FROM activity_points
+       WHERE user_id = $1 AND activity_type = $2 AND reason = $3
+       ORDER BY created_at DESC
+       LIMIT 1
+     )
+     RETURNING id`,
+    [userId, activityType, reason]
+  );
+
+  await del(
+    `user:${userId}:points:total`,
+    `user:${userId}:points:history`,
+    `user:${userId}:points:${activityType}`
+  );
+
+  return !!removed;
+}
+
+/**
  * Get total points for all users
  */
 export async function getTotalPointsAllUsers(): Promise<number> {
@@ -273,5 +304,6 @@ export default {
   getPointsThisWeek,
   getPointsThisMonth,
   subtractPoints,
+  removePoints,
   getTotalPointsAllUsers,
 };

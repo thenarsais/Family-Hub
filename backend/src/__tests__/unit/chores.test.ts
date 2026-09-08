@@ -5,6 +5,21 @@ import * as PointsRepository from '../../database/repositories/PointsRepository'
 jest.mock('../../database/connection');
 jest.mock('../../database/repositories/PointsRepository');
 
+const mockQuery = connection.query as jest.Mock;
+const mockQueryOne = connection.queryOne as jest.Mock;
+
+const CHORE_ROW = {
+  id: 'chore-1',
+  user_id: 'kid-1',
+  name: 'Take out trash',
+  description: 'Move trash to curb',
+  time_slot: 'morning',
+  points_value: 10,
+  enabled: true,
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
 describe('ChoreService', () => {
   let service: ChoreService;
 
@@ -14,206 +29,243 @@ describe('ChoreService', () => {
   });
 
   describe('createChore', () => {
-    it('should create a chore with valid data', async () => {
-      const mockChore = {
-        id: 'test-id',
-        user_id: 'user-1',
-        name: 'Take out trash',
-        description: 'Move trash to curb',
-        time_slot: 'morning',
-        points_value: 10,
-        enabled: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      };
+    it('creates for the caller when no assignee is given', async () => {
+      mockQueryOne.mockResolvedValueOnce({ ...CHORE_ROW, user_id: 'parent-1' }); // INSERT
 
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockChore);
-
-      const result = await service.createChore(
-        'user-1',
-        'Take out trash',
-        'Move trash to curb',
-        'morning',
-        10
-      );
+      const result = await service.createChore('parent-1', 'Take out trash', 'desc', 'morning', 10);
 
       expect(result.name).toBe('Take out trash');
-      expect(result.pointsValue).toBe(10);
       expect(result.timeSlot).toBe('morning');
+      expect(mockQueryOne.mock.calls[0][1][0]).toBe('parent-1'); // user_id = creator
     });
 
-    it('should throw if chore creation fails', async () => {
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(null);
+    it('validates a different assignee against the family and stores them as user_id', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ family_id: 'fam-1' }) // familyId(creator)
+        .mockResolvedValueOnce({ ok: 1 }) // membership check
+        .mockResolvedValueOnce(CHORE_ROW); // INSERT
+
+      const result = await service.createChore('parent-1', 'Trash', undefined, 'morning', 10, 'kid-1');
+
+      expect(mockQueryOne.mock.calls[2][1][0]).toBe('kid-1'); // stored as user_id
+      expect(result.userId).toBe('kid-1');
+    });
+
+    it("throws 'bad-assignee' when the assignee is not in the caller's family", async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ family_id: 'fam-1' }) // familyId
+        .mockResolvedValueOnce(null); // membership check → not a member
 
       await expect(
-        service.createChore('user-1', 'Chore', undefined, 'morning', 10)
+        service.createChore('parent-1', 'Trash', undefined, 'morning', 10, 'stranger'),
+      ).rejects.toThrow('bad-assignee');
+    });
+
+    it('throws when the insert returns nothing', async () => {
+      mockQueryOne.mockResolvedValueOnce(null);
+      await expect(
+        service.createChore('parent-1', 'Chore', undefined, 'morning', 10),
       ).rejects.toThrow('Failed to create chore');
     });
   });
 
-  describe('getUserChores', () => {
-    it('should return user chores ordered by time slot', async () => {
-      const mockChores = [
-        {
-          id: '1',
-          user_id: 'user-1',
-          name: 'Morning task',
-          description: null,
-          time_slot: 'morning',
-          points_value: 10,
-          enabled: true,
-          created_at: new Date(),
-          updated_at: new Date(),
-        },
-        {
-          id: '2',
-          user_id: 'user-1',
-          name: 'Evening task',
-          description: null,
-          time_slot: 'evening',
-          points_value: 15,
-          enabled: true,
-          created_at: new Date(),
-          updated_at: new Date(),
-        },
-      ];
+  describe('updateChore', () => {
+    it('writes only whitelisted columns for a family-shared chore', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce(CHORE_ROW) // SELECT the chore
+        .mockResolvedValueOnce({ family_id: 'fam-1' }) // familyId(caller) — caller !== chore.user_id
+        .mockResolvedValueOnce({ ok: 1 }) // membership check
+        .mockResolvedValueOnce({ ...CHORE_ROW, points_value: 25, enabled: false }); // UPDATE
 
-      (connection.query as jest.Mock).mockResolvedValueOnce({ rows: mockChores });
+      const result = await service.updateChore('parent-1', 'chore-1', {
+        points_value: 25,
+        enabled: false,
+        user_id: 'hacker', // ignored — not whitelisted
+      });
 
-      const result = await service.getUserChores('user-1');
-
-      expect(result).toHaveLength(2);
-      expect(result[0].timeSlot).toBe('morning');
-      expect(result[1].timeSlot).toBe('evening');
+      const [sql, params] = mockQueryOne.mock.calls[3];
+      expect(sql).toContain('points_value = $2');
+      expect(sql).not.toContain('user_id =');
+      expect(params).toEqual(['chore-1', 25, false]);
+      expect(result?.pointsValue).toBe(25);
     });
 
-    it('should return empty array if user has no chores', async () => {
-      (connection.query as jest.Mock).mockResolvedValueOnce({ rows: [] });
+    it('returns null when the chore is not in the caller family', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce(CHORE_ROW) // SELECT
+        .mockResolvedValueOnce({ family_id: 'fam-1' }) // familyId
+        .mockResolvedValueOnce(null); // membership check → no
 
-      const result = await service.getUserChores('user-1');
+      expect(await service.updateChore('outsider', 'chore-1', { name: 'x' })).toBeNull();
+    });
 
-      expect(result).toEqual([]);
+    it('returns null when the chore does not exist', async () => {
+      mockQueryOne.mockResolvedValueOnce(null); // SELECT → none
+      expect(await service.updateChore('parent-1', 'nope', { name: 'x' })).toBeNull();
+    });
+  });
+
+  describe('getChores', () => {
+    it("scope 'mine' — enabled chores + today's completion state", async () => {
+      mockQueryOne.mockResolvedValueOnce({ timezone: 'America/Denver' }); // familyTz
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...CHORE_ROW, assignee_name: 'Krish', completion_id: 'comp-9' }],
+      });
+
+      const rows = await service.getChores('kid-1', 'mine');
+
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain('c.user_id = $2 AND c.enabled = true');
+      expect(params).toEqual(['America/Denver', 'kid-1']);
+      expect(rows[0]).toMatchObject({ completedToday: true, completionId: 'comp-9', assigneeName: 'Krish' });
+    });
+
+    it("scope 'family' — all members' chores incl. disabled, keyed to the family", async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ timezone: 'America/Denver' }) // familyTz
+        .mockResolvedValueOnce({ family_id: 'fam-1' }); // familyId
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...CHORE_ROW, enabled: false, assignee_name: 'Krish', completion_id: null }],
+      });
+
+      const rows = await service.getChores('parent-1', 'family');
+
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain('c.user_id IN (');
+      expect(params).toEqual(['America/Denver', 'fam-1']);
+      expect(rows[0]).toMatchObject({ enabled: false, completedToday: false });
+    });
+
+    it("scope 'family' — empty when the caller has no family", async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ timezone: null }) // familyTz → default
+        .mockResolvedValueOnce(null); // familyId → none
+
+      expect(await service.getChores('lonely', 'family')).toEqual([]);
+      expect(mockQuery).not.toHaveBeenCalled();
     });
   });
 
   describe('completeChore', () => {
-    it('should record chore completion and award points', async () => {
-      const mockChoreDetails = { points_value: 20 };
-      const mockCompletion = {
-        id: 'completion-1',
-        chore_id: 'chore-1',
-        user_id: 'user-1',
-        completed_at: new Date(),
-        points_earned: 20,
-      };
+    it('records the completion and awards points once per day', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ points_value: 20 }) // chore lookup
+        .mockResolvedValueOnce({ timezone: 'America/Denver' }) // familyTz
+        .mockResolvedValueOnce(null) // no existing completion today
+        .mockResolvedValueOnce({
+          id: 'comp-1',
+          chore_id: 'chore-1',
+          user_id: 'kid-1',
+          completed_at: new Date(),
+          points_earned: 20,
+        }); // INSERT
 
-      (connection.queryOne as jest.Mock)
-        .mockResolvedValueOnce(mockChoreDetails)
-        .mockResolvedValueOnce(mockCompletion);
-
-      (PointsRepository.addPoints as jest.Mock).mockResolvedValue({});
-
-      const result = await service.completeChore('user-1', 'chore-1');
+      const result = await service.completeChore('kid-1', 'chore-1');
 
       expect(result.pointsEarned).toBe(20);
-      expect(PointsRepository.addPoints).toHaveBeenCalledWith('user-1', 20, 'chore', expect.stringContaining('chore-1'));
+      expect(PointsRepository.addPoints).toHaveBeenCalledWith(
+        'kid-1',
+        20,
+        'chore',
+        expect.stringContaining('chore-1'),
+      );
     });
 
-    it('should throw if chore not found', async () => {
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(null);
+    it("throws 'already-completed-today' when there is a completion for the family-local day", async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ points_value: 20 }) // chore lookup
+        .mockResolvedValueOnce({ timezone: 'America/Denver' }) // familyTz
+        .mockResolvedValueOnce({ id: 'comp-earlier' }); // existing completion today
 
-      await expect(service.completeChore('user-1', 'invalid-chore')).rejects.toThrow(
-        'Chore not found'
+      await expect(service.completeChore('kid-1', 'chore-1')).rejects.toThrow(
+        'already-completed-today',
       );
+      expect(PointsRepository.addPoints).not.toHaveBeenCalled();
+    });
+
+    it("throws 'Chore not found' when it isn't the caller's chore", async () => {
+      mockQueryOne.mockResolvedValueOnce(null);
+      await expect(service.completeChore('kid-1', 'not-mine')).rejects.toThrow('Chore not found');
+    });
+  });
+
+  describe('undoCompletion', () => {
+    it("removes today's completion and reverses the points", async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ timezone: 'America/Denver' }) // familyTz
+        .mockResolvedValueOnce({ id: 'comp-1' }); // DELETE ... RETURNING
+
+      const ok = await service.undoCompletion('kid-1', 'chore-1');
+
+      expect(ok).toBe(true);
+      expect(PointsRepository.removePoints).toHaveBeenCalledWith(
+        'kid-1',
+        'chore',
+        'Completed: chore-1',
+      );
+    });
+
+    it('returns false when there is nothing to undo today', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ timezone: 'America/Denver' }) // familyTz
+        .mockResolvedValueOnce(null); // DELETE matched nothing
+
+      expect(await service.undoCompletion('kid-1', 'chore-1')).toBe(false);
+      expect(PointsRepository.removePoints).not.toHaveBeenCalled();
     });
   });
 
   describe('getChoreProgress', () => {
-    it('should return progress statistics', async () => {
-      const mockStats = {
+    it('returns progress statistics', async () => {
+      mockQueryOne.mockResolvedValueOnce({
         total_completed: '15',
         this_week: '3',
         this_month: '10',
         points_earned: '150',
-      };
+      });
 
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockStats);
+      const result = await service.getChoreProgress('kid-1');
 
-      const result = await service.getChoreProgress('user-1');
-
-      expect(result.totalCompleted).toBe(15);
-      expect(result.thisWeek).toBe(3);
-      expect(result.thisMonth).toBe(10);
-      expect(result.pointsEarned).toBe(150);
+      expect(result).toEqual({ totalCompleted: 15, thisWeek: 3, thisMonth: 10, pointsEarned: 150 });
     });
 
-    it('should handle null results', async () => {
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(null);
-
-      const result = await service.getChoreProgress('user-1');
-
-      expect(result.totalCompleted).toBe(0);
-      expect(result.thisWeek).toBe(0);
+    it('handles null results', async () => {
+      mockQueryOne.mockResolvedValueOnce(null);
+      expect(await service.getChoreProgress('kid-1')).toEqual({
+        totalCompleted: 0,
+        thisWeek: 0,
+        thisMonth: 0,
+        pointsEarned: 0,
+      });
     });
   });
 
   describe('getPointsSummary', () => {
-    it('should return points summary from the real points ledger (activity_points, via PointsRepository)', async () => {
+    it('reads the one real ledger (activity_points) via PointsRepository', async () => {
       (PointsRepository.getTotalPoints as jest.Mock).mockResolvedValueOnce(500);
       (PointsRepository.getPointsToday as jest.Mock).mockResolvedValueOnce(50);
       (PointsRepository.getPointsThisWeek as jest.Mock).mockResolvedValueOnce(200);
       (PointsRepository.getPointsThisMonth as jest.Mock).mockResolvedValueOnce(400);
 
-      const result = await service.getPointsSummary('user-1');
-
-      expect(result.totalPoints).toBe(500);
-      expect(result.dailyPoints).toBe(50);
-      expect(result.weeklyPoints).toBe(200);
-      expect(result.monthlyPoints).toBe(400);
-    });
-
-    it('should return zeros if user has no points recorded', async () => {
-      (PointsRepository.getTotalPoints as jest.Mock).mockResolvedValueOnce(0);
-      (PointsRepository.getPointsToday as jest.Mock).mockResolvedValueOnce(0);
-      (PointsRepository.getPointsThisWeek as jest.Mock).mockResolvedValueOnce(0);
-      (PointsRepository.getPointsThisMonth as jest.Mock).mockResolvedValueOnce(0);
-
-      const result = await service.getPointsSummary('user-1');
-
-      expect(result.totalPoints).toBe(0);
-      expect(result.dailyPoints).toBe(0);
-      expect(result.weeklyPoints).toBe(0);
-      expect(result.monthlyPoints).toBe(0);
+      expect(await service.getPointsSummary('kid-1')).toEqual({
+        totalPoints: 500,
+        dailyPoints: 50,
+        weeklyPoints: 200,
+        monthlyPoints: 400,
+      });
     });
   });
 
   describe('getTransactionHistory', () => {
-    it('should return transaction history from the real points ledger', async () => {
-      const mockTransactions = [
-        {
-          user_id: 'user-1',
-          activity_type: 'chore',
-          points: 20,
-          reason: 'Completed task',
-          created_at: new Date(),
-        },
-        {
-          user_id: 'user-1',
-          activity_type: 'trivia',
-          points: 10,
-          reason: null,
-          created_at: new Date(),
-        },
-      ];
+    it('delegates to PointsRepository', async () => {
+      (PointsRepository.getPointsHistory as jest.Mock).mockResolvedValueOnce([
+        { user_id: 'kid-1', activity_type: 'chore', points: 20, reason: 'x', created_at: new Date() },
+      ]);
 
-      (PointsRepository.getPointsHistory as jest.Mock).mockResolvedValueOnce(mockTransactions);
+      const result = await service.getTransactionHistory('kid-1', 50);
 
-      const result = await service.getTransactionHistory('user-1', 50);
-
-      expect(PointsRepository.getPointsHistory).toHaveBeenCalledWith('user-1', 50);
-      expect(result).toHaveLength(2);
-      expect(result[0].activity_type).toBe('chore');
-      expect(result[1].activity_type).toBe('trivia');
+      expect(PointsRepository.getPointsHistory).toHaveBeenCalledWith('kid-1', 50);
+      expect(result).toHaveLength(1);
     });
   });
 });

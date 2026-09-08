@@ -9,9 +9,11 @@ import express from 'express';
 // import time. Instead, mock the module to always return the same shared
 // object, and configure that object's methods per test.
 const mockChoreService = {
-  getUserChores: jest.fn(),
+  getChores: jest.fn(),
   createChore: jest.fn(),
+  updateChore: jest.fn(),
   completeChore: jest.fn(),
+  undoCompletion: jest.fn(),
   getChoreProgress: jest.fn(),
   getPointsSummary: jest.fn(),
   getTransactionHistory: jest.fn(),
@@ -61,7 +63,7 @@ describe('Chores Routes', () => {
 
   describe('GET /api/chores', () => {
     it('should list all chores for user', async () => {
-      mockChoreService.getUserChores.mockResolvedValueOnce(mockChores);
+      mockChoreService.getChores.mockResolvedValueOnce(mockChores);
 
       const res = await request(app)
         .get('/api/chores')
@@ -75,7 +77,7 @@ describe('Chores Routes', () => {
     });
 
     it('should return empty array when no chores', async () => {
-      mockChoreService.getUserChores.mockResolvedValueOnce([]);
+      mockChoreService.getChores.mockResolvedValueOnce([]);
 
       const res = await request(app)
         .get('/api/chores')
@@ -96,7 +98,7 @@ describe('Chores Routes', () => {
     });
 
     it('should handle service errors', async () => {
-      mockChoreService.getUserChores.mockRejectedValueOnce(new Error('Database error'));
+      mockChoreService.getChores.mockRejectedValueOnce(new Error('Database error'));
 
       const res = await request(app)
         .get('/api/chores')
@@ -142,17 +144,39 @@ describe('Chores Routes', () => {
       expect(res.body.message).toBe('User ID required');
     });
 
-    it('should validate required fields', async () => {
+    it('should require a name', async () => {
       const res = await request(app)
         .post('/api/chores')
         .set('x-user-id', 'user-1')
-        .send({
-          name: 'Clean bedroom',
-        })
+        .send({ timeSlot: 'morning', pointsValue: 10 })
         .expect(400);
 
-      expect(res.body.status).toBe('error');
-      expect(res.body.message).toContain('required');
+      expect(res.body.message).toContain('name is required');
+    });
+
+    it('passes assigneeId through and 400s a bad assignee', async () => {
+      mockChoreService.createChore.mockResolvedValueOnce({ ...mockChore, userId: 'kid-1' });
+      await request(app)
+        .post('/api/chores')
+        .set('x-user-id', 'parent-1')
+        .send({ name: 'Trash', timeSlot: 'morning', pointsValue: 10, assigneeId: 'kid-1' })
+        .expect(201);
+      expect(mockChoreService.createChore).toHaveBeenCalledWith(
+        'parent-1',
+        'Trash',
+        undefined,
+        'morning',
+        10,
+        'kid-1',
+      );
+
+      mockChoreService.createChore.mockRejectedValueOnce(new Error('bad-assignee'));
+      const res = await request(app)
+        .post('/api/chores')
+        .set('x-user-id', 'parent-1')
+        .send({ name: 'Trash', timeSlot: 'morning', pointsValue: 10, assigneeId: 'stranger' })
+        .expect(400);
+      expect(res.body.message).toContain('not a member of your family');
     });
 
     it('should return 4xx (not 500) for a bodyless request', async () => {
@@ -226,7 +250,105 @@ describe('Chores Routes', () => {
     });
   });
 
+  describe('GET /api/chores?scope=family', () => {
+    it('passes the family scope through', async () => {
+      mockChoreService.getChores.mockResolvedValueOnce(mockChores);
+      await request(app)
+        .get('/api/chores?scope=family')
+        .set('x-user-id', 'parent-1')
+        .expect(200);
+      expect(mockChoreService.getChores).toHaveBeenCalledWith('parent-1', 'family');
+    });
+
+    it('defaults to the "mine" scope', async () => {
+      mockChoreService.getChores.mockResolvedValueOnce([]);
+      await request(app).get('/api/chores').set('x-user-id', 'kid-1').expect(200);
+      expect(mockChoreService.getChores).toHaveBeenCalledWith('kid-1', 'mine');
+    });
+  });
+
+  describe('PATCH /api/chores/:id', () => {
+    it('updates whitelisted fields', async () => {
+      mockChoreService.updateChore.mockResolvedValueOnce({ ...mockChore, pointsValue: 25 });
+      const res = await request(app)
+        .patch('/api/chores/chore-1')
+        .set('x-user-id', 'parent-1')
+        .send({ pointsValue: 25, enabled: false })
+        .expect(200);
+      expect(res.body.chore.pointsValue).toBe(25);
+      expect(mockChoreService.updateChore).toHaveBeenCalledWith('parent-1', 'chore-1', {
+        points_value: 25,
+        enabled: false,
+      });
+    });
+
+    it('404s when the chore is not in the caller family', async () => {
+      mockChoreService.updateChore.mockResolvedValueOnce(null);
+      await request(app)
+        .patch('/api/chores/chore-1')
+        .set('x-user-id', 'outsider')
+        .send({ name: 'x' })
+        .expect(404);
+    });
+
+    it('validates timeSlot / pointsValue on update', async () => {
+      await request(app)
+        .patch('/api/chores/chore-1')
+        .set('x-user-id', 'parent-1')
+        .send({ timeSlot: 'nope' })
+        .expect(400);
+      await request(app)
+        .patch('/api/chores/chore-1')
+        .set('x-user-id', 'parent-1')
+        .send({ pointsValue: -3 })
+        .expect(400);
+    });
+
+    it('requires a user id', async () => {
+      await request(app).patch('/api/chores/chore-1').send({ name: 'x' }).expect(401);
+    });
+  });
+
+  describe('DELETE /api/chores/:choreId/complete', () => {
+    it('undoes today\'s completion', async () => {
+      mockChoreService.undoCompletion.mockResolvedValueOnce(true);
+      mockChoreService.getChoreProgress.mockResolvedValueOnce({
+        totalCompleted: 0,
+        thisWeek: 0,
+        thisMonth: 0,
+        pointsEarned: 0,
+      });
+      const res = await request(app)
+        .delete('/api/chores/chore-1/complete')
+        .set('x-user-id', 'kid-1')
+        .expect(200);
+      expect(res.body.message).toBe('Chore completion undone');
+      expect(mockChoreService.undoCompletion).toHaveBeenCalledWith('kid-1', 'chore-1');
+    });
+
+    it('404s when there is nothing to undo today', async () => {
+      mockChoreService.undoCompletion.mockResolvedValueOnce(false);
+      await request(app)
+        .delete('/api/chores/chore-1/complete')
+        .set('x-user-id', 'kid-1')
+        .expect(404);
+    });
+
+    it('requires a user id', async () => {
+      await request(app).delete('/api/chores/chore-1/complete').expect(401);
+    });
+  });
+
   describe('POST /api/chores/:choreId/complete', () => {
+    it('409s when already completed today', async () => {
+      mockChoreService.completeChore.mockRejectedValueOnce(new Error('already-completed-today'));
+      const res = await request(app)
+        .post('/api/chores/chore-1/complete')
+        .set('x-user-id', 'kid-1')
+        .expect(409);
+      expect(res.body.message).toBe('Chore already completed today');
+    });
+
     it('should complete a chore and award points', async () => {
       const mockCompletion = {
         id: 'completion-1',

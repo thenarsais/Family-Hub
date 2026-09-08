@@ -1535,9 +1535,17 @@ paths:
   /api/chores:
     get:
       tags: [Chores]
-      summary: List the authenticated user's chores
+      summary: List chores with today's completion state
+      description: >-
+        `scope=mine` (default) — the caller's enabled chores, for the board.
+        `scope=family` — every family member's chores including disabled ones,
+        with the assignee name, for the parent Manage panel.
       operationId: listChores
       security: [{ userIdHeader: [] }]
+      parameters:
+        - name: scope
+          in: query
+          schema: { type: string, enum: [mine, family], default: mine }
       responses:
         '200':
           description: Chores.
@@ -1549,7 +1557,7 @@ paths:
                   status: { type: string, const: success }
                   chores:
                     type: array
-                    items: { $ref: '#/components/schemas/Chore' }
+                    items: { $ref: '#/components/schemas/ChoreWithStatus' }
                   count: { type: integer }
                   timestamp: { type: string, format: date-time }
         '401':
@@ -1561,6 +1569,10 @@ paths:
     post:
       tags: [Chores]
       summary: Create a chore
+      description: >-
+        `assigneeId` defaults to the caller and is stored as the chore's
+        `userId` ("whose chore"); it must be an active member of the caller's
+        family.
       operationId: createChore
       security: [{ userIdHeader: [] }]
       requestBody:
@@ -1575,6 +1587,7 @@ paths:
                 description: { type: string }
                 timeSlot: { type: string, enum: [morning, afternoon, evening] }
                 pointsValue: { type: number, minimum: 1 }
+                assigneeId: { type: string, format: uuid }
       responses:
         '201':
           description: Chore created.
@@ -1588,10 +1601,60 @@ paths:
                   chore: { $ref: '#/components/schemas/Chore' }
                   timestamp: { type: string, format: date-time }
         '400':
-          description: Missing/invalid fields.
+          description: Missing/invalid fields, or `assigneeId` is not a family member.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '401':
           description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/chores/{choreId}:
+    patch:
+      tags: [Chores]
+      summary: Edit a chore
+      description: >-
+        name / description / timeSlot / pointsValue / enabled. Family-scoped:
+        the caller must share a family with the chore's assignee.
+      operationId: updateChore
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: choreId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: [string, 'null'] }
+                timeSlot: { type: string, enum: [morning, afternoon, evening] }
+                pointsValue: { type: number, minimum: 1 }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Chore updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Chore updated successfully" }
+                  chore: { $ref: '#/components/schemas/Chore' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid timeSlot / pointsValue.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such chore in the caller's family.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -1601,6 +1664,7 @@ paths:
     post:
       tags: [Chores]
       summary: Mark a chore complete and award its points
+      description: One completion per family-local day.
       operationId: completeChore
       security: [{ userIdHeader: [] }]
       parameters:
@@ -1625,7 +1689,42 @@ paths:
           description: Missing x-user-id.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '404':
-          description: Chore not found.
+          description: Chore not found (or not the caller's).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '409':
+          description: Already completed today.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Chores]
+      summary: Undo today's completion of a chore
+      description: Removes today's completion and reverses the points award.
+      operationId: undoChoreCompletion
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: choreId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Completion undone.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Chore completion undone" }
+                  progress: { $ref: '#/components/schemas/ChoreProgress' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Nothing to undo today.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -5102,6 +5201,21 @@ components:
         enabled: { type: boolean }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    ChoreWithStatus:
+      description: >-
+        A `Chore` plus today's state — what `GET /api/chores` returns.
+        `assigneeName` is the display name of `userId`. `completedToday` reflects
+        the family's local calendar day; `completionId` is set only when it is
+        true, so the client can offer "undo".
+      allOf:
+        - $ref: '#/components/schemas/Chore'
+        - type: object
+          required: [completedToday]
+          properties:
+            assigneeName: { type: [string, 'null'] }
+            completedToday: { type: boolean }
+            completionId: { type: [string, 'null'], format: uuid }
 
     ChoreCompletion:
       type: object
