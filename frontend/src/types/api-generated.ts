@@ -1072,10 +1072,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the authenticated user's reminders */
+        /**
+         * List every reminder in the caller's family
+         * @description Family-scoped. Each row carries `assignee_name`. Stale recurring reminders are rolled forward to their next occurrence as a side effect of this read (there is no job runner yet).
+         */
         get: operations["listReminders"];
         put?: never;
-        /** Create a reminder */
+        /**
+         * Create a reminder
+         * @description The reminder is created in the caller's family. `assignee_user_id` defaults to the caller; anyone in the family may be assigned.
+         */
         post: operations["createReminder"];
         delete?: never;
         options?: never;
@@ -1090,8 +1096,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get reminders due in the next 24 hours */
+        /** Family reminders due in the next 24 hours */
         get: operations["getUpcomingReminders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reminders/due": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Family reminders scheduled for now or the past and not dismissed
+         * @description The T-18 "due now" surface — what the dashboard band polls.
+         */
+        get: operations["getDueReminders"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1110,13 +1136,16 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete a reminder */
+        /**
+         * Delete a reminder
+         * @description Permanent, family-scoped.
+         */
         delete: operations["deleteReminder"];
         options?: never;
         head?: never;
         /**
          * Update a reminder
-         * @description Request body is passed through with only a column-name whitelist (no other validation).
+         * @description Family-scoped. Body is passed through with only a column-name whitelist (no other validation).
          */
         patch: operations["updateReminder"];
         trace?: never;
@@ -1130,8 +1159,28 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Dismiss a reminder */
+        /**
+         * Dismiss a reminder
+         * @description A one-off reminder is hidden (`is_dismissed = true`). A recurring reminder is treated as "done this time" and rolls forward to its next occurrence instead — unless it is past its `recurrence_end_date`, in which case it is hidden. Returns the resulting row.
+         */
         post: operations["dismissReminder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reminders/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Un-dismiss a reminder */
+        post: operations["restoreReminder"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2392,12 +2441,16 @@ export interface components {
             /** Format: date-time */
             updated_at?: string | null;
         };
-        /** @description Raw `reminders` table row (Tables<'reminders'>['Row']). */
+        /** @description A `reminders` table row plus `assignee_name` (the joined display name of `user_id`). Reminders are family-scoped: `family_id` is the visibility scope and `user_id` is the assignee ("whose reminder"). */
         Reminder: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
             user_id: string;
+            /** Format: uuid */
+            family_id?: string | null;
+            /** @description Display name of `user_id`; present on the family-scoped read/write views, not a stored column. */
+            assignee_name?: string | null;
             title: string;
             description?: string | null;
             /** @enum {string} */
@@ -6477,13 +6530,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Reminders. */
+            /** @description Reminders (empty array if the caller has no family). */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        count?: number;
                         data?: components["schemas"]["Reminder"][];
                     };
                 };
@@ -6520,20 +6574,24 @@ export interface operations {
                 "application/json": {
                     title: string;
                     description?: string;
-                    /** @enum {string} */
-                    reminder_type: "chore" | "assignment" | "event" | "goal" | "custom";
-                    related_item_id?: string;
-                    related_item_type?: string;
+                    /**
+                     * @default custom
+                     * @enum {string}
+                     */
+                    reminder_type?: "chore" | "assignment" | "event" | "goal" | "custom";
+                    /**
+                     * Format: uuid
+                     * @description Family member the reminder is for. Defaults to the caller.
+                     */
+                    assignee_user_id?: string;
                     /** Format: date-time */
                     scheduled_time: string;
-                    /** @default 15 */
-                    remind_before_minutes?: number;
                     /**
                      * @default once
                      * @enum {string}
                      */
                     recurrence?: "once" | "daily" | "weekly" | "monthly";
-                    /** Format: date-time */
+                    /** Format: date */
                     recurrence_end_date?: string;
                 };
             };
@@ -6550,7 +6608,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Missing required fields. */
+            /** @description Invalid body, or `assignee_user_id` is not a member of the caller's family. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6561,6 +6619,15 @@ export interface operations {
             };
             /** @description Missing x-user-id. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description The caller has no family. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6595,6 +6662,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        count?: number;
+                        data?: components["schemas"]["Reminder"][];
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getDueReminders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Due reminders. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        count?: number;
                         data?: components["schemas"]["Reminder"][];
                     };
                 };
@@ -6646,8 +6755,17 @@ export interface operations {
                     };
                 };
             };
-            /** @description Missing reminder ID. */
-            400: {
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such reminder in the caller's family. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6687,7 +6805,7 @@ export interface operations {
                     scheduled_time?: string;
                     remind_before_minutes?: number;
                     recurrence?: string;
-                    /** Format: date-time */
+                    /** Format: date */
                     recurrence_end_date?: string;
                 };
             };
@@ -6704,8 +6822,17 @@ export interface operations {
                     };
                 };
             };
-            /** @description Missing reminder ID. */
-            400: {
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such reminder in the caller's family. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6735,24 +6862,79 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Dismissed. */
+            /** @description The reminder after dismissal / roll-forward. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @constant */
-                        status?: "success";
-                        /** @constant */
-                        message?: "Reminder dismissed";
-                        /** Format: date-time */
-                        timestamp?: string;
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["Reminder"];
                     };
                 };
             };
-            /** @description Missing reminder ID. */
-            400: {
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such reminder in the caller's family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    restoreReminder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The restored reminder. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["Reminder"];
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such reminder in the caller's family. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
