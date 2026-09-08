@@ -12,12 +12,18 @@ import { useAuth } from '@/hooks/useAuth';
 // partial mock silently returns `undefined` for whatever's missing rather
 // than erroring, which is easy to miss (it only breaks the specific
 // assertions that check those exact fields, not the render itself).
+const { mockAuthState } = vi.hoisted(() => ({
+  mockAuthState: {
+    user: { id: 'user-1', email: 'test@example.com' } as { id: string; email: string } | null,
+    token: 'mock-token' as string | null,
+    isLoading: false,
+    error: null as string | null,
+  },
+}));
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
-    user: { id: 'user-1', email: 'test@example.com' },
-    token: 'mock-token',
-    isLoading: false,
-    error: null,
+    ...mockAuthState,
     login: vi.fn(),
     logout: vi.fn(),
     signup: vi.fn(),
@@ -37,6 +43,10 @@ vi.mock('@/services/api', () => ({
 describe('useAuth Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthState.user = { id: 'user-1', email: 'test@example.com' };
+    mockAuthState.token = 'mock-token';
+    mockAuthState.isLoading = false;
+    mockAuthState.error = null;
   });
 
   describe('Initial State', () => {
@@ -58,6 +68,19 @@ describe('useAuth Hook', () => {
       const { result } = renderHook(() => useAuth());
 
       expect(result.current.isLoading).toBe(false);
+    });
+
+    it('reports the session as still resolving when a stored token has no user yet', () => {
+      // hard-load: readStoredAuth put a token in the store but loadCurrentUser
+      // hasn't populated the user. Route guards must wait, not redirect to /login.
+      mockAuthState.token = 'mock-token';
+      mockAuthState.user = null;
+      mockAuthState.isLoading = false;
+
+      const { result } = renderHook(() => useAuth());
+
+      expect(result.current.isLoading).toBe(true);
+      expect(result.current.isAuthenticated).toBe(false);
     });
 
     it('should have no error initially', () => {
