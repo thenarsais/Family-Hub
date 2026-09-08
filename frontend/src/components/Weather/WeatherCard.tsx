@@ -15,13 +15,27 @@ interface Props extends CardShellProps {
   loading: boolean;
   error: string | null;
   location: string;
+  /** FR-092 — the cities the switcher offers, and which one is showing. */
+  cities: ReadonlyArray<{ label: string }>;
+  selectedIndex: number;
+  onSelectCity: (index: number) => void;
 }
 
 /**
- * FR-014 — current conditions for the family's city + a 5-day forecast strip.
+ * FR-014 / FR-092 — current conditions + a 5-day forecast for whichever of the
+ * family's cities is selected (pill switcher along the top; the first is home).
  * Degrades to an "unavailable" line when the OpenWeather key isn't configured.
  */
-export function WeatherCard({ weather, loading, error, location, ...shell }: Props) {
+export function WeatherCard({
+  weather,
+  loading,
+  error,
+  location,
+  cities,
+  selectedIndex,
+  onSelectCity,
+  ...shell
+}: Props) {
   const c = weather?.current;
 
   return (
@@ -31,6 +45,25 @@ export function WeatherCard({ weather, loading, error, location, ...shell }: Pro
       icon={<CloudSun className="w-5 h-5 text-accent" aria-hidden="true" />}
       count={c ? `${Math.round(c.temp)}°` : undefined}
     >
+      {cities.length > 1 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {cities.map((city, i) => (
+            <button
+              key={city.label}
+              type="button"
+              onClick={() => onSelectCity(i)}
+              aria-pressed={i === selectedIndex}
+              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                i === selectedIndex
+                  ? 'border-accent bg-accent/10 text-accent font-semibold'
+                  : 'border-rule text-ink-2 hover:border-accent hover:text-accent'
+              }`}
+            >
+              {city.label.split(',')[0]}
+            </button>
+          ))}
+        </div>
+      )}
       {loading ? (
         <div className="py-6 flex justify-center" role="status" aria-label="Loading">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />

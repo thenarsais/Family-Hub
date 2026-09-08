@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 
-/** What we query OpenWeather with — a US ZIP gives a local reading (the ZIP's
- *  coordinates) rather than the city centroid. */
-export const WEATHER_QUERY = '80241';
+/** Cities the family follows (FR-092). The first is "home" — it drives the top
+ *  bar, the dress-for-weather card, and the default weather card view. `query`
+ *  is what OpenWeather gets: a US ZIP for a local reading, else `City,State,US`
+ *  or `City,CountryCode`. All shown in °F (T-03 "US household" units decision). */
+export const WEATHER_CITIES = [
+  { query: '80241', label: 'Thornton, CO' },
+  { query: 'Cleveland,OH,US', label: 'Cleveland, OH' },
+  { query: 'Vadodara,IN', label: 'Vadodara, IN' },
+] as const;
+
+/** Home city — a US ZIP gives a local reading (the ZIP's coordinates). */
+export const WEATHER_QUERY = WEATHER_CITIES[0].query;
 /** Friendly label for the top bar / weather card. */
-export const WEATHER_LOCATION = 'Thornton, CO';
+export const WEATHER_LOCATION = WEATHER_CITIES[0].label;
 /** @deprecated use WEATHER_LOCATION for display / WEATHER_QUERY for lookups. */
 export const WEATHER_CITY = WEATHER_LOCATION;
 const UNITS = 'imperial' as const; // °F + mph — a US household (T-03 decision)
@@ -64,7 +73,13 @@ function weekdayLabel(dateStr: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'short' });
 }
 
-export function useWeather(): UseWeatherReturn {
+/**
+ * Weather for one of `WEATHER_CITIES`. Defaults to home (index 0) — that call
+ * is what the top bar and the dress-for-weather card use. Pass an index to
+ * follow the weather-card's city switcher.
+ */
+export function useWeather(cityIndex = 0): UseWeatherReturn {
+  const city = WEATHER_CITIES[cityIndex] ?? WEATHER_CITIES[0];
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,11 +93,11 @@ export function useWeather(): UseWeatherReturn {
         setError(null);
 
         const [currentRes, forecastRes] = await Promise.all([
-          apiClient.get<ApiCurrent>(`/api/external/weather/city/${encodeURIComponent(WEATHER_QUERY)}`, {
+          apiClient.get<ApiCurrent>(`/api/external/weather/city/${encodeURIComponent(city.query)}`, {
             params: { units: UNITS },
           }),
           apiClient.get<{ forecast: ApiForecastItem[] }>(
-            `/api/external/weather/forecast/${encodeURIComponent(WEATHER_QUERY)}`,
+            `/api/external/weather/forecast/${encodeURIComponent(city.query)}`,
             { params: { units: UNITS } },
           ),
         ]);
@@ -122,7 +137,7 @@ export function useWeather(): UseWeatherReturn {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [city.query]);
 
-  return { weather, loading, error, units: UNITS, location: WEATHER_LOCATION };
+  return { weather, loading, error, units: UNITS, location: city.label };
 }

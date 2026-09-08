@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { WeatherCard } from '@/components/Weather/WeatherCard';
 import type { WeatherData } from '@/hooks/useWeather';
@@ -11,6 +12,12 @@ const shell = {
   onMove: vi.fn(),
 };
 
+const CITIES = [
+  { label: 'Thornton, CO' },
+  { label: 'Cleveland, OH' },
+  { label: 'Vadodara, IN' },
+];
+
 const weather: WeatherData = {
   current: { temp: 71, feelsLike: 68, condition: 'clear sky', icon: '☀️', humidity: 40, windSpeed: 9 },
   forecast: [
@@ -19,9 +26,27 @@ const weather: WeatherData = {
   ],
 };
 
+function renderCard(props: Partial<React.ComponentProps<typeof WeatherCard>> = {}) {
+  const onSelectCity = vi.fn();
+  render(
+    <WeatherCard
+      {...shell}
+      weather={weather}
+      loading={false}
+      error={null}
+      location="Thornton, CO"
+      cities={CITIES}
+      selectedIndex={0}
+      onSelectCity={onSelectCity}
+      {...props}
+    />,
+  );
+  return { onSelectCity };
+}
+
 describe('WeatherCard', () => {
   it('shows current conditions and the forecast strip', () => {
-    render(<WeatherCard {...shell} weather={weather} loading={false} error={null} location="Denver" />);
+    renderCard({ location: 'Denver' });
 
     expect(screen.getAllByText('71°').length).toBeGreaterThan(0);
     expect(screen.getByText('clear sky')).toBeInTheDocument();
@@ -32,12 +57,30 @@ describe('WeatherCard', () => {
   });
 
   it('shows the unavailable state on error', () => {
-    render(<WeatherCard {...shell} weather={null} loading={false} error="down" location="Denver" />);
+    renderCard({ weather: null, error: 'down' });
     expect(screen.getByText(/unavailable — add an OpenWeather API key/i)).toBeInTheDocument();
   });
 
   it('shows a spinner while loading', () => {
-    render(<WeatherCard {...shell} weather={null} loading error={null} location="Denver" />);
+    renderCard({ weather: null, loading: true });
     expect(screen.getByRole('status', { name: /loading/i })).toBeInTheDocument();
+  });
+
+  it('renders a pill per city, marks the selected one, and reports taps (FR-092)', async () => {
+    const { onSelectCity } = renderCard({ selectedIndex: 1 });
+
+    const pills = ['Thornton', 'Cleveland', 'Vadodara'].map((n) =>
+      screen.getByRole('button', { name: n }),
+    );
+    expect(pills[1]).toHaveAttribute('aria-pressed', 'true');
+    expect(pills[0]).toHaveAttribute('aria-pressed', 'false');
+
+    await userEvent.click(pills[2]);
+    expect(onSelectCity).toHaveBeenCalledWith(2);
+  });
+
+  it('omits the switcher when there is only one city', () => {
+    renderCard({ cities: [{ label: 'Thornton, CO' }] });
+    expect(screen.queryByRole('button', { name: 'Thornton' })).not.toBeInTheDocument();
   });
 });

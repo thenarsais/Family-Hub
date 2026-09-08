@@ -11,7 +11,7 @@ import { MealPlannerCard } from '../components/shell/MealPlannerCard';
 import { WeatherCard } from '../components/Weather/WeatherCard';
 import { DressForWeather } from '../components/Weather/DressForWeather';
 import { useAuth } from '../hooks/useAuth';
-import { useWeather } from '../hooks/useWeather';
+import { useWeather, WEATHER_CITIES } from '../hooks/useWeather';
 import { useReminders } from '../hooks/useReminders';
 import { useEnergy } from '../hooks/useEnergy';
 import { useFamily } from '../hooks/useFamily';
@@ -98,7 +98,11 @@ export default function Dashboard() {
     removeItem: removeShoppingItem,
     clearChecked: clearCheckedShopping,
   } = useShoppingList();
-  const { weather, loading: weatherLoading, error: weatherError, location: weatherLocation } = useWeather();
+  // Home weather (index 0) feeds the top bar, dress-for-weather card and stat.
+  const { weather, loading: weatherLoading, error: weatherError } = useWeather();
+  // The weather card follows its own city switcher (FR-092).
+  const [weatherCity, setWeatherCity] = useState(0);
+  const cardWx = useWeather(weatherCity);
   const { meals, loading: mealsLoading, updateMeal } = useMealPlanner();
 
   const caller = members.find((m) => m.user_id === user?.id);
@@ -148,10 +152,13 @@ export default function Dashboard() {
     weather: (
       <WeatherCard
         {...cardProps('weather')}
-        weather={weather}
-        loading={weatherLoading}
-        error={weatherError}
-        location={weatherLocation}
+        weather={cardWx.weather}
+        loading={cardWx.loading}
+        error={cardWx.error}
+        location={cardWx.location}
+        cities={WEATHER_CITIES}
+        selectedIndex={weatherCity}
+        onSelectCity={setWeatherCity}
       />
     ),
 
