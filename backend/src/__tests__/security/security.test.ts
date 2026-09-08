@@ -15,9 +15,11 @@ import helmet from 'helmet';
 // `undefined` return. Instead, mock the module to always return the same
 // shared object, and configure that object's methods per test.
 const mockChoreService = {
-  getUserChores: jest.fn(),
+  getChores: jest.fn(),
   createChore: jest.fn(),
+  updateChore: jest.fn(),
   completeChore: jest.fn(),
+  undoCompletion: jest.fn(),
   getChoreProgress: jest.fn(),
   getPointsSummary: jest.fn(),
   getTransactionHistory: jest.fn(),
@@ -229,14 +231,14 @@ describe('Security Tests', () => {
 
   describe('Authorization Tests', () => {
     it('user should only access their own chores', async () => {
-      mockChoreService.getUserChores.mockResolvedValueOnce([]);
+      mockChoreService.getChores.mockResolvedValueOnce([]);
 
       await request(app)
         .get('/api/chores')
         .set('x-user-id', 'user-1');
 
       // Verify the service was called with the correct user ID
-      expect(mockChoreService.getUserChores).toHaveBeenCalledWith('user-1');
+      expect(mockChoreService.getChores).toHaveBeenCalledWith('user-1', 'mine');
     });
 
     it('should not allow accessing other user\'s chore data', async () => {
@@ -345,7 +347,7 @@ describe('Security Tests', () => {
 
   describe('Response Security Tests', () => {
     it('should not expose internal error details', async () => {
-      mockChoreService.getUserChores.mockRejectedValueOnce(new Error('Internal DB connection error'));
+      mockChoreService.getChores.mockRejectedValueOnce(new Error('Internal DB connection error'));
 
       const res = await request(app)
         .get('/api/chores')
@@ -368,7 +370,7 @@ describe('Security Tests', () => {
     });
 
     it('should not return sensitive data in error responses', async () => {
-      mockChoreService.getUserChores.mockRejectedValueOnce({
+      mockChoreService.getChores.mockRejectedValueOnce({
         message: 'Database error',
         password: 'secret123',
         connectionString: 'REDACTED-FAKE-DB-CONNECTION-STRING-FOR-TEST',
@@ -385,7 +387,7 @@ describe('Security Tests', () => {
 
   describe('Rate Limiting Readiness Tests', () => {
     it('should accept rate limit headers', async () => {
-      mockChoreService.getUserChores.mockResolvedValueOnce([]);
+      mockChoreService.getChores.mockResolvedValueOnce([]);
 
       const res = await request(app)
         .get('/api/chores')

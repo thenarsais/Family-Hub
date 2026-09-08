@@ -193,6 +193,30 @@ describe('PointsRepository', () => {
     });
   });
 
+  describe('removePoints', () => {
+    it('deletes the most recent matching row and busts the cache', async () => {
+      (db.queryOne as jest.Mock).mockResolvedValueOnce({ id: 'p9' });
+
+      const removed = await PointsRepository.removePoints('u1', 'chore', 'Completed: c1');
+
+      expect(removed).toBe(true);
+      const [sql, params] = (db.queryOne as jest.Mock).mock.calls[0];
+      expect(sql).toContain('DELETE FROM activity_points');
+      expect(sql).toContain('ORDER BY created_at DESC');
+      expect(params).toEqual(['u1', 'chore', 'Completed: c1']);
+      expect(cache.del).toHaveBeenCalledWith(
+        'user:u1:points:total',
+        'user:u1:points:history',
+        'user:u1:points:chore',
+      );
+    });
+
+    it('returns false when nothing matched', async () => {
+      (db.queryOne as jest.Mock).mockResolvedValueOnce(null);
+      expect(await PointsRepository.removePoints('u1', 'chore', 'Completed: c1')).toBe(false);
+    });
+  });
+
   describe('getTotalPointsAllUsers', () => {
     it('should parse the sitewide total', async () => {
       (db.queryOne as jest.Mock).mockResolvedValueOnce({ total: '10000' });

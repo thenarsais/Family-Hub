@@ -14,9 +14,11 @@ import express from 'express';
 // and 500. Instead, mock each module to always return the same shared
 // object, and configure that object's methods per test.
 const mockChoreService = {
-  getUserChores: jest.fn(),
+  getChores: jest.fn(),
   createChore: jest.fn(),
+  updateChore: jest.fn(),
   completeChore: jest.fn(),
+  undoCompletion: jest.fn(),
   getChoreProgress: jest.fn(),
   getPointsSummary: jest.fn(),
   getTransactionHistory: jest.fn(),
@@ -68,7 +70,7 @@ describe('Performance Tests', () => {
 
   describe('Response Time Tests', () => {
     it('GET /chores should respond within 500ms', async () => {
-      mockChoreService.getUserChores.mockResolvedValueOnce([
+      mockChoreService.getChores.mockResolvedValueOnce([
         { id: 'chore-1', name: 'Test', userId: 'user-1', pointsValue: 50, timeSlot: 'morning', enabled: true },
       ]);
 
@@ -142,7 +144,7 @@ describe('Performance Tests', () => {
 
   describe('Concurrent Request Tests', () => {
     it('should handle multiple concurrent requests', async () => {
-      mockChoreService.getUserChores.mockResolvedValue([]);
+      mockChoreService.getChores.mockResolvedValue([]);
 
       const requests = [];
 
@@ -177,7 +179,7 @@ describe('Performance Tests', () => {
         updatedAt: new Date(),
       }));
 
-      mockChoreService.getUserChores.mockResolvedValueOnce(largeChoreList);
+      mockChoreService.getChores.mockResolvedValueOnce(largeChoreList);
 
       const res = await request(app)
         .get('/api/chores')
@@ -190,7 +192,7 @@ describe('Performance Tests', () => {
 
   describe('Memory Efficiency Tests', () => {
     it('should not leak memory on repeated requests', async () => {
-      mockChoreService.getUserChores.mockResolvedValue([]);
+      mockChoreService.getChores.mockResolvedValue([]);
 
       // Warm up first — JIT compilation and first-request allocations
       // (module init, route table, etc.) are one-time costs that would
@@ -242,7 +244,7 @@ describe('Performance Tests', () => {
 
   describe('Error Recovery Performance', () => {
     it('should handle errors gracefully without significant overhead', async () => {
-      mockChoreService.getUserChores.mockRejectedValueOnce(new Error('Service error'));
+      mockChoreService.getChores.mockRejectedValueOnce(new Error('Service error'));
 
       const startTime = Date.now();
       await request(app)

@@ -684,15 +684,41 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the authenticated user's chores */
+        /**
+         * List chores with today's completion state
+         * @description `scope=mine` (default) — the caller's enabled chores, for the board. `scope=family` — every family member's chores including disabled ones, with the assignee name, for the parent Manage panel.
+         */
         get: operations["listChores"];
         put?: never;
-        /** Create a chore */
+        /**
+         * Create a chore
+         * @description `assigneeId` defaults to the caller and is stored as the chore's `userId` ("whose chore"); it must be an active member of the caller's family.
+         */
         post: operations["createChore"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/chores/{choreId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit a chore
+         * @description name / description / timeSlot / pointsValue / enabled. Family-scoped: the caller must share a family with the chore's assignee.
+         */
+        patch: operations["updateChore"];
         trace?: never;
     };
     "/api/chores/{choreId}/complete": {
@@ -704,9 +730,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mark a chore complete and award its points */
+        /**
+         * Mark a chore complete and award its points
+         * @description One completion per family-local day.
+         */
         post: operations["completeChore"];
-        delete?: never;
+        /**
+         * Undo today's completion of a chore
+         * @description Removes today's completion and reverses the points award.
+         */
+        delete: operations["undoChoreCompletion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2294,6 +2327,13 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /** @description A `Chore` plus today's state — what `GET /api/chores` returns. `assigneeName` is the display name of `userId`. `completedToday` reflects the family's local calendar day; `completionId` is set only when it is true, so the client can offer "undo". */
+        ChoreWithStatus: components["schemas"]["Chore"] & {
+            assigneeName?: string | null;
+            completedToday: boolean;
+            /** Format: uuid */
+            completionId?: string | null;
         };
         ChoreCompletion: {
             /** Format: uuid */
@@ -4890,7 +4930,9 @@ export interface operations {
     };
     listChores: {
         parameters: {
-            query?: never;
+            query?: {
+                scope?: "mine" | "family";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4906,7 +4948,7 @@ export interface operations {
                     "application/json": {
                         /** @constant */
                         status?: "success";
-                        chores?: components["schemas"]["Chore"][];
+                        chores?: components["schemas"]["ChoreWithStatus"][];
                         count?: number;
                         /** Format: date-time */
                         timestamp?: string;
@@ -4948,6 +4990,8 @@ export interface operations {
                     /** @enum {string} */
                     timeSlot: "morning" | "afternoon" | "evening";
                     pointsValue: number;
+                    /** Format: uuid */
+                    assigneeId?: string;
                 };
             };
         };
@@ -4969,7 +5013,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Missing/invalid fields. */
+            /** @description Missing/invalid fields, or `assigneeId` is not a family member. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -4980,6 +5024,83 @@ export interface operations {
             };
             /** @description Missing x-user-id. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateChore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                choreId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    description?: string | null;
+                    /** @enum {string} */
+                    timeSlot?: "morning" | "afternoon" | "evening";
+                    pointsValue?: number;
+                    enabled?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Chore updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Chore updated successfully";
+                        chore?: components["schemas"]["Chore"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid timeSlot / pointsValue. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such chore in the caller's family. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5036,7 +5157,73 @@ export interface operations {
                     "application/json": components["schemas"]["EnvelopeError"];
                 };
             };
-            /** @description Chore not found. */
+            /** @description Chore not found (or not the caller's). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Already completed today. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    undoChoreCompletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                choreId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Completion undone. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Chore completion undone";
+                        progress?: components["schemas"]["ChoreProgress"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Nothing to undo today. */
             404: {
                 headers: {
                     [name: string]: unknown;
