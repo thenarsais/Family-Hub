@@ -44,7 +44,7 @@ describe('useWeather', () => {
 
     expect(result.current.error).toBeNull();
     expect(result.current.units).toBe('imperial');
-    expect(result.current.location).toBe('Denver');
+    expect(result.current.location).toBe('Thornton, CO');
     expect(result.current.weather?.current).toEqual({
       temp: 71,
       feelsLike: 68,
@@ -59,8 +59,10 @@ describe('useWeather', () => {
     ]);
 
     const cityCall = mockGet.mock.calls.find(([p]) => p.includes('/weather/city/'));
-    expect(cityCall?.[0]).toContain('/weather/city/Denver');
+    expect(cityCall?.[0]).toContain('/weather/city/80241');
     expect(cityCall?.[1]).toEqual({ params: { units: 'imperial' } });
+    const fcCall = mockGet.mock.calls.find(([p]) => p.includes('/weather/forecast/'));
+    expect(fcCall?.[0]).toContain('/weather/forecast/80241');
   });
 
   it('surfaces an error and leaves weather null when a request fails', async () => {

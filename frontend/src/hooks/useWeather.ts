@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 
-/** The one city shown for v1. Wiring this to a family-settings field is a
- *  fast-follow (needs a `weather_location` column); FR-092 adds more cities. */
-export const WEATHER_CITY = 'Denver';
+/** What we query OpenWeather with — a US ZIP gives a local reading (the ZIP's
+ *  coordinates) rather than the city centroid. */
+export const WEATHER_QUERY = '80241';
+/** Friendly label for the top bar / weather card. */
+export const WEATHER_LOCATION = 'Thornton, CO';
+/** @deprecated use WEATHER_LOCATION for display / WEATHER_QUERY for lookups. */
+export const WEATHER_CITY = WEATHER_LOCATION;
 const UNITS = 'imperial' as const; // °F + mph — a US household (T-03 decision)
 
 export interface WeatherData {
@@ -74,11 +78,11 @@ export function useWeather(): UseWeatherReturn {
         setError(null);
 
         const [currentRes, forecastRes] = await Promise.all([
-          apiClient.get<ApiCurrent>(`/api/external/weather/city/${encodeURIComponent(WEATHER_CITY)}`, {
+          apiClient.get<ApiCurrent>(`/api/external/weather/city/${encodeURIComponent(WEATHER_QUERY)}`, {
             params: { units: UNITS },
           }),
           apiClient.get<{ forecast: ApiForecastItem[] }>(
-            `/api/external/weather/forecast/${encodeURIComponent(WEATHER_CITY)}`,
+            `/api/external/weather/forecast/${encodeURIComponent(WEATHER_QUERY)}`,
             { params: { units: UNITS } },
           ),
         ]);
@@ -120,5 +124,5 @@ export function useWeather(): UseWeatherReturn {
     };
   }, []);
 
-  return { weather, loading, error, units: UNITS, location: WEATHER_CITY };
+  return { weather, loading, error, units: UNITS, location: WEATHER_LOCATION };
 }

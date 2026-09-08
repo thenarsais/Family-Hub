@@ -17,6 +17,17 @@ const OW_BASE_URL = 'https://api.openweathermap.org/data/2.5';
 export type WeatherUnits = 'metric' | 'imperial';
 const DEFAULT_UNITS: WeatherUnits = 'imperial';
 
+/**
+ * OpenWeather location query param. A 5-digit string is treated as a US ZIP
+ * (`zip=80241,US`), which resolves to that ZIP's coordinates — noticeably more
+ * local than a city name (`q=Denver` = the city centroid). Anything else is a
+ * plain city-name lookup.
+ */
+function locationParam(location: string): string {
+  const v = location.trim();
+  return /^\d{5}$/.test(v) ? `zip=${v},US` : `q=${encodeURIComponent(v)}`;
+}
+
 interface WeatherData {
   location: string;
   temperature: number;
@@ -79,11 +90,11 @@ export async function getCurrentWeatherByCity(
 
   try {
     const response = await fetch(
-      `${OW_BASE_URL}/weather?q=${encodeURIComponent(city)}&units=${units}&appid=${OW_API_KEY}`
+      `${OW_BASE_URL}/weather?${locationParam(city)}&units=${units}&appid=${OW_API_KEY}`
     );
 
     if (!response.ok) {
-      console.warn(`Weather API error for city "${city}": ${response.statusText}`);
+      console.warn(`Weather API error for location "${city}": ${response.statusText}`);
       return null;
     }
 
@@ -179,7 +190,7 @@ export async function getForecast(
 
   try {
     const response = await fetch(
-      `${OW_BASE_URL}/forecast?q=${encodeURIComponent(city)}&units=${units}&appid=${OW_API_KEY}`
+      `${OW_BASE_URL}/forecast?${locationParam(city)}&units=${units}&appid=${OW_API_KEY}`
     );
 
     if (!response.ok) {

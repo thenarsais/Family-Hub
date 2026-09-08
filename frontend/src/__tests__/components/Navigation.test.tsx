@@ -13,7 +13,7 @@ vi.mock('@hooks/useAuth', () => ({ useAuth: mockUseAuth }));
 // The top bar reads weather for the temp chip; stub it so this suite doesn't
 // fire a real (unmocked) fetch that logs during teardown.
 vi.mock('@hooks/useWeather', () => ({
-  useWeather: () => ({ weather: null, loading: false, error: null, units: 'imperial', location: 'Denver' }),
+  useWeather: () => ({ weather: null, loading: false, error: null, units: 'imperial', location: 'Thornton, CO' }),
 }));
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
