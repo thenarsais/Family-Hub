@@ -85,10 +85,16 @@ describe('RemindersPage', () => {
     expect(container.querySelector('.animate-spin')).toBeInTheDocument();
   });
 
-  it('shows an error message when the hook errors', () => {
+  it('shows an error banner but still renders the list sections when the hook errors', () => {
     hook.error = 'kaboom';
+    hook.reminders = [];
     render(<RemindersPage />);
-    expect(screen.getByText('kaboom')).toBeInTheDocument();
+    expect(screen.getByText(/Couldn't load your reminders: kaboom/)).toBeInTheDocument();
+    // the section headers still render so the page reads as a list page, not just a form
+    expect(screen.getByRole('heading', { name: /Due now/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Upcoming/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Done & dismissed/ })).toBeInTheDocument();
+    expect(screen.getByText('Nothing due right now.')).toBeInTheDocument();
   });
 
   it('groups reminders into due / upcoming / dismissed', () => {
