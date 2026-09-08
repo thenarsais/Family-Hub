@@ -2580,7 +2580,11 @@ paths:
   /api/reminders:
     get:
       tags: [Reminders]
-      summary: List the authenticated user's reminders
+      summary: List every reminder in the caller's family
+      description: >-
+        Family-scoped. Each row carries `assignee_name`. Stale recurring reminders
+        are rolled forward to their next occurrence as a side effect of this read
+        (there is no job runner yet).
       operationId: listReminders
       security: [{ userIdHeader: [] }]
       parameters:
@@ -2589,7 +2593,7 @@ paths:
           schema: { type: string, enum: [pending, dismissed, all], default: all }
       responses:
         '200':
-          description: Reminders.
+          description: Reminders (empty array if the caller has no family).
           content:
             application/json:
               schema:
@@ -2597,6 +2601,7 @@ paths:
                   - $ref: '#/components/schemas/EnvelopeSuccess'
                   - type: object
                     properties:
+                      count: { type: integer }
                       data:
                         type: array
                         items: { $ref: '#/components/schemas/Reminder' }
@@ -2609,6 +2614,9 @@ paths:
     post:
       tags: [Reminders]
       summary: Create a reminder
+      description: >-
+        The reminder is created in the caller's family. `assignee_user_id`
+        defaults to the caller; anyone in the family may be assigned.
       operationId: createReminder
       security: [{ userIdHeader: [] }]
       requestBody:
@@ -2617,17 +2625,18 @@ paths:
           application/json:
             schema:
               type: object
-              required: [title, reminder_type, scheduled_time]
+              required: [title, scheduled_time]
               properties:
                 title: { type: string }
                 description: { type: string }
-                reminder_type: { type: string, enum: [chore, assignment, event, goal, custom] }
-                related_item_id: { type: string }
-                related_item_type: { type: string }
+                reminder_type: { type: string, enum: [chore, assignment, event, goal, custom], default: custom }
+                assignee_user_id:
+                  type: string
+                  format: uuid
+                  description: Family member the reminder is for. Defaults to the caller.
                 scheduled_time: { type: string, format: date-time }
-                remind_before_minutes: { type: integer, default: 15 }
                 recurrence: { type: string, enum: [once, daily, weekly, monthly], default: once }
-                recurrence_end_date: { type: string, format: date-time }
+                recurrence_end_date: { type: string, format: date }
       responses:
         '201':
           description: Created.
@@ -2640,10 +2649,13 @@ paths:
                     properties:
                       data: { $ref: '#/components/schemas/Reminder' }
         '400':
-          description: Missing required fields.
+          description: Invalid body, or `assignee_user_id` is not a member of the caller's family.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '401':
           description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: The caller has no family.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -2652,7 +2664,7 @@ paths:
   /api/reminders/upcoming:
     get:
       tags: [Reminders]
-      summary: Get reminders due in the next 24 hours
+      summary: Family reminders due in the next 24 hours
       operationId: getUpcomingReminders
       security: [{ userIdHeader: [] }]
       responses:
@@ -2665,6 +2677,35 @@ paths:
                   - $ref: '#/components/schemas/EnvelopeSuccess'
                   - type: object
                     properties:
+                      count: { type: integer }
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Reminder' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/reminders/due:
+    get:
+      tags: [Reminders]
+      summary: Family reminders scheduled for now or the past and not dismissed
+      description: The T-18 "due now" surface — what the dashboard band polls.
+      operationId: getDueReminders
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Due reminders.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      count: { type: integer }
                       data:
                         type: array
                         items: { $ref: '#/components/schemas/Reminder' }
@@ -2679,8 +2720,9 @@ paths:
     patch:
       tags: [Reminders]
       summary: Update a reminder
-      description: "Request body is passed through with only a column-name whitelist (no other validation)."
+      description: "Family-scoped. Body is passed through with only a column-name whitelist (no other validation)."
       operationId: updateReminder
+      security: [{ userIdHeader: [] }]
       parameters:
         - name: id
           in: path
@@ -2700,7 +2742,7 @@ paths:
                 scheduled_time: { type: string, format: date-time }
                 remind_before_minutes: { type: integer }
                 recurrence: { type: string }
-                recurrence_end_date: { type: string, format: date-time }
+                recurrence_end_date: { type: string, format: date }
       responses:
         '200':
           description: Updated.
@@ -2712,8 +2754,11 @@ paths:
                   - type: object
                     properties:
                       data: { $ref: '#/components/schemas/Reminder' }
-        '400':
-          description: Missing reminder ID.
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such reminder in the caller's family.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -2721,7 +2766,9 @@ paths:
     delete:
       tags: [Reminders]
       summary: Delete a reminder
+      description: Permanent, family-scoped.
       operationId: deleteReminder
+      security: [{ userIdHeader: [] }]
       parameters:
         - name: id
           in: path
@@ -2738,8 +2785,11 @@ paths:
                   status: { type: string, const: success }
                   message: { type: string, const: "Reminder deleted" }
                   timestamp: { type: string, format: date-time }
-        '400':
-          description: Missing reminder ID.
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such reminder in the caller's family.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -2749,7 +2799,13 @@ paths:
     post:
       tags: [Reminders]
       summary: Dismiss a reminder
+      description: >-
+        A one-off reminder is hidden (`is_dismissed = true`). A recurring reminder
+        is treated as "done this time" and rolls forward to its next occurrence
+        instead — unless it is past its `recurrence_end_date`, in which case it is
+        hidden. Returns the resulting row.
       operationId: dismissReminder
+      security: [{ userIdHeader: [] }]
       parameters:
         - name: id
           in: path
@@ -2757,17 +2813,52 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200':
-          description: Dismissed.
+          description: The reminder after dismissal / roll-forward.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status: { type: string, const: success }
-                  message: { type: string, const: "Reminder dismissed" }
-                  timestamp: { type: string, format: date-time }
-        '400':
-          description: Missing reminder ID.
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Reminder' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such reminder in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/reminders/{id}/restore:
+    post:
+      tags: [Reminders]
+      summary: Un-dismiss a reminder
+      operationId: restoreReminder
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The restored reminder.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Reminder' }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such reminder in the caller's family.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -5150,11 +5241,18 @@ components:
     # ---------------- Reminders ----------------
     Reminder:
       type: object
-      description: Raw `reminders` table row (Tables<'reminders'>['Row']).
+      description: >-
+        A `reminders` table row plus `assignee_name` (the joined display name of
+        `user_id`). Reminders are family-scoped: `family_id` is the visibility
+        scope and `user_id` is the assignee ("whose reminder").
       required: [id, user_id, title, reminder_type, scheduled_time]
       properties:
         id: { type: string, format: uuid }
         user_id: { type: string, format: uuid }
+        family_id: { type: [string, 'null'], format: uuid }
+        assignee_name:
+          type: [string, 'null']
+          description: Display name of `user_id`; present on the family-scoped read/write views, not a stored column.
         title: { type: string }
         description: { type: [string, 'null'] }
         reminder_type: { type: string, enum: [chore, assignment, event, goal, custom] }
