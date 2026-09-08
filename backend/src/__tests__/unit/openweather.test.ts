@@ -57,6 +57,17 @@ describe('OpenWeatherService', () => {
       });
       expect(cache.set).toHaveBeenCalledWith('weather:current:seattle:imperial', result, 600);
       expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('units=imperial');
+      expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('q=Seattle');
+    });
+
+    it('queries by US zip (not q=) when given a 5-digit string', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => mockCurrentResponse });
+
+      await getCurrentWeatherByCity('80241');
+
+      const url = (global.fetch as jest.Mock).mock.calls[0][0];
+      expect(url).toContain('zip=80241,US');
+      expect(url).not.toContain('q=');
     });
 
     it('honours a metric units request (own cache key + query)', async () => {
@@ -178,6 +189,16 @@ describe('OpenWeatherService', () => {
       expect(result).toHaveLength(5);
       expect(result?.[0]).toMatchObject({ high: 10, low: 2, precipChance: 42, icon: '☀️' });
       expect(cache.set).toHaveBeenCalledWith('weather:forecast:seattle:imperial', result, 3600);
+    });
+
+    it('queries the forecast by US zip when given a 5-digit string', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => ({ list: [] }) });
+
+      await getForecast('80241');
+
+      const url = (global.fetch as jest.Mock).mock.calls[0][0];
+      expect(url).toContain('zip=80241,US');
+      expect(url).not.toContain('q=');
     });
 
     it('should default precipChance to 0 when pop is absent', async () => {
