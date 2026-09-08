@@ -881,9 +881,20 @@ export function WeekCalendar() {
               </div>
             )}
 
-            <div className="flex gap-2 pt-4 border-t border-rule">
+            <div className="flex flex-wrap gap-2 pt-4 border-t border-rule">
               <button className="flex-1 btn btn-secondary text-sm" onClick={() => setSelectedEvent(null)}>
                 Close
+              </button>
+              <button
+                className="btn btn-secondary text-sm flex items-center gap-1"
+                onClick={() => {
+                  onDismissClick(selectedEvent);
+                  setSelectedEvent(null);
+                }}
+                title="Hide this event from the calendar"
+              >
+                <Ban className="w-4 h-4" />
+                Hide
               </button>
               {isEditableBy(selectedEvent, user?.id) && (
                 <>
