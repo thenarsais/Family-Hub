@@ -80,6 +80,12 @@ export default function Navigation({
               Activity Board
             </Link>
             <Link
+              to="/learn"
+              className="hidden sm:inline text-ink-2 hover:text-accent transition-colors"
+            >
+              Learn
+            </Link>
+            <Link
               to="/family"
               className="hidden sm:inline text-ink-2 hover:text-accent transition-colors"
             >

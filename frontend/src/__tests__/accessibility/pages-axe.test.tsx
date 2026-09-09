@@ -16,6 +16,7 @@ import SmartHomePage from '@/pages/SmartHome';
 import ActivityBoard from '@/pages/ActivityBoard';
 import KidsBoard from '@/pages/KidsBoard';
 import KioskHome from '@/pages/KioskHome';
+import LearnPage from '@/pages/LearnPage';
 import * as deviceHook from '@/hooks/useDevices';
 
 expect.extend(toHaveNoViolations);
@@ -80,6 +81,25 @@ vi.mock('@/hooks/useKidBoard', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useSpeak', () => ({
+  useSpeak: () => ({ supported: false, hasGujaratiVoice: false, speak: vi.fn() }),
+}));
+
+vi.mock('@/hooks/useLearning', () => ({
+  useLearning: () => ({
+    lessons: [
+      { id: 'l1', category: 'alphabet', phase: 'phase_1_alphabet', subcategory: 'vowels', sequenceOrder: 0, content: { text: 'અ', romanization: 'a', pronunciation: 'uh', english: 'vowel a' }, pointsValue: 10, completed: false, pointsEarned: 0 },
+    ],
+    byPhase: { phase_1_alphabet: { vowels: [{ id: 'l1', category: 'alphabet', phase: 'phase_1_alphabet', subcategory: 'vowels', sequenceOrder: 0, content: { text: 'અ', romanization: 'a', pronunciation: 'uh', english: 'vowel a' }, pointsValue: 10, completed: false, pointsEarned: 0 }] } },
+    stats: { totalLessonsCompleted: 0, totalPointsEarned: 0, alphabet: { completed: 0, total: 47 }, numbers: { completed: 0, total: 10 }, vocabulary: { completed: 0, total: 120 } },
+    loading: false,
+    error: null,
+    completeLesson: vi.fn(),
+    recordQuizAnswer: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useKiosk', () => ({
   useKiosk: () => ({
     profiles: [
@@ -139,7 +159,8 @@ describe('Real page accessibility (axe)', () => {
   });
 
   it('ActivityBoard page has no axe violations', async () => {
-    const { container } = render(<ActivityBoard />);
+    // the Gujarati section renders a <Link>, so it needs a router context now
+    const { container } = renderWithRouter(<ActivityBoard />);
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -156,6 +177,11 @@ describe('Real page accessibility (axe)', () => {
 
   it('KioskHome page has no axe violations', async () => {
     const { container } = renderWithRouter(<KioskHome />);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('LearnPage has no axe violations', async () => {
+    const { container } = renderWithRouter(<LearnPage />);
     expect(await axe(container)).toHaveNoViolations();
   });
 });
