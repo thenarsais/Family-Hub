@@ -14,6 +14,7 @@
     "start": "node dist/server.js",
     "migrate": "ts-node --transpile-only src/runMigrationsV2.ts",
     "seed": "ts-node --transpile-only src/seed.ts",
+    "seed:learning": "ts-node --transpile-only src/scripts/seed-learning.ts",
     "test": "jest --passWithNoTests --maxWorkers=2 --testTimeout=10000",
     "test:unit": "jest --testPathPattern=unit --passWithNoTests --maxWorkers=2",
     "test:integration": "jest --testPathPattern=integration --passWithNoTests --maxWorkers=2",

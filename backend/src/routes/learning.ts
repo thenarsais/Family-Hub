@@ -8,15 +8,82 @@ const router = Router();
 router.use(normalizeBody); // req.body is {} even on a bodyless request
 const learning = getLearningService();
 
+const CATEGORIES = ['alphabet', 'numbers', 'vocabulary'];
+
+/**
+ * GET /api/learning/lessons?category=&phase=&subcategory=
+ * The curriculum with this user's per-lesson completion folded in.
+ */
+router.get('/lessons', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) {
+      return res.status(401).json({ status: 'error', message: 'User ID required' });
+    }
+
+    const { category, phase, subcategory } = req.query as Record<string, string | undefined>;
+    if (category && !CATEGORIES.includes(category)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'category must be alphabet, numbers, or vocabulary',
+      });
+    }
+
+    const lessons = await learning.getLessonsWithProgress(userId, { category, phase, subcategory });
+
+    res.json({
+      status: 'success',
+      lessons,
+      count: lessons.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    console.error('Failed to list lessons:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to list lessons',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * GET /api/learning/lessons/:id
+ * One lesson plus this user's progress on it.
+ */
+router.get('/lessons/:id', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) {
+      return res.status(401).json({ status: 'error', message: 'User ID required' });
+    }
+
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const lesson = await learning.getLessonById(id, userId);
+    if (!lesson) {
+      return res.status(404).json({ status: 'error', message: 'Lesson not found' });
+    }
+
+    res.json({ status: 'success', lesson, timestamp: new Date().toISOString() });
+  } catch (error: unknown) {
+    console.error('Failed to get lesson:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get lesson',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
 /**
  * POST /api/learning/lessons/:lessonId/complete
- * Record lesson completion and award points
+ * Record lesson completion and award points. category/phase/points are read
+ * from the lesson row, not the request body.
  */
 router.post('/lessons/:lessonId/complete', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
     const lessonId = Array.isArray(req.params.lessonId) ? req.params.lessonId[0] : req.params.lessonId;
-    const { category, phase, pointsValue = 10 } = req.body;
 
     if (!userId) {
       return res.status(401).json({
@@ -25,21 +92,7 @@ router.post('/lessons/:lessonId/complete', async (req: Request, res: Response) =
       });
     }
 
-    if (!category || !phase) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Category and phase are required',
-      });
-    }
-
-    if (!['alphabet', 'numbers', 'vocabulary'].includes(category)) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Category must be alphabet, numbers, or vocabulary',
-      });
-    }
-
-    const progress = await learning.completeLesson(userId, lessonId, category, phase, pointsValue);
+    const progress = await learning.completeLesson(userId, lessonId);
     const stats = await learning.getLearningStats(userId);
 
     res.status(201).json({
@@ -50,6 +103,9 @@ router.post('/lessons/:lessonId/complete', async (req: Request, res: Response) =
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {
+    if (getErrorMessage(error) === 'not-found') {
+      return res.status(404).json({ status: 'error', message: 'Lesson not found' });
+    }
     console.error('Failed to complete lesson:', error);
     res.status(500).json({
       status: 'error',

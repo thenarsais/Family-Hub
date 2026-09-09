@@ -1098,6 +1098,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The Gujarati curriculum with this user's per-lesson completion */
+        get: operations["listLessons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learning/lessons/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One lesson plus this user's progress on it */
+        get: operations["getLesson"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning/lessons/{lessonId}/complete": {
         parameters: {
             query?: never;
@@ -1107,7 +1141,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Record lesson completion and award points */
+        /**
+         * Record lesson completion and award points
+         * @description category / phase / points are read from the lesson row; the request body is ignored.
+         */
         post: operations["completeLesson"];
         delete?: never;
         options?: never;
@@ -2757,6 +2794,34 @@ export interface components {
             members: components["schemas"]["KioskProfile"][];
             hasPin: boolean;
             idleMinutes: number;
+        };
+        /** @description Normalised lesson body — `text` is the Gujarati glyph/word. */
+        LessonContent: {
+            text: string;
+            romanization: string;
+            pronunciation: string;
+            english: string;
+            /** @description Gujarati spelled-out word (numbers only). */
+            word?: string;
+        };
+        /** @description A `learning_lessons` row (seeded from seed-data/gujarati-curriculum.json). */
+        Lesson: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            category: "alphabet" | "numbers" | "vocabulary";
+            /** @enum {string} */
+            phase: "phase_1_alphabet" | "phase_2_numbers" | "phase_3_vocabulary";
+            /** @description vowels / consonants / digits / animals / family / … */
+            subcategory: string;
+            sequenceOrder: number;
+            content: components["schemas"]["LessonContent"];
+            pointsValue: number;
+        };
+        /** @description A `Lesson` plus this user's completion of it. */
+        LessonWithProgress: components["schemas"]["Lesson"] & {
+            completed: boolean;
+            pointsEarned: number;
         };
         /**
          * @description From `LearningService`'s raw-Postgres `learning_progress` table —
@@ -7139,6 +7204,119 @@ export interface operations {
             };
         };
     };
+    listLessons: {
+        parameters: {
+            query?: {
+                category?: "alphabet" | "numbers" | "vocabulary";
+                phase?: string;
+                subcategory?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lessons (ordered by phase, subcategory, sequence). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        lessons?: components["schemas"]["LessonWithProgress"][];
+                        count?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Bad category. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getLesson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The lesson. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        lesson?: components["schemas"]["LessonWithProgress"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such lesson. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
     completeLesson: {
         parameters: {
             query?: never;
@@ -7148,17 +7326,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    category: "alphabet" | "numbers" | "vocabulary";
-                    phase: string;
-                    /** @default 10 */
-                    pointsValue?: number;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Lesson completion recorded. */
             201: {
@@ -7178,8 +7346,8 @@ export interface operations {
                     };
                 };
             };
-            /** @description Missing/invalid category or phase. */
-            400: {
+            /** @description Missing x-user-id. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7187,8 +7355,8 @@ export interface operations {
                     "application/json": components["schemas"]["EnvelopeError"];
                 };
             };
-            /** @description Missing x-user-id. */
-            401: {
+            /** @description No lesson with that id. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
