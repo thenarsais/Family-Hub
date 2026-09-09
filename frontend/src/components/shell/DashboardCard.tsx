@@ -6,6 +6,11 @@ import { ChevronDown, GripVertical } from 'lucide-react';
  * clamped) and expanded (full body + actions), toggled from the header. A drag
  * handle reorders cards (HTML5 DnD, plus ArrowUp/Down for keyboard); the parent
  * owns the order via useCardOrder.
+ *
+ * `minimal` is the "nothing to show" stub: the body renders un-clamped with no
+ * fade and the header collapse toggle is dropped (there's nothing to expand).
+ * The grip handle, count and footer stay so the card keeps its slot and its
+ * primary action (e.g. "+ Add reminder").
  */
 export function DashboardCard({
   id,
@@ -17,6 +22,7 @@ export function DashboardCard({
   onReorder,
   onMove,
   footer,
+  minimal = false,
   children,
 }: {
   id: string;
@@ -28,6 +34,7 @@ export function DashboardCard({
   onReorder: (dragId: string, dropId: string) => void;
   onMove: (id: string, delta: number) => void;
   footer?: ReactNode;
+  minimal?: boolean;
   children: ReactNode;
 }) {
   const [dragOver, setDragOver] = useState(false);
@@ -73,34 +80,44 @@ export function DashboardCard({
         </button>
 
         <h2 id={`card-title-${id}`} className="flex-1 min-w-0 m-0">
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls={bodyId}
-            onClick={() => onToggle(id)}
-            className="flex items-center gap-2 w-full text-left font-display text-lg font-semibold text-ink"
-          >
-            {icon}
-            <span className="truncate">{title}</span>
-            {count != null && (
-              <span className="ml-auto text-xs font-semibold text-ink-3">{count}</span>
-            )}
-            <ChevronDown
-              className={`w-4 h-4 shrink-0 text-ink-3 transition-transform ${
-                count != null ? '' : 'ml-auto'
-              } ${expanded ? 'rotate-180' : ''}`}
-              aria-hidden="true"
-            />
-          </button>
+          {minimal ? (
+            <span className="flex items-center gap-2 w-full font-display text-lg font-semibold text-ink">
+              {icon}
+              <span className="truncate">{title}</span>
+              {count != null && (
+                <span className="ml-auto text-xs font-semibold text-ink-3">{count}</span>
+              )}
+            </span>
+          ) : (
+            <button
+              type="button"
+              aria-expanded={expanded}
+              aria-controls={bodyId}
+              onClick={() => onToggle(id)}
+              className="flex items-center gap-2 w-full text-left font-display text-lg font-semibold text-ink"
+            >
+              {icon}
+              <span className="truncate">{title}</span>
+              {count != null && (
+                <span className="ml-auto text-xs font-semibold text-ink-3">{count}</span>
+              )}
+              <ChevronDown
+                className={`w-4 h-4 shrink-0 text-ink-3 transition-transform ${
+                  count != null ? '' : 'ml-auto'
+                } ${expanded ? 'rotate-180' : ''}`}
+                aria-hidden="true"
+              />
+            </button>
+          )}
         </h2>
       </div>
 
       <div
         id={bodyId}
-        className={expanded ? '' : 'relative max-h-52 overflow-hidden'}
+        className={expanded || minimal ? '' : 'relative max-h-52 overflow-hidden'}
       >
         {children}
-        {!expanded && (
+        {!expanded && !minimal && (
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-raised to-transparent"

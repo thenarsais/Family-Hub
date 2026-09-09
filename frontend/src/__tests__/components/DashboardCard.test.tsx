@@ -116,4 +116,17 @@ describe('DashboardCard', () => {
     fireEvent.drop(section, { dataTransfer: { getData: () => 'reminders' } });
     expect(onReorder).not.toHaveBeenCalled();
   });
+
+  describe('minimal', () => {
+    it('drops the collapse toggle and the body clamp, keeps grip + footer', () => {
+      setup({ minimal: true });
+      // no expand/collapse toggle — the title is static text
+      expect(screen.queryByRole('button', { name: /Reminders3/ })).not.toBeInTheDocument();
+      expect(screen.getByText('Reminders')).toBeInTheDocument();
+      expect(document.getElementById('card-body-reminders')).not.toHaveClass('max-h-52');
+      expect(screen.getByRole('button', { name: /reorder reminders/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'View All' })).toBeInTheDocument();
+      expect(screen.getByText('body content')).toBeInTheDocument();
+    });
+  });
 });

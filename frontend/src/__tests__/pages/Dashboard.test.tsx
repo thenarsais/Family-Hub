@@ -6,6 +6,7 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
 
@@ -264,6 +265,22 @@ describe('Dashboard Page', () => {
 
       // Should unmount cleanly
       expect(() => unmount()).not.toThrow();
+    });
+  });
+
+  describe('Reminders card', () => {
+    it('shows the empty stub with a "+ Add reminder" action when nothing is upcoming', async () => {
+      renderDashboard();
+      await waitFor(() => {
+        expect(screen.getByText('Nothing coming up.')).toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /\+ add reminder/i })).toBeInTheDocument();
+    });
+
+    it('opens the quick-add reminder modal from the card', async () => {
+      renderDashboard();
+      await userEvent.click(await screen.findByRole('button', { name: /\+ add reminder/i }));
+      expect(screen.getByRole('dialog', { name: /new reminder/i })).toBeInTheDocument();
     });
   });
 
