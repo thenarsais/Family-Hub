@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { UserPlus, Mail, Trash2, ChevronDown } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
@@ -239,6 +240,15 @@ export default function FamilyPage() {
                   </select>
                 ) : (
                   <span className="badge badge-primary capitalize">{m.role}</span>
+                )}
+
+                {canManage && m.role === 'child' && (
+                  <Link
+                    to={`/kids/${m.user_id}`}
+                    className="btn btn-secondary btn-small shrink-0"
+                  >
+                    Open {(m.name || 'their').split(' ')[0]}'s day
+                  </Link>
                 )}
 
                 {isAdmin && !isSelf && (
