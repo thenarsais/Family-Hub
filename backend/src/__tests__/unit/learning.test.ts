@@ -5,6 +5,19 @@ import * as PointsRepository from '../../database/repositories/PointsRepository'
 jest.mock('../../database/connection');
 jest.mock('../../database/repositories/PointsRepository');
 
+const mockQuery = connection.query as jest.Mock;
+const mockQueryOne = connection.queryOne as jest.Mock;
+
+const LESSON_ROW = {
+  id: 'lesson-a',
+  category: 'alphabet',
+  phase: 'phase_1_alphabet',
+  subcategory: 'vowels',
+  sequence_order: 0,
+  content: { text: 'અ', romanization: 'a', pronunciation: "uh", english: 'vowel a' },
+  points_value: 10,
+};
+
 describe('LearningService', () => {
   let service: LearningService;
 
@@ -14,193 +27,220 @@ describe('LearningService', () => {
     (PointsRepository.addPoints as jest.Mock).mockResolvedValue({});
   });
 
-  describe('completeLesson', () => {
-    it('should record lesson completion with points', async () => {
-      const mockResult = {
-        id: 'progress-1',
-        user_id: 'user-1',
-        lesson_id: 'lesson-a',
+  describe('getLessons', () => {
+    it('returns the mapped curriculum, unfiltered', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [LESSON_ROW], rowCount: 1 });
+      const lessons = await service.getLessons();
+      expect(lessons[0]).toEqual({
+        id: 'lesson-a',
         category: 'alphabet',
         phase: 'phase_1_alphabet',
-        completed: true,
-        points_earned: 10,
-        completed_at: new Date(),
-        created_at: new Date(),
-        updated_at: new Date(),
-      };
+        subcategory: 'vowels',
+        sequenceOrder: 0,
+        content: LESSON_ROW.content,
+        pointsValue: 10,
+      });
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).not.toContain('WHERE');
+      expect(params).toEqual([]);
+    });
 
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockResult);
+    it('builds a filtered WHERE clause', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await service.getLessons({ category: 'vocabulary', subcategory: 'animals' });
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain('WHERE category = $1 AND subcategory = $2');
+      expect(params).toEqual(['vocabulary', 'animals']);
+    });
+  });
 
-      const result = await service.completeLesson(
+  describe('getLessonsWithProgress', () => {
+    it('folds in per-lesson completion, user id first', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...LESSON_ROW, completed: true, points_earned: 10 }],
+        rowCount: 1,
+      });
+      const rows = await service.getLessonsWithProgress('user-1', { phase: 'phase_1_alphabet' });
+      expect(rows[0]).toMatchObject({ id: 'lesson-a', completed: true, pointsEarned: 10 });
+      const [sql, params] = mockQuery.mock.calls[0];
+      expect(sql).toContain('LEFT JOIN learning_progress');
+      expect(params).toEqual(['user-1', 'phase_1_alphabet']);
+    });
+
+    it('defaults completed/points when there is no progress row', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...LESSON_ROW, completed: false, points_earned: 0 }],
+        rowCount: 1,
+      });
+      const rows = await service.getLessonsWithProgress('user-1');
+      expect(rows[0].completed).toBe(false);
+      expect(rows[0].pointsEarned).toBe(0);
+    });
+  });
+
+  describe('getLessonById', () => {
+    it('returns null for an unknown id', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await service.getLessonById('nope', 'user-1')).toBeNull();
+    });
+    it('returns the lesson with progress', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...LESSON_ROW, completed: true, points_earned: 10 }],
+        rowCount: 1,
+      });
+      const l = await service.getLessonById('lesson-a', 'user-1');
+      expect(l).toMatchObject({ id: 'lesson-a', completed: true });
+    });
+  });
+
+  describe('completeLesson', () => {
+    it('derives category/phase/points from the lesson row and awards points', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ category: 'alphabet', phase: 'phase_1_alphabet', points_value: 10 })
+        .mockResolvedValueOnce({
+          id: 'progress-1',
+          user_id: 'user-1',
+          lesson_id: 'lesson-a',
+          category: 'alphabet',
+          phase: 'phase_1_alphabet',
+          completed: true,
+          points_earned: 10,
+          completed_at: new Date(),
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+
+      const result = await service.completeLesson('user-1', 'lesson-a');
+
+      expect(result.completed).toBe(true);
+      expect(result.pointsEarned).toBe(10);
+      expect(PointsRepository.addPoints).toHaveBeenCalledWith(
+        'user-1',
+        10,
+        'learning',
+        expect.stringContaining('lesson-a'),
+      );
+      // the INSERT was parameterised with values from the lesson row
+      expect(mockQueryOne.mock.calls[1][1]).toEqual([
         'user-1',
         'lesson-a',
         'alphabet',
         'phase_1_alphabet',
-        10
-      );
-
-      expect(result.completed).toBe(true);
-      expect(result.pointsEarned).toBe(10);
-      expect(PointsRepository.addPoints).toHaveBeenCalled();
+        10,
+      ]);
     });
 
-    it('should award points for lesson completion', async () => {
-      const mockResult = {
-        id: 'progress-1',
-        user_id: 'user-1',
-        lesson_id: 'lesson-a',
-        category: 'alphabet',
-        phase: 'phase_1_alphabet',
-        completed: true,
-        points_earned: 15,
-        completed_at: new Date(),
-        created_at: new Date(),
-        updated_at: new Date(),
-      };
-
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockResult);
-
-      await service.completeLesson('user-1', 'lesson-a', 'alphabet', 'phase_1_alphabet', 15);
-
-      expect(PointsRepository.addPoints).toHaveBeenCalledWith(
-        'user-1',
-        15,
-        'learning',
-        expect.stringContaining('lesson-a')
-      );
+    it("throws 'not-found' for an unknown lesson id (no points)", async () => {
+      mockQueryOne.mockResolvedValueOnce(null);
+      await expect(service.completeLesson('user-1', 'ghost')).rejects.toThrow('not-found');
+      expect(PointsRepository.addPoints).not.toHaveBeenCalled();
     });
   });
 
   describe('recordQuizAnswer', () => {
-    it('should record correct quiz answer with points', async () => {
-      (connection.query as jest.Mock).mockResolvedValue({});
-
+    it('records a correct answer and awards points', async () => {
+      mockQuery.mockResolvedValue({ rows: [], rowCount: 1 });
       await service.recordQuizAnswer('user-1', 'lesson-a', 1, 2, 2, 10);
-
-      expect(connection.query).toHaveBeenCalledTimes(1); // Insert answer
-      expect(PointsRepository.addPoints).toHaveBeenCalledWith('user-1', 10, 'learning', expect.stringContaining('lesson-a:1'));
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      expect(PointsRepository.addPoints).toHaveBeenCalledWith(
+        'user-1',
+        10,
+        'learning',
+        expect.stringContaining('lesson-a:1'),
+      );
     });
 
-    it('should record incorrect answer without points', async () => {
-      (connection.query as jest.Mock).mockResolvedValue({});
-
+    it('records an incorrect answer without points', async () => {
+      mockQuery.mockResolvedValue({ rows: [], rowCount: 1 });
       await service.recordQuizAnswer('user-1', 'lesson-a', 1, 1, 2, 10);
-
-      // Should still record answer but not award points
-      expect(connection.query).toHaveBeenCalled();
+      expect(mockQuery).toHaveBeenCalled();
       expect(PointsRepository.addPoints).not.toHaveBeenCalled();
     });
   });
 
   describe('getPhaseProgress', () => {
-    it('should calculate phase progress percentage', async () => {
-      const mockResult = {
-        total: '47',
-        completed: '30',
-        points_earned: '300',
-      };
-
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockResult);
-
+    it('takes totals from learning_lessons via the LEFT JOIN', async () => {
+      mockQueryOne.mockResolvedValueOnce({ total: '47', completed: '30', points_earned: '300' });
       const result = await service.getPhaseProgress('user-1', 'phase_1_alphabet');
-
-      expect(result.totalLessons).toBe(47);
-      expect(result.completedLessons).toBe(30);
-      expect(result.percentComplete).toBe(64); // 30/47 = 0.638 = 64%
-      expect(result.pointsEarned).toBe(300);
+      expect(result).toEqual({
+        totalLessons: 47,
+        completedLessons: 30,
+        percentComplete: 64,
+        pointsEarned: 300,
+      });
+      const [sql, params] = mockQueryOne.mock.calls[0];
+      expect(sql).toContain('FROM learning_lessons l');
+      expect(sql).toContain('LEFT JOIN learning_progress');
+      expect(params).toEqual(['user-1', 'phase_1_alphabet']);
     });
 
-    it('should handle zero total lessons', async () => {
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(null);
-
-      const result = await service.getPhaseProgress('user-1', 'phase_1_alphabet');
-
+    it('handles a phase with no lessons', async () => {
+      mockQueryOne.mockResolvedValueOnce(null);
+      const result = await service.getPhaseProgress('user-1', 'phase_x');
       expect(result.totalLessons).toBe(0);
       expect(result.percentComplete).toBe(0);
     });
   });
 
   describe('getLearningStats', () => {
-    it('should return learning statistics for all phases', async () => {
-      const mockResult = {
-        total_completed: '100',
-        total_points: '1000',
-        alphabet_completed: '47',
-        alphabet_total: '47',
-        numbers_completed: '10',
-        numbers_total: '10',
-        vocab_completed: '43',
-        vocab_total: '101',
-      };
+    it('reports full-curriculum totals per category with the user completions', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          { category: 'alphabet', total: '47', completed: '12', points: '120' },
+          { category: 'numbers', total: '10', completed: '10', points: '100' },
+          { category: 'vocabulary', total: '120', completed: '3', points: '30' },
+        ],
+        rowCount: 3,
+      });
 
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockResult);
+      const stats = await service.getLearningStats('user-1');
 
-      const result = await service.getLearningStats('user-1');
+      expect(stats.alphabet).toEqual({ completed: 12, total: 47 });
+      expect(stats.numbers).toEqual({ completed: 10, total: 10 });
+      expect(stats.vocabulary).toEqual({ completed: 3, total: 120 });
+      expect(stats.totalLessonsCompleted).toBe(25);
+      expect(stats.totalPointsEarned).toBe(250);
+    });
 
-      expect(result.totalLessonsCompleted).toBe(100);
-      expect(result.totalPointsEarned).toBe(1000);
-      expect(result.alphabet.completed).toBe(47);
-      expect(result.alphabet.total).toBe(47);
-      expect(result.numbers.completed).toBe(10);
-      expect(result.numbers.total).toBe(10);
-      expect(result.vocabulary.completed).toBe(43);
-      expect(result.vocabulary.total).toBe(101);
+    it('zero-fills a category with no rows', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const stats = await service.getLearningStats('user-1');
+      expect(stats.alphabet).toEqual({ completed: 0, total: 0 });
+      expect(stats.totalLessonsCompleted).toBe(0);
     });
   });
 
   describe('getQuizPerformance', () => {
-    it('should calculate quiz accuracy percentage', async () => {
-      const mockResult = {
-        total: '50',
-        correct: '40',
-        points_earned: '200',
-      };
-
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(mockResult);
-
+    it('calculates accuracy', async () => {
+      mockQueryOne.mockResolvedValueOnce({ total: '50', correct: '40', points_earned: '200' });
       const result = await service.getQuizPerformance('user-1');
-
-      expect(result.totalAnswered).toBe(50);
-      expect(result.correctAnswers).toBe(40);
-      expect(result.accuracy).toBe(80); // 40/50 = 0.8 = 80%
-      expect(result.pointsEarned).toBe(200);
+      expect(result).toEqual({
+        totalAnswered: 50,
+        correctAnswers: 40,
+        accuracy: 80,
+        pointsEarned: 200,
+      });
     });
 
-    it('should handle no quiz answers', async () => {
-      (connection.queryOne as jest.Mock).mockResolvedValueOnce(null);
-
+    it('handles no answers', async () => {
+      mockQueryOne.mockResolvedValueOnce(null);
       const result = await service.getQuizPerformance('user-1');
-
-      expect(result.totalAnswered).toBe(0);
       expect(result.accuracy).toBe(0);
-      expect(result.pointsEarned).toBe(0);
     });
   });
 
   describe('getRecentActivity', () => {
-    it('should return recent activities ordered by date', async () => {
-      const mockActivities = [
-        {
-          type: 'lesson',
-          subject: 'lesson-a',
-          created_at: new Date(),
-          points_earned: 10,
-        },
-        {
-          type: 'quiz',
-          subject: 'lesson-b:1',
-          created_at: new Date(),
-          points_earned: 5,
-        },
-      ];
-
-      (connection.query as jest.Mock).mockResolvedValueOnce({ rows: mockActivities });
-
+    it('returns rows in the given order', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          { type: 'lesson', subject: 'lesson-a', created_at: new Date(), points_earned: 10 },
+          { type: 'quiz', subject: 'lesson-b:1', created_at: new Date(), points_earned: 5 },
+        ],
+        rowCount: 2,
+      });
       const result = await service.getRecentActivity('user-1', 20);
-
       expect(result).toHaveLength(2);
       expect(result[0].type).toBe('lesson');
-      expect(result[1].type).toBe('quiz');
     });
   });
 });

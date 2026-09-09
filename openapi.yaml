@@ -2498,28 +2498,67 @@ paths:
   # ================================================================
   # LEARNING (x-user-id)
   # ================================================================
+  /api/learning/lessons:
+    get:
+      tags: [Learning]
+      summary: The Gujarati curriculum with this user's per-lesson completion
+      operationId: listLessons
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: category, in: query, required: false, schema: { type: string, enum: [alphabet, numbers, vocabulary] } }
+        - { name: phase, in: query, required: false, schema: { type: string } }
+        - { name: subcategory, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: Lessons (ordered by phase, subcategory, sequence).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  lessons: { type: array, items: { $ref: '#/components/schemas/LessonWithProgress' } }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '400': { description: Bad category., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+
+  /api/learning/lessons/{id}:
+    get:
+      tags: [Learning]
+      summary: One lesson plus this user's progress on it
+      operationId: getLesson
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The lesson.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  lesson: { $ref: '#/components/schemas/LessonWithProgress' }
+                  timestamp: { type: string, format: date-time }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '404': { description: No such lesson., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+
   /api/learning/lessons/{lessonId}/complete:
     post:
       tags: [Learning]
       summary: Record lesson completion and award points
       operationId: completeLesson
+      description: category / phase / points are read from the lesson row; the request body is ignored.
       security: [{ userIdHeader: [] }]
       parameters:
         - name: lessonId
           in: path
           required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [category, phase]
-              properties:
-                category: { type: string, enum: [alphabet, numbers, vocabulary] }
-                phase: { type: string }
-                pointsValue: { type: number, default: 10 }
+          schema: { type: string, format: uuid }
       responses:
         '201':
           description: Lesson completion recorded.
@@ -2533,11 +2572,11 @@ paths:
                   progress: { $ref: '#/components/schemas/LearningProgressEntry' }
                   stats: { $ref: '#/components/schemas/LearningStats' }
                   timestamp: { type: string, format: date-time }
-        '400':
-          description: Missing/invalid category or phase.
-          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '401':
           description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No lesson with that id.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -6068,6 +6107,40 @@ components:
         idleMinutes: { type: integer }
 
     # ---------------- Learning (hand-rolled schema) ----------------
+    LessonContent:
+      type: object
+      description: Normalised lesson body — `text` is the Gujarati glyph/word.
+      required: [text, romanization, pronunciation, english]
+      properties:
+        text: { type: string }
+        romanization: { type: string }
+        pronunciation: { type: string }
+        english: { type: string }
+        word: { type: string, description: "Gujarati spelled-out word (numbers only)." }
+
+    Lesson:
+      type: object
+      description: A `learning_lessons` row (seeded from seed-data/gujarati-curriculum.json).
+      required: [id, category, phase, subcategory, sequenceOrder, content, pointsValue]
+      properties:
+        id: { type: string, format: uuid }
+        category: { type: string, enum: [alphabet, numbers, vocabulary] }
+        phase: { type: string, enum: [phase_1_alphabet, phase_2_numbers, phase_3_vocabulary] }
+        subcategory: { type: string, description: "vowels / consonants / digits / animals / family / …" }
+        sequenceOrder: { type: integer }
+        content: { $ref: '#/components/schemas/LessonContent' }
+        pointsValue: { type: integer }
+
+    LessonWithProgress:
+      description: A `Lesson` plus this user's completion of it.
+      allOf:
+        - $ref: '#/components/schemas/Lesson'
+        - type: object
+          required: [completed, pointsEarned]
+          properties:
+            completed: { type: boolean }
+            pointsEarned: { type: integer }
+
     LearningProgressEntry:
       type: object
       description: |

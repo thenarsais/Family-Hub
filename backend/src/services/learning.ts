@@ -33,17 +33,6 @@ interface PhaseProgressRow {
   points_earned: string | null;
 }
 
-interface LearningStatsRow {
-  total_completed: string | null;
-  total_points: string | null;
-  alphabet_completed: string | null;
-  alphabet_total: string | null;
-  numbers_completed: string | null;
-  numbers_total: string | null;
-  vocab_completed: string | null;
-  vocab_total: string | null;
-}
-
 interface QuizPerformanceRow {
   total: string | null;
   correct: string | null;
@@ -57,17 +46,141 @@ interface RecentActivityRow {
   points_earned: number;
 }
 
+export type LessonCategory = 'alphabet' | 'numbers' | 'vocabulary';
+
+/** Normalised lesson content — always has `text` (the Gujarati glyph/word). */
+export interface LessonContent {
+  text: string;
+  romanization: string;
+  pronunciation: string;
+  english: string;
+  word?: string;
+}
+
+export interface Lesson {
+  id: string;
+  category: LessonCategory;
+  phase: string;
+  subcategory: string;
+  sequenceOrder: number;
+  content: LessonContent;
+  pointsValue: number;
+}
+
+/** A lesson plus this user's progress on it. */
+export interface LessonWithProgress extends Lesson {
+  completed: boolean;
+  pointsEarned: number;
+}
+
+export interface LessonFilter {
+  category?: string;
+  phase?: string;
+  subcategory?: string;
+}
+
+interface LessonRow {
+  id: string;
+  category: LessonCategory;
+  phase: string;
+  subcategory: string;
+  sequence_order: number;
+  content: LessonContent;
+  points_value: number;
+  completed?: boolean | null;
+  points_earned?: number | null;
+}
+
 export class LearningService {
+  private mapLesson(row: LessonRow): Lesson {
+    return {
+      id: row.id,
+      category: row.category,
+      phase: row.phase,
+      subcategory: row.subcategory,
+      sequenceOrder: row.sequence_order,
+      content: row.content,
+      pointsValue: row.points_value,
+    };
+  }
+
+  /** The curriculum, optionally filtered. Ordered for stable browse UI. */
+  async getLessons(filter: LessonFilter = {}): Promise<Lesson[]> {
+    const where: string[] = [];
+    const params: unknown[] = [];
+    for (const key of ['category', 'phase', 'subcategory'] as const) {
+      if (filter[key]) {
+        params.push(filter[key]);
+        where.push(`${key} = $${params.length}`);
+      }
+    }
+    const { rows } = await query<LessonRow>(
+      `SELECT id, category, phase, subcategory, sequence_order, content, points_value
+       FROM learning_lessons
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY phase, subcategory, sequence_order`,
+      params
+    );
+    return rows.map((r) => this.mapLesson(r));
+  }
+
+  /** The curriculum with this user's per-lesson completion folded in. */
+  async getLessonsWithProgress(userId: string, filter: LessonFilter = {}): Promise<LessonWithProgress[]> {
+    const where: string[] = [];
+    const params: unknown[] = [userId];
+    for (const key of ['category', 'phase', 'subcategory'] as const) {
+      if (filter[key]) {
+        params.push(filter[key]);
+        where.push(`l.${key} = $${params.length}`);
+      }
+    }
+    const { rows } = await query<LessonRow>(
+      `SELECT l.id, l.category, l.phase, l.subcategory, l.sequence_order, l.content, l.points_value,
+              COALESCE(p.completed, false) AS completed,
+              COALESCE(p.points_earned, 0) AS points_earned
+       FROM learning_lessons l
+       LEFT JOIN learning_progress p ON p.lesson_id = l.id AND p.user_id = $1
+       ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY l.phase, l.subcategory, l.sequence_order`,
+      params
+    );
+    return rows.map((r) => ({
+      ...this.mapLesson(r),
+      completed: !!r.completed,
+      pointsEarned: r.points_earned ?? 0,
+    }));
+  }
+
+  async getLessonById(lessonId: string, userId?: string): Promise<LessonWithProgress | null> {
+    const { rows } = await query<LessonRow>(
+      `SELECT l.id, l.category, l.phase, l.subcategory, l.sequence_order, l.content, l.points_value,
+              COALESCE(p.completed, false) AS completed,
+              COALESCE(p.points_earned, 0) AS points_earned
+       FROM learning_lessons l
+       LEFT JOIN learning_progress p ON p.lesson_id = l.id AND p.user_id = $2
+       WHERE l.id = $1`,
+      [lessonId, userId ?? null]
+    );
+    if (!rows[0]) return null;
+    return {
+      ...this.mapLesson(rows[0]),
+      completed: !!rows[0].completed,
+      pointsEarned: rows[0].points_earned ?? 0,
+    };
+  }
+
   /**
-   * Record lesson completion
+   * Record lesson completion. `category` / `phase` / `points_value` are read
+   * from the lesson row, not trusted from the caller. Throws 'not-found' for an
+   * unknown lesson id.
    */
-  async completeLesson(
-    userId: string,
-    lessonId: string,
-    category: string,
-    phase: string,
-    pointsValue: number = 10
-  ): Promise<LearningProgress> {
+  async completeLesson(userId: string, lessonId: string): Promise<LearningProgress> {
+    const lesson = await queryOne<{ category: string; phase: string; points_value: number }>(
+      `SELECT category, phase, points_value FROM learning_lessons WHERE id = $1`,
+      [lessonId]
+    );
+    if (!lesson) throw new Error('not-found');
+
     const result = await queryOne<LearningProgressRow>(
       `INSERT INTO learning_progress (user_id, lesson_id, category, phase, completed, points_earned, completed_at)
        VALUES ($1, $2, $3, $4, true, $5, CURRENT_TIMESTAMP)
@@ -77,14 +190,14 @@ export class LearningService {
        completed_at = CURRENT_TIMESTAMP,
        updated_at = CURRENT_TIMESTAMP
        RETURNING id, user_id, lesson_id, category, phase, completed, points_earned, completed_at, created_at, updated_at`,
-      [userId, lessonId, category, phase, pointsValue]
+      [userId, lessonId, lesson.category, lesson.phase, lesson.points_value]
     );
 
     if (!result) throw new Error('Failed to record lesson completion');
 
     // Award points via the one real points ledger (activity_points), not a
     // separate learning-only ledger -- see 002_chores_and_learning_schema.sql.
-    await PointsRepository.addPoints(userId, pointsValue, 'learning', `Completed lesson: ${lessonId}`);
+    await PointsRepository.addPoints(userId, lesson.points_value, 'learning', `Completed lesson: ${lessonId}`);
 
     return this.mapProgress(result);
   }
@@ -114,7 +227,8 @@ export class LearningService {
   }
 
   /**
-   * Get user's progress in a phase
+   * Get user's progress in a phase. Totals come from `learning_lessons` (the
+   * whole phase), not just the rows the user has touched.
    */
   async getPhaseProgress(userId: string, phase: string): Promise<{
     totalLessons: number;
@@ -124,11 +238,12 @@ export class LearningService {
   }> {
     const result = await queryOne<PhaseProgressRow>(
       `SELECT
-        COUNT(*) as total,
-        SUM(CASE WHEN completed = true THEN 1 ELSE 0 END) as completed,
-        SUM(points_earned) as points_earned
-       FROM learning_progress
-       WHERE user_id = $1 AND phase = $2`,
+        COUNT(*) AS total,
+        COUNT(p.id) FILTER (WHERE p.completed) AS completed,
+        COALESCE(SUM(p.points_earned) FILTER (WHERE p.completed), 0) AS points_earned
+       FROM learning_lessons l
+       LEFT JOIN learning_progress p ON p.lesson_id = l.id AND p.user_id = $1
+       WHERE l.phase = $2`,
       [userId, phase]
     );
 
@@ -144,7 +259,8 @@ export class LearningService {
   }
 
   /**
-   * Get overall learning statistics
+   * Overall learning stats. `total` per category is the full curriculum count;
+   * `completed` / points come from this user's progress.
    */
   async getLearningStats(userId: string): Promise<{
     totalLessonsCompleted: number;
@@ -153,36 +269,33 @@ export class LearningService {
     numbers: { completed: number; total: number };
     vocabulary: { completed: number; total: number };
   }> {
-    const result = await queryOne<LearningStatsRow>(
-      `SELECT
-        COUNT(*) as total_completed,
-        SUM(points_earned) as total_points,
-        SUM(CASE WHEN phase = 'phase_1_alphabet' AND completed = true THEN 1 ELSE 0 END) as alphabet_completed,
-        SUM(CASE WHEN phase = 'phase_1_alphabet' THEN 1 ELSE 0 END) as alphabet_total,
-        SUM(CASE WHEN phase = 'phase_2_numbers' AND completed = true THEN 1 ELSE 0 END) as numbers_completed,
-        SUM(CASE WHEN phase = 'phase_2_numbers' THEN 1 ELSE 0 END) as numbers_total,
-        SUM(CASE WHEN phase = 'phase_3_vocabulary' AND completed = true THEN 1 ELSE 0 END) as vocab_completed,
-        SUM(CASE WHEN phase = 'phase_3_vocabulary' THEN 1 ELSE 0 END) as vocab_total
-       FROM learning_progress
-       WHERE user_id = $1 AND completed = true`,
+    const { rows } = await query<{
+      category: LessonCategory;
+      total: string;
+      completed: string;
+      points: string;
+    }>(
+      `SELECT l.category,
+              COUNT(*) AS total,
+              COUNT(p.id) FILTER (WHERE p.completed) AS completed,
+              COALESCE(SUM(p.points_earned) FILTER (WHERE p.completed), 0) AS points
+       FROM learning_lessons l
+       LEFT JOIN learning_progress p ON p.lesson_id = l.id AND p.user_id = $1
+       GROUP BY l.category`,
       [userId]
     );
 
+    const byCat = (cat: LessonCategory) => {
+      const r = rows.find((x) => x.category === cat);
+      return { completed: parseInt(r?.completed || '0'), total: parseInt(r?.total || '0') };
+    };
+
     return {
-      totalLessonsCompleted: parseInt(result?.total_completed || '0'),
-      totalPointsEarned: parseInt(result?.total_points || '0'),
-      alphabet: {
-        completed: parseInt(result?.alphabet_completed || '0'),
-        total: parseInt(result?.alphabet_total || '0'),
-      },
-      numbers: {
-        completed: parseInt(result?.numbers_completed || '0'),
-        total: parseInt(result?.numbers_total || '0'),
-      },
-      vocabulary: {
-        completed: parseInt(result?.vocab_completed || '0'),
-        total: parseInt(result?.vocab_total || '0'),
-      },
+      totalLessonsCompleted: rows.reduce((n, r) => n + parseInt(r.completed || '0'), 0),
+      totalPointsEarned: rows.reduce((n, r) => n + parseInt(r.points || '0'), 0),
+      alphabet: byCat('alphabet'),
+      numbers: byCat('numbers'),
+      vocabulary: byCat('vocabulary'),
     };
   }
 

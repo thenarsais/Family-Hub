@@ -134,17 +134,18 @@ describe('Security Tests', () => {
       expect(res.body.message).toContain('morning, afternoon, or evening');
     });
 
-    it('should reject lesson completion with invalid category', async () => {
-      const res = await request(app)
-        .post('/api/learning/lessons/lesson-1/complete')
-        .set('x-user-id', 'user-1')
-        .send({
-          category: 'invalid_category',
-          phase: 'phase_1_alphabet',
-        });
+    it('should reject lesson completion for an unknown lesson id', async () => {
+      // category/phase/points are read from the lesson row, not user input —
+      // an unknown id is rejected rather than trusted.
+      mockLearningService.completeLesson.mockRejectedValueOnce(new Error('not-found'));
 
-      expect(res.status).toBe(400);
-      expect(res.body.message).toContain('alphabet, numbers, or vocabulary');
+      const res = await request(app)
+        .post('/api/learning/lessons/not-a-real-lesson/complete')
+        .set('x-user-id', 'user-1')
+        .send({ category: 'invalid_category', phase: 'phase_1_alphabet' });
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Lesson not found');
     });
 
     it('should reject quiz answer with missing fields', async () => {

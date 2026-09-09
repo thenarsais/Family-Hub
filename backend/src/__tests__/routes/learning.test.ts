@@ -14,6 +14,8 @@ const mockLearningService = {
   getPhaseProgress: jest.fn(),
   getQuizPerformance: jest.fn(),
   getRecentActivity: jest.fn(),
+  getLessonsWithProgress: jest.fn(),
+  getLessonById: jest.fn(),
 };
 
 jest.mock('../../services/learning', () => ({ getLearningService: () => mockLearningService }));
@@ -44,137 +46,117 @@ describe('Learning Routes', () => {
     jest.resetAllMocks();
   });
 
-  describe('POST /api/learning/lessons/:lessonId/complete', () => {
-    it('should complete a lesson and award points', async () => {
-      const mockStats = {
-        totalLessonsCompleted: 5,
-        totalPointsEarned: 50,
-        alphabet: { completed: 5, total: 47 },
-        numbers: { completed: 0, total: 10 },
-        vocabulary: { completed: 0, total: 120 },
-      };
+  const mockStats = {
+    totalLessonsCompleted: 5,
+    totalPointsEarned: 50,
+    alphabet: { completed: 5, total: 47 },
+    numbers: { completed: 0, total: 10 },
+    vocabulary: { completed: 0, total: 120 },
+  };
 
+  const LESSON = {
+    id: 'lesson-1',
+    category: 'alphabet',
+    phase: 'phase_1_alphabet',
+    subcategory: 'vowels',
+    sequenceOrder: 0,
+    content: { text: 'અ', romanization: 'a', pronunciation: 'uh', english: 'vowel a' },
+    pointsValue: 10,
+    completed: false,
+    pointsEarned: 0,
+  };
+
+  describe('GET /api/learning/lessons', () => {
+    it('returns the curriculum with progress', async () => {
+      mockLearningService.getLessonsWithProgress.mockResolvedValueOnce([LESSON]);
+      const res = await request(app)
+        .get('/api/learning/lessons?phase=phase_1_alphabet')
+        .set('x-user-id', 'user-1')
+        .expect(200);
+      expect(res.body.lessons).toHaveLength(1);
+      expect(res.body.count).toBe(1);
+      expect(mockLearningService.getLessonsWithProgress).toHaveBeenCalledWith('user-1', {
+        category: undefined,
+        phase: 'phase_1_alphabet',
+        subcategory: undefined,
+      });
+    });
+
+    it('401s without x-user-id', async () => {
+      await request(app).get('/api/learning/lessons').expect(401);
+    });
+
+    it('400s on a bad category', async () => {
+      await request(app)
+        .get('/api/learning/lessons?category=klingon')
+        .set('x-user-id', 'user-1')
+        .expect(400);
+    });
+
+    it('500s on a service error', async () => {
+      mockLearningService.getLessonsWithProgress.mockRejectedValueOnce(new Error('boom'));
+      await request(app).get('/api/learning/lessons').set('x-user-id', 'user-1').expect(500);
+    });
+  });
+
+  describe('GET /api/learning/lessons/:id', () => {
+    it('returns one lesson', async () => {
+      mockLearningService.getLessonById.mockResolvedValueOnce(LESSON);
+      const res = await request(app)
+        .get('/api/learning/lessons/lesson-1')
+        .set('x-user-id', 'user-1')
+        .expect(200);
+      expect(res.body.lesson.id).toBe('lesson-1');
+    });
+
+    it('404s for an unknown id', async () => {
+      mockLearningService.getLessonById.mockResolvedValueOnce(null);
+      await request(app)
+        .get('/api/learning/lessons/ghost')
+        .set('x-user-id', 'user-1')
+        .expect(404);
+    });
+
+    it('401s without x-user-id', async () => {
+      await request(app).get('/api/learning/lessons/lesson-1').expect(401);
+    });
+  });
+
+  describe('POST /api/learning/lessons/:lessonId/complete', () => {
+    it('completes a lesson and returns fresh stats (no body needed)', async () => {
       mockLearningService.completeLesson.mockResolvedValueOnce(mockProgress);
       mockLearningService.getLearningStats.mockResolvedValueOnce(mockStats);
 
       const res = await request(app)
         .post('/api/learning/lessons/lesson-1/complete')
         .set('x-user-id', 'user-1')
-        .send({
-          category: 'alphabet',
-          phase: 'phase_1_alphabet',
-          pointsValue: 10,
-        })
         .expect(201);
 
       expect(res.body.status).toBe('success');
       expect(res.body.progress.completed).toBe(true);
       expect(res.body.stats.totalLessonsCompleted).toBe(5);
+      expect(mockLearningService.completeLesson).toHaveBeenCalledWith('user-1', 'lesson-1');
     });
 
-    it('should require user ID', async () => {
-      const res = await request(app)
-        .post('/api/learning/lessons/lesson-1/complete')
-        .send({
-          category: 'alphabet',
-          phase: 'phase_1_alphabet',
-        })
-        .expect(401);
-
-      expect(res.body.status).toBe('error');
-      expect(res.body.message).toBe('User ID required');
+    it('requires user ID', async () => {
+      await request(app).post('/api/learning/lessons/lesson-1/complete').expect(401);
     });
 
-    it('should require category and phase', async () => {
+    it('404s for an unknown lesson id', async () => {
+      mockLearningService.completeLesson.mockRejectedValueOnce(new Error('not-found'));
       const res = await request(app)
-        .post('/api/learning/lessons/lesson-1/complete')
+        .post('/api/learning/lessons/ghost/complete')
         .set('x-user-id', 'user-1')
-        .send({})
-        .expect(400);
-
-      expect(res.body.status).toBe('error');
-      expect(res.body.message).toContain('required');
+        .expect(404);
+      expect(res.body.message).toBe('Lesson not found');
     });
 
-    it('should validate category enum', async () => {
-      const res = await request(app)
-        .post('/api/learning/lessons/lesson-1/complete')
-        .set('x-user-id', 'user-1')
-        .send({
-          category: 'invalid',
-          phase: 'phase_1_alphabet',
-        })
-        .expect(400);
-
-      expect(res.body.status).toBe('error');
-      expect(res.body.message).toContain('alphabet, numbers, or vocabulary');
-    });
-
-    it('should accept all valid categories', async () => {
-      const mockStats = {
-        totalLessonsCompleted: 1,
-        totalPointsEarned: 10,
-        alphabet: { completed: 0, total: 47 },
-        numbers: { completed: 1, total: 10 },
-        vocabulary: { completed: 0, total: 120 },
-      };
-
-      mockLearningService.completeLesson.mockResolvedValue(mockProgress);
-      mockLearningService.getLearningStats.mockResolvedValue(mockStats);
-
-      const categories = ['alphabet', 'numbers', 'vocabulary'];
-
-      for (const category of categories) {
-        const res = await request(app)
-          .post('/api/learning/lessons/lesson-1/complete')
-          .set('x-user-id', 'user-1')
-          .send({
-            category,
-            phase: 'phase_1_alphabet',
-          });
-
-        expect(res.status).toBe(201);
-        expect(res.body.status).toBe('success');
-      }
-    });
-
-    it('should use default pointsValue if not provided', async () => {
-      const mockStats = {
-        totalLessonsCompleted: 1,
-        totalPointsEarned: 10,
-        alphabet: { completed: 1, total: 47 },
-        numbers: { completed: 0, total: 10 },
-        vocabulary: { completed: 0, total: 120 },
-      };
-
-      mockLearningService.completeLesson.mockResolvedValueOnce(mockProgress);
-      mockLearningService.getLearningStats.mockResolvedValueOnce(mockStats);
-
-      const res = await request(app)
-        .post('/api/learning/lessons/lesson-1/complete')
-        .set('x-user-id', 'user-1')
-        .send({
-          category: 'alphabet',
-          phase: 'phase_1_alphabet',
-        })
-        .expect(201);
-
-      expect(res.body.status).toBe('success');
-    });
-
-    it('should handle service errors', async () => {
+    it('500s on an unexpected service error', async () => {
       mockLearningService.completeLesson.mockRejectedValueOnce(new Error('Database error'));
-
       const res = await request(app)
         .post('/api/learning/lessons/lesson-1/complete')
         .set('x-user-id', 'user-1')
-        .send({
-          category: 'alphabet',
-          phase: 'phase_1_alphabet',
-        })
         .expect(500);
-
-      expect(res.body.status).toBe('error');
       expect(res.body.message).toBe('Failed to complete lesson');
     });
   });
