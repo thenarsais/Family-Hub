@@ -1,47 +1,14 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { Repeat, Check, Pencil, Trash2, RotateCcw, Bell } from 'lucide-react';
-import { useReminders, type NewReminder } from '@hooks/useReminders';
+import { useReminders } from '@hooks/useReminders';
 import { useFamily } from '@hooks/useFamily';
 import { useAuth } from '@hooks/useAuth';
+import ReminderForm, { RECURRENCE_OPTIONS } from '@components/ReminderForm';
+import { isoToLocalInput, localInputToIso, whenLabel } from '@/utils/reminderTime';
 import type { components } from '@/types/api-generated';
 
 type Reminder = components['schemas']['Reminder'];
 type Recurrence = 'once' | 'daily' | 'weekly' | 'monthly';
-
-const RECURRENCE_OPTIONS: { value: Recurrence; label: string }[] = [
-  { value: 'once', label: 'Once' },
-  { value: 'daily', label: 'Every day' },
-  { value: 'weekly', label: 'Every week' },
-  { value: 'monthly', label: 'Every month' },
-];
-
-/** ISO instant -> value for an <input type="datetime-local"> in local time. */
-export function isoToLocalInput(iso?: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-export function localInputToIso(local: string): string | null {
-  if (!local) return null;
-  const d = new Date(local);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-export function whenLabel(iso?: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString([], {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 const isRecurring = (r?: string | null): boolean =>
   r === 'daily' || r === 'weekly' || r === 'monthly';
@@ -62,53 +29,6 @@ export default function RemindersPage() {
 
   const memberName = (userId?: string | null) =>
     members.find((m) => m.user_id === userId)?.name ?? null;
-
-  // ---- create form ----
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [when, setWhen] = useState('');
-  const [recurrence, setRecurrence] = useState<Recurrence>('once');
-  const [endDate, setEndDate] = useState('');
-  const [assignee, setAssignee] = useState<string>(user?.id ?? '');
-  const [busy, setBusy] = useState(false);
-  const [formErr, setFormErr] = useState<string | null>(null);
-
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setWhen('');
-    setRecurrence('once');
-    setEndDate('');
-    setAssignee(user?.id ?? '');
-  };
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    const t = title.trim();
-    const iso = localInputToIso(when);
-    if (!t || !iso || busy) {
-      setFormErr(!t ? 'Give the reminder a title.' : 'Pick a date and time.');
-      return;
-    }
-    setBusy(true);
-    setFormErr(null);
-    const payload: NewReminder = {
-      title: t,
-      description: description.trim() || undefined,
-      scheduled_time: iso,
-      recurrence,
-      recurrence_end_date: recurrence !== 'once' && endDate ? endDate : null,
-      assignee_user_id: assignee || undefined,
-    };
-    try {
-      await createReminder(payload);
-      resetForm();
-    } catch (err) {
-      setFormErr(err instanceof Error ? err.message : 'Could not create the reminder.');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   // ---- inline edit ----
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -303,100 +223,14 @@ export default function RemindersPage() {
         </p>
       </header>
 
-      <form onSubmit={submit} className="card space-y-3">
+      <section className="card space-y-3">
         <h2 className="font-display text-lg font-bold text-ink">New reminder</h2>
-        <div>
-          <label className="label" htmlFor="r-title">
-            Title
-          </label>
-          <input
-            id="r-title"
-            className="input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={120}
-          />
-        </div>
-        <div>
-          <label className="label" htmlFor="r-desc">
-            Details <span className="text-ink-3 font-normal">(optional)</span>
-          </label>
-          <input
-            id="r-desc"
-            className="input"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={280}
-          />
-        </div>
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <label className="label" htmlFor="r-when">
-              When
-            </label>
-            <input
-              id="r-when"
-              type="datetime-local"
-              className="input w-auto"
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="r-recurrence">
-              Repeat
-            </label>
-            <select
-              id="r-recurrence"
-              className="input w-auto"
-              value={recurrence}
-              onChange={(e) => setRecurrence(e.target.value as Recurrence)}
-            >
-              {RECURRENCE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {recurrence !== 'once' && (
-            <div>
-              <label className="label" htmlFor="r-end">
-                Until <span className="text-ink-3 font-normal">(optional)</span>
-              </label>
-              <input
-                id="r-end"
-                type="date"
-                className="input w-auto"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          )}
-          <div>
-            <label className="label" htmlFor="r-assignee">
-              For
-            </label>
-            <select
-              id="r-assignee"
-              className="input w-auto"
-              value={assignee}
-              onChange={(e) => setAssignee(e.target.value)}
-            >
-              {members.map((m) => (
-                <option key={m.user_id} value={m.user_id}>
-                  {m.name ?? 'Family member'}
-                  {m.user_id === user?.id ? ' (me)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        {formErr && <p className="text-sm text-alert bg-alert/10 rounded p-2">{formErr}</p>}
-        <button type="submit" className="btn btn-primary btn-small" disabled={busy}>
-          {busy ? 'Adding…' : 'Add reminder'}
-        </button>
-      </form>
+        <ReminderForm
+          members={members}
+          defaultAssigneeId={user?.id ?? ''}
+          onSubmit={createReminder}
+        />
+      </section>
 
       {error && (
         <p className="text-sm text-alert bg-alert/10 rounded p-2">

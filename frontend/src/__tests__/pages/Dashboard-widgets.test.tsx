@@ -37,6 +37,7 @@ vi.mock('@/hooks/useReminders', () => ({
     upcomingReminders: [{ id: 'r1', title: 'Dentist', scheduled_time: day(-1) }],
     dueReminders: [],
     dismissReminder: vi.fn(),
+    createReminder: vi.fn().mockResolvedValue({ id: 'new' }),
     loading: false,
   }),
 }));
@@ -122,6 +123,13 @@ describe('Dashboard widgets (populated)', () => {
     expect(screen.getByText('Completed a chore')).toBeInTheDocument();
     expect(screen.getByText('Milk')).toBeInTheDocument();
     expect(screen.getByText('1 of 2 items still needed')).toBeInTheDocument();
+  });
+
+  it('the Reminders card carries a "+ Add reminder" action alongside the list', () => {
+    renderDashboard();
+    expect(screen.getByRole('button', { name: /\+ add reminder/i })).toBeInTheDocument();
+    // populated → not the stub
+    expect(screen.queryByText('Nothing coming up.')).not.toBeInTheDocument();
   });
 
   it('derives "points this week" from the last 7 days of activity only', () => {

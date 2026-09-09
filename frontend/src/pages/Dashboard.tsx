@@ -6,6 +6,7 @@ import { AnnouncementsBand } from '../components/shell/AnnouncementsBand';
 import { RemindersDueBand } from '../components/shell/RemindersDueBand';
 import { FactOfDayBand } from '../components/shell/FactOfDayBand';
 import { DashboardCard } from '../components/shell/DashboardCard';
+import ReminderFormModal from '../components/ReminderFormModal';
 import { ShoppingWidget } from '../components/shell/ShoppingWidget';
 import { MealPlannerCard } from '../components/shell/MealPlannerCard';
 import { WeatherCard } from '../components/Weather/WeatherCard';
@@ -86,7 +87,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { upcomingReminders, loading: remindersLoading } = useReminders();
+  const { upcomingReminders, loading: remindersLoading, createReminder } = useReminders();
+  const [addReminderOpen, setAddReminderOpen] = useState(false);
   const { currentMonth, goals, loading: energyLoading } = useEnergy();
   const { family, members, loading: familyLoading } = useFamily();
   const { activity, loading: activityLoading } = useActivityLog();
@@ -148,6 +150,9 @@ export default function Dashboard() {
     onMove: move,
   });
 
+  // With nothing upcoming the Reminders card shrinks to a stub (keeps "+ Add reminder").
+  const noReminders = !remindersLoading && upcomingReminders.length === 0;
+
   const CARDS: Record<string, ReactNode> = {
     weather: (
       <WeatherCard
@@ -189,40 +194,52 @@ export default function Dashboard() {
         {...cardProps('reminders')}
         title="Reminders"
         icon={<Calendar className="w-5 h-5 text-accent" aria-hidden="true" />}
-        count={remindersLoading ? undefined : upcomingReminders.length}
+        count={remindersLoading || noReminders ? undefined : upcomingReminders.length}
+        minimal={noReminders}
         footer={
-          <button onClick={() => navigate('/reminders')} className="btn btn-secondary w-full text-xs">
-            View All
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAddReminderOpen(true)}
+              className="btn btn-primary flex-1 text-xs"
+            >
+              + Add reminder
+            </button>
+            <button
+              onClick={() => navigate('/reminders')}
+              className="btn btn-secondary flex-1 text-xs"
+            >
+              View All
+            </button>
+          </div>
         }
       >
-        <div className="space-y-2">
-          <WidgetBody
-            loading={remindersLoading}
-            isEmpty={upcomingReminders.length === 0}
-            emptyText="No upcoming reminders"
-          >
-            {upcomingReminders.map((reminder) => (
-              <div key={reminder.id} className="p-3 rounded-lg bg-paper border border-rule">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-sm text-ink truncate">{reminder.title}</p>
-                  {reminder.assignee_name && (
-                    <span className="shrink-0 text-[0.65rem] font-semibold uppercase tracking-wide text-ink-3 border border-rule-2 rounded px-1">
-                      {reminder.assignee_name}
-                    </span>
-                  )}
+        {noReminders ? (
+          <p className="text-ink-3 text-sm">Nothing coming up.</p>
+        ) : (
+          <div className="space-y-2">
+            <WidgetBody loading={remindersLoading} isEmpty={false} emptyText="No upcoming reminders">
+              {upcomingReminders.map((reminder) => (
+                <div key={reminder.id} className="p-3 rounded-lg bg-paper border border-rule">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm text-ink truncate">{reminder.title}</p>
+                    {reminder.assignee_name && (
+                      <span className="shrink-0 text-[0.65rem] font-semibold uppercase tracking-wide text-ink-3 border border-rule-2 rounded px-1">
+                        {reminder.assignee_name}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-ink-3">
+                    {new Date(reminder.scheduled_time).toLocaleString([], {
+                      weekday: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
                 </div>
-                <p className="text-xs text-ink-3">
-                  {new Date(reminder.scheduled_time).toLocaleString([], {
-                    weekday: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-            ))}
-          </WidgetBody>
-        </div>
+              ))}
+            </WidgetBody>
+          </div>
+        )}
       </DashboardCard>
     ),
 
@@ -476,6 +493,15 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {addReminderOpen && (
+        <ReminderFormModal
+          members={members}
+          defaultAssigneeId={user?.id ?? ''}
+          onSubmit={createReminder}
+          onClose={() => setAddReminderOpen(false)}
+        />
+      )}
     </main>
   );
 }
