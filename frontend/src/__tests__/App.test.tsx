@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import App from '@/App';
+import { useKioskStore } from '@stores/kioskStore';
 
 // AnnouncementsPage / FamilyPage / ProfilePage aren't navigated to in this
 // suite, but they're lazy() in App — stub them so a chunk fetch never happens.
@@ -8,6 +9,7 @@ vi.mock('@pages/AnnouncementsPage', () => ({ default: () => <div>Announcements P
 vi.mock('@pages/RemindersPage', () => ({ default: () => <div>Reminders Page</div> }));
 vi.mock('@pages/ShoppingListPage', () => ({ default: () => <div>Shopping List Page</div> }));
 vi.mock('@pages/KidsBoard', () => ({ default: () => <div>Kids Board Page</div> }));
+vi.mock('@pages/KioskHome', () => ({ default: () => <div>Kiosk Home Page</div> }));
 vi.mock('@pages/FamilyPage', () => ({ default: () => <div>Family Page</div> }));
 vi.mock('@pages/ProfilePage', () => ({ default: () => <div>Profile Page</div> }));
 
@@ -43,6 +45,7 @@ function setPath(path: string) {
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useKioskStore.setState({ deviceToken: null, profiles: [], activeProfileId: null });
   });
 
   it('should call initializeFromStorage once on mount', () => {
@@ -154,6 +157,63 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('Kids Board Page')).toBeInTheDocument();
+  });
+
+  it('renders KioskHome at /dashboard in kiosk mode with no profile selected', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    // profiles already loaded (post-bootstrap) but nobody has tapped a face yet
+    useKioskStore.setState({
+      deviceToken: 'dev-tok',
+      activeProfileId: null,
+      profiles: [{ userId: 'k1', name: 'K', role: 'child', color: null }],
+    });
+    setPath('/dashboard');
+
+    render(<App />);
+
+    expect(await screen.findByText('Kiosk Home Page')).toBeInTheDocument();
+    expect(screen.queryByText('Dashboard Page')).not.toBeInTheDocument();
+  });
+
+  it('bootstraps the household on boot when only the device token is restored', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    const spy = vi.spyOn(useKioskStore.getState(), 'bootstrap').mockResolvedValue(undefined);
+    useKioskStore.setState({ deviceToken: 'dev-tok', activeProfileId: null, profiles: [] });
+    setPath('/dashboard');
+
+    render(<App />);
+
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('renders the real Dashboard once a kiosk profile is selected', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    useKioskStore.setState({
+      deviceToken: 'dev-tok',
+      activeProfileId: 'k1',
+      profiles: [{ userId: 'k1', name: 'K', role: 'child', color: null }],
+    });
+    setPath('/dashboard');
+
+    render(<App />);
+
+    expect(screen.getByText('Dashboard Page')).toBeInTheDocument();
+  });
+
+  it('does not send /login to the login page in kiosk mode', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    useKioskStore.setState({
+      deviceToken: 'dev-tok',
+      activeProfileId: 'k1',
+      profiles: [{ userId: 'k1', name: 'K', role: 'child', color: null }],
+    });
+    setPath('/login');
+
+    render(<App />);
+
+    expect(screen.getByText('Dashboard Page')).toBeInTheDocument();
+    expect(screen.queryByText('Login Page')).not.toBeInTheDocument();
   });
 
   it('should redirect the root path to /dashboard', () => {

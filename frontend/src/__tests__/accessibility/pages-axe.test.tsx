@@ -15,6 +15,7 @@ import Dashboard from '@/pages/Dashboard';
 import SmartHomePage from '@/pages/SmartHome';
 import ActivityBoard from '@/pages/ActivityBoard';
 import KidsBoard from '@/pages/KidsBoard';
+import KioskHome from '@/pages/KioskHome';
 import * as deviceHook from '@/hooks/useDevices';
 
 expect.extend(toHaveNoViolations);
@@ -79,6 +80,19 @@ vi.mock('@/hooks/useKidBoard', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useKiosk', () => ({
+  useKiosk: () => ({
+    profiles: [
+      { userId: 'p1', name: 'Priya', role: 'parent', color: 'priya' },
+      { userId: 'k1', name: 'Karishma', role: 'child', color: 'karishma' },
+    ],
+    familyName: 'Narsai',
+    hasPin: true,
+    switchProfile: vi.fn(),
+    unlockParent: vi.fn(),
+  }),
+}));
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
@@ -137,6 +151,11 @@ describe('Real page accessibility (axe)', () => {
         </Routes>
       </MemoryRouter>,
     );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('KioskHome page has no axe violations', async () => {
+    const { container } = renderWithRouter(<KioskHome />);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

@@ -44,6 +44,23 @@ class ApiClient {
           console.error('[API] Failed to decode token:', e.message);
         }
       }
+
+      // Kiosk mode: the device token authenticates the wall display, and the
+      // selected profile (if any) drives all data scoping. Read straight from
+      // localStorage to match the auth_token handling above.
+      try {
+        const kioskToken = localStorage.getItem('fh:kiosk:token');
+        if (kioskToken) {
+          config.headers['x-kiosk-token'] = kioskToken;
+          const profileId = localStorage.getItem('fh:kiosk:profile');
+          if (profileId && !config.headers['x-user-id']) {
+            config.headers['x-user-id'] = profileId;
+          }
+        }
+      } catch {
+        /* storage unavailable — fall through as a normal request */
+      }
+
       return config;
     });
 

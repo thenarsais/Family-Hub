@@ -5,6 +5,7 @@ import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
 import { colorForIndex } from '@/data/familyColors';
 import MoodHeatmap from '@components/family/MoodHeatmap';
+import KioskSettings from '@components/kiosk/KioskSettings';
 import type { components } from '@/types/api-generated';
 
 type Role = components['schemas']['FamilyMember']['role'];
@@ -101,6 +102,7 @@ export default function FamilyPage() {
     updateMemberRole,
     removeMember,
     updateSettings,
+    refresh,
   } = useFamily();
 
   const caller = members.find((m) => m.user_id === user?.id);
@@ -404,6 +406,15 @@ export default function FamilyPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {canManage && settings && (
+        <KioskSettings
+          hasPin={Boolean((settings as { has_pin?: boolean }).has_pin)}
+          idleMinutes={Number((settings as { kiosk_idle_minutes?: number }).kiosk_idle_minutes) || 5}
+          onChangeIdle={(minutes) => void updateSettings({ kiosk_idle_minutes: minutes })}
+          onPinChanged={() => void refresh()}
+        />
       )}
     </div>
   );
