@@ -85,6 +85,22 @@ vi.mock('@/hooks/useSpeak', () => ({
   useSpeak: () => ({ supported: false, hasGujaratiVoice: false, speak: vi.fn() }),
 }));
 
+vi.mock('@/hooks/useTrivia', () => ({
+  useTrivia: () => ({
+    question: {
+      id: 'q1', question: 'Largest planet?', category: 'Space', difficulty: 'easy',
+      options: ['Jupiter', 'Saturn', 'Uranus', 'Neptune'], hint: 'J', pointsValue: 10,
+    },
+    attempt: null,
+    streak: 0,
+    stats: { answered: 0, correct: 0 },
+    loading: false,
+    error: null,
+    submit: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useLearning', () => ({
   useLearning: () => ({
     lessons: [

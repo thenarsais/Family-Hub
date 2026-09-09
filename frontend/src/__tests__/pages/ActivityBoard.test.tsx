@@ -23,6 +23,9 @@ vi.mock('@hooks/useHabits', async () => {
 // state here so this suite stays about the board shell (LearningSummarySection
 // has its own test).
 vi.mock('@hooks/useLearning', () => ({ useLearning: () => ({ loading: true, stats: {} }) }));
+vi.mock('@hooks/useTrivia', () => ({
+  useTrivia: () => ({ loading: true, question: null, attempt: null, streak: 0, stats: { answered: 0, correct: 0 } }),
+}));
 
 const choreFns = {
   complete: vi.fn().mockResolvedValue(undefined),
