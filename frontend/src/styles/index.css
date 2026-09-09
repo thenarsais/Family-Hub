@@ -218,9 +218,27 @@ html[data-mehndi='off'] .mehndi-band {
   animation: slideUp 300ms ease-in-out;
 }
 
+/* Satisfying tap feedback for the kids' board (T-12) */
+@keyframes pop {
+  0% {
+    transform: scale(0.9);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-pop {
+  animation: pop 0.28s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fadeIn,
-  .animate-slideUp {
+  .animate-slideUp,
+  .animate-pop {
     animation: none;
   }
 }
