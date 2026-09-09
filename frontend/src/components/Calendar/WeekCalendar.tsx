@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2, Settings } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2, Settings, Bell, BellRing,
+} from 'lucide-react';
 import { useCalendar, type EventAssignment, type DismissOpts } from '@hooks/useCalendar';
+import { useReminders } from '@hooks/useReminders';
 import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
+import EventReminderDialog from './EventReminderDialog';
 import { useCalendarView, CALENDAR_VIEWS, type CalendarView } from '@hooks/useCalendarView';
 import { useMealPlanner } from '@hooks/useMealPlanner';
 import { useMealLibrary } from '@hooks/useMealLibrary';
@@ -39,7 +43,49 @@ interface CalendarEvent {
   // Set on an expanded occurrence of a recurring Google event — the series
   // master id. Its presence enables the "this / whole series" dismiss prompt.
   recurringEventId?: string;
+  event_date?: string;
   attendees?: Array<{ email?: string; self?: boolean }>;
+}
+
+type Cadence = 'daily' | 'weekly' | 'monthly';
+
+interface EventStartish {
+  start?: { dateTime?: string; date?: string } | null;
+  event_date?: string | null;
+  recurringEventId?: string | null;
+}
+
+/** Resolve an event's start. All-day events anchor at 9am local so lead-time
+ *  reminders have a clock time; returns null if there's no parseable start. */
+function resolveEventStart(e: EventStartish): { at: Date; allDay: boolean } | null {
+  const iso = e.start?.dateTime;
+  if (iso) {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : { at: d, allDay: false };
+  }
+  const dateOnly = e.start?.date ?? e.event_date;
+  if (dateOnly) {
+    const [y, m, d] = dateOnly.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    return { at: new Date(y, m - 1, d, 9, 0, 0), allDay: true };
+  }
+  return null;
+}
+
+/** Guess a recurring series' cadence from the spacing of its loaded instances
+ *  (weekly fallback — Google's expanded events don't carry the RRULE). */
+function inferCadence(events: EventStartish[], recurringEventId?: string | null): Cadence {
+  if (!recurringEventId) return 'weekly';
+  const starts = events
+    .filter((e) => e.recurringEventId === recurringEventId)
+    .map((e) => resolveEventStart(e)?.at.getTime())
+    .filter((n): n is number => typeof n === 'number' && !Number.isNaN(n))
+    .sort((a, b) => a - b);
+  if (starts.length < 2) return 'weekly';
+  const gapDays = (starts[1] - starts[0]) / 86_400_000;
+  if (gapDays <= 2) return 'daily';
+  if (gapDays <= 10) return 'weekly';
+  return 'monthly';
 }
 
 // A form-created (B-lite) event carries a google_event_id. Only its creator
@@ -164,6 +210,14 @@ export function WeekCalendar() {
     cal.setEventPeople ?? (async () => undefined);
   const { user } = useAuth();
   const { members } = useFamily();
+  const {
+    createReminder: createReminderRaw,
+    deleteReminder: deleteReminderRaw,
+    remindersForItem,
+  } = useReminders();
+  const createReminder = createReminderRaw ?? (async () => undefined);
+  const deleteReminder = deleteReminderRaw ?? (async () => undefined);
+  const linkedReminders = remindersForItem ?? (() => []);
   const { view, setView } = useCalendarView(user?.id ?? 'anon');
   const { mealForDate, updateMeal } = useMealPlanner();
   const mealLib = useMealLibrary();
@@ -180,6 +234,8 @@ export function WeekCalendar() {
   const [deleting, setDeleting] = useState(false);
   // FR-126: the ✕ on a recurring event opens this prompt instead of dismissing.
   const [dismissPrompt, setDismissPrompt] = useState<CalendarEvent | null>(null);
+  // "Remind me" on an event → lead-time picker.
+  const [reminderDialog, setReminderDialog] = useState<CalendarEvent | null>(null);
 
   const handleFormSubmit = async (values: EventFormValues) => {
     let eventId: string | undefined;
@@ -896,6 +952,26 @@ export function WeekCalendar() {
                 <Ban className="w-4 h-4" />
                 Hide
               </button>
+              {(() => {
+                const n = linkedReminders(selectedEvent.id).length;
+                return (
+                  <button
+                    className="btn btn-secondary text-sm flex items-center gap-1"
+                    onClick={() => {
+                      setReminderDialog(selectedEvent);
+                      setSelectedEvent(null);
+                    }}
+                    title="Get a reminder for this event"
+                  >
+                    {n > 0 ? (
+                      <BellRing className="w-4 h-4 text-accent" />
+                    ) : (
+                      <Bell className="w-4 h-4" />
+                    )}
+                    {n > 0 ? `Reminders (${n})` : 'Remind me'}
+                  </button>
+                );
+              })()}
               {isEditableBy(selectedEvent, user?.id) && (
                 <>
                   <button
@@ -957,6 +1033,42 @@ export function WeekCalendar() {
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      {reminderDialog &&
+        (() => {
+          const start = resolveEventStart(reminderDialog);
+          if (!start) {
+            // no parseable start — nothing to anchor a lead time to
+            setReminderDialog(null);
+            return null;
+          }
+          const existing = [
+            ...linkedReminders(reminderDialog.id),
+            ...(reminderDialog.recurringEventId
+              ? linkedReminders(reminderDialog.recurringEventId)
+              : []),
+          ];
+          return (
+            <EventReminderDialog
+              event={{
+                id: reminderDialog.id,
+                title: reminderDialog.title,
+                recurringEventId: reminderDialog.recurringEventId,
+              }}
+              startAt={start.at}
+              allDay={start.allDay}
+              seriesCadence={
+                reminderDialog.recurringEventId
+                  ? inferCadence(events, reminderDialog.recurringEventId)
+                  : null
+              }
+              existing={existing}
+              onCreate={createReminder}
+              onDelete={deleteReminder}
+              onClose={() => setReminderDialog(null)}
+            />
+          );
+        })()}
     </div>
   );
 }

@@ -18,6 +18,17 @@ import { useAuth } from '@hooks/useAuth';
 vi.mock('@hooks/useCalendar');
 vi.mock('@hooks/useAuth');
 
+const reminderHook = {
+  reminders: [] as Record<string, unknown>[],
+  createReminder: vi.fn().mockResolvedValue({ id: 'new' }),
+  deleteReminder: vi.fn().mockResolvedValue(undefined),
+  remindersForItem: vi.fn<(id: string) => Record<string, unknown>[]>(() => []),
+};
+vi.mock('@hooks/useReminders', async () => {
+  const actual = await vi.importActual<typeof import('@hooks/useReminders')>('@hooks/useReminders');
+  return { ...actual, useReminders: () => reminderHook };
+});
+
 // Meal planner is a real (networked) hook now — stub it with a fixed plan so
 // the FR-150 meals-line assertions stay deterministic.
 const MEAL_PLAN: Record<string, { breakfast: string; lunch: string; dinner: string; snack: string }> = {
@@ -232,6 +243,77 @@ describe('WeekCalendar — interactions', () => {
       expect(dismissEvent).not.toHaveBeenCalled();
       expect(screen.getByRole('dialog', { name: /hide recurring event/i })).toBeInTheDocument();
       expect(screen.queryByText(/Conference Room A/)).not.toBeInTheDocument();
+    });
+
+    it('"Remind me" opens the lead-time dialog for the event', () => {
+      reminderHook.remindersForItem.mockReturnValue([]);
+      mockCalendar({ events: [event] });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('Team Standup'));
+      fireEvent.click(screen.getByRole('button', { name: /remind me/i }));
+
+      expect(screen.getByRole('dialog', { name: /reminders for team standup/i })).toBeInTheDocument();
+      // all-day event → the 9am option set
+      expect(screen.getByLabelText(/morning of \(9am\)/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/1 week before/i)).toBeInTheDocument();
+    });
+
+    it('the bell shows a filled "Reminders (N)" state when the event has linked reminders', () => {
+      reminderHook.remindersForItem.mockImplementation((id: string) =>
+        id === 'g-1'
+          ? [{ id: 'rem-1', related_item_id: 'g-1', related_item_type: 'calendar_event', remind_before_minutes: 1440 }]
+          : [],
+      );
+      mockCalendar({ events: [event] });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('Team Standup'));
+      expect(screen.getByRole('button', { name: /reminders \(1\)/i })).toBeInTheDocument();
+      reminderHook.remindersForItem.mockReturnValue([]);
+    });
+
+    it('saving a lead time from the dialog calls createReminder for a timed event', () => {
+      reminderHook.remindersForItem.mockReturnValue([]);
+      const timed = {
+        id: 'g-2',
+        summary: 'Doctor',
+        start: { dateTime: '2026-08-22T15:00:00-04:00' },
+        source: 'google',
+      };
+      mockCalendar({ events: [timed] });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByText('Doctor'));
+      fireEvent.click(screen.getByRole('button', { name: /remind me/i }));
+      fireEvent.click(screen.getByLabelText('1 hour before'));
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+      expect(reminderHook.createReminder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Doctor',
+          related_item_type: 'calendar_event',
+          remind_before_minutes: 60,
+          recurrence: 'once',
+        }),
+      );
+    });
+
+    it('a recurring event gets the series scope choice with an inferred cadence', () => {
+      reminderHook.remindersForItem.mockReturnValue([]);
+      const weekly = [
+        { id: 'w-1', summary: 'Soccer', start: { date: '2026-08-22' }, source: 'google', recurringEventId: 'rid-9' },
+        { id: 'w-2', summary: 'Soccer', start: { date: '2026-08-29' }, source: 'google', recurringEventId: 'rid-9' },
+      ];
+      mockCalendar({ events: weekly });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getAllByText('Soccer')[0]);
+      fireEvent.click(screen.getByRole('button', { name: /remind me/i }));
+
+      expect(screen.getByLabelText(/every event in the series/i)).toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText(/every event in the series/i));
+      expect(screen.getByText(/repeats ~weekly/i)).toBeInTheDocument();
     });
   });
 

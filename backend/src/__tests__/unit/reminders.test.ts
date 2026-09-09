@@ -212,6 +212,43 @@ describe('ReminderService', () => {
       expect(mockQueryOne.mock.calls[2][1][0]).toBe('user-2'); // stored as user_id
       expect(result).toEqual({ id: 'r1', assignee_name: 'Sam' });
     });
+
+    it('stores the calendar-event link fields (related_item_id / type / lead minutes)', async () => {
+      mockQueryOne.mockResolvedValueOnce(FAMILY);
+      mockQueryOne.mockResolvedValueOnce({ id: 'r1' });
+      mockQueryOne.mockResolvedValueOnce({ id: 'r1' });
+
+      await service.createReminder('user-1', {
+        title: 'Dentist',
+        scheduled_time: '2026-01-01T08:00:00Z',
+        reminder_type: 'event',
+        related_item_id: 'gcal-evt-123',
+        related_item_type: 'calendar_event',
+        remind_before_minutes: 60,
+      });
+
+      const [sql, params] = mockQueryOne.mock.calls[1];
+      expect(sql).toContain('related_item_id');
+      expect(params[8]).toBe('gcal-evt-123');
+      expect(params[9]).toBe('calendar_event');
+      expect(params[10]).toBe(60);
+    });
+
+    it('defaults the link fields to null / 0 when omitted', async () => {
+      mockQueryOne.mockResolvedValueOnce(FAMILY);
+      mockQueryOne.mockResolvedValueOnce({ id: 'r1' });
+      mockQueryOne.mockResolvedValueOnce({ id: 'r1' });
+
+      await service.createReminder('user-1', {
+        title: 'x',
+        scheduled_time: '2026-01-01T08:00:00Z',
+      });
+
+      const params = mockQueryOne.mock.calls[1][1];
+      expect(params[8]).toBeNull();
+      expect(params[9]).toBeNull();
+      expect(params[10]).toBe(0);
+    });
   });
 
   describe('updateReminder', () => {

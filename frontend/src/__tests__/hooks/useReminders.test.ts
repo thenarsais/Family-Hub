@@ -160,6 +160,53 @@ describe('useReminders', () => {
         result.current.createReminder({ title: 'x', scheduled_time: '2026-01-01T00:00:00Z' }),
       ).rejects.toThrow('User not authenticated');
     });
+
+    it('passes the calendar-event link fields straight through', async () => {
+      mockGetPaths();
+      (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { status: 'success', data: { id: 'r1' } },
+      });
+      const { result } = renderHook(() => useReminders());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.createReminder({
+          title: 'Dentist',
+          scheduled_time: '2026-01-01T08:00:00Z',
+          reminder_type: 'event',
+          related_item_id: 'gcal-evt-1',
+          related_item_type: 'calendar_event',
+          remind_before_minutes: 60,
+        });
+      });
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/api/reminders',
+        expect.objectContaining({
+          related_item_id: 'gcal-evt-1',
+          related_item_type: 'calendar_event',
+          remind_before_minutes: 60,
+        }),
+        { headers: { 'x-user-id': 'user-1' } },
+      );
+    });
+  });
+
+  describe('remindersForItem', () => {
+    it('returns only calendar_event reminders whose related_item_id matches', async () => {
+      mockGetPaths({
+        reminders: [
+          { id: 'a', related_item_type: 'calendar_event', related_item_id: 'evt-1' },
+          { id: 'b', related_item_type: 'calendar_event', related_item_id: 'evt-2' },
+          { id: 'c', related_item_type: 'chore', related_item_id: 'evt-1' },
+        ],
+      });
+      const { result } = renderHook(() => useReminders());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.remindersForItem('evt-1').map((r) => r.id)).toEqual(['a']);
+      expect(result.current.remindersForItem('nope')).toEqual([]);
+    });
   });
 
   describe('dismissReminder', () => {

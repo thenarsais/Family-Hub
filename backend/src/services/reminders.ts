@@ -158,6 +158,9 @@ class ReminderService {
       scheduled_time: string;
       recurrence?: Recurrence;
       recurrence_end_date?: string;
+      related_item_id?: string;
+      related_item_type?: string;
+      remind_before_minutes?: number;
     },
   ): Promise<ReminderWithAssignee | null | 'bad-assignee'> {
     const ctx = await this.familyContext(creatorId);
@@ -176,8 +179,9 @@ class ReminderService {
     const created = await queryOne<{ id: string }>(
       `INSERT INTO reminders
          (user_id, family_id, title, description, reminder_type, scheduled_time,
-          recurrence, recurrence_end_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          recurrence, recurrence_end_date, related_item_id, related_item_type,
+          remind_before_minutes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id`,
       [
         assignee,
@@ -188,6 +192,9 @@ class ReminderService {
         data.scheduled_time,
         isRecurring(data.recurrence) ? data.recurrence : 'once',
         data.recurrence_end_date || null,
+        data.related_item_id || null,
+        data.related_item_type || null,
+        Number.isFinite(data.remind_before_minutes) ? data.remind_before_minutes : 0,
       ],
     );
     if (!created) return null;
