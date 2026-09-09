@@ -789,11 +789,13 @@ export type Database = {
           enable_smart_home_control: boolean | null
           family_id: string
           id: string
+          kiosk_idle_minutes: number | null
           language: string | null
           leaderboard_enabled: boolean | null
           max_screen_time_minutes: number | null
           notifications_enabled: boolean | null
           parental_controls_enabled: boolean | null
+          pin_hash: string | null
           points_system_enabled: boolean | null
           privacy_mode: boolean | null
           require_age_verification: boolean | null
@@ -813,11 +815,13 @@ export type Database = {
           enable_smart_home_control?: boolean | null
           family_id: string
           id?: string
+          kiosk_idle_minutes?: number | null
           language?: string | null
           leaderboard_enabled?: boolean | null
           max_screen_time_minutes?: number | null
           notifications_enabled?: boolean | null
           parental_controls_enabled?: boolean | null
+          pin_hash?: string | null
           points_system_enabled?: boolean | null
           privacy_mode?: boolean | null
           require_age_verification?: boolean | null
@@ -837,11 +841,13 @@ export type Database = {
           enable_smart_home_control?: boolean | null
           family_id?: string
           id?: string
+          kiosk_idle_minutes?: number | null
           language?: string | null
           leaderboard_enabled?: boolean | null
           max_screen_time_minutes?: number | null
           notifications_enabled?: boolean | null
           parental_controls_enabled?: boolean | null
+          pin_hash?: string | null
           points_system_enabled?: boolean | null
           privacy_mode?: boolean | null
           require_age_verification?: boolean | null
