@@ -496,9 +496,16 @@ router.get('/settings', async (req: Request, res: Response) => {
 
     const settings = await family.getFamilySettings(userFamily.id);
 
+    // Never ship the PIN hash to the client — expose only whether one is set.
+    let data: Record<string, unknown> | null = null;
+    if (settings) {
+      const { pin_hash, ...rest } = settings as Record<string, unknown> & { pin_hash?: string | null };
+      data = { ...rest, has_pin: !!pin_hash };
+    }
+
     res.json({
       status: 'success',
-      data: settings,
+      data,
       timestamp: new Date().toISOString(),
     });
   } catch (error: unknown) {

@@ -517,12 +517,13 @@ describe('Family Routes', () => {
       expect(res.body.message).toBe('No family found');
     });
 
-    it('should return the family settings', async () => {
+    it('should return the family settings with has_pin and no pin_hash', async () => {
       mockFamilyService.getUserFamily.mockResolvedValueOnce({ id: 'family-1' });
-      mockFamilyService.getFamilySettings.mockResolvedValueOnce({ theme: 'dark' });
+      mockFamilyService.getFamilySettings.mockResolvedValueOnce({ theme: 'dark', pin_hash: 'salt:hash' });
 
       const res = await request(app).get('/api/family/settings').set('x-user-id', 'user-1').expect(200);
-      expect(res.body.data).toEqual({ theme: 'dark' });
+      expect(res.body.data).toEqual({ theme: 'dark', has_pin: true });
+      expect(res.body.data.pin_hash).toBeUndefined();
     });
   });
 

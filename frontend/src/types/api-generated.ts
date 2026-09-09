@@ -3146,6 +3146,8 @@ export interface components {
             allow_google_calendar_sync?: boolean | null;
             /** @description Minutes of inactivity before a shared display reverts to the household overview (T-14). Default 5. */
             kiosk_idle_minutes?: number | null;
+            /** @description Whether a family PIN is set (T-14). Derived server-side; the hash itself is never sent to the client. */
+            has_pin?: boolean;
             /** Format: date-time */
             created_at?: string | null;
             /** Format: date-time */
