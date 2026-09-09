@@ -10,6 +10,7 @@ vi.mock('@pages/RemindersPage', () => ({ default: () => <div>Reminders Page</div
 vi.mock('@pages/ShoppingListPage', () => ({ default: () => <div>Shopping List Page</div> }));
 vi.mock('@pages/KidsBoard', () => ({ default: () => <div>Kids Board Page</div> }));
 vi.mock('@pages/KioskHome', () => ({ default: () => <div>Kiosk Home Page</div> }));
+vi.mock('@pages/LearnPage', () => ({ default: () => <div>Learn Page</div> }));
 vi.mock('@pages/FamilyPage', () => ({ default: () => <div>Family Page</div> }));
 vi.mock('@pages/ProfilePage', () => ({ default: () => <div>Profile Page</div> }));
 
@@ -148,6 +149,15 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('Shopping List Page')).toBeInTheDocument();
+  });
+
+  it('should render the learn page at /learn when authenticated', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    setPath('/learn');
+
+    render(<App />);
+
+    expect(await screen.findByText('Learn Page')).toBeInTheDocument();
   });
 
   it('should render the kids board at /kids/:memberId when authenticated', async () => {

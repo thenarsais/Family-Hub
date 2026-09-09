@@ -19,6 +19,10 @@ vi.mock('@hooks/useHabits', async () => {
   const actual = await vi.importActual<typeof import('@hooks/useHabits')>('@hooks/useHabits');
   return { ...actual, useHabits: mockUseHabits };
 });
+// The Gujarati section pulls in useLearning + a <Link>; keep it in its loading
+// state here so this suite stays about the board shell (LearningSummarySection
+// has its own test).
+vi.mock('@hooks/useLearning', () => ({ useLearning: () => ({ loading: true, stats: {} }) }));
 
 const choreFns = {
   complete: vi.fn().mockResolvedValue(undefined),

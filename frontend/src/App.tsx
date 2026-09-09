@@ -23,6 +23,7 @@ const RemindersPage = lazy(() => import('@pages/RemindersPage'));
 const ShoppingListPage = lazy(() => import('@pages/ShoppingListPage'));
 const KidsBoard = lazy(() => import('@pages/KidsBoard'));
 const KioskHome = lazy(() => import('@pages/KioskHome'));
+const LearnPage = lazy(() => import('@pages/LearnPage'));
 
 import ProtectedRoute from '@components/ProtectedRoute';
 import Navigation from '@components/Navigation';
@@ -101,6 +102,7 @@ function AppShell() {
             <Route path="/reminders" element={<Lazy><RemindersPage /></Lazy>} />
             <Route path="/shopping-list" element={<Lazy><ShoppingListPage /></Lazy>} />
             <Route path="/kids/:memberId" element={<Lazy><KidsBoard /></Lazy>} />
+            <Route path="/learn" element={<Lazy><LearnPage /></Lazy>} />
           </Route>
 
           {/* Redirect root to dashboard */}
