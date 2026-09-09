@@ -116,6 +116,8 @@ tags:
     description: T-14 — shared wall-display enrolment, profile bootstrap, and the numeric family PIN (migration 016). Enrol/list/PIN routes use x-user-id (parent); POST /session uses x-kiosk-token and no user login.
   - name: Learning
     description: Lesson completion, quizzes, learning stats (x-user-id auth; hand-rolled schema, not Supabase learning_progress).
+  - name: Trivia
+    description: T-09 — one shared daily question + a per-user participation streak (x-user-id auth; migration 018). No games, leaderboard, or badges.
   - name: Announcements
     description: Family announcements/messaging (x-user-id auth).
   - name: Reminders
@@ -2752,6 +2754,61 @@ paths:
         '500':
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # TRIVIA (T-09 — x-user-id)
+  # ================================================================
+  /api/trivia/today:
+    get:
+      tags: [Trivia]
+      summary: Today's shared question + this user's attempt, streak and stats
+      operationId: getTriviaToday
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: The daily trivia payload.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/TriviaToday'
+                  - type: object
+                    properties:
+                      status: { type: string, const: success }
+                      timestamp: { type: string, format: date-time }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+    post:
+      tags: [Trivia]
+      summary: Record today's answer (points, flat by difficulty, only if correct)
+      operationId: submitTriviaToday
+      description: A second submit the same day is a no-op and returns the current state.
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answer]
+              properties:
+                answer: { type: string, description: Must be one of the question's four options. }
+      responses:
+        '200':
+          description: The updated daily trivia payload (attempt now populated).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/TriviaToday'
+                  - type: object
+                    properties:
+                      status: { type: string, const: success }
+                      timestamp: { type: string, format: date-time }
+        '400': { description: Missing answer, or not one of the options., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '503': { description: No trivia question is available (empty bank)., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
 
   # ================================================================
   # ANNOUNCEMENTS (x-user-id)
@@ -6177,6 +6234,51 @@ components:
         alphabet: { type: object, properties: { completed: { type: integer }, total: { type: integer } } }
         numbers: { type: object, properties: { completed: { type: integer }, total: { type: integer } } }
         vocabulary: { type: object, properties: { completed: { type: integer }, total: { type: integer } } }
+
+    # ---------------- Trivia (T-09, migration 018) ----------------
+    TriviaQuestion:
+      type: object
+      description: The daily question as shown — four options, no answer key.
+      required: [id, question, category, difficulty, options, hint, pointsValue]
+      properties:
+        id: { type: string, format: uuid }
+        question: { type: string }
+        category: { type: string }
+        difficulty: { type: string, enum: [easy, medium, hard] }
+        options: { type: array, items: { type: string }, minItems: 4, maxItems: 4 }
+        hint: { type: [string, 'null'] }
+        pointsValue: { type: integer }
+
+    TriviaAttempt:
+      type: object
+      description: This user's answer for today (present only once they've answered).
+      required: [selectedAnswer, isCorrect, pointsEarned, correctAnswer]
+      properties:
+        selectedAnswer: { type: string }
+        isCorrect: { type: boolean }
+        pointsEarned: { type: integer }
+        correctAnswer: { type: string }
+        funFact: { type: [string, 'null'] }
+
+    TriviaToday:
+      type: object
+      required: [question, attempt, streak, stats]
+      properties:
+        question:
+          oneOf:
+            - $ref: '#/components/schemas/TriviaQuestion'
+            - type: 'null'
+        attempt:
+          oneOf:
+            - $ref: '#/components/schemas/TriviaAttempt'
+            - type: 'null'
+        streak: { type: integer, description: Consecutive family-local days ending today with an attempt. }
+        stats:
+          type: object
+          required: [answered, correct]
+          properties:
+            answered: { type: integer }
+            correct: { type: integer }
 
     # ---------------- Announcements ----------------
     Announcement:
