@@ -2,8 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Calendar, Zap, Users, ShoppingCart, TrendingUp, UtensilsCrossed } from 'lucide-react';
 import { WeekCalendar } from '../components/Calendar';
-import { AnnouncementsBand } from '../components/shell/AnnouncementsBand';
-import { RemindersDueBand } from '../components/shell/RemindersDueBand';
+import { PriorityBand } from '../components/shell/PriorityBand';
 import { FactOfDayBand } from '../components/shell/FactOfDayBand';
 import { DashboardCard } from '../components/shell/DashboardCard';
 import ReminderFormModal from '../components/ReminderFormModal';
@@ -391,8 +390,7 @@ export default function Dashboard() {
 
   return (
     <main>
-      <AnnouncementsBand canPost={canManage} familyId={family?.id} />
-      <RemindersDueBand />
+      <PriorityBand canPost={canManage} familyId={family?.id} />
       <FactOfDayBand canShuffle={canManage} />
 
       <div className="container py-6 space-y-6">

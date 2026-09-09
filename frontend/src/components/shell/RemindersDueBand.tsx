@@ -30,7 +30,7 @@ export function RemindersDueBand() {
   };
 
   return (
-    <div className="bg-alert/10 border-b border-rule border-l-4 border-l-alert px-4 sm:px-6 py-2.5">
+    <div className="bg-alert/10 border-l-4 border-l-alert px-4 sm:px-6 py-2.5">
       <div className="flex items-start gap-3">
         <span className="flex items-center gap-1.5 shrink-0 pt-0.5 text-[0.7rem] font-bold uppercase tracking-wider text-alert">
           <BellRing className="w-3.5 h-3.5" aria-hidden="true" />
