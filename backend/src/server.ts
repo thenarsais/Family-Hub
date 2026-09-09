@@ -12,6 +12,7 @@ import externalApisRoutes from './routes/external-apis';
 import smartthingsRoutes from './routes/smartthings';
 import choresRoutes from './routes/chores';
 import habitsRoutes from './routes/habits';
+import kidsRoutes from './routes/kids';
 import learningRoutes from './routes/learning';
 import announcementsRoutes from './routes/announcements';
 import remindersRoutes from './routes/reminders';
@@ -150,6 +151,9 @@ app.use('/api/chores', choresRoutes);
 
 // Habits + daily mood check-in: list, complete/undo, weekly streak, mood
 app.use('/api/habits', habitsRoutes);
+
+// Kids board (T-12): a parent acting for a young child — routine checklists + mood
+app.use('/api/kids', kidsRoutes);
 
 // Learning endpoints: Lessons, quizzes, progress, stats
 app.use('/api/learning', learningRoutes);
