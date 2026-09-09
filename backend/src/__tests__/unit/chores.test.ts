@@ -159,6 +159,7 @@ describe('ChoreService', () => {
           completed_at: new Date(),
           points_earned: 20,
         }); // INSERT
+      mockQuery.mockResolvedValueOnce({ rows: [{ len: '1' }] }); // getDailyStreak → 1 day, ×1
 
       const result = await service.completeChore('kid-1', 'chore-1');
 
@@ -169,6 +170,29 @@ describe('ChoreService', () => {
         'chore',
         expect.stringContaining('chore-1'),
       );
+    });
+
+    it('scales the award by the daily streak (FR-035) and rewrites the row', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ points_value: 20 }) // chore lookup
+        .mockResolvedValueOnce({ timezone: 'America/Denver' }) // familyTz
+        .mockResolvedValueOnce(null) // no existing completion today
+        .mockResolvedValueOnce({
+          id: 'comp-1',
+          chore_id: 'chore-1',
+          user_id: 'kid-1',
+          completed_at: new Date(),
+          points_earned: 20,
+        }); // INSERT
+      mockQuery
+        .mockResolvedValueOnce({ rows: [{ len: '7' }] }) // getDailyStreak → 7 days, ×1.2
+        .mockResolvedValueOnce({ rows: [] }); // UPDATE chore_completions
+
+      const result = await service.completeChore('kid-1', 'chore-1');
+
+      expect(result.pointsEarned).toBe(24);
+      expect(mockQuery.mock.calls[1][0]).toContain('UPDATE chore_completions SET points_earned');
+      expect(PointsRepository.addPoints).toHaveBeenCalledWith('kid-1', 24, 'chore', expect.any(String));
     });
 
     it("throws 'already-completed-today' when there is a completion for the family-local day", async () => {

@@ -796,6 +796,131 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/habits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List habits with this week's progress and streak
+         * @description `scope=mine` (default) — the caller's enabled habits, for the board. `scope=family` — every family member's habits including disabled ones, with the assignee name, for the parent Manage panel.
+         */
+        get: operations["listHabits"];
+        put?: never;
+        /**
+         * Create a habit
+         * @description `assigneeId` defaults to the caller and is stored as the habit's `userId`; it must be an active member of the caller's family.
+         */
+        post: operations["createHabit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habits/{habitId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit a habit
+         * @description title / description / weeklyTarget / pointsValue / enabled. Family-scoped: the caller must share a family with the habit's assignee.
+         */
+        patch: operations["updateHabit"];
+        trace?: never;
+    };
+    "/api/habits/{habitId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a habit done for today and award its (streak-scaled) points
+         * @description One completion per family-local day. Points are the habit's `pointsValue` scaled by the caller's daily streak (FR-035): ×1.1 at a 3-day streak, ×1.2 at 7+.
+         */
+        post: operations["completeHabit"];
+        /**
+         * Undo today's completion of a habit
+         * @description Removes today's completion and reverses the points award.
+         */
+        delete: operations["undoHabitCompletion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habits/mood/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's mood entry for the family-local today */
+        get: operations["getTodayMood"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habits/mood": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record (or replace) the caller's mood for today
+         * @description One row per member per family-local day; posting again before midnight overwrites it.
+         */
+        post: operations["setMood"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habits/mood/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Family mood history for the parent heatmap (FR-149)
+         * @description One entry per member per family-local day for the last `days` days. Parents/admins only.
+         */
+        get: operations["getFamilyMoodHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning/lessons/{lessonId}/complete": {
         parameters: {
             query?: never;
@@ -2357,6 +2482,54 @@ export interface components {
             dailyPoints?: number;
             weeklyPoints?: number;
             monthlyPoints?: number;
+        };
+        /** @description From HabitService's raw-Postgres `habits` table (migration 013) — NOT the Supabase-era `habits` shape in types/database.ts. user_id is the assignee; weekly_target is the "N of 7 days this week" goal. */
+        Habit: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            title: string;
+            description?: string;
+            weeklyTarget: number;
+            pointsValue: number;
+            enabled: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description A `Habit` plus this week's progress — what `GET /api/habits` returns. `weekCompletions` counts the family-local current week (Mon–Sun); `completedToday` / `completionId` reflect today; `weekStreak` is consecutive weeks that met `weeklyTarget`. */
+        HabitWithStatus: components["schemas"]["Habit"] & {
+            assigneeName?: string | null;
+            weekCompletions: number;
+            completedToday: boolean;
+            /** Format: uuid */
+            completionId?: string | null;
+            weekStreak: number;
+        };
+        MoodEntry: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            /** @enum {string} */
+            mood: "great" | "good" | "ok" | "low" | "sad";
+            emoji?: string;
+            note?: string;
+            /** Format: date-time */
+            recordedAt: string;
+        };
+        /** @description One member's mood for one family-local day — the FR-149 heatmap unit. */
+        MoodDay: {
+            /** Format: uuid */
+            userId: string;
+            assigneeName?: string | null;
+            /** Format: date */
+            day: string;
+            /** @enum {string} */
+            mood: "great" | "good" | "ok" | "low" | "sad";
+            emoji?: string | null;
         };
         /**
          * @description From `LearningService`'s raw-Postgres `learning_progress` table —
@@ -5360,6 +5533,481 @@ export interface operations {
             };
             /** @description Missing x-user-id. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listHabits: {
+        parameters: {
+            query?: {
+                scope?: "mine" | "family";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Habits. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        habits?: components["schemas"]["HabitWithStatus"][];
+                        count?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    createHabit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    description?: string;
+                    weeklyTarget: number;
+                    pointsValue: number;
+                    /** Format: uuid */
+                    assigneeId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Habit created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Habit created successfully";
+                        habit?: components["schemas"]["Habit"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing/invalid fields, or `assigneeId` is not a family member. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateHabit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                habitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    description?: string | null;
+                    weeklyTarget?: number;
+                    pointsValue?: number;
+                    enabled?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Habit updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Habit updated successfully";
+                        habit?: components["schemas"]["Habit"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid weeklyTarget / pointsValue. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such habit in the caller's family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    completeHabit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                habitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Completion recorded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Habit completed";
+                        pointsEarned?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Habit not found (or not the caller's). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Already completed today. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    undoHabitCompletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                habitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Completion undone. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Habit completion undone";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Nothing to undo today. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getTodayMood: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's mood, or null if not yet logged. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        mood?: components["schemas"]["MoodEntry"] | null;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    setMood: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    mood: "great" | "good" | "ok" | "low" | "sad";
+                    emoji?: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Mood recorded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Mood recorded";
+                        mood?: components["schemas"]["MoodEntry"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid mood value. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getFamilyMoodHistory: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mood days. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        history?: components["schemas"]["MoodDay"][];
+                        count?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller is not a parent/admin. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

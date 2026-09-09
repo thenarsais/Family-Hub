@@ -11,6 +11,7 @@ import pointsRoutes from './routes/points';
 import externalApisRoutes from './routes/external-apis';
 import smartthingsRoutes from './routes/smartthings';
 import choresRoutes from './routes/chores';
+import habitsRoutes from './routes/habits';
 import learningRoutes from './routes/learning';
 import announcementsRoutes from './routes/announcements';
 import remindersRoutes from './routes/reminders';
@@ -146,6 +147,9 @@ app.use('/api/smartthings', smartthingsRoutes);
 
 // Chores endpoints: Create, list, complete, progress
 app.use('/api/chores', choresRoutes);
+
+// Habits + daily mood check-in: list, complete/undo, weekly streak, mood
+app.use('/api/habits', habitsRoutes);
 
 // Learning endpoints: Lessons, quizzes, progress, stats
 app.use('/api/learning', learningRoutes);
