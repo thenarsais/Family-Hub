@@ -13,6 +13,7 @@ import smartthingsRoutes from './routes/smartthings';
 import choresRoutes from './routes/chores';
 import habitsRoutes from './routes/habits';
 import kidsRoutes from './routes/kids';
+import kioskRoutes from './routes/kiosk';
 import learningRoutes from './routes/learning';
 import announcementsRoutes from './routes/announcements';
 import remindersRoutes from './routes/reminders';
@@ -154,6 +155,9 @@ app.use('/api/habits', habitsRoutes);
 
 // Kids board (T-12): a parent acting for a young child — routine checklists + mood
 app.use('/api/kids', kidsRoutes);
+
+// Kiosk (T-14): shared wall-display enrolment, profile bootstrap, family PIN
+app.use('/api/kiosk', kioskRoutes);
 
 // Learning endpoints: Lessons, quizzes, progress, stats
 app.use('/api/learning', learningRoutes);

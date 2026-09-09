@@ -32,6 +32,7 @@ const UPDATABLE_SETTINGS_COLUMNS = [
   'max_screen_time_minutes', 'bedtime_enabled', 'bedtime_start', 'bedtime_end',
   'enable_smart_home_control', 'points_system_enabled', 'badges_system_enabled',
   'leaderboard_enabled', 'privacy_mode', 'allow_google_calendar_sync',
+  'kiosk_idle_minutes',
 ];
 
 class FamilyService {
