@@ -7,6 +7,7 @@ import App from '@/App';
 vi.mock('@pages/AnnouncementsPage', () => ({ default: () => <div>Announcements Page</div> }));
 vi.mock('@pages/RemindersPage', () => ({ default: () => <div>Reminders Page</div> }));
 vi.mock('@pages/ShoppingListPage', () => ({ default: () => <div>Shopping List Page</div> }));
+vi.mock('@pages/KidsBoard', () => ({ default: () => <div>Kids Board Page</div> }));
 vi.mock('@pages/FamilyPage', () => ({ default: () => <div>Family Page</div> }));
 vi.mock('@pages/ProfilePage', () => ({ default: () => <div>Profile Page</div> }));
 
@@ -144,6 +145,15 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('Shopping List Page')).toBeInTheDocument();
+  });
+
+  it('should render the kids board at /kids/:memberId when authenticated', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    setPath('/kids/abc');
+
+    render(<App />);
+
+    expect(await screen.findByText('Kids Board Page')).toBeInTheDocument();
   });
 
   it('should redirect the root path to /dashboard', () => {

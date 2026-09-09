@@ -7,13 +7,14 @@
 
 import { vi, type Mock } from 'vitest';
 import { render } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import Login from '@/pages/Login';
 import Signup from '@/pages/Signup';
 import Dashboard from '@/pages/Dashboard';
 import SmartHomePage from '@/pages/SmartHome';
 import ActivityBoard from '@/pages/ActivityBoard';
+import KidsBoard from '@/pages/KidsBoard';
 import * as deviceHook from '@/hooks/useDevices';
 
 expect.extend(toHaveNoViolations);
@@ -47,6 +48,36 @@ vi.mock('@/services/api', () => ({
 }));
 
 vi.mock('@/hooks/useDevices');
+
+vi.mock('@/hooks/useFamily', () => ({
+  useFamily: () => ({
+    loading: false,
+    members: [
+      { user_id: 'user-1', role: 'parent', name: 'Test User' },
+      { user_id: 'kid-1', role: 'child', name: 'Karishma Kid' },
+    ],
+  }),
+}));
+
+vi.mock('@/hooks/useKidBoard', () => ({
+  useKidBoard: () => ({
+    routines: [
+      { id: 'r1', userId: 'kid-1', slot: 'morning', label: 'Brush teeth', emoji: '🪥', sortOrder: 0, enabled: true, doneToday: false },
+      { id: 'r2', userId: 'kid-1', slot: 'evening', label: 'Pajamas', emoji: '👕', sortOrder: 0, enabled: true, doneToday: true },
+    ],
+    manageRoutines: [],
+    todayMood: null,
+    loading: false,
+    error: null,
+    completeRoutine: vi.fn(),
+    undoRoutine: vi.fn(),
+    setMood: vi.fn(),
+    createRoutine: vi.fn(),
+    updateRoutine: vi.fn(),
+    refresh: vi.fn(),
+    refreshManage: vi.fn(),
+  }),
+}));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -95,6 +126,17 @@ describe('Real page accessibility (axe)', () => {
 
   it('ActivityBoard page has no axe violations', async () => {
     const { container } = render(<ActivityBoard />);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('KidsBoard page has no axe violations', async () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/kids/kid-1']}>
+        <Routes>
+          <Route path="/kids/:memberId" element={<KidsBoard />} />
+        </Routes>
+      </MemoryRouter>,
+    );
     expect(await axe(container)).toHaveNoViolations();
   });
 });
