@@ -110,6 +110,8 @@ tags:
     description: Chore creation/completion/progress (x-user-id auth; uses a hand-rolled chores schema, not Supabase chores).
   - name: Habits
     description: Habit tracking (weekly target + streak) and the daily mood check-in (x-user-id auth; hand-rolled schema, migration 013).
+  - name: Kids
+    description: T-12 — a parent acting for a young child (routine checklists + mood tap, no scoring; x-user-id is the parent; migration 015).
   - name: Learning
     description: Lesson completion, quizzes, learning stats (x-user-id auth; hand-rolled schema, not Supabase learning_progress).
   - name: Announcements
@@ -2120,6 +2122,220 @@ paths:
         '500':
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # KIDS BOARD — a parent acting for a young child (x-user-id = the parent)
+  # ================================================================
+  /api/kids/{memberId}/routines:
+    get:
+      tags: [Kids]
+      summary: The child's routine checklist + today's ticks
+      description: >-
+        `memberId` is the child; `x-user-id` is the caller, who must be that
+        child or an active parent/admin in the same family.
+      operationId: getKidRoutines
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: scope
+          in: query
+          description: "`board` (default) = enabled checklist items; `manage` = every item incl. hidden."
+          schema: { type: string, enum: [board, manage], default: board }
+      responses:
+        '200':
+          description: Routines.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  routines:
+                    type: array
+                    items: { $ref: '#/components/schemas/RoutineWithStatus' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '403': { description: Caller may not act for this member., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+    post:
+      tags: [Kids]
+      summary: Add a routine item to the child's list (parent only)
+      operationId: createKidRoutine
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slot, label, emoji]
+              properties:
+                slot: { type: string, enum: [morning, evening] }
+                label: { type: string }
+                emoji: { type: string }
+                sortOrder: { type: integer }
+      responses:
+        '201':
+          description: Routine created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Routine created" }
+                  routine: { $ref: '#/components/schemas/Routine' }
+                  timestamp: { type: string, format: date-time }
+        '400': { description: Missing/invalid slot / label / emoji., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '403': { description: Not a parent for this member., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+
+  /api/kids/{memberId}/routines/{id}:
+    patch:
+      tags: [Kids]
+      summary: Edit / enable-disable a routine item (parent only)
+      operationId: updateKidRoutine
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slot: { type: string, enum: [morning, evening] }
+                label: { type: string }
+                emoji: { type: string }
+                sortOrder: { type: integer }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Routine updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Routine updated" }
+                  routine: { $ref: '#/components/schemas/Routine' }
+                  timestamp: { type: string, format: date-time }
+        '400': { description: Invalid slot., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '404': { description: No such routine the caller may edit., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+
+  /api/kids/{memberId}/routines/{id}/complete:
+    post:
+      tags: [Kids]
+      summary: Tick a routine off for today (idempotent)
+      operationId: completeKidRoutine
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Routine done" }
+                  timestamp: { type: string, format: date-time }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '403': { description: Caller may not act for this member., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '404': { description: Routine not found for this member., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+    delete:
+      tags: [Kids]
+      summary: Un-tick today's completion
+      operationId: undoKidRoutine
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Un-ticked.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Routine un-ticked" }
+                  timestamp: { type: string, format: date-time }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '403': { description: Caller may not act for this member., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '404': { description: Nothing to undo today., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+
+  /api/kids/{memberId}/mood:
+    get:
+      tags: [Kids]
+      summary: The child's mood for the family-local today
+      operationId: getKidMood
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Today's mood, or null.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  mood:
+                    oneOf:
+                      - { $ref: '#/components/schemas/MoodEntry' }
+                      - { type: 'null' }
+                  timestamp: { type: string, format: date-time }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '403': { description: Caller may not act for this member., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+    post:
+      tags: [Kids]
+      summary: Record the child's mood for today (parent tap)
+      operationId: setKidMood
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mood]
+              properties:
+                mood: { type: string, enum: [great, good, ok, low, sad] }
+      responses:
+        '200':
+          description: Mood recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Mood recorded" }
+                  mood: { $ref: '#/components/schemas/MoodEntry' }
+                  timestamp: { type: string, format: date-time }
+        '400': { description: Invalid mood value., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '401': { description: Missing x-user-id., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '403': { description: Caller may not act for this member., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
+        '500': { description: Unexpected failure., content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } } }
 
   # ================================================================
   # LEARNING (x-user-id)
@@ -5619,6 +5835,34 @@ components:
         day: { type: string, format: date }
         mood: { type: string, enum: [great, good, ok, low, sad] }
         emoji: { type: [string, 'null'] }
+
+    # ---------------- Kids board — routines (hand-rolled schema, migration 015) ----------------
+    Routine:
+      type: object
+      description: >-
+        A single morning/evening routine-checklist item for a young child (T-12).
+        `userId` is whose routine. No points, no streak — deliberately its own
+        table, not `habits`.
+      required: [id, userId, slot, label, emoji, sortOrder, enabled, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        slot: { type: string, enum: [morning, evening] }
+        label: { type: string }
+        emoji: { type: string }
+        sortOrder: { type: integer }
+        enabled: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    RoutineWithStatus:
+      description: A `Routine` plus whether it's been ticked off for the child's family-local today.
+      allOf:
+        - $ref: '#/components/schemas/Routine'
+        - type: object
+          required: [doneToday]
+          properties:
+            doneToday: { type: boolean }
 
     # ---------------- Learning (hand-rolled schema) ----------------
     LearningProgressEntry:
