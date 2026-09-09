@@ -1,8 +1,10 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
+import { useKioskStore, selectIsKiosk } from '@stores/kioskStore';
 
 export default function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
+  const isKiosk = useKioskStore(selectIsKiosk);
 
   if (isLoading) {
     return (
@@ -14,7 +16,8 @@ export default function ProtectedRoute() {
     );
   }
 
-  if (!isAuthenticated) {
+  // On a shared display the device itself is the credential — no login screen.
+  if (!isKiosk && !isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 

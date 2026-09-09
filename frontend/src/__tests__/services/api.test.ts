@@ -113,6 +113,33 @@ describe('API Service', () => {
       // The Authorization header should still be set even if decoding fails.
       expect(result.headers.Authorization).toBe('Bearer not-a-real-token');
     });
+
+    it('adds x-kiosk-token and the active profile as x-user-id in kiosk mode', () => {
+      window.localStorage.setItem('fh:kiosk:token', 'dev-tok');
+      window.localStorage.setItem('fh:kiosk:profile', 'kid-1');
+      const result = requestInterceptor({ headers: {} as Record<string, string> });
+
+      expect(result.headers['x-kiosk-token']).toBe('dev-tok');
+      expect(result.headers['x-user-id']).toBe('kid-1');
+    });
+
+    it('kiosk mode with no selected profile sends the device token only', () => {
+      window.localStorage.setItem('fh:kiosk:token', 'dev-tok');
+      const result = requestInterceptor({ headers: {} as Record<string, string> });
+
+      expect(result.headers['x-kiosk-token']).toBe('dev-tok');
+      expect(result.headers['x-user-id']).toBeUndefined();
+    });
+
+    it('an explicit x-user-id header wins over the kiosk profile', () => {
+      window.localStorage.setItem('fh:kiosk:token', 'dev-tok');
+      window.localStorage.setItem('fh:kiosk:profile', 'kid-1');
+      const result = requestInterceptor({
+        headers: { 'x-user-id': 'parent-9' } as Record<string, string>,
+      });
+
+      expect(result.headers['x-user-id']).toBe('parent-9');
+    });
   });
 
   describe('Response interceptor — 401 handling', () => {

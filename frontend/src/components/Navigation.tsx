@@ -3,6 +3,8 @@ import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useWeather } from '@hooks/useWeather';
 import { useClock, formatClockDate, formatClockTime } from '@hooks/useClock';
+import { useKioskStore, selectIsKiosk } from '@stores/kioskStore';
+import ProfileBar from './kiosk/ProfileBar';
 
 interface NavigationProps {
   isNightMode?: boolean;
@@ -26,6 +28,7 @@ export default function Navigation({
   const { weather, location: weatherLocation } = useWeather();
   const navigate = useNavigate();
   const now = useClock();
+  const isKiosk = useKioskStore(selectIsKiosk);
 
   const handleLogout = async () => {
     await logout();
@@ -111,24 +114,30 @@ export default function Navigation({
             )}
 
             <div className="flex items-center gap-3 pl-4 sm:border-l border-rule">
-              <Link
-                to="/profile"
-                className="flex items-center gap-3 rounded-full hover:bg-accent-soft transition-colors px-1 py-0.5"
-              >
-                <span
-                  className="w-8 h-8 rounded-full bg-accent text-white grid place-items-center text-sm font-semibold"
-                  aria-hidden="true"
-                >
-                  {initial}
-                </span>
-                <span className="text-right leading-tight hidden sm:block">
-                  <span className="block text-sm font-medium text-ink">{user?.name}</span>
-                  <span className="block text-xs text-ink-3">{user?.email}</span>
-                </span>
-              </Link>
-              <button onClick={handleLogout} className="btn btn-secondary btn-small">
-                Logout
-              </button>
+              {isKiosk ? (
+                <ProfileBar />
+              ) : (
+                <>
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-3 rounded-full hover:bg-accent-soft transition-colors px-1 py-0.5"
+                  >
+                    <span
+                      className="w-8 h-8 rounded-full bg-accent text-white grid place-items-center text-sm font-semibold"
+                      aria-hidden="true"
+                    >
+                      {initial}
+                    </span>
+                    <span className="text-right leading-tight hidden sm:block">
+                      <span className="block text-sm font-medium text-ink">{user?.name}</span>
+                      <span className="block text-xs text-ink-3">{user?.email}</span>
+                    </span>
+                  </Link>
+                  <button onClick={handleLogout} className="btn btn-secondary btn-small">
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
