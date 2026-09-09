@@ -20,6 +20,18 @@ import { useAuth } from '@hooks/useAuth';
 
 vi.mock('@hooks/useCalendar');
 vi.mock('@hooks/useAuth');
+vi.mock('@hooks/useReminders', async () => {
+  const actual = await vi.importActual<typeof import('@hooks/useReminders')>('@hooks/useReminders');
+  return {
+    ...actual,
+    useReminders: () => ({
+      reminders: [],
+      createReminder: vi.fn(),
+      deleteReminder: vi.fn(),
+      remindersForItem: () => [],
+    }),
+  };
+});
 
 const originalFetch = global.fetch;
 

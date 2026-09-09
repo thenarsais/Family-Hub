@@ -14,7 +14,15 @@ export interface NewReminder {
   recurrence?: 'once' | 'daily' | 'weekly' | 'monthly';
   recurrence_end_date?: string | null;
   assignee_user_id?: string;
+  /** Link a reminder to another item — e.g. a calendar event id (or its series id). */
+  related_item_id?: string;
+  related_item_type?: string;
+  /** Lead time before the source item; the reminder still fires at scheduled_time. */
+  remind_before_minutes?: number;
 }
+
+/** Anything the calendar bell creates is tagged with this related_item_type. */
+export const CALENDAR_EVENT_ITEM_TYPE = 'calendar_event';
 
 type ReminderUpdate = Partial<
   Pick<
@@ -35,6 +43,8 @@ interface UseRemindersReturn {
   dismissReminder: (id: string) => Promise<void>;
   restoreReminder: (id: string) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
+  /** Reminders linked to a calendar event (or its series id) — for the calendar bell. */
+  remindersForItem: (itemId: string) => Reminder[];
   refresh: () => Promise<void>;
 }
 
@@ -202,6 +212,14 @@ export function useReminders(): UseRemindersReturn {
     [userId, fetchAll],
   );
 
+  const remindersForItem = useCallback(
+    (itemId: string) =>
+      reminders.filter(
+        (r) => r.related_item_type === CALENDAR_EVENT_ITEM_TYPE && r.related_item_id === itemId,
+      ),
+    [reminders],
+  );
+
   return {
     reminders,
     upcomingReminders,
@@ -214,6 +232,7 @@ export function useReminders(): UseRemindersReturn {
     dismissReminder,
     restoreReminder,
     deleteReminder,
+    remindersForItem,
     refresh: fetchAll,
   };
 }

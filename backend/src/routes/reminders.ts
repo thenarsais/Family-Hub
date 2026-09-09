@@ -69,13 +69,14 @@ router.get('/due', async (req: Request, res: Response) => {
 /**
  * POST /api/reminders
  * Body: { title, scheduled_time, description?, reminder_type?, recurrence?,
- *         recurrence_end_date?, assignee_user_id? }
+ *         recurrence_end_date?, assignee_user_id?, related_item_id?,
+ *         related_item_type?, remind_before_minutes? }
  */
 router.post('/', async (req: Request, res: Response) => {
   const userId = requireUser(req, res);
   if (!userId) return;
 
-  const { title, scheduled_time, recurrence } = req.body;
+  const { title, scheduled_time, recurrence, related_item_id, remind_before_minutes } = req.body;
   if (!title || typeof title !== 'string' || !title.trim()) {
     return fail(res, 400, 'title is required');
   }
@@ -84,6 +85,17 @@ router.post('/', async (req: Request, res: Response) => {
   }
   if (recurrence != null && recurrence !== 'once' && !isRecurring(recurrence)) {
     return fail(res, 400, 'recurrence must be once, daily, weekly or monthly');
+  }
+  if (related_item_id != null && (typeof related_item_id !== 'string' || !related_item_id.trim())) {
+    return fail(res, 400, 'related_item_id must be a non-empty string');
+  }
+  if (
+    remind_before_minutes != null &&
+    (typeof remind_before_minutes !== 'number' ||
+      !Number.isInteger(remind_before_minutes) ||
+      remind_before_minutes < 0)
+  ) {
+    return fail(res, 400, 'remind_before_minutes must be a non-negative integer');
   }
 
   try {
@@ -95,6 +107,11 @@ router.post('/', async (req: Request, res: Response) => {
       scheduled_time,
       recurrence: recurrence ?? 'once',
       recurrence_end_date: req.body.recurrence_end_date,
+      related_item_id: typeof related_item_id === 'string' ? related_item_id : undefined,
+      related_item_type:
+        typeof req.body.related_item_type === 'string' ? req.body.related_item_type : undefined,
+      remind_before_minutes:
+        typeof remind_before_minutes === 'number' ? remind_before_minutes : undefined,
     });
     if (result === null) return fail(res, 404, 'No family for this user');
     if (result === 'bad-assignee') return fail(res, 400, 'assignee_user_id is not a member of your family');

@@ -7428,6 +7428,12 @@ export interface operations {
                     recurrence?: "once" | "daily" | "weekly" | "monthly";
                     /** Format: date */
                     recurrence_end_date?: string;
+                    /** @description Links the reminder to another item (e.g. a calendar event id, or its series recurringEventId). */
+                    related_item_id?: string;
+                    /** @description What related_item_id points at, e.g. "calendar_event". */
+                    related_item_type?: string;
+                    /** @description Lead time before the source item; the reminder still fires at scheduled_time, this is for display / de-dupe. */
+                    remind_before_minutes?: number;
                 };
             };
         };

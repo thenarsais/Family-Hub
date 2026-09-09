@@ -3045,6 +3045,16 @@ paths:
                 scheduled_time: { type: string, format: date-time }
                 recurrence: { type: string, enum: [once, daily, weekly, monthly], default: once }
                 recurrence_end_date: { type: string, format: date }
+                related_item_id:
+                  type: string
+                  description: Links the reminder to another item (e.g. a calendar event id, or its series recurringEventId).
+                related_item_type:
+                  type: string
+                  description: What related_item_id points at, e.g. "calendar_event".
+                remind_before_minutes:
+                  type: integer
+                  minimum: 0
+                  description: Lead time before the source item; the reminder still fires at scheduled_time, this is for display / de-dupe.
       responses:
         '201':
           description: Created.

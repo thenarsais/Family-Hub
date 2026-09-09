@@ -159,6 +159,39 @@ describe('Reminders Routes', () => {
       );
     });
 
+    it('forwards the calendar-event link fields', async () => {
+      mockReminderService.createReminder.mockResolvedValueOnce({ id: 'r1' });
+
+      await U(request(app).post('/api/reminders'))
+        .send({
+          ...good,
+          reminder_type: 'event',
+          related_item_id: 'gcal-evt-123',
+          related_item_type: 'calendar_event',
+          remind_before_minutes: 60,
+        })
+        .expect(201);
+
+      expect(mockReminderService.createReminder).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          related_item_id: 'gcal-evt-123',
+          related_item_type: 'calendar_event',
+          remind_before_minutes: 60,
+        }),
+      );
+    });
+
+    it('rejects a blank related_item_id and a negative lead time', async () => {
+      const a = await U(request(app).post('/api/reminders')).send({ ...good, related_item_id: '  ' }).expect(400);
+      expect(a.body.message).toMatch(/related_item_id/);
+      const b = await U(request(app).post('/api/reminders'))
+        .send({ ...good, remind_before_minutes: -5 })
+        .expect(400);
+      expect(b.body.message).toMatch(/remind_before_minutes/);
+      expect(mockReminderService.createReminder).not.toHaveBeenCalled();
+    });
+
     it('should 404 when the user has no family', async () => {
       mockReminderService.createReminder.mockResolvedValueOnce(null);
 
