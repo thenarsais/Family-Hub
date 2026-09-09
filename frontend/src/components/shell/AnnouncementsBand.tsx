@@ -59,7 +59,7 @@ export function AnnouncementsBand({
   };
 
   return (
-    <div className="bg-raised border-b border-rule border-l-4 border-l-accent px-4 sm:px-6 py-2.5">
+    <div className="border-l-4 border-l-accent px-4 sm:px-6 py-2.5">
       <div className="flex items-center gap-3">
         <span className="flex items-center gap-1.5 shrink-0 text-[0.7rem] font-bold uppercase tracking-wider text-accent">
           <Pin className="w-3.5 h-3.5" aria-hidden="true" />

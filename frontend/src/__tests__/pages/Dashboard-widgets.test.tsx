@@ -35,7 +35,7 @@ vi.mock('@/hooks/useAnnouncements', () => ({
 vi.mock('@/hooks/useReminders', () => ({
   useReminders: () => ({
     upcomingReminders: [{ id: 'r1', title: 'Dentist', scheduled_time: day(-1) }],
-    dueReminders: [],
+    dueReminders: [{ id: 'd1', title: 'Water the plants', assignee_name: null }],
     dismissReminder: vi.fn(),
     createReminder: vi.fn().mockResolvedValue({ id: 'new' }),
     loading: false,
@@ -130,6 +130,18 @@ describe('Dashboard widgets (populated)', () => {
     expect(screen.getByRole('button', { name: /\+ add reminder/i })).toBeInTheDocument();
     // populated → not the stub
     expect(screen.queryByText('Nothing coming up.')).not.toBeInTheDocument();
+  });
+
+  it('unifies due reminders + pinned announcements into one priority region, reminders first', () => {
+    const { container } = renderDashboard();
+    const section = container.querySelector('section.divide-y');
+    expect(section).toBeInTheDocument();
+
+    const due = screen.getByText('Water the plants'); // due-now band row
+    const announce = screen.getByText(/Trash night/); // announcements band row
+    expect(section).toContainElement(due);
+    expect(section).toContainElement(announce);
+    expect(due.compareDocumentPosition(announce) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('derives "points this week" from the last 7 days of activity only', () => {
