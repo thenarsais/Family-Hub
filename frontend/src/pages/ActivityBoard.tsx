@@ -3,19 +3,36 @@ import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
 import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
 import { useChores } from '@hooks/useChores';
+import { useHabits } from '@hooks/useHabits';
 import { useBoardSections } from '@hooks/useBoardSections';
 import ChoresSection from '@components/activity/ChoresSection';
 import ChoreManagePanel from '@components/activity/ChoreManagePanel';
+import HabitsSection from '@components/activity/HabitsSection';
+import HabitManagePanel from '@components/activity/HabitManagePanel';
+import MoodCheckIn from '@components/activity/MoodCheckIn';
 
-/** Board sections in their default order. Chores is the only one built for v1;
- *  the shell is here so Games / Reading / Habits slot in without a rewrite. */
-const SECTIONS = [{ id: 'chores', title: 'Chores today', emoji: '🧹' }];
+/** Board sections in their default order. The shell (order + collapse per
+ *  profile) is generic — Games / Reading slot in the same way. */
+const SECTIONS = [
+  { id: 'chores', title: 'Chores today', emoji: '🧹', manageable: true },
+  { id: 'habits', title: 'Habits this week', emoji: '🎯', manageable: true },
+  { id: 'mood', title: 'Mood', emoji: '💛', manageable: false },
+];
 const SECTION_IDS = SECTIONS.map((s) => s.id);
+
+function Spinner() {
+  return (
+    <div className="py-6 flex justify-center" role="status" aria-label="Loading">
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />
+    </div>
+  );
+}
 
 export default function ActivityBoard() {
   const { user } = useAuth();
   const { family, members } = useFamily();
   const chores = useChores();
+  const habits = useHabits();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -23,25 +40,26 @@ export default function ActivityBoard() {
   const profileKey = user?.id || 'anon';
   const { sorted, collapsed, move, toggle } = useBoardSections(profileKey, SECTION_IDS);
 
-  const [managing, setManaging] = useState(false);
+  const [managingId, setManagingId] = useState<string | null>(null);
 
   return (
     <main className="container py-6 space-y-6">
       <header>
         <h1 className="font-display text-3xl font-bold text-ink">Activity Board</h1>
         <p className="text-ink-2 text-sm mt-1">
-          Tap a chore when it's done to earn its points. Everything resets overnight.
+          Tap something when it's done to earn its points. The day resets overnight.
         </p>
       </header>
 
-      {chores.error && (
-        <p className="text-sm text-alert bg-alert/10 rounded p-3">{chores.error}</p>
+      {(chores.error || habits.error) && (
+        <p className="text-sm text-alert bg-alert/10 rounded p-3">{chores.error || habits.error}</p>
       )}
 
       {sorted.map((id, i) => {
         const meta = SECTIONS.find((s) => s.id === id);
         if (!meta) return null;
         const isCollapsed = collapsed[id];
+        const managing = managingId === id;
         return (
           <section key={id} className="card">
             <div className="flex items-center gap-2">
@@ -49,8 +67,9 @@ export default function ActivityBoard() {
                 className="flex flex-1 items-center gap-2 text-left"
                 onClick={() => toggle(id)}
                 aria-expanded={!isCollapsed}
+                aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${meta.title}`}
               >
-                <span className="text-lg">{meta.emoji}</span>
+                <span className="text-lg" aria-hidden="true">{meta.emoji}</span>
                 <h2 className="font-display text-lg font-bold text-ink">{meta.title}</h2>
                 {isCollapsed ? (
                   <ChevronDown className="h-4 w-4 text-ink-3" />
@@ -59,10 +78,10 @@ export default function ActivityBoard() {
                 )}
               </button>
 
-              {id === 'chores' && canManage && !isCollapsed && (
+              {meta.manageable && canManage && !isCollapsed && (
                 <button
                   className="btn btn-secondary btn-small gap-1"
-                  onClick={() => setManaging((v) => !v)}
+                  onClick={() => setManagingId((cur) => (cur === id ? null : id))}
                   aria-pressed={managing}
                 >
                   <Settings2 className="h-3.5 w-3.5" />
@@ -92,31 +111,63 @@ export default function ActivityBoard() {
               )}
             </div>
 
-            {!isCollapsed && id === 'chores' && (
+            {!isCollapsed && (
               <div className="mt-4">
-                {chores.loading ? (
-                  <div className="py-6 flex justify-center" role="status" aria-label="Loading">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent" />
-                  </div>
-                ) : (
-                  <ChoresSection
-                    chores={chores.chores}
-                    pointsSummary={chores.pointsSummary}
-                    onComplete={chores.complete}
-                    onUndo={chores.undo}
-                  />
+                {id === 'chores' && (
+                  <>
+                    {chores.loading ? (
+                      <Spinner />
+                    ) : (
+                      <ChoresSection
+                        chores={chores.chores}
+                        pointsSummary={chores.pointsSummary}
+                        onComplete={chores.complete}
+                        onUndo={chores.undo}
+                      />
+                    )}
+                    {managing && canManage && user?.id && (
+                      <ChoreManagePanel
+                        familyChores={chores.familyChores}
+                        members={members}
+                        selfId={user.id}
+                        onLoad={chores.loadFamilyChores}
+                        createChore={chores.createChore}
+                        updateChore={chores.updateChore}
+                      />
+                    )}
+                  </>
                 )}
 
-                {managing && canManage && user?.id && (
-                  <ChoreManagePanel
-                    familyChores={chores.familyChores}
-                    members={members}
-                    selfId={user.id}
-                    onLoad={chores.loadFamilyChores}
-                    createChore={chores.createChore}
-                    updateChore={chores.updateChore}
-                  />
+                {id === 'habits' && (
+                  <>
+                    {habits.loading ? (
+                      <Spinner />
+                    ) : (
+                      <HabitsSection
+                        habits={habits.habits}
+                        onComplete={habits.complete}
+                        onUndo={habits.undo}
+                      />
+                    )}
+                    {managing && canManage && user?.id && (
+                      <HabitManagePanel
+                        familyHabits={habits.familyHabits}
+                        members={members}
+                        selfId={user.id}
+                        onLoad={habits.loadFamilyHabits}
+                        createHabit={habits.createHabit}
+                        updateHabit={habits.updateHabit}
+                      />
+                    )}
+                  </>
                 )}
+
+                {id === 'mood' &&
+                  (habits.loading ? (
+                    <Spinner />
+                  ) : (
+                    <MoodCheckIn todayMood={habits.todayMood} onPick={habits.setMood} />
+                  ))}
               </div>
             )}
           </section>
@@ -125,7 +176,7 @@ export default function ActivityBoard() {
 
       {!family && !chores.loading && (
         <p className="text-sm text-ink-3">
-          Chores are shared with your family. Set one up on the Family page first.
+          The board is shared with your family. Set one up on the Family page first.
         </p>
       )}
     </main>
