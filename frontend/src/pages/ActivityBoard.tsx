@@ -11,6 +11,7 @@ import HabitsSection from '@components/activity/HabitsSection';
 import HabitManagePanel from '@components/activity/HabitManagePanel';
 import MoodCheckIn from '@components/activity/MoodCheckIn';
 import LearningSummarySection from '@components/activity/LearningSummarySection';
+import TriviaSection from '@components/activity/TriviaSection';
 
 /** Board sections in their default order. The shell (order + collapse per
  *  profile) is generic — Games / Reading slot in the same way. */
@@ -18,6 +19,7 @@ const SECTIONS = [
   { id: 'chores', title: 'Chores today', emoji: '🧹', manageable: true },
   { id: 'habits', title: 'Habits this week', emoji: '🎯', manageable: true },
   { id: 'mood', title: 'Mood', emoji: '💛', manageable: false },
+  { id: 'trivia', title: 'Trivia', emoji: '🧠', manageable: false },
   { id: 'gujarati', title: 'Gujarati', emoji: '📖', manageable: false },
 ];
 const SECTION_IDS = SECTIONS.map((s) => s.id);
@@ -170,6 +172,8 @@ export default function ActivityBoard() {
                   ) : (
                     <MoodCheckIn todayMood={habits.todayMood} onPick={habits.setMood} />
                   ))}
+
+                {id === 'trivia' && <TriviaSection />}
 
                 {id === 'gujarati' && <LearningSummarySection />}
               </div>
