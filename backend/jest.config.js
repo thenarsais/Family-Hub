@@ -23,9 +23,10 @@ module.exports = {
     '!src/migrations.ts',
     '!src/runMigrationsV2.ts',
     '!src/seed.ts',
-    // seed-learning.ts: its `flattenCurriculum` export is unit-tested; the rest
-    // is a pg upsert loop that runs on `npm run seed:learning`, same as seed.ts.
+    // seed-learning.ts / seed-trivia.ts: their parse helpers are unit-tested;
+    // the rest is a pg upsert loop that runs on `npm run seed:*`, same as seed.ts.
     '!src/scripts/seed-learning.ts',
+    '!src/scripts/seed-trivia.ts',
     // Pure type declarations, no runtime behavior to cover.
     '!src/types/database.ts'
   ],

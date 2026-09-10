@@ -1237,6 +1237,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trivia/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's shared question + this user's attempt, streak and stats */
+        get: operations["getTriviaToday"];
+        put?: never;
+        /**
+         * Record today's answer (points, flat by difficulty, only if correct)
+         * @description A second submit the same day is a no-op and returns the current state.
+         */
+        post: operations["submitTriviaToday"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/announcements": {
         parameters: {
             query?: never;
@@ -2868,6 +2889,36 @@ export interface components {
             vocabulary?: {
                 completed?: number;
                 total?: number;
+            };
+        };
+        /** @description The daily question as shown — four options, no answer key. */
+        TriviaQuestion: {
+            /** Format: uuid */
+            id: string;
+            question: string;
+            category: string;
+            /** @enum {string} */
+            difficulty: "easy" | "medium" | "hard";
+            options: string[];
+            hint: string | null;
+            pointsValue: number;
+        };
+        /** @description This user's answer for today (present only once they've answered). */
+        TriviaAttempt: {
+            selectedAnswer: string;
+            isCorrect: boolean;
+            pointsEarned: number;
+            correctAnswer: string;
+            funFact?: string | null;
+        };
+        TriviaToday: {
+            question: components["schemas"]["TriviaQuestion"] | null;
+            attempt: components["schemas"]["TriviaAttempt"] | null;
+            /** @description Consecutive family-local days ending today with an attempt. */
+            streak: number;
+            stats: {
+                answered: number;
+                correct: number;
             };
         };
         /** @description Raw `announcements` table row (Tables<'announcements'>['Row']). */
@@ -7641,6 +7692,117 @@ export interface operations {
             };
             /** @description Unexpected failure. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getTriviaToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The daily trivia payload. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriviaToday"] & {
+                        /** @constant */
+                        status?: "success";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    submitTriviaToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Must be one of the question's four options. */
+                    answer: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The updated daily trivia payload (attempt now populated). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriviaToday"] & {
+                        /** @constant */
+                        status?: "success";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing answer */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No trivia question is available (empty bank). */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

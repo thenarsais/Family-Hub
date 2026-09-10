@@ -15,6 +15,7 @@ import habitsRoutes from './routes/habits';
 import kidsRoutes from './routes/kids';
 import kioskRoutes from './routes/kiosk';
 import learningRoutes from './routes/learning';
+import triviaRoutes from './routes/trivia';
 import announcementsRoutes from './routes/announcements';
 import remindersRoutes from './routes/reminders';
 import energyRoutes from './routes/energy';
@@ -161,6 +162,9 @@ app.use('/api/kiosk', kioskRoutes);
 
 // Learning endpoints: Lessons, quizzes, progress, stats
 app.use('/api/learning', learningRoutes);
+
+// Trivia (T-09): one shared daily question + a participation streak
+app.use('/api/trivia', triviaRoutes);
 
 // ================================================
 // PHASE 2 FEATURES: Dashboard & Home Automation
