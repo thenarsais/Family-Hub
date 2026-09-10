@@ -4,11 +4,14 @@ import { useAuth } from '@hooks/useAuth';
 import { useFamily } from '@hooks/useFamily';
 import { useChores } from '@hooks/useChores';
 import { useHabits } from '@hooks/useHabits';
+import { useHomework } from '@hooks/useHomework';
 import { useBoardSections } from '@hooks/useBoardSections';
 import ChoresSection from '@components/activity/ChoresSection';
 import ChoreManagePanel from '@components/activity/ChoreManagePanel';
 import HabitsSection from '@components/activity/HabitsSection';
 import HabitManagePanel from '@components/activity/HabitManagePanel';
+import HomeworkSection from '@components/activity/HomeworkSection';
+import HomeworkManagePanel from '@components/activity/HomeworkManagePanel';
 import MoodCheckIn from '@components/activity/MoodCheckIn';
 import LearningSummarySection from '@components/activity/LearningSummarySection';
 import TriviaSection from '@components/activity/TriviaSection';
@@ -18,6 +21,7 @@ import TriviaSection from '@components/activity/TriviaSection';
 const SECTIONS = [
   { id: 'chores', title: 'Chores today', emoji: '🧹', manageable: true },
   { id: 'habits', title: 'Habits this week', emoji: '🎯', manageable: true },
+  { id: 'homework', title: 'Homework', emoji: '📚', manageable: true },
   { id: 'mood', title: 'Mood', emoji: '💛', manageable: false },
   { id: 'trivia', title: 'Trivia', emoji: '🧠', manageable: false },
   { id: 'gujarati', title: 'Gujarati', emoji: '📖', manageable: false },
@@ -37,6 +41,7 @@ export default function ActivityBoard() {
   const { family, members } = useFamily();
   const chores = useChores();
   const habits = useHabits();
+  const homework = useHomework();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -55,8 +60,10 @@ export default function ActivityBoard() {
         </p>
       </header>
 
-      {(chores.error || habits.error) && (
-        <p className="text-sm text-alert bg-alert/10 rounded p-3">{chores.error || habits.error}</p>
+      {(chores.error || habits.error || homework.error) && (
+        <p className="text-sm text-alert bg-alert/10 rounded p-3">
+          {chores.error || habits.error || homework.error}
+        </p>
       )}
 
       {sorted.map((id, i) => {
@@ -161,6 +168,32 @@ export default function ActivityBoard() {
                         onLoad={habits.loadFamilyHabits}
                         createHabit={habits.createHabit}
                         updateHabit={habits.updateHabit}
+                      />
+                    )}
+                  </>
+                )}
+
+                {id === 'homework' && (
+                  <>
+                    {homework.loading ? (
+                      <Spinner />
+                    ) : (
+                      <HomeworkSection
+                        items={homework.items}
+                        onComplete={homework.complete}
+                        onUncomplete={homework.uncomplete}
+                        onAdd={homework.createItem}
+                      />
+                    )}
+                    {managing && canManage && user?.id && (
+                      <HomeworkManagePanel
+                        familyItems={homework.familyItems}
+                        members={members}
+                        selfId={user.id}
+                        onLoad={homework.loadFamilyItems}
+                        createItem={homework.createItem}
+                        updateItem={homework.updateItem}
+                        deleteItem={homework.deleteItem}
                       />
                     )}
                   </>
