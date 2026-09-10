@@ -118,6 +118,8 @@ tags:
     description: Lesson completion, quizzes, learning stats (x-user-id auth; hand-rolled schema, not Supabase learning_progress).
   - name: Trivia
     description: T-09 — one shared daily question + a per-user participation streak (x-user-id auth; migration 018). No games, leaderboard, or badges.
+  - name: Homework
+    description: T-20 — dated one-shot homework items with a per-item points value, board section + parent panel (x-user-id auth; migration 019). No recurrence, no streak.
   - name: Announcements
     description: Family announcements/messaging (x-user-id auth).
   - name: Reminders
@@ -1815,6 +1817,236 @@ paths:
                   timestamp: { type: string, format: date-time }
         '401':
           description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # HOMEWORK (x-user-id) — T-20, migration 019
+  # ================================================================
+  /api/homework:
+    get:
+      tags: [Homework]
+      summary: List homework items
+      description: >-
+        `scope=mine` (default) — the caller's open items due within the next 7
+        family-local days or overdue, plus anything completed today (the board).
+        `scope=family` — every family member's open items plus the last 30 days,
+        for the parent Manage panel.
+      operationId: listHomework
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: scope
+          in: query
+          schema: { type: string, enum: [mine, family], default: mine }
+      responses:
+        '200':
+          description: Homework items.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/HomeworkItemWithStatus' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Homework]
+      summary: Create a homework item
+      description: >-
+        `assigneeId` defaults to the caller ("whose homework") and must be an
+        active member of the caller's family. `pointsValue` defaults to 10.
+        Both parents and kids may add items.
+      operationId: createHomework
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, dueDate]
+              properties:
+                title: { type: string }
+                dueDate: { type: string, format: date }
+                subject: { type: string }
+                pointsValue: { type: number, minimum: 1 }
+                assigneeId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Homework created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Homework created successfully" }
+                  item: { $ref: '#/components/schemas/HomeworkItem' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing/invalid fields, `assigneeId` not a family member, or a bad due date.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/homework/{id}:
+    patch:
+      tags: [Homework]
+      summary: Edit a homework item
+      description: >-
+        title / subject / dueDate / pointsValue. Family-scoped: the caller must
+        share a family with the item's assignee.
+      operationId: updateHomework
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                subject: { type: [string, 'null'] }
+                dueDate: { type: string, format: date }
+                pointsValue: { type: number, minimum: 1 }
+      responses:
+        '200':
+          description: Homework updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Homework updated successfully" }
+                  item: { $ref: '#/components/schemas/HomeworkItem' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid dueDate / pointsValue.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such item in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Homework]
+      summary: Delete a homework item
+      description: Reverses the points award if the item was completed. Family-scoped.
+      operationId: deleteHomework
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Homework deleted" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such item in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/homework/{id}/complete:
+    post:
+      tags: [Homework]
+      summary: Mark a homework item complete and award its points
+      description: Flat award of the item's `pointsValue` — no streak multiplier.
+      operationId: completeHomework
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Completion recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Homework completed successfully" }
+                  pointsEarned: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Item not found (or not the caller's).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '409':
+          description: Already completed.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Homework]
+      summary: Undo a homework completion
+      description: Clears the completion and reverses the points award.
+      operationId: undoHomeworkCompletion
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Completion undone.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Homework completion undone" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Nothing to undo.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -6040,6 +6272,43 @@ components:
         dailyPoints: { type: integer }
         weeklyPoints: { type: integer }
         monthlyPoints: { type: integer }
+
+    # ---------------- Homework (hand-rolled schema, migration 019) ----------------
+    HomeworkItem:
+      type: object
+      description: >-
+        From HomeworkService's raw-Postgres `homework_items` table (migration
+        019). Dated one-shot items: `completedAt` / `pointsEarned` live on the
+        row, there is no completions table. `userId` is the assignee; `dueDate`
+        is a plain calendar date (YYYY-MM-DD).
+      required: [id, userId, title, dueDate, pointsValue, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        createdBy: { type: string, format: uuid }
+        title: { type: string }
+        subject: { type: string }
+        dueDate: { type: string, format: date }
+        pointsValue: { type: integer }
+        completedAt: { type: [string, 'null'], format: date-time }
+        pointsEarned: { type: [integer, 'null'] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    HomeworkItemWithStatus:
+      description: >-
+        A `HomeworkItem` plus derived state — what `GET /api/homework` returns.
+        `isOverdue` is true when the item is incomplete and its `dueDate` is
+        before the family-local today; `completed` mirrors `completedAt != null`.
+      allOf:
+        - $ref: '#/components/schemas/HomeworkItem'
+        - type: object
+          required: [isOverdue, completed]
+          properties:
+            assigneeName: { type: [string, 'null'] }
+            addedByName: { type: [string, 'null'] }
+            isOverdue: { type: boolean }
+            completed: { type: boolean }
 
     # ---------------- Habits + mood (hand-rolled schema, migration 013) ----------------
     Habit:
