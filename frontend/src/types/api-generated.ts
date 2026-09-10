@@ -796,6 +796,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/homework": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List homework items
+         * @description `scope=mine` (default) — the caller's open items due within the next 7 family-local days or overdue, plus anything completed today (the board). `scope=family` — every family member's open items plus the last 30 days, for the parent Manage panel.
+         */
+        get: operations["listHomework"];
+        put?: never;
+        /**
+         * Create a homework item
+         * @description `assigneeId` defaults to the caller ("whose homework") and must be an active member of the caller's family. `pointsValue` defaults to 10. Both parents and kids may add items.
+         */
+        post: operations["createHomework"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/homework/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a homework item
+         * @description Reverses the points award if the item was completed. Family-scoped.
+         */
+        delete: operations["deleteHomework"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a homework item
+         * @description title / subject / dueDate / pointsValue. Family-scoped: the caller must share a family with the item's assignee.
+         */
+        patch: operations["updateHomework"];
+        trace?: never;
+    };
+    "/api/homework/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a homework item complete and award its points
+         * @description Flat award of the item's `pointsValue` — no streak multiplier.
+         */
+        post: operations["completeHomework"];
+        /**
+         * Undo a homework completion
+         * @description Clears the completion and reverses the points award.
+         */
+        delete: operations["undoHomeworkCompletion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/habits": {
         parameters: {
             query?: never;
@@ -2717,6 +2789,34 @@ export interface components {
             dailyPoints?: number;
             weeklyPoints?: number;
             monthlyPoints?: number;
+        };
+        /** @description From HomeworkService's raw-Postgres `homework_items` table (migration 019). Dated one-shot items: `completedAt` / `pointsEarned` live on the row, there is no completions table. `userId` is the assignee; `dueDate` is a plain calendar date (YYYY-MM-DD). */
+        HomeworkItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            /** Format: uuid */
+            createdBy?: string;
+            title: string;
+            subject?: string;
+            /** Format: date */
+            dueDate: string;
+            pointsValue: number;
+            /** Format: date-time */
+            completedAt?: string | null;
+            pointsEarned?: number | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description A `HomeworkItem` plus derived state — what `GET /api/homework` returns. `isOverdue` is true when the item is incomplete and its `dueDate` is before the family-local today; `completed` mirrors `completedAt != null`. */
+        HomeworkItemWithStatus: components["schemas"]["HomeworkItem"] & {
+            assigneeName?: string | null;
+            addedByName?: string | null;
+            isOverdue: boolean;
+            completed: boolean;
         };
         /** @description From HabitService's raw-Postgres `habits` table (migration 013) — NOT the Supabase-era `habits` shape in types/database.ts. user_id is the assignee; weekly_target is the "N of 7 days this week" goal. */
         Habit: {
@@ -5881,6 +5981,374 @@ export interface operations {
             };
             /** @description Missing x-user-id. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listHomework: {
+        parameters: {
+            query?: {
+                scope?: "mine" | "family";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Homework items. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        items?: components["schemas"]["HomeworkItemWithStatus"][];
+                        count?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    createHomework: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    /** Format: date */
+                    dueDate: string;
+                    subject?: string;
+                    pointsValue?: number;
+                    /** Format: uuid */
+                    assigneeId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Homework created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Homework created successfully";
+                        item?: components["schemas"]["HomeworkItem"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing/invalid fields, `assigneeId` not a family member, or a bad due date. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    deleteHomework: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Homework deleted";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such item in the caller's family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateHomework: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    subject?: string | null;
+                    /** Format: date */
+                    dueDate?: string;
+                    pointsValue?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Homework updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Homework updated successfully";
+                        item?: components["schemas"]["HomeworkItem"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid dueDate / pointsValue. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such item in the caller's family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    completeHomework: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Completion recorded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Homework completed successfully";
+                        pointsEarned?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Item not found (or not the caller's). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Already completed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    undoHomeworkCompletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Completion undone. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Homework completion undone";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Nothing to undo. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
