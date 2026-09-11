@@ -101,6 +101,37 @@ vi.mock('@/hooks/useTrivia', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useHomework', () => ({
+  useHomework: () => ({
+    items: [
+      {
+        id: 'hw-1', userId: 'kid-1', title: 'Spelling list', subject: 'English',
+        dueDate: '2020-01-01', pointsValue: 10, completedAt: null, isOverdue: true, completed: false,
+      },
+      {
+        id: 'hw-2', userId: 'kid-1', title: 'Math worksheet', subject: 'Math',
+        dueDate: new Date().toISOString().slice(0, 10), pointsValue: 10,
+        completedAt: null, isOverdue: false, completed: false,
+      },
+      {
+        id: 'hw-3', userId: 'kid-1', title: 'Science reading', subject: null,
+        dueDate: new Date().toISOString().slice(0, 10), pointsValue: 10,
+        completedAt: new Date().toISOString(), pointsEarned: 10, isOverdue: false, completed: true,
+      },
+    ],
+    familyItems: [],
+    loading: false,
+    error: null,
+    complete: vi.fn(),
+    uncomplete: vi.fn(),
+    createItem: vi.fn(),
+    updateItem: vi.fn(),
+    deleteItem: vi.fn(),
+    loadFamilyItems: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useLearning', () => ({
   useLearning: () => ({
     lessons: [
