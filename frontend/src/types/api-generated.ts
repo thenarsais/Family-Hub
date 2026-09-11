@@ -1050,6 +1050,141 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rewards/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check the weekly goal + monthly tiers and record any newly-earned milestone
+         * @description A GET with a side effect, like /api/quests/today: computes the current weekly and monthly points totals, records any milestone crossed for the first time (idempotent per period), and returns the current progress.
+         */
+        get: operations["getRewardsToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards/earned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List earned rewards (pending and fulfilled)
+         * @description `scope=mine` (default) — the caller's own. `scope=family` — every family member's, for the parent fulfillment panel.
+         */
+        get: operations["listEarnedRewards"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards/earned/{id}/fulfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fulfill a pending reward
+         * @description Picks a library item (and an optional note) for an earned-but-unfulfilled reward. Never touches the points ledger. Family-scoped: the caller must share a family with the reward's owner.
+         */
+        post: operations["fulfillReward"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the family's reward library (active and retired) */
+        get: operations["listRewardLibrary"];
+        put?: never;
+        /** Add a reward library item */
+        post: operations["addRewardLibraryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards/library/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit or retire a reward library item
+         * @description Retiring is `active:false` — items are never hard-deleted (earned rewards may reference them).
+         */
+        patch: operations["updateRewardLibraryItem"];
+        trace?: never;
+    };
+    "/api/rewards/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get reward settings (weekly goal)
+         * @description `scope=mine` (default) — the caller's weekly goal (defaults when unset). `scope=family` — every active family member's, for the parent panel.
+         */
+        get: operations["listRewardSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rewards/settings/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set a family member's weekly points goal */
+        patch: operations["setRewardSettings"];
+        trace?: never;
+    };
     "/api/habits": {
         parameters: {
             query?: never;
@@ -3048,6 +3183,42 @@ export interface components {
             key: "chore" | "habit" | "homework" | "reading" | "kungfu" | "trivia" | "mood" | "gujarati";
             label: string;
             done: boolean;
+        };
+        /** @description Per-user weekly points goal. Missing rows default to 50. */
+        RewardSettings: {
+            weeklyGoal: number;
+        };
+        /** @description A `RewardSettings` tagged with the family member it belongs to. */
+        RewardSettingsWithMember: components["schemas"]["RewardSettings"] & {
+            /** Format: uuid */
+            userId: string;
+            name?: string | null;
+        };
+        /** @description One item in a family's reward catalog. `cashAmount` is null for a non-cash reward. Retired items (`active: false`) are never deleted — earned rewards may still reference them. */
+        RewardLibraryItem: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description?: string | null;
+            cashAmount?: number | null;
+            active: boolean;
+        };
+        /** @description One milestone crossed (a weekly-goal hit, or a monthly tier reached). `libraryItem` and `fulfilledAt` are null until a parent fulfills it. */
+        RewardEarned: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            assigneeName?: string | null;
+            /** @enum {string} */
+            milestoneType: "weekly" | "bronze" | "silver" | "gold";
+            periodKey: string;
+            /** Format: date-time */
+            earnedAt: string;
+            /** Format: date-time */
+            fulfilledAt: string | null;
+            libraryItem: components["schemas"]["RewardLibraryItem"] | null;
+            fulfillmentNote: string | null;
         };
         /** @description From HabitService's raw-Postgres `habits` table (migration 013) — NOT the Supabase-era `habits` shape in types/database.ts. user_id is the assignee; weekly_target is the "N of 7 days this week" goal. */
         Habit: {
@@ -7185,6 +7356,471 @@ export interface operations {
                         /** Format: date-time */
                         timestamp?: string;
                     };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getRewardsToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current progress. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        weeklyGoal?: number;
+                        weekPoints?: number;
+                        monthPoints?: number;
+                        tiers?: {
+                            /** @enum {string} */
+                            name?: "bronze" | "silver" | "gold";
+                            points?: number;
+                            reached?: boolean;
+                        }[];
+                        justEarned?: ("weekly" | "bronze" | "silver" | "gold")[];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listEarnedRewards: {
+        parameters: {
+            query?: {
+                scope?: "mine" | "family";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Earned rewards. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        earned?: components["schemas"]["RewardEarned"][];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    fulfillReward: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    libraryItemId: string;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Fulfilled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        reward?: components["schemas"]["RewardEarned"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing libraryItemId, caller not in the family, or the item is from a different family. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Reward not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Already fulfilled. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listRewardLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Library items. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        library?: components["schemas"]["RewardLibraryItem"][];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    addRewardLibraryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    description?: string;
+                    cashAmount?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Added. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        item?: components["schemas"]["RewardLibraryItem"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing title, invalid cashAmount, or the caller has no family. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateRewardLibraryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    description?: string | null;
+                    cashAmount?: number | null;
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        item?: components["schemas"]["RewardLibraryItem"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid cashAmount. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such item in the caller's family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listRewardSettings: {
+        parameters: {
+            query?: {
+                scope?: "mine" | "family";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        settings?: components["schemas"]["RewardSettings"] | components["schemas"]["RewardSettingsWithMember"][];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    setRewardSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    weeklyGoal: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        settings?: components["schemas"]["RewardSettings"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid weeklyGoal, or userId is not a family member. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
                 };
             };
             /** @description Missing x-user-id. */

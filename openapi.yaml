@@ -126,6 +126,8 @@ tags:
     description: T-22 — a free-form class/practice training log (multiple entries per day allowed) plus a parent-set belt profile (x-user-id auth; migration 021). No fixed schedule, no auto belt progression.
   - name: Quests
     description: T-23 — 3 random daily quests drawn from the other 8 sections, each auto-detected against that section's own table (no separate completion path), a flat +50 bonus when all 3 are done (x-user-id auth; migration 022). Read-only — a single GET.
+  - name: Rewards
+    description: T-24 — a family-editable reward library plus two milestones (a per-kid weekly points goal, and the existing monthly bronze/silver/gold tiers) that create a pending reward a parent later fulfills (x-user-id auth; migration 023). Fulfilling never touches the points ledger.
   - name: Announcements
     description: Family announcements/messaging (x-user-id auth).
   - name: Reminders
@@ -2469,6 +2471,319 @@ paths:
                   allDone: { type: boolean }
                   bonusAwarded: { type: boolean }
                   timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # REWARDS (x-user-id) — T-24, migration 023
+  # ================================================================
+  /api/rewards/today:
+    get:
+      tags: [Rewards]
+      summary: Check the weekly goal + monthly tiers and record any newly-earned milestone
+      description: >-
+        A GET with a side effect, like /api/quests/today: computes the current
+        weekly and monthly points totals, records any milestone crossed for the
+        first time (idempotent per period), and returns the current progress.
+      operationId: getRewardsToday
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Current progress.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  weeklyGoal: { type: integer }
+                  weekPoints: { type: integer }
+                  monthPoints: { type: integer }
+                  tiers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string, enum: [bronze, silver, gold] }
+                        points: { type: integer }
+                        reached: { type: boolean }
+                  justEarned:
+                    type: array
+                    items: { type: string, enum: [weekly, bronze, silver, gold] }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/rewards/earned:
+    get:
+      tags: [Rewards]
+      summary: List earned rewards (pending and fulfilled)
+      description: >-
+        `scope=mine` (default) — the caller's own. `scope=family` — every
+        family member's, for the parent fulfillment panel.
+      operationId: listEarnedRewards
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: scope
+          in: query
+          schema: { type: string, enum: [mine, family], default: mine }
+      responses:
+        '200':
+          description: Earned rewards.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  earned:
+                    type: array
+                    items: { $ref: '#/components/schemas/RewardEarned' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/rewards/earned/{id}/fulfill:
+    post:
+      tags: [Rewards]
+      summary: Fulfill a pending reward
+      description: >-
+        Picks a library item (and an optional note) for an earned-but-unfulfilled
+        reward. Never touches the points ledger. Family-scoped: the caller must
+        share a family with the reward's owner.
+      operationId: fulfillReward
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [libraryItemId]
+              properties:
+                libraryItemId: { type: string, format: uuid }
+                note: { type: string }
+      responses:
+        '200':
+          description: Fulfilled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  reward: { $ref: '#/components/schemas/RewardEarned' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing libraryItemId, caller not in the family, or the item is from a different family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Reward not found.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '409':
+          description: Already fulfilled.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/rewards/library:
+    get:
+      tags: [Rewards]
+      summary: List the family's reward library (active and retired)
+      operationId: listRewardLibrary
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Library items.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  library:
+                    type: array
+                    items: { $ref: '#/components/schemas/RewardLibraryItem' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Rewards]
+      summary: Add a reward library item
+      operationId: addRewardLibraryItem
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                cashAmount: { type: number, minimum: 0.01 }
+      responses:
+        '201':
+          description: Added.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  item: { $ref: '#/components/schemas/RewardLibraryItem' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing title, invalid cashAmount, or the caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/rewards/library/{id}:
+    patch:
+      tags: [Rewards]
+      summary: Edit or retire a reward library item
+      description: Retiring is `active:false` — items are never hard-deleted (earned rewards may reference them).
+      operationId: updateRewardLibraryItem
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: [string, 'null'] }
+                cashAmount: { type: [number, 'null'], minimum: 0.01 }
+                active: { type: boolean }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  item: { $ref: '#/components/schemas/RewardLibraryItem' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid cashAmount.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such item in the caller's family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/rewards/settings:
+    get:
+      tags: [Rewards]
+      summary: Get reward settings (weekly goal)
+      description: >-
+        `scope=mine` (default) — the caller's weekly goal (defaults when unset).
+        `scope=family` — every active family member's, for the parent panel.
+      operationId: listRewardSettings
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: scope
+          in: query
+          schema: { type: string, enum: [mine, family], default: mine }
+      responses:
+        '200':
+          description: Settings.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  settings:
+                    oneOf:
+                      - { $ref: '#/components/schemas/RewardSettings' }
+                      - type: array
+                        items: { $ref: '#/components/schemas/RewardSettingsWithMember' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/rewards/settings/{userId}:
+    patch:
+      tags: [Rewards]
+      summary: Set a family member's weekly points goal
+      operationId: setRewardSettings
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [weeklyGoal]
+              properties:
+                weeklyGoal: { type: number, minimum: 1 }
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  settings: { $ref: '#/components/schemas/RewardSettings' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid weeklyGoal, or userId is not a family member.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '401':
           description: Missing x-user-id.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
@@ -6818,6 +7133,58 @@ components:
           enum: [chore, habit, homework, reading, kungfu, trivia, mood, gujarati]
         label: { type: string }
         done: { type: boolean }
+
+    # ---------------- Rewards (hand-rolled schema, migration 023) ----------------
+    RewardSettings:
+      type: object
+      description: Per-user weekly points goal. Missing rows default to 50.
+      required: [weeklyGoal]
+      properties:
+        weeklyGoal: { type: integer }
+
+    RewardSettingsWithMember:
+      description: A `RewardSettings` tagged with the family member it belongs to.
+      allOf:
+        - $ref: '#/components/schemas/RewardSettings'
+        - type: object
+          required: [userId]
+          properties:
+            userId: { type: string, format: uuid }
+            name: { type: [string, 'null'] }
+
+    RewardLibraryItem:
+      type: object
+      description: >-
+        One item in a family's reward catalog. `cashAmount` is null for a
+        non-cash reward. Retired items (`active: false`) are never deleted —
+        earned rewards may still reference them.
+      required: [id, title, active]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: [string, 'null'] }
+        cashAmount: { type: [number, 'null'] }
+        active: { type: boolean }
+
+    RewardEarned:
+      type: object
+      description: >-
+        One milestone crossed (a weekly-goal hit, or a monthly tier reached).
+        `libraryItem` and `fulfilledAt` are null until a parent fulfills it.
+      required: [id, userId, milestoneType, periodKey, earnedAt, fulfilledAt, libraryItem, fulfillmentNote]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        assigneeName: { type: [string, 'null'] }
+        milestoneType: { type: string, enum: [weekly, bronze, silver, gold] }
+        periodKey: { type: string }
+        earnedAt: { type: string, format: date-time }
+        fulfilledAt: { type: [string, 'null'], format: date-time }
+        libraryItem:
+          oneOf:
+            - { $ref: '#/components/schemas/RewardLibraryItem' }
+            - { type: 'null' }
+        fulfillmentNote: { type: [string, 'null'] }
 
     # ---------------- Habits + mood (hand-rolled schema, migration 013) ----------------
     Habit:
