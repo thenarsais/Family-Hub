@@ -124,6 +124,8 @@ tags:
     description: T-21 — a daily reading-minutes log against parent-set daily/weekly goals, flat points on the daily goal, a goal-met streak (x-user-id auth; migration 020).
   - name: KungFu
     description: T-22 — a free-form class/practice training log (multiple entries per day allowed) plus a parent-set belt profile (x-user-id auth; migration 021). No fixed schedule, no auto belt progression.
+  - name: Quests
+    description: T-23 — 3 random daily quests drawn from the other 8 sections, each auto-detected against that section's own table (no separate completion path), a flat +50 bonus when all 3 are done (x-user-id auth; migration 022). Read-only — a single GET.
   - name: Announcements
     description: Family announcements/messaging (x-user-id auth).
   - name: Reminders
@@ -2430,6 +2432,43 @@ paths:
         '400':
           description: Invalid values, or userId is not a family member.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # QUESTS (x-user-id) — T-23, migration 022
+  # ================================================================
+  /api/quests/today:
+    get:
+      tags: [Quests]
+      summary: Get today's 3 assigned quests, their done state, and the bonus
+      description: >-
+        Assigns 3 random quest keys on the first call of the family-local day
+        (stored, never re-rolled). Each quest's `done` is checked live against
+        its own section's table — there is no separate "complete quest"
+        action. Awards a flat 50-point bonus the first time all 3 are done in
+        a day; later calls do not re-award it.
+      operationId: getQuestsToday
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Today's quests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  quests:
+                    type: array
+                    items: { $ref: '#/components/schemas/Quest' }
+                  allDone: { type: boolean }
+                  bonusAwarded: { type: boolean }
+                  timestamp: { type: string, format: date-time }
         '401':
           description: Missing x-user-id.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
@@ -6764,6 +6803,21 @@ components:
         sessionType: { type: string, enum: [class, practice] }
         pointsEarned: { type: integer }
         loggedAt: { type: string, format: date-time }
+
+    # ---------------- Quests (hand-rolled schema, migration 022) ----------------
+    Quest:
+      type: object
+      description: >-
+        One of today's 3 assigned quests. `key` names which section it maps
+        to; `done` is computed live against that section's own table, not
+        stored.
+      required: [key, label, done]
+      properties:
+        key:
+          type: string
+          enum: [chore, habit, homework, reading, kungfu, trivia, mood, gujarati]
+        label: { type: string }
+        done: { type: boolean }
 
     # ---------------- Habits + mood (hand-rolled schema, migration 013) ----------------
     Habit:
