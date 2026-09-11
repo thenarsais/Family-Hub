@@ -122,6 +122,8 @@ tags:
     description: T-20 — dated one-shot homework items with a per-item points value, board section + parent panel (x-user-id auth; migration 019). No recurrence, no streak.
   - name: Reading
     description: T-21 — a daily reading-minutes log against parent-set daily/weekly goals, flat points on the daily goal, a goal-met streak (x-user-id auth; migration 020).
+  - name: KungFu
+    description: T-22 — a free-form class/practice training log (multiple entries per day allowed) plus a parent-set belt profile (x-user-id auth; migration 021). No fixed schedule, no auto belt progression.
   - name: Announcements
     description: Family announcements/messaging (x-user-id auth).
   - name: Reminders
@@ -2225,6 +2227,205 @@ paths:
                 properties:
                   status: { type: string, const: success }
                   goals: { $ref: '#/components/schemas/ReadingGoals' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid values, or userId is not a family member.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # KUNG FU (x-user-id) — T-22, migration 021
+  # ================================================================
+  /api/kungfu/today:
+    get:
+      tags: [KungFu]
+      summary: Get the profile, today's individual log entries, and this week's counts
+      operationId: getKungFuToday
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Today's kung fu state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  profile: { $ref: '#/components/schemas/KungFuProfile' }
+                  todayLogs:
+                    type: array
+                    items: { $ref: '#/components/schemas/KungFuLog' }
+                  weekCounts:
+                    type: object
+                    required: [class, practice]
+                    properties:
+                      class: { type: integer }
+                      practice: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/kungfu/log:
+    post:
+      tags: [KungFu]
+      summary: Log a class or practice session
+      description: >-
+        Multiple logs per day are allowed — this is a free-form training log,
+        not a daily check-in. Awards the profile's flat points for that
+        session type.
+      operationId: logKungFuSession
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type: { type: string, enum: [class, practice] }
+      responses:
+        '201':
+          description: Logged.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  profile: { $ref: '#/components/schemas/KungFuProfile' }
+                  todayLogs:
+                    type: array
+                    items: { $ref: '#/components/schemas/KungFuLog' }
+                  weekCounts:
+                    type: object
+                    properties:
+                      class: { type: integer }
+                      practice: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: type must be 'class' or 'practice'.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/kungfu/log/{id}:
+    delete:
+      tags: [KungFu]
+      summary: Undo one of today's logs
+      description: >-
+        Removes the log and reverses its points. Restricted to today's
+        entries — a log from a previous day 404s.
+      operationId: undoKungFuLog
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Undone.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Log undone" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No matching log for today.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/kungfu/profile:
+    get:
+      tags: [KungFu]
+      summary: Get kung fu profile(s)
+      description: >-
+        `scope=mine` (default) — the caller's profile (defaults when unset).
+        `scope=family` — every active family member's profile, for the parent
+        Manage panel.
+      operationId: listKungFuProfiles
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: scope
+          in: query
+          schema: { type: string, enum: [mine, family], default: mine }
+      responses:
+        '200':
+          description: Profile(s).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  profile: { $ref: '#/components/schemas/KungFuProfile' }
+                  profiles:
+                    type: array
+                    items: { $ref: '#/components/schemas/KungFuProfileWithMember' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/kungfu/profile/{userId}:
+    patch:
+      tags: [KungFu]
+      summary: Set a family member's kung fu profile
+      description: >-
+        Upserts `kungfu_profiles` (belt, belt-since, per-type points).
+        Family-scoped: the caller must share a family with `userId`.
+      operationId: setKungFuProfile
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                belt: { type: [string, 'null'] }
+                beltSince: { type: [string, 'null'], format: date }
+                pointsPerClass: { type: number, minimum: 1 }
+                pointsPerPractice: { type: number, minimum: 1 }
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  profile: { $ref: '#/components/schemas/KungFuProfile' }
                   timestamp: { type: string, format: date-time }
         '400':
           description: Invalid values, or userId is not a family member.
@@ -6527,6 +6728,42 @@ components:
         minutes: { type: integer }
         goalMet: { type: boolean }
         pointsEarned: { type: integer }
+
+    # ---------------- Kung Fu (hand-rolled schema, migration 021) ----------------
+    KungFuProfile:
+      type: object
+      description: >-
+        Per-user kung fu profile (`kungfu_profiles`). `belt` is set manually by
+        a parent — there is no auto-calculated progression. Missing rows
+        default to no belt and 15/5 points.
+      required: [belt, beltSince, pointsPerClass, pointsPerPractice]
+      properties:
+        belt: { type: [string, 'null'] }
+        beltSince: { type: [string, 'null'], format: date }
+        pointsPerClass: { type: integer }
+        pointsPerPractice: { type: integer }
+
+    KungFuProfileWithMember:
+      description: A `KungFuProfile` tagged with the family member it belongs to.
+      allOf:
+        - $ref: '#/components/schemas/KungFuProfile'
+        - type: object
+          required: [userId]
+          properties:
+            userId: { type: string, format: uuid }
+            name: { type: [string, 'null'] }
+
+    KungFuLog:
+      type: object
+      description: >-
+        One training log entry. `pointsEarned` is snapshotted from the
+        profile's per-type point value at the moment it was logged.
+      required: [id, sessionType, pointsEarned, loggedAt]
+      properties:
+        id: { type: string, format: uuid }
+        sessionType: { type: string, enum: [class, practice] }
+        pointsEarned: { type: integer }
+        loggedAt: { type: string, format: date-time }
 
     # ---------------- Habits + mood (hand-rolled schema, migration 013) ----------------
     Habit:

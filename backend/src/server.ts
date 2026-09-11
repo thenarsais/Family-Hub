@@ -18,6 +18,7 @@ import learningRoutes from './routes/learning';
 import triviaRoutes from './routes/trivia';
 import homeworkRoutes from './routes/homework';
 import readingRoutes from './routes/reading';
+import kungfuRoutes from './routes/kungfu';
 import announcementsRoutes from './routes/announcements';
 import remindersRoutes from './routes/reminders';
 import energyRoutes from './routes/energy';
@@ -173,6 +174,9 @@ app.use('/api/homework', homeworkRoutes);
 
 // Reading challenges (T-21): daily minutes log + weekly total + goal-met streak
 app.use('/api/reading', readingRoutes);
+
+// Kung Fu tracker (T-22): free-form class/practice log (multiple/day) + belt profile
+app.use('/api/kungfu', kungfuRoutes);
 
 // ================================================
 // PHASE 2 FEATURES: Dashboard & Home Automation
