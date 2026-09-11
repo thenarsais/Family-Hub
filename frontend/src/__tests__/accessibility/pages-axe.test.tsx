@@ -132,6 +132,23 @@ vi.mock('@/hooks/useHomework', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useReading', () => ({
+  useReading: () => ({
+    goals: { dailyMinutes: 20, weeklyMinutes: 100, pointsValue: 10 },
+    log: { minutes: 25, goalMet: true, pointsEarned: 10 },
+    weekMinutes: 55,
+    streak: 2,
+    loading: false,
+    error: null,
+    submit: vi.fn(),
+    undo: vi.fn(),
+    familyGoals: [],
+    loadFamilyGoals: vi.fn(),
+    updateGoals: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useLearning', () => ({
   useLearning: () => ({
     lessons: [
