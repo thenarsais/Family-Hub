@@ -40,6 +40,8 @@ interface UseLearningReturn {
   loading: boolean;
   error: string | null;
   completeLesson: (lessonId: string) => Promise<void>;
+  /** T-25 — records a trace-mode session; +15 pts only the first time, ever. */
+  traceLesson: (lessonId: string) => Promise<{ alreadyTraced: boolean }>;
   recordQuizAnswer: (payload: QuizAnswerPayload) => Promise<boolean>;
   refresh: () => Promise<void>;
 }
@@ -117,6 +119,29 @@ export function useLearning(): UseLearningReturn {
     [userId, lessons, headers, refresh],
   );
 
+  const traceLesson = useCallback(
+    async (lessonId: string): Promise<{ alreadyTraced: boolean }> => {
+      if (!userId) throw new Error('Not signed in');
+      const snapshot = lessons;
+      setLessons((prev) =>
+        prev.map((l) => (l.id === lessonId ? { ...l, traced: true } : l)),
+      );
+      try {
+        const res = await apiClient.post<{ alreadyTraced?: boolean }>(
+          `/api/learning/lessons/${lessonId}/trace-complete`,
+          {},
+          headers(),
+        );
+        await refresh();
+        return { alreadyTraced: !!res.data?.alreadyTraced };
+      } catch (err) {
+        setLessons(snapshot);
+        throw err;
+      }
+    },
+    [userId, lessons, headers, refresh],
+  );
+
   const recordQuizAnswer = useCallback(
     async (payload: QuizAnswerPayload): Promise<boolean> => {
       if (!userId) throw new Error('Not signed in');
@@ -137,6 +162,7 @@ export function useLearning(): UseLearningReturn {
     loading,
     error,
     completeLesson,
+    traceLesson,
     recordQuizAnswer,
     refresh,
   };

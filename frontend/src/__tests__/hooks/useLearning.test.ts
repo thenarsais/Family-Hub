@@ -21,6 +21,7 @@ const L = (over = {}) => ({
   pointsValue: 10,
   completed: false,
   pointsEarned: 0,
+  traced: false,
   ...over,
 });
 
@@ -94,6 +95,51 @@ describe('useLearning', () => {
       await expect(result.current.completeLesson('l1')).rejects.toThrow('offline');
     });
     expect(result.current.lessons.find((l) => l.id === 'l1')?.completed).toBe(false);
+  });
+
+  it('traceLesson optimistically flips traced, posts, and refreshes', async () => {
+    mockLoad();
+    post.mockResolvedValueOnce({ data: { status: 'success', alreadyTraced: false } });
+    const { result } = renderHook(() => useLearning());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: { alreadyTraced: boolean } | undefined;
+    await act(async () => {
+      outcome = await result.current.traceLesson('l1');
+    });
+    expect(outcome).toEqual({ alreadyTraced: false });
+    expect(post).toHaveBeenCalledWith(
+      '/api/learning/lessons/l1/trace-complete',
+      {},
+      expect.objectContaining({ headers: { 'x-user-id': 'user-1' } }),
+    );
+    // refresh ran again (2 pairs of GETs)
+    expect(get.mock.calls.filter((c) => c[0] === '/api/learning/lessons')).toHaveLength(2);
+  });
+
+  it('traceLesson reports alreadyTraced on a repeat trace', async () => {
+    mockLoad();
+    post.mockResolvedValueOnce({ data: { status: 'success', alreadyTraced: true } });
+    const { result } = renderHook(() => useLearning());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: { alreadyTraced: boolean } | undefined;
+    await act(async () => {
+      outcome = await result.current.traceLesson('l1');
+    });
+    expect(outcome).toEqual({ alreadyTraced: true });
+  });
+
+  it('rolls back the optimistic traced flip on failure', async () => {
+    mockLoad();
+    post.mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useLearning());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await expect(result.current.traceLesson('l1')).rejects.toThrow('offline');
+    });
+    expect(result.current.lessons.find((l) => l.id === 'l1')?.traced).toBeFalsy();
   });
 
   it('recordQuizAnswer posts and returns whether it was correct', async () => {
