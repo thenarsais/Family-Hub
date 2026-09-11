@@ -933,6 +933,103 @@ export interface paths {
         patch: operations["setReadingGoals"];
         trace?: never;
     };
+    "/api/kungfu/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the profile, today's individual log entries, and this week's counts */
+        get: operations["getKungFuToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kungfu/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log a class or practice session
+         * @description Multiple logs per day are allowed — this is a free-form training log, not a daily check-in. Awards the profile's flat points for that session type.
+         */
+        post: operations["logKungFuSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kungfu/log/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Undo one of today's logs
+         * @description Removes the log and reverses its points. Restricted to today's entries — a log from a previous day 404s.
+         */
+        delete: operations["undoKungFuLog"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kungfu/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get kung fu profile(s)
+         * @description `scope=mine` (default) — the caller's profile (defaults when unset). `scope=family` — every active family member's profile, for the parent Manage panel.
+         */
+        get: operations["listKungFuProfiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/kungfu/profile/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set a family member's kung fu profile
+         * @description Upserts `kungfu_profiles` (belt, belt-since, per-type points). Family-scoped: the caller must share a family with `userId`.
+         */
+        patch: operations["setKungFuProfile"];
+        trace?: never;
+    };
     "/api/habits": {
         parameters: {
             query?: never;
@@ -2900,6 +2997,30 @@ export interface components {
             minutes: number;
             goalMet: boolean;
             pointsEarned: number;
+        };
+        /** @description Per-user kung fu profile (`kungfu_profiles`). `belt` is set manually by a parent — there is no auto-calculated progression. Missing rows default to no belt and 15/5 points. */
+        KungFuProfile: {
+            belt: string | null;
+            /** Format: date */
+            beltSince: string | null;
+            pointsPerClass: number;
+            pointsPerPractice: number;
+        };
+        /** @description A `KungFuProfile` tagged with the family member it belongs to. */
+        KungFuProfileWithMember: components["schemas"]["KungFuProfile"] & {
+            /** Format: uuid */
+            userId: string;
+            name?: string | null;
+        };
+        /** @description One training log entry. `pointsEarned` is snapshotted from the profile's per-type point value at the moment it was logged. */
+        KungFuLog: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            sessionType: "class" | "practice";
+            pointsEarned: number;
+            /** Format: date-time */
+            loggedAt: string;
         };
         /** @description From HabitService's raw-Postgres `habits` table (migration 013) — NOT the Supabase-era `habits` shape in types/database.ts. user_id is the assignee; weekly_target is the "N of 7 days this week" goal. */
         Habit: {
@@ -6697,6 +6818,288 @@ export interface operations {
                         /** @constant */
                         status?: "success";
                         goals?: components["schemas"]["ReadingGoals"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid values, or userId is not a family member. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getKungFuToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's kung fu state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        profile?: components["schemas"]["KungFuProfile"];
+                        todayLogs?: components["schemas"]["KungFuLog"][];
+                        weekCounts?: {
+                            class: number;
+                            practice: number;
+                        };
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    logKungFuSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    type: "class" | "practice";
+                };
+            };
+        };
+        responses: {
+            /** @description Logged. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        profile?: components["schemas"]["KungFuProfile"];
+                        todayLogs?: components["schemas"]["KungFuLog"][];
+                        weekCounts?: {
+                            class?: number;
+                            practice?: number;
+                        };
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description type must be 'class' or 'practice'. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    undoKungFuLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Undone. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Log undone";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No matching log for today. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listKungFuProfiles: {
+        parameters: {
+            query?: {
+                scope?: "mine" | "family";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profile(s). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        profile?: components["schemas"]["KungFuProfile"];
+                        profiles?: components["schemas"]["KungFuProfileWithMember"][];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    setKungFuProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    belt?: string | null;
+                    /** Format: date */
+                    beltSince?: string | null;
+                    pointsPerClass?: number;
+                    pointsPerPractice?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        profile?: components["schemas"]["KungFuProfile"];
                         /** Format: date-time */
                         timestamp?: string;
                     };
