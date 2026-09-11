@@ -181,6 +181,33 @@ vi.mock('@/hooks/useQuests', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useRewards', () => ({
+  useRewards: () => ({
+    weeklyGoal: 50,
+    weekPoints: 20,
+    monthPoints: 220,
+    tiers: [
+      { name: 'bronze', points: 200, reached: true },
+      { name: 'silver', points: 300, reached: false },
+      { name: 'gold', points: 400, reached: false },
+    ],
+    justEarned: [],
+    earned: [],
+    library: [],
+    loading: false,
+    error: null,
+    familySettings: [],
+    loadFamilySettings: vi.fn(),
+    updateSettings: vi.fn(),
+    familyEarned: [],
+    loadFamilyEarned: vi.fn(),
+    fulfillReward: vi.fn(),
+    addLibraryItem: vi.fn(),
+    updateLibraryItem: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useLearning', () => ({
   useLearning: () => ({
     lessons: [

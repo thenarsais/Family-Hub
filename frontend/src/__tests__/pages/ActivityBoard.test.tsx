@@ -62,6 +62,27 @@ vi.mock('@hooks/useKungFu', () => ({
 vi.mock('@hooks/useQuests', () => ({
   useQuests: () => ({ loading: true, quests: [], allDone: false, bonusAwarded: false, error: null }),
 }));
+vi.mock('@hooks/useRewards', () => ({
+  useRewards: () => ({
+    loading: true,
+    weeklyGoal: 50,
+    weekPoints: 0,
+    monthPoints: 0,
+    tiers: [],
+    justEarned: [],
+    earned: [],
+    library: [],
+    error: null,
+    familySettings: [],
+    loadFamilySettings: vi.fn(),
+    updateSettings: vi.fn(),
+    familyEarned: [],
+    loadFamilyEarned: vi.fn(),
+    fulfillReward: vi.fn(),
+    addLibraryItem: vi.fn(),
+    updateLibraryItem: vi.fn(),
+  }),
+}));
 
 const choreFns = {
   complete: vi.fn().mockResolvedValue(undefined),
@@ -185,7 +206,7 @@ describe('ActivityBoard', () => {
     expect(habitFns.setMood).toHaveBeenCalledWith('good');
   });
 
-  it('shows Manage on chores, habits, homework, reading and kung fu for a parent, not for a child', async () => {
+  it('shows Manage on rewards, chores, habits, homework, reading and kung fu for a parent, not for a child', async () => {
     asRole('child');
     withHooks();
     const { rerender } = render(<ActivityBoard />);
@@ -195,9 +216,9 @@ describe('ActivityBoard', () => {
     withHooks();
     rerender(<ActivityBoard />);
     const manageButtons = screen.getAllByRole('button', { name: /manage/i });
-    expect(manageButtons).toHaveLength(5);
+    expect(manageButtons).toHaveLength(6);
 
-    await userEvent.click(manageButtons[1]); // habits
+    await userEvent.click(manageButtons[2]); // habits (order: rewards, chores, habits, ...)
     await waitFor(() => expect(habitFns.loadFamilyHabits).toHaveBeenCalled());
     expect(screen.getByRole('button', { name: /add habit/i })).toBeInTheDocument();
   });

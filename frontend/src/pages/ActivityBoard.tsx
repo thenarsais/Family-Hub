@@ -8,8 +8,11 @@ import { useHomework } from '@hooks/useHomework';
 import { useReading } from '@hooks/useReading';
 import { useKungFu } from '@hooks/useKungFu';
 import { useQuests } from '@hooks/useQuests';
+import { useRewards } from '@hooks/useRewards';
 import { useBoardSections } from '@hooks/useBoardSections';
 import QuestsSection from '@components/activity/QuestsSection';
+import RewardsSection from '@components/activity/RewardsSection';
+import RewardsManagePanel from '@components/activity/RewardsManagePanel';
 import ChoresSection from '@components/activity/ChoresSection';
 import ChoreManagePanel from '@components/activity/ChoreManagePanel';
 import HabitsSection from '@components/activity/HabitsSection';
@@ -28,6 +31,7 @@ import TriviaSection from '@components/activity/TriviaSection';
  *  profile) is generic — Games / Reading slot in the same way. */
 const SECTIONS = [
   { id: 'quests', title: "Today's Quests", emoji: '🏆', manageable: false },
+  { id: 'rewards', title: 'Rewards', emoji: '🎁', manageable: true },
   { id: 'chores', title: 'Chores today', emoji: '🧹', manageable: true },
   { id: 'habits', title: 'Habits this week', emoji: '🎯', manageable: true },
   { id: 'homework', title: 'Homework', emoji: '📚', manageable: true },
@@ -56,6 +60,7 @@ export default function ActivityBoard() {
   const reading = useReading();
   const kungfu = useKungFu();
   const quests = useQuests();
+  const rewards = useRewards();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -146,6 +151,37 @@ export default function ActivityBoard() {
                     loading={quests.loading}
                     error={quests.error}
                   />
+                )}
+
+                {id === 'rewards' && (
+                  <>
+                    <RewardsSection
+                      weeklyGoal={rewards.weeklyGoal}
+                      weekPoints={rewards.weekPoints}
+                      monthPoints={rewards.monthPoints}
+                      tiers={rewards.tiers}
+                      justEarned={rewards.justEarned}
+                      earned={rewards.earned}
+                      loading={rewards.loading}
+                      error={rewards.error}
+                    />
+                    {managing && canManage && (
+                      <RewardsManagePanel
+                        familySettings={rewards.familySettings}
+                        familyEarned={rewards.familyEarned}
+                        library={rewards.library}
+                        members={members}
+                        onLoad={() => {
+                          rewards.loadFamilySettings();
+                          rewards.loadFamilyEarned();
+                        }}
+                        updateSettings={rewards.updateSettings}
+                        addLibraryItem={rewards.addLibraryItem}
+                        updateLibraryItem={rewards.updateLibraryItem}
+                        fulfillReward={rewards.fulfillReward}
+                      />
+                    )}
+                  </>
                 )}
 
                 {id === 'chores' && (

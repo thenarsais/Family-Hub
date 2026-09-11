@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { Check, Undo2 } from 'lucide-react';
-import {
-  CHORE_TIERS,
-  type ChorePointsSummary,
-  type ChoreWithStatus,
-  type TimeSlot,
-} from '@hooks/useChores';
+import { type ChorePointsSummary, type ChoreWithStatus, type TimeSlot } from '@hooks/useChores';
 
 const SLOTS: { key: TimeSlot; label: string; emoji: string }[] = [
   { key: 'morning', label: 'Morning', emoji: '🌅' },
@@ -14,25 +9,11 @@ const SLOTS: { key: TimeSlot; label: string; emoji: string }[] = [
 ];
 
 const DAILY_TARGET = 100;
-const MONTHLY_TARGET = CHORE_TIERS[CHORE_TIERS.length - 1].points; // 400
 
-function currentTier(monthly: number): string {
-  let name = '—';
-  for (const t of CHORE_TIERS) if (monthly >= t.points) name = t.name;
-  return name;
-}
-
-function ProgressBar({
-  value,
-  max,
-  label,
-  ticks = [],
-}: {
-  value: number;
-  max: number;
-  label: string;
-  ticks?: number[];
-}) {
+// The monthly bronze/silver/gold tier bar moved to RewardsSection (T-24) — it's a
+// family-wide points total, not chore-specific, and that's where hitting a tier
+// now means something (a reward).
+function ProgressBar({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = Math.min(100, Math.round((value / max) * 100));
   return (
     <div>
@@ -51,13 +32,6 @@ function ProgressBar({
         aria-label={label}
       >
         <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-        {ticks.map((t) => (
-          <span
-            key={t}
-            className="absolute top-0 h-full w-px bg-ink-3/50"
-            style={{ left: `${(t / max) * 100}%` }}
-          />
-        ))}
       </div>
     </div>
   );
@@ -85,19 +59,10 @@ export default function ChoresSection({ chores, pointsSummary, onComplete, onUnd
   };
 
   const daily = pointsSummary.dailyPoints ?? 0;
-  const monthly = pointsSummary.monthlyPoints ?? 0;
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <ProgressBar value={daily} max={DAILY_TARGET} label="Today's points" />
-        <ProgressBar
-          value={monthly}
-          max={MONTHLY_TARGET}
-          label={`This month · ${currentTier(monthly)}`}
-          ticks={CHORE_TIERS.map((t) => t.points)}
-        />
-      </div>
+      <ProgressBar value={daily} max={DAILY_TARGET} label="Today's points" />
 
       {chores.length === 0 ? (
         <p className="text-sm text-ink-3">No chores for today. Enjoy the break! 🎉</p>
