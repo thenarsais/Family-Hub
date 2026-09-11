@@ -116,6 +116,47 @@ router.post('/lessons/:lessonId/complete', async (req: Request, res: Response) =
 });
 
 /**
+ * POST /api/learning/lessons/:lessonId/trace-complete
+ * Record a trace-mode session (T-25 / FR-143). Points are awarded only the
+ * first time a lesson is successfully traced -- see LearningService.completeTrace.
+ */
+router.post('/lessons/:lessonId/trace-complete', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    const lessonId = Array.isArray(req.params.lessonId) ? req.params.lessonId[0] : req.params.lessonId;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'User ID required',
+      });
+    }
+
+    const { alreadyTraced, ...progress } = await learning.completeTrace(userId, lessonId);
+    const stats = await learning.getLearningStats(userId);
+
+    res.status(201).json({
+      status: 'success',
+      message: alreadyTraced ? 'Traced again for practice' : 'Trace completed successfully',
+      progress,
+      alreadyTraced,
+      stats,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === 'not-found') {
+      return res.status(404).json({ status: 'error', message: 'Lesson not found' });
+    }
+    console.error('Failed to record trace completion:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to record trace completion',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
  * POST /api/learning/quiz/answer
  * Record quiz answer and score points if correct
  */

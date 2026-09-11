@@ -69,12 +69,22 @@ describe('LearningService', () => {
 
     it('defaults completed/points when there is no progress row', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{ ...LESSON_ROW, completed: false, points_earned: 0 }],
+        rows: [{ ...LESSON_ROW, completed: false, points_earned: 0, traced: false }],
         rowCount: 1,
       });
       const rows = await service.getLessonsWithProgress('user-1');
       expect(rows[0].completed).toBe(false);
       expect(rows[0].pointsEarned).toBe(0);
+      expect(rows[0].traced).toBe(false);
+    });
+
+    it('folds in traced state alongside completed', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...LESSON_ROW, completed: false, points_earned: 0, traced: true }],
+        rowCount: 1,
+      });
+      const rows = await service.getLessonsWithProgress('user-1');
+      expect(rows[0].traced).toBe(true);
     });
   });
 
@@ -133,6 +143,73 @@ describe('LearningService', () => {
     it("throws 'not-found' for an unknown lesson id (no points)", async () => {
       mockQueryOne.mockResolvedValueOnce(null);
       await expect(service.completeLesson('user-1', 'ghost')).rejects.toThrow('not-found');
+      expect(PointsRepository.addPoints).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('completeTrace', () => {
+    it('awards points on the first successful trace', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ category: 'alphabet', phase: 'phase_1_alphabet' }) // lesson lookup
+        .mockResolvedValueOnce(null) // no existing progress row -> not already traced
+        .mockResolvedValueOnce({
+          id: 'progress-1',
+          user_id: 'user-1',
+          lesson_id: 'lesson-a',
+          category: 'alphabet',
+          phase: 'phase_1_alphabet',
+          completed: false,
+          points_earned: 0,
+          completed_at: null,
+          traced: true,
+          trace_points_earned: 15,
+          traced_at: new Date(),
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+
+      const result = await service.completeTrace('user-1', 'lesson-a');
+
+      expect(result.alreadyTraced).toBe(false);
+      expect(result.traced).toBe(true);
+      expect(result.tracePointsEarned).toBe(15);
+      expect(PointsRepository.addPoints).toHaveBeenCalledWith(
+        'user-1',
+        15,
+        'learning',
+        expect.stringContaining('lesson-a'),
+      );
+    });
+
+    it('does not re-award points when the lesson was already traced', async () => {
+      mockQueryOne
+        .mockResolvedValueOnce({ category: 'alphabet', phase: 'phase_1_alphabet' })
+        .mockResolvedValueOnce({ traced: true }) // already traced
+        .mockResolvedValueOnce({
+          id: 'progress-1',
+          user_id: 'user-1',
+          lesson_id: 'lesson-a',
+          category: 'alphabet',
+          phase: 'phase_1_alphabet',
+          completed: false,
+          points_earned: 0,
+          completed_at: null,
+          traced: true,
+          trace_points_earned: 15,
+          traced_at: new Date('2026-01-01'),
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+
+      const result = await service.completeTrace('user-1', 'lesson-a');
+
+      expect(result.alreadyTraced).toBe(true);
+      expect(PointsRepository.addPoints).not.toHaveBeenCalled();
+    });
+
+    it("throws 'not-found' for an unknown lesson id (no points)", async () => {
+      mockQueryOne.mockResolvedValueOnce(null);
+      await expect(service.completeTrace('user-1', 'ghost')).rejects.toThrow('not-found');
       expect(PointsRepository.addPoints).not.toHaveBeenCalled();
     });
   });
@@ -207,6 +284,17 @@ describe('LearningService', () => {
       const stats = await service.getLearningStats('user-1');
       expect(stats.alphabet).toEqual({ completed: 0, total: 0 });
       expect(stats.totalLessonsCompleted).toBe(0);
+    });
+
+    it('the points aggregate SQL folds in trace points alongside completed-lesson points', async () => {
+      // the query itself sums both p.points_earned FILTER (completed) and
+      // p.trace_points_earned FILTER (traced) into one `points` column --
+      // this asserts the SQL shape, since the DB does the actual folding.
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await service.getLearningStats('user-1');
+      const [sql] = mockQuery.mock.calls[0];
+      expect(sql).toContain('trace_points_earned');
+      expect(sql).toContain("FILTER (WHERE p.traced)");
     });
   });
 

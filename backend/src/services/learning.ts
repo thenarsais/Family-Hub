@@ -10,6 +10,9 @@ export interface LearningProgress {
   completed: boolean;
   pointsEarned: number;
   completedAt?: Date;
+  traced: boolean;
+  tracePointsEarned: number;
+  tracedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,9 +26,15 @@ interface LearningProgressRow {
   completed: boolean;
   points_earned: number;
   completed_at: string | null;
+  traced: boolean;
+  trace_points_earned: number;
+  traced_at: string | null;
   created_at: string;
   updated_at: string;
 }
+
+/** Points awarded the first (and only) time a lesson is successfully traced. */
+export const TRACE_POINTS = 15;
 
 interface PhaseProgressRow {
   total: string | null;
@@ -71,6 +80,7 @@ export interface Lesson {
 export interface LessonWithProgress extends Lesson {
   completed: boolean;
   pointsEarned: number;
+  traced: boolean;
 }
 
 export interface LessonFilter {
@@ -89,6 +99,7 @@ interface LessonRow {
   points_value: number;
   completed?: boolean | null;
   points_earned?: number | null;
+  traced?: boolean | null;
 }
 
 export class LearningService {
@@ -137,7 +148,8 @@ export class LearningService {
     const { rows } = await query<LessonRow>(
       `SELECT l.id, l.category, l.phase, l.subcategory, l.sequence_order, l.content, l.points_value,
               COALESCE(p.completed, false) AS completed,
-              COALESCE(p.points_earned, 0) AS points_earned
+              COALESCE(p.points_earned, 0) AS points_earned,
+              COALESCE(p.traced, false) AS traced
        FROM learning_lessons l
        LEFT JOIN learning_progress p ON p.lesson_id = l.id AND p.user_id = $1
        ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
@@ -148,6 +160,7 @@ export class LearningService {
       ...this.mapLesson(r),
       completed: !!r.completed,
       pointsEarned: r.points_earned ?? 0,
+      traced: !!r.traced,
     }));
   }
 
@@ -155,7 +168,8 @@ export class LearningService {
     const { rows } = await query<LessonRow>(
       `SELECT l.id, l.category, l.phase, l.subcategory, l.sequence_order, l.content, l.points_value,
               COALESCE(p.completed, false) AS completed,
-              COALESCE(p.points_earned, 0) AS points_earned
+              COALESCE(p.points_earned, 0) AS points_earned,
+              COALESCE(p.traced, false) AS traced
        FROM learning_lessons l
        LEFT JOIN learning_progress p ON p.lesson_id = l.id AND p.user_id = $2
        WHERE l.id = $1`,
@@ -166,6 +180,7 @@ export class LearningService {
       ...this.mapLesson(rows[0]),
       completed: !!rows[0].completed,
       pointsEarned: rows[0].points_earned ?? 0,
+      traced: !!rows[0].traced,
     };
   }
 
@@ -189,7 +204,8 @@ export class LearningService {
        points_earned = $5,
        completed_at = CURRENT_TIMESTAMP,
        updated_at = CURRENT_TIMESTAMP
-       RETURNING id, user_id, lesson_id, category, phase, completed, points_earned, completed_at, created_at, updated_at`,
+       RETURNING id, user_id, lesson_id, category, phase, completed, points_earned, completed_at,
+                 traced, trace_points_earned, traced_at, created_at, updated_at`,
       [userId, lessonId, lesson.category, lesson.phase, lesson.points_value]
     );
 
@@ -200,6 +216,48 @@ export class LearningService {
     await PointsRepository.addPoints(userId, lesson.points_value, 'learning', `Completed lesson: ${lessonId}`);
 
     return this.mapProgress(result);
+  }
+
+  /**
+   * Record a trace-mode session (T-25 / FR-143). Independent of `completed` --
+   * a lesson can be traced without ever going through Learn/Quiz. Points are
+   * awarded once per lesson, ever: a repeat trace is practice only, no second
+   * ledger entry and `traced_at`/`trace_points_earned` are left untouched.
+   */
+  async completeTrace(userId: string, lessonId: string): Promise<LearningProgress & { alreadyTraced: boolean }> {
+    const lesson = await queryOne<{ category: string; phase: string }>(
+      `SELECT category, phase FROM learning_lessons WHERE id = $1`,
+      [lessonId]
+    );
+    if (!lesson) throw new Error('not-found');
+
+    const existing = await queryOne<{ traced: boolean }>(
+      `SELECT traced FROM learning_progress WHERE user_id = $1 AND lesson_id = $2`,
+      [userId, lessonId]
+    );
+    const alreadyTraced = existing?.traced === true;
+
+    const result = await queryOne<LearningProgressRow>(
+      `INSERT INTO learning_progress (user_id, lesson_id, category, phase, traced, traced_at, trace_points_earned)
+       VALUES ($1, $2, $3, $4, true, CURRENT_TIMESTAMP, $5)
+       ON CONFLICT (user_id, lesson_id) DO UPDATE SET
+       traced = true,
+       traced_at = COALESCE(learning_progress.traced_at, CURRENT_TIMESTAMP),
+       trace_points_earned = CASE WHEN learning_progress.traced
+         THEN learning_progress.trace_points_earned ELSE $5 END,
+       updated_at = CURRENT_TIMESTAMP
+       RETURNING id, user_id, lesson_id, category, phase, completed, points_earned, completed_at,
+                 traced, trace_points_earned, traced_at, created_at, updated_at`,
+      [userId, lessonId, lesson.category, lesson.phase, TRACE_POINTS]
+    );
+
+    if (!result) throw new Error('Failed to record trace completion');
+
+    if (!alreadyTraced) {
+      await PointsRepository.addPoints(userId, TRACE_POINTS, 'learning', `Traced lesson: ${lessonId}`);
+    }
+
+    return { ...this.mapProgress(result), alreadyTraced };
   }
 
   /**
@@ -278,7 +336,8 @@ export class LearningService {
       `SELECT l.category,
               COUNT(*) AS total,
               COUNT(p.id) FILTER (WHERE p.completed) AS completed,
-              COALESCE(SUM(p.points_earned) FILTER (WHERE p.completed), 0) AS points
+              COALESCE(SUM(p.points_earned) FILTER (WHERE p.completed), 0)
+                + COALESCE(SUM(p.trace_points_earned) FILTER (WHERE p.traced), 0) AS points
        FROM learning_lessons l
        LEFT JOIN learning_progress p ON p.lesson_id = l.id AND p.user_id = $1
        GROUP BY l.category`,
@@ -356,6 +415,9 @@ export class LearningService {
       completed: row.completed,
       pointsEarned: row.points_earned,
       completedAt: row.completed_at ? new Date(row.completed_at) : undefined,
+      traced: row.traced,
+      tracePointsEarned: row.trace_points_earned,
+      tracedAt: row.traced_at ? new Date(row.traced_at) : undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };

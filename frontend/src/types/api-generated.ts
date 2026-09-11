@@ -1541,6 +1541,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning/lessons/{lessonId}/trace-complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a trace-mode session (T-25 / FR-143)
+         * @description Points (+15) are awarded only the first time a lesson is successfully
+         *     traced — a repeat trace is practice only (`alreadyTraced: true`, no
+         *     second ledger entry). Independent of `/complete`; a lesson can be
+         *     traced without ever going through Learn or Quiz.
+         */
+        post: operations["completeTrace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/learning/quiz/answer": {
         parameters: {
             query?: never;
@@ -3345,6 +3368,8 @@ export interface components {
         LessonWithProgress: components["schemas"]["Lesson"] & {
             completed: boolean;
             pointsEarned: number;
+            /** @description T-25 — has this lesson had a successful trace-mode session, ever. */
+            traced: boolean;
         };
         /**
          * @description From `LearningService`'s raw-Postgres `learning_progress` table —
@@ -3365,6 +3390,12 @@ export interface components {
             pointsEarned: number;
             /** Format: date-time */
             completedAt?: string;
+            /** @description T-25 — set on the first successful trace-mode session. */
+            traced: boolean;
+            /** @description Awarded once, ever (0 until the first successful trace). */
+            tracePointsEarned: number;
+            /** Format: date-time */
+            tracedAt?: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -9335,6 +9366,65 @@ export interface operations {
                         /** @constant */
                         message?: "Lesson completed successfully";
                         progress?: components["schemas"]["LearningProgressEntry"];
+                        stats?: components["schemas"]["LearningStats"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No lesson with that id. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    completeTrace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lessonId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Trace session recorded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @description 'Trace completed successfully' or 'Traced again for practice' */
+                        message?: string;
+                        progress?: components["schemas"]["LearningProgressEntry"];
+                        alreadyTraced?: boolean;
                         stats?: components["schemas"]["LearningStats"];
                         /** Format: date-time */
                         timestamp?: string;
