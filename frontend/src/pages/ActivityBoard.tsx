@@ -6,6 +6,7 @@ import { useChores } from '@hooks/useChores';
 import { useHabits } from '@hooks/useHabits';
 import { useHomework } from '@hooks/useHomework';
 import { useReading } from '@hooks/useReading';
+import { useKungFu } from '@hooks/useKungFu';
 import { useBoardSections } from '@hooks/useBoardSections';
 import ChoresSection from '@components/activity/ChoresSection';
 import ChoreManagePanel from '@components/activity/ChoreManagePanel';
@@ -15,6 +16,8 @@ import HomeworkSection from '@components/activity/HomeworkSection';
 import HomeworkManagePanel from '@components/activity/HomeworkManagePanel';
 import ReadingSection from '@components/activity/ReadingSection';
 import ReadingManagePanel from '@components/activity/ReadingManagePanel';
+import KungFuSection from '@components/activity/KungFuSection';
+import KungFuManagePanel from '@components/activity/KungFuManagePanel';
 import MoodCheckIn from '@components/activity/MoodCheckIn';
 import LearningSummarySection from '@components/activity/LearningSummarySection';
 import TriviaSection from '@components/activity/TriviaSection';
@@ -26,6 +29,7 @@ const SECTIONS = [
   { id: 'habits', title: 'Habits this week', emoji: '🎯', manageable: true },
   { id: 'homework', title: 'Homework', emoji: '📚', manageable: true },
   { id: 'reading', title: 'Reading', emoji: '📗', manageable: true },
+  { id: 'kungfu', title: 'Kung Fu', emoji: '🥋', manageable: true },
   { id: 'mood', title: 'Mood', emoji: '💛', manageable: false },
   { id: 'trivia', title: 'Trivia', emoji: '🧠', manageable: false },
   { id: 'gujarati', title: 'Gujarati', emoji: '📖', manageable: false },
@@ -47,6 +51,7 @@ export default function ActivityBoard() {
   const habits = useHabits();
   const homework = useHomework();
   const reading = useReading();
+  const kungfu = useKungFu();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -221,6 +226,28 @@ export default function ActivityBoard() {
                         familyGoals={reading.familyGoals}
                         onLoad={reading.loadFamilyGoals}
                         updateGoals={reading.updateGoals}
+                      />
+                    )}
+                  </>
+                )}
+
+                {id === 'kungfu' && (
+                  <>
+                    <KungFuSection
+                      profile={kungfu.profile}
+                      todayLogs={kungfu.todayLogs}
+                      weekCounts={kungfu.weekCounts}
+                      loading={kungfu.loading}
+                      error={kungfu.error}
+                      onLogClass={kungfu.logClass}
+                      onLogPractice={kungfu.logPractice}
+                      onUndo={kungfu.undo}
+                    />
+                    {managing && canManage && (
+                      <KungFuManagePanel
+                        familyProfiles={kungfu.familyProfiles}
+                        onLoad={kungfu.loadFamilyProfiles}
+                        updateProfile={kungfu.updateProfile}
                       />
                     )}
                   </>

@@ -149,6 +149,23 @@ vi.mock('@/hooks/useReading', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useKungFu', () => ({
+  useKungFu: () => ({
+    profile: { belt: 'Yellow Sash', beltSince: '2026-06-01', pointsPerClass: 15, pointsPerPractice: 5 },
+    todayLogs: [{ id: 'log-1', sessionType: 'class', pointsEarned: 15, loggedAt: new Date().toISOString() }],
+    weekCounts: { class: 1, practice: 2 },
+    loading: false,
+    error: null,
+    logClass: vi.fn(),
+    logPractice: vi.fn(),
+    undo: vi.fn(),
+    familyProfiles: [],
+    loadFamilyProfiles: vi.fn(),
+    updateProfile: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useLearning', () => ({
   useLearning: () => ({
     lessons: [

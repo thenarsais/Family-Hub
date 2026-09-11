@@ -44,6 +44,21 @@ vi.mock('@hooks/useReading', () => ({
     undo: vi.fn(),
   }),
 }));
+vi.mock('@hooks/useKungFu', () => ({
+  useKungFu: () => ({
+    loading: true,
+    profile: { belt: null, beltSince: null, pointsPerClass: 15, pointsPerPractice: 5 },
+    todayLogs: [],
+    weekCounts: { class: 0, practice: 0 },
+    error: null,
+    familyProfiles: [],
+    loadFamilyProfiles: vi.fn(),
+    updateProfile: vi.fn(),
+    logClass: vi.fn(),
+    logPractice: vi.fn(),
+    undo: vi.fn(),
+  }),
+}));
 
 const choreFns = {
   complete: vi.fn().mockResolvedValue(undefined),
@@ -167,7 +182,7 @@ describe('ActivityBoard', () => {
     expect(habitFns.setMood).toHaveBeenCalledWith('good');
   });
 
-  it('shows Manage on chores, habits, homework and reading for a parent, not for a child', async () => {
+  it('shows Manage on chores, habits, homework, reading and kung fu for a parent, not for a child', async () => {
     asRole('child');
     withHooks();
     const { rerender } = render(<ActivityBoard />);
@@ -177,7 +192,7 @@ describe('ActivityBoard', () => {
     withHooks();
     rerender(<ActivityBoard />);
     const manageButtons = screen.getAllByRole('button', { name: /manage/i });
-    expect(manageButtons).toHaveLength(4);
+    expect(manageButtons).toHaveLength(5);
 
     await userEvent.click(manageButtons[1]); // habits
     await waitFor(() => expect(habitFns.loadFamilyHabits).toHaveBeenCalled());
