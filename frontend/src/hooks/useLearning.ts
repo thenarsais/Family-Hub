@@ -73,29 +73,40 @@ export function useLearning(): UseLearningReturn {
     [userId],
   );
 
-  const refresh = useCallback(async () => {
-    if (!userId) {
-      setLessons([]);
-      setStats(EMPTY_STATS);
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      setError(null);
-      const [list, s] = await Promise.all([
-        apiClient.get<LessonsResponse>('/api/learning/lessons', headers()),
-        apiClient.get<StatsResponse>('/api/learning/stats', headers()),
-      ]);
-      setLessons(list.data?.lessons ?? []);
-      setStats(s.data?.stats ?? EMPTY_STATS);
-    } catch (err) {
-      console.error('Failed to load the learning module:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, headers]);
+  /**
+   * `silent` skips the loading flip. Only the very first load should show the
+   * page-level spinner (LearnPage unmounts its whole subview while loading is
+   * true) -- a post-action refetch (complete/trace/quiz) must NOT do that, or
+   * it wipes out whatever local UI state the current view was showing (T-25
+   * caught this: it discarded TraceCanvas's just-earned success message
+   * before the user ever saw it).
+   */
+  const refresh = useCallback(
+    async (silent = false) => {
+      if (!userId) {
+        setLessons([]);
+        setStats(EMPTY_STATS);
+        setLoading(false);
+        return;
+      }
+      try {
+        if (!silent) setLoading(true);
+        setError(null);
+        const [list, s] = await Promise.all([
+          apiClient.get<LessonsResponse>('/api/learning/lessons', headers()),
+          apiClient.get<StatsResponse>('/api/learning/stats', headers()),
+        ]);
+        setLessons(list.data?.lessons ?? []);
+        setStats(s.data?.stats ?? EMPTY_STATS);
+      } catch (err) {
+        console.error('Failed to load the learning module:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load');
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [userId, headers],
+  );
 
   useEffect(() => {
     void refresh();
@@ -110,7 +121,7 @@ export function useLearning(): UseLearningReturn {
       );
       try {
         await apiClient.post(`/api/learning/lessons/${lessonId}/complete`, {}, headers());
-        await refresh();
+        await refresh(true);
       } catch (err) {
         setLessons(snapshot);
         throw err;
@@ -132,7 +143,7 @@ export function useLearning(): UseLearningReturn {
           {},
           headers(),
         );
-        await refresh();
+        await refresh(true);
         return { alreadyTraced: !!res.data?.alreadyTraced };
       } catch (err) {
         setLessons(snapshot);
