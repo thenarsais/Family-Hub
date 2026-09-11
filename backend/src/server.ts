@@ -20,6 +20,7 @@ import homeworkRoutes from './routes/homework';
 import readingRoutes from './routes/reading';
 import kungfuRoutes from './routes/kungfu';
 import questsRoutes from './routes/quests';
+import rewardsRoutes from './routes/rewards';
 import announcementsRoutes from './routes/announcements';
 import remindersRoutes from './routes/reminders';
 import energyRoutes from './routes/energy';
@@ -181,6 +182,9 @@ app.use('/api/kungfu', kungfuRoutes);
 
 // Daily quests (T-23): 3 random quests/day, auto-detected against the real sections
 app.use('/api/quests', questsRoutes);
+
+// Reward fulfilment (T-24): weekly goal + monthly tiers -> a pending reward, parent-fulfilled
+app.use('/api/rewards', rewardsRoutes);
 
 // ================================================
 // PHASE 2 FEATURES: Dashboard & Home Automation

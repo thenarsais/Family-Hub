@@ -27,6 +27,7 @@ module.exports = {
     // the rest is a pg upsert loop that runs on `npm run seed:*`, same as seed.ts.
     '!src/scripts/seed-learning.ts',
     '!src/scripts/seed-trivia.ts',
+    '!src/scripts/seed-reward-library.ts',
     // Pure type declarations, no runtime behavior to cover.
     '!src/types/database.ts'
   ],
