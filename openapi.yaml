@@ -3555,6 +3555,46 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
 
+  /api/learning/lessons/{lessonId}/trace-complete:
+    post:
+      tags: [Learning]
+      summary: Record a trace-mode session (T-25 / FR-143)
+      operationId: completeTrace
+      description: |
+        Points (+15) are awarded only the first time a lesson is successfully
+        traced — a repeat trace is practice only (`alreadyTraced: true`, no
+        second ledger entry). Independent of `/complete`; a lesson can be
+        traced without ever going through Learn or Quiz.
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Trace session recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, description: "'Trace completed successfully' or 'Traced again for practice'" }
+                  progress: { $ref: '#/components/schemas/LearningProgressEntry' }
+                  alreadyTraced: { type: boolean }
+                  stats: { $ref: '#/components/schemas/LearningStats' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No lesson with that id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
   /api/learning/quiz/answer:
     post:
       tags: [Learning]
@@ -7338,10 +7378,13 @@ components:
       allOf:
         - $ref: '#/components/schemas/Lesson'
         - type: object
-          required: [completed, pointsEarned]
+          required: [completed, pointsEarned, traced]
           properties:
             completed: { type: boolean }
             pointsEarned: { type: integer }
+            traced:
+              type: boolean
+              description: T-25 — has this lesson had a successful trace-mode session, ever.
 
     LearningProgressEntry:
       type: object
@@ -7350,7 +7393,7 @@ components:
         NOT the Supabase `learning_progress` table in `types/database.ts`
         (different columns: course_id/current_lesson_id/completion_percentage
         vs. this feature's lesson_id/category/phase/completed).
-      required: [id, userId, lessonId, category, phase, completed, pointsEarned, createdAt, updatedAt]
+      required: [id, userId, lessonId, category, phase, completed, pointsEarned, traced, tracePointsEarned, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         userId: { type: string, format: uuid }
@@ -7360,6 +7403,13 @@ components:
         completed: { type: boolean }
         pointsEarned: { type: integer }
         completedAt: { type: string, format: date-time }
+        traced:
+          type: boolean
+          description: T-25 — set on the first successful trace-mode session.
+        tracePointsEarned:
+          type: integer
+          description: Awarded once, ever (0 until the first successful trace).
+        tracedAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 

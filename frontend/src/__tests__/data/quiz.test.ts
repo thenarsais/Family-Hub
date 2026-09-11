@@ -11,6 +11,7 @@ const lesson = (id: string, sub: string, text: string, english: string): Lesson 
   pointsValue: 10,
   completed: false,
   pointsEarned: 0,
+  traced: false,
 });
 
 const ANIMALS = [

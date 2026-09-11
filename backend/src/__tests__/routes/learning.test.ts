@@ -9,6 +9,7 @@ import express from 'express';
 // and configure its methods per test.
 const mockLearningService = {
   completeLesson: jest.fn(),
+  completeTrace: jest.fn(),
   getLearningStats: jest.fn(),
   recordQuizAnswer: jest.fn(),
   getPhaseProgress: jest.fn(),
@@ -158,6 +159,59 @@ describe('Learning Routes', () => {
         .set('x-user-id', 'user-1')
         .expect(500);
       expect(res.body.message).toBe('Failed to complete lesson');
+    });
+  });
+
+  describe('POST /api/learning/lessons/:lessonId/trace-complete', () => {
+    it('traces a lesson for the first time and awards points', async () => {
+      mockLearningService.completeTrace.mockResolvedValueOnce({ ...mockProgress, alreadyTraced: false });
+      mockLearningService.getLearningStats.mockResolvedValueOnce(mockStats);
+
+      const res = await request(app)
+        .post('/api/learning/lessons/lesson-1/trace-complete')
+        .set('x-user-id', 'user-1')
+        .expect(201);
+
+      expect(res.body.status).toBe('success');
+      expect(res.body.alreadyTraced).toBe(false);
+      expect(res.body.message).toBe('Trace completed successfully');
+      expect(res.body.progress.alreadyTraced).toBeUndefined();
+      expect(mockLearningService.completeTrace).toHaveBeenCalledWith('user-1', 'lesson-1');
+    });
+
+    it('re-tracing an already-traced lesson reports alreadyTraced, no re-award message', async () => {
+      mockLearningService.completeTrace.mockResolvedValueOnce({ ...mockProgress, alreadyTraced: true });
+      mockLearningService.getLearningStats.mockResolvedValueOnce(mockStats);
+
+      const res = await request(app)
+        .post('/api/learning/lessons/lesson-1/trace-complete')
+        .set('x-user-id', 'user-1')
+        .expect(201);
+
+      expect(res.body.alreadyTraced).toBe(true);
+      expect(res.body.message).toBe('Traced again for practice');
+    });
+
+    it('requires user ID', async () => {
+      await request(app).post('/api/learning/lessons/lesson-1/trace-complete').expect(401);
+    });
+
+    it('404s for an unknown lesson id', async () => {
+      mockLearningService.completeTrace.mockRejectedValueOnce(new Error('not-found'));
+      const res = await request(app)
+        .post('/api/learning/lessons/ghost/trace-complete')
+        .set('x-user-id', 'user-1')
+        .expect(404);
+      expect(res.body.message).toBe('Lesson not found');
+    });
+
+    it('500s on an unexpected service error', async () => {
+      mockLearningService.completeTrace.mockRejectedValueOnce(new Error('Database error'));
+      const res = await request(app)
+        .post('/api/learning/lessons/lesson-1/trace-complete')
+        .set('x-user-id', 'user-1')
+        .expect(500);
+      expect(res.body.message).toBe('Failed to record trace completion');
     });
   });
 
