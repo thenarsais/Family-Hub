@@ -166,6 +166,21 @@ vi.mock('@/hooks/useKungFu', () => ({
   }),
 }));
 
+vi.mock('@/hooks/useQuests', () => ({
+  useQuests: () => ({
+    quests: [
+      { key: 'chore', label: 'Complete a chore', done: true },
+      { key: 'reading', label: 'Log your reading', done: false },
+      { key: 'mood', label: 'Check in your mood', done: false },
+    ],
+    allDone: false,
+    bonusAwarded: false,
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  }),
+}));
+
 vi.mock('@/hooks/useLearning', () => ({
   useLearning: () => ({
     lessons: [

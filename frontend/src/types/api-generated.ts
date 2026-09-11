@@ -1030,6 +1030,26 @@ export interface paths {
         patch: operations["setKungFuProfile"];
         trace?: never;
     };
+    "/api/quests/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get today's 3 assigned quests, their done state, and the bonus
+         * @description Assigns 3 random quest keys on the first call of the family-local day (stored, never re-rolled). Each quest's `done` is checked live against its own section's table — there is no separate "complete quest" action. Awards a flat 50-point bonus the first time all 3 are done in a day; later calls do not re-award it.
+         */
+        get: operations["getQuestsToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/habits": {
         parameters: {
             query?: never;
@@ -3021,6 +3041,13 @@ export interface components {
             pointsEarned: number;
             /** Format: date-time */
             loggedAt: string;
+        };
+        /** @description One of today's 3 assigned quests. `key` names which section it maps to; `done` is computed live against that section's own table, not stored. */
+        Quest: {
+            /** @enum {string} */
+            key: "chore" | "habit" | "homework" | "reading" | "kungfu" | "trivia" | "mood" | "gujarati";
+            label: string;
+            done: boolean;
         };
         /** @description From HabitService's raw-Postgres `habits` table (migration 013) — NOT the Supabase-era `habits` shape in types/database.ts. user_id is the assignee; weekly_target is the "N of 7 days this week" goal. */
         Habit: {
@@ -7112,6 +7139,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getQuestsToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's quests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        quests?: components["schemas"]["Quest"][];
+                        allDone?: boolean;
+                        bonusAwarded?: boolean;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
                 };
             };
             /** @description Missing x-user-id. */

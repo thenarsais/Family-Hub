@@ -7,7 +7,9 @@ import { useHabits } from '@hooks/useHabits';
 import { useHomework } from '@hooks/useHomework';
 import { useReading } from '@hooks/useReading';
 import { useKungFu } from '@hooks/useKungFu';
+import { useQuests } from '@hooks/useQuests';
 import { useBoardSections } from '@hooks/useBoardSections';
+import QuestsSection from '@components/activity/QuestsSection';
 import ChoresSection from '@components/activity/ChoresSection';
 import ChoreManagePanel from '@components/activity/ChoreManagePanel';
 import HabitsSection from '@components/activity/HabitsSection';
@@ -25,6 +27,7 @@ import TriviaSection from '@components/activity/TriviaSection';
 /** Board sections in their default order. The shell (order + collapse per
  *  profile) is generic — Games / Reading slot in the same way. */
 const SECTIONS = [
+  { id: 'quests', title: "Today's Quests", emoji: '🏆', manageable: false },
   { id: 'chores', title: 'Chores today', emoji: '🧹', manageable: true },
   { id: 'habits', title: 'Habits this week', emoji: '🎯', manageable: true },
   { id: 'homework', title: 'Homework', emoji: '📚', manageable: true },
@@ -52,6 +55,7 @@ export default function ActivityBoard() {
   const homework = useHomework();
   const reading = useReading();
   const kungfu = useKungFu();
+  const quests = useQuests();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -134,6 +138,16 @@ export default function ActivityBoard() {
 
             {!isCollapsed && (
               <div className="mt-4">
+                {id === 'quests' && (
+                  <QuestsSection
+                    quests={quests.quests}
+                    allDone={quests.allDone}
+                    bonusAwarded={quests.bonusAwarded}
+                    loading={quests.loading}
+                    error={quests.error}
+                  />
+                )}
+
                 {id === 'chores' && (
                   <>
                     {chores.loading ? (

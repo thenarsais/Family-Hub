@@ -59,6 +59,9 @@ vi.mock('@hooks/useKungFu', () => ({
     undo: vi.fn(),
   }),
 }));
+vi.mock('@hooks/useQuests', () => ({
+  useQuests: () => ({ loading: true, quests: [], allDone: false, bonusAwarded: false, error: null }),
+}));
 
 const choreFns = {
   complete: vi.fn().mockResolvedValue(undefined),
