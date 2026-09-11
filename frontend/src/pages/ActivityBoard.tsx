@@ -5,6 +5,7 @@ import { useFamily } from '@hooks/useFamily';
 import { useChores } from '@hooks/useChores';
 import { useHabits } from '@hooks/useHabits';
 import { useHomework } from '@hooks/useHomework';
+import { useReading } from '@hooks/useReading';
 import { useBoardSections } from '@hooks/useBoardSections';
 import ChoresSection from '@components/activity/ChoresSection';
 import ChoreManagePanel from '@components/activity/ChoreManagePanel';
@@ -12,6 +13,8 @@ import HabitsSection from '@components/activity/HabitsSection';
 import HabitManagePanel from '@components/activity/HabitManagePanel';
 import HomeworkSection from '@components/activity/HomeworkSection';
 import HomeworkManagePanel from '@components/activity/HomeworkManagePanel';
+import ReadingSection from '@components/activity/ReadingSection';
+import ReadingManagePanel from '@components/activity/ReadingManagePanel';
 import MoodCheckIn from '@components/activity/MoodCheckIn';
 import LearningSummarySection from '@components/activity/LearningSummarySection';
 import TriviaSection from '@components/activity/TriviaSection';
@@ -22,6 +25,7 @@ const SECTIONS = [
   { id: 'chores', title: 'Chores today', emoji: '🧹', manageable: true },
   { id: 'habits', title: 'Habits this week', emoji: '🎯', manageable: true },
   { id: 'homework', title: 'Homework', emoji: '📚', manageable: true },
+  { id: 'reading', title: 'Reading', emoji: '📗', manageable: true },
   { id: 'mood', title: 'Mood', emoji: '💛', manageable: false },
   { id: 'trivia', title: 'Trivia', emoji: '🧠', manageable: false },
   { id: 'gujarati', title: 'Gujarati', emoji: '📖', manageable: false },
@@ -42,6 +46,7 @@ export default function ActivityBoard() {
   const chores = useChores();
   const habits = useHabits();
   const homework = useHomework();
+  const reading = useReading();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -194,6 +199,28 @@ export default function ActivityBoard() {
                         createItem={homework.createItem}
                         updateItem={homework.updateItem}
                         deleteItem={homework.deleteItem}
+                      />
+                    )}
+                  </>
+                )}
+
+                {id === 'reading' && (
+                  <>
+                    <ReadingSection
+                      goals={reading.goals}
+                      log={reading.log}
+                      weekMinutes={reading.weekMinutes}
+                      streak={reading.streak}
+                      loading={reading.loading}
+                      error={reading.error}
+                      onSubmit={reading.submit}
+                      onUndo={reading.undo}
+                    />
+                    {managing && canManage && (
+                      <ReadingManagePanel
+                        familyGoals={reading.familyGoals}
+                        onLoad={reading.loadFamilyGoals}
+                        updateGoals={reading.updateGoals}
                       />
                     )}
                   </>
