@@ -1,8 +1,11 @@
-import { useMemo, useState } from 'react';
-import { ArrowLeft, Check, Volume2 } from 'lucide-react';
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { ArrowLeft, Check, Eraser, Pencil, Volume2 } from 'lucide-react';
 import { useLearning, type Lesson } from '@hooks/useLearning';
 import { useSpeak } from '@hooks/useSpeak';
 import { makeQuiz, type QuizQuestion } from '@/data/quiz';
+
+/** T-25 — a lesson is "practiced" after this many finished pen strokes. */
+const TRACES_TO_EARN = 10;
 
 const PHASES = [
   { id: 'phase_1_alphabet', title: 'Alphabet', emoji: '🔤', statKey: 'alphabet' as const },
@@ -20,6 +23,7 @@ type View =
   | { name: 'home' }
   | { name: 'browse'; phase: string }
   | { name: 'learn'; phase: string; sub: string; index: number }
+  | { name: 'trace'; phase: string; sub: string; index: number }
   | { name: 'quiz'; phase: string; sub: string };
 
 function Spinner() {
@@ -31,7 +35,8 @@ function Spinner() {
 }
 
 export default function LearnPage() {
-  const { byPhase, stats, loading, error, completeLesson, recordQuizAnswer } = useLearning();
+  const { byPhase, stats, loading, error, completeLesson, traceLesson, recordQuizAnswer } =
+    useLearning();
   const [view, setView] = useState<View>({ name: 'home' });
 
   if (loading) {
@@ -76,6 +81,7 @@ export default function LearnPage() {
           phase={view.phase}
           groups={byPhase[view.phase] ?? {}}
           onLearn={(sub, index) => setView({ name: 'learn', phase: view.phase, sub, index })}
+          onTrace={(sub, index) => setView({ name: 'trace', phase: view.phase, sub, index })}
           onQuiz={(sub) => setView({ name: 'quiz', phase: view.phase, sub })}
         />
       )}
@@ -85,6 +91,15 @@ export default function LearnPage() {
           lessons={byPhase[view.phase]?.[view.sub] ?? []}
           startIndex={view.index}
           onComplete={completeLesson}
+          onDone={() => setView({ name: 'browse', phase: view.phase })}
+        />
+      )}
+
+      {view.name === 'trace' && (
+        <TraceView
+          lessons={byPhase[view.phase]?.[view.sub] ?? []}
+          startIndex={view.index}
+          onTrace={traceLesson}
           onDone={() => setView({ name: 'browse', phase: view.phase })}
         />
       )}
@@ -155,11 +170,13 @@ function BrowseView({
   phase,
   groups,
   onLearn,
+  onTrace,
   onQuiz,
 }: {
   phase: string;
   groups: Record<string, Lesson[]>;
   onLearn: (sub: string, index: number) => void;
+  onTrace: (sub: string, index: number) => void;
   onQuiz: (sub: string) => void;
 }) {
   const meta = PHASES.find((p) => p.id === phase);
@@ -186,7 +203,7 @@ function BrowseView({
           </div>
           <ul className="grid grid-cols-4 sm:grid-cols-6 gap-2">
             {groups[sub].map((l, i) => (
-              <li key={l.id}>
+              <li key={l.id} className="relative">
                 <button
                   type="button"
                   onClick={() => onLearn(sub, i)}
@@ -203,6 +220,18 @@ function BrowseView({
                       <Check className="h-3 w-3" aria-hidden="true" />
                     </span>
                   )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onTrace(sub, i)}
+                  aria-label={`Trace ${l.content.english}${l.traced ? ', practiced' : ''}`}
+                  className={`absolute -bottom-1.5 -right-1.5 grid h-5 w-5 place-items-center rounded-full border transition ${
+                    l.traced
+                      ? 'border-accent bg-accent text-paper'
+                      : 'border-rule bg-raised text-ink-3 hover:border-accent hover:text-accent'
+                  }`}
+                >
+                  <Pencil className="h-3 w-3" aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -281,6 +310,200 @@ function LearnView({
           {index + 1 < lessons.length ? 'Got it →' : 'Finish'}
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ---------------- trace (T-25 / FR-143) ---------------- */
+
+function TraceView({
+  lessons,
+  startIndex,
+  onTrace,
+  onDone,
+}: {
+  lessons: Lesson[];
+  startIndex: number;
+  onTrace: (id: string) => Promise<{ alreadyTraced: boolean }>;
+  onDone: () => void;
+}) {
+  const [index, setIndex] = useState(Math.min(startIndex, Math.max(0, lessons.length - 1)));
+  const lesson = lessons[index];
+
+  if (!lesson) {
+    return <p className="text-ink-3">Nothing to show.</p>;
+  }
+
+  const advance = () => {
+    if (index + 1 < lessons.length) setIndex(index + 1);
+    else onDone();
+  };
+
+  return (
+    <div className="card text-center space-y-4">
+      <p className="text-sm text-ink-3">
+        {index + 1} / {lessons.length}
+      </p>
+      {/* remounts per lesson so stroke count / canvas ink always start fresh */}
+      <TraceCanvas key={lesson.id} lesson={lesson} onTrace={onTrace} onNext={advance} />
+      <div className="flex items-center justify-between pt-2">
+        <button
+          type="button"
+          className="btn btn-secondary btn-small"
+          onClick={() => setIndex(Math.max(0, index - 1))}
+          disabled={index === 0}
+        >
+          Previous
+        </button>
+        <button type="button" className="btn btn-secondary btn-small" onClick={advance}>
+          Skip →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A faded guide glyph with a transparent drawing canvas on top. No accuracy
+ * checking (FR-044 stays deferred) -- every finished pen stroke counts as one
+ * trace, ink just accumulates until "Clear". Points are awarded by `onTrace`
+ * only the first time, ever; a lesson that's already traced still lets you
+ * practice, it just won't say "+15" again.
+ */
+function TraceCanvas({
+  lesson,
+  onTrace,
+  onNext,
+}: {
+  lesson: Lesson;
+  onTrace: (id: string) => Promise<{ alreadyTraced: boolean }>;
+  onNext: () => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingRef = useRef(false);
+  const strokeColorRef = useRef('#3a2a1e');
+  const [strokes, setStrokes] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<'earned' | 'alreadyTraced' | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const ready = strokes >= TRACES_TO_EARN;
+
+  const pointFromEvent = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (result) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* pointer capture unsupported in this environment -- fine, drawing still works */
+    }
+    drawingRef.current = true;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (ctx) {
+      strokeColorRef.current = getComputedStyle(e.currentTarget).color || strokeColorRef.current;
+      const { x, y } = pointFromEvent(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+  };
+
+  const handlePointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!drawingRef.current) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const { x, y } = pointFromEvent(e);
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = strokeColorRef.current;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const endStroke = () => {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+    setStrokes((n) => n + 1);
+  };
+
+  const clear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const finish = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { alreadyTraced } = await onTrace(lesson.id);
+      setResult(alreadyTraced ? 'alreadyTraced' : 'earned');
+    } catch {
+      setError("Couldn't save that trace -- try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="relative mx-auto h-56 w-56 rounded-xl border-2 border-rule bg-raised overflow-hidden">
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 grid place-items-center font-display text-8xl text-ink opacity-15 select-none pointer-events-none"
+        >
+          {lesson.content.text}
+        </span>
+        <canvas
+          ref={canvasRef}
+          width={224}
+          height={224}
+          aria-label={`Trace ${lesson.content.english}`}
+          className="absolute inset-0 h-full w-full touch-none text-ink"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endStroke}
+          onPointerLeave={endStroke}
+          onPointerCancel={endStroke}
+        />
+      </div>
+
+      <p className="text-ink-2">
+        {lesson.content.romanization} · {lesson.content.english}
+      </p>
+
+      {result ? (
+        <div className="space-y-2">
+          <p className="text-ok font-semibold">
+            {result === 'earned' ? '🎉 Traced! +15 points' : 'Nice practice — already earned for this one'}
+          </p>
+          <button type="button" className="btn btn-primary btn-small mx-auto" onClick={onNext}>
+            Next
+          </button>
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-ink-3">
+            Traces: {Math.min(strokes, TRACES_TO_EARN)} / {TRACES_TO_EARN}
+          </p>
+          {error && <p className="text-sm text-alert">{error}</p>}
+          <div className="flex items-center justify-center gap-2">
+            <button type="button" className="btn btn-secondary btn-small gap-1" onClick={clear}>
+              <Eraser className="h-4 w-4" aria-hidden="true" /> Clear
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-small"
+              onClick={finish}
+              disabled={!ready || busy}
+            >
+              {lesson.traced ? 'Done (practice)' : 'Done — +15 pts'}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
