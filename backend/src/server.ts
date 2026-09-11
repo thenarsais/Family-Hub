@@ -17,6 +17,7 @@ import kioskRoutes from './routes/kiosk';
 import learningRoutes from './routes/learning';
 import triviaRoutes from './routes/trivia';
 import homeworkRoutes from './routes/homework';
+import readingRoutes from './routes/reading';
 import announcementsRoutes from './routes/announcements';
 import remindersRoutes from './routes/reminders';
 import energyRoutes from './routes/energy';
@@ -169,6 +170,9 @@ app.use('/api/trivia', triviaRoutes);
 
 // Homework (T-20): dated one-shot homework items — board section + parent panel
 app.use('/api/homework', homeworkRoutes);
+
+// Reading challenges (T-21): daily minutes log + weekly total + goal-met streak
+app.use('/api/reading', readingRoutes);
 
 // ================================================
 // PHASE 2 FEATURES: Dashboard & Home Automation

@@ -868,6 +868,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reading/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get today's reading goals, log, week total, and streak */
+        get: operations["getReadingToday"];
+        put?: never;
+        /**
+         * Log today's reading minutes
+         * @description One log per family-local day (409 on a second attempt). Awards the family's flat points value when `minutes` meets the daily goal.
+         */
+        post: operations["logReadingToday"];
+        /**
+         * Undo today's reading log
+         * @description Removes today's log and reverses any points it earned.
+         */
+        delete: operations["undoReadingToday"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reading/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get reading goals
+         * @description `scope=mine` (default) — the caller's goals (defaults when unset). `scope=family` — every active family member's goals, for the parent Manage panel.
+         */
+        get: operations["listReadingGoals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reading/goals/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set a family member's reading goals
+         * @description Upserts `reading_goals`. Family-scoped: the caller must share a family with `userId`.
+         */
+        patch: operations["setReadingGoals"];
+        trace?: never;
+    };
     "/api/habits": {
         parameters: {
             query?: never;
@@ -2817,6 +2882,24 @@ export interface components {
             addedByName?: string | null;
             isOverdue: boolean;
             completed: boolean;
+        };
+        /** @description Per-user reading goals (`reading_goals`). Missing rows default to 20 daily / 100 weekly minutes and 10 points. */
+        ReadingGoals: {
+            dailyMinutes: number;
+            weeklyMinutes: number;
+            pointsValue: number;
+        };
+        /** @description A `ReadingGoals` tagged with the family member it belongs to. */
+        ReadingGoalsWithMember: components["schemas"]["ReadingGoals"] & {
+            /** Format: uuid */
+            userId: string;
+            name?: string | null;
+        };
+        /** @description Today's reading log, if any. `goalMet` / `pointsEarned` are snapshotted against the daily goal at the moment it was logged, not read live from `reading_goals` — a later goal edit never rewrites history. */
+        ReadingLog: {
+            minutes: number;
+            goalMet: boolean;
+            pointsEarned: number;
         };
         /** @description From HabitService's raw-Postgres `habits` table (migration 013) — NOT the Supabase-era `habits` shape in types/database.ts. user_id is the assignee; weekly_target is the "N of 7 days this week" goal. */
         Habit: {
@@ -6349,6 +6432,287 @@ export interface operations {
             };
             /** @description Nothing to undo. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getReadingToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's reading state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        goals?: components["schemas"]["ReadingGoals"];
+                        log?: components["schemas"]["ReadingLog"] | null;
+                        weekMinutes?: number;
+                        streak?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    logReadingToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    minutes: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Logged. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        goals?: components["schemas"]["ReadingGoals"];
+                        log?: components["schemas"]["ReadingLog"];
+                        weekMinutes?: number;
+                        streak?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description minutes missing or negative. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Already logged today. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    undoReadingToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Undone. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** @constant */
+                        message?: "Reading log undone";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Nothing to undo today. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listReadingGoals: {
+        parameters: {
+            query?: {
+                scope?: "mine" | "family";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Goals. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        goals?: components["schemas"]["ReadingGoals"] | components["schemas"]["ReadingGoalsWithMember"][];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    setReadingGoals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    dailyMinutes?: number;
+                    weeklyMinutes?: number;
+                    pointsValue?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        goals?: components["schemas"]["ReadingGoals"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid values, or userId is not a family member. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -120,6 +120,8 @@ tags:
     description: T-09 — one shared daily question + a per-user participation streak (x-user-id auth; migration 018). No games, leaderboard, or badges.
   - name: Homework
     description: T-20 — dated one-shot homework items with a per-item points value, board section + parent panel (x-user-id auth; migration 019). No recurrence, no streak.
+  - name: Reading
+    description: T-21 — a daily reading-minutes log against parent-set daily/weekly goals, flat points on the daily goal, a goal-met streak (x-user-id auth; migration 020).
   - name: Announcements
     description: Family announcements/messaging (x-user-id auth).
   - name: Reminders
@@ -2047,6 +2049,188 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '404':
           description: Nothing to undo.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
+  # READING (x-user-id) — T-21, migration 020
+  # ================================================================
+  /api/reading/today:
+    get:
+      tags: [Reading]
+      summary: Get today's reading goals, log, week total, and streak
+      operationId: getReadingToday
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Today's reading state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  goals: { $ref: '#/components/schemas/ReadingGoals' }
+                  log:
+                    oneOf:
+                      - { $ref: '#/components/schemas/ReadingLog' }
+                      - { type: 'null' }
+                  weekMinutes: { type: integer }
+                  streak: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Reading]
+      summary: Log today's reading minutes
+      description: >-
+        One log per family-local day (409 on a second attempt). Awards the
+        family's flat points value when `minutes` meets the daily goal.
+      operationId: logReadingToday
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [minutes]
+              properties:
+                minutes: { type: integer, minimum: 0 }
+      responses:
+        '201':
+          description: Logged.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  goals: { $ref: '#/components/schemas/ReadingGoals' }
+                  log: { $ref: '#/components/schemas/ReadingLog' }
+                  weekMinutes: { type: integer }
+                  streak: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: minutes missing or negative.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '409':
+          description: Already logged today.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Reading]
+      summary: Undo today's reading log
+      description: Removes today's log and reverses any points it earned.
+      operationId: undoReadingToday
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Undone.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  message: { type: string, const: "Reading log undone" }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: Nothing to undo today.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/reading/goals:
+    get:
+      tags: [Reading]
+      summary: Get reading goals
+      description: >-
+        `scope=mine` (default) — the caller's goals (defaults when unset).
+        `scope=family` — every active family member's goals, for the parent
+        Manage panel.
+      operationId: listReadingGoals
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: scope
+          in: query
+          schema: { type: string, enum: [mine, family], default: mine }
+      responses:
+        '200':
+          description: Goals.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  goals:
+                    oneOf:
+                      - { $ref: '#/components/schemas/ReadingGoals' }
+                      - type: array
+                        items: { $ref: '#/components/schemas/ReadingGoalsWithMember' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/reading/goals/{userId}:
+    patch:
+      tags: [Reading]
+      summary: Set a family member's reading goals
+      description: >-
+        Upserts `reading_goals`. Family-scoped: the caller must share a family
+        with `userId`.
+      operationId: setReadingGoals
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dailyMinutes: { type: number, minimum: 1 }
+                weeklyMinutes: { type: number, minimum: 1 }
+                pointsValue: { type: number, minimum: 1 }
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  goals: { $ref: '#/components/schemas/ReadingGoals' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid values, or userId is not a family member.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -6309,6 +6493,40 @@ components:
             addedByName: { type: [string, 'null'] }
             isOverdue: { type: boolean }
             completed: { type: boolean }
+
+    # ---------------- Reading (hand-rolled schema, migration 020) ----------------
+    ReadingGoals:
+      type: object
+      description: >-
+        Per-user reading goals (`reading_goals`). Missing rows default to
+        20 daily / 100 weekly minutes and 10 points.
+      required: [dailyMinutes, weeklyMinutes, pointsValue]
+      properties:
+        dailyMinutes: { type: integer }
+        weeklyMinutes: { type: integer }
+        pointsValue: { type: integer }
+
+    ReadingGoalsWithMember:
+      description: A `ReadingGoals` tagged with the family member it belongs to.
+      allOf:
+        - $ref: '#/components/schemas/ReadingGoals'
+        - type: object
+          required: [userId]
+          properties:
+            userId: { type: string, format: uuid }
+            name: { type: [string, 'null'] }
+
+    ReadingLog:
+      type: object
+      description: >-
+        Today's reading log, if any. `goalMet` / `pointsEarned` are snapshotted
+        against the daily goal at the moment it was logged, not read live from
+        `reading_goals` — a later goal edit never rewrites history.
+      required: [minutes, goalMet, pointsEarned]
+      properties:
+        minutes: { type: integer }
+        goalMet: { type: boolean }
+        pointsEarned: { type: integer }
 
     # ---------------- Habits + mood (hand-rolled schema, migration 013) ----------------
     Habit:
