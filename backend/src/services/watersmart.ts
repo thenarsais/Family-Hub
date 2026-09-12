@@ -53,6 +53,13 @@ export class WaterSmartFetchError extends Error {
   }
 }
 
+// WaterSmart (or a WAF in front of it) has been observed silently holding a
+// connection open instead of returning an error when it doesn't like a
+// request's pace -- every fetch to it needs its own timeout so a stalled
+// request fails fast instead of hanging the poll (and the caller's HTTP
+// request, for a manual sync) indefinitely.
+const REQUEST_TIMEOUT_MS = 15_000;
+
 // WaterSmart's WAF serves different content (or rejects outright) to an
 // obviously non-browser client -- send browser-shaped headers throughout.
 const BROWSER_HEADERS: Record<string, string> = {
@@ -113,40 +120,61 @@ function extractErrorMessages(html: string): string[] {
   return out;
 }
 
+/**
+ * A successful login gets a 302 (WaterSmart redirects to the site root) --
+ * and critically, the Set-Cookie on THAT redirect response carries a second,
+ * per-session cookie the REST API actually checks (beyond the plain
+ * PHPSESSID every request gets). `fetch`'s default automatic-redirect-follow
+ * silently drops Set-Cookie headers from intermediate hops, so the login
+ * looked "successful" (no scraped error) while the real auth cookie was
+ * discarded -- every subsequent API call then came back 403. `redirect:
+ * 'manual'` is required throughout this function so those cookies are seen.
+ */
 async function login(config: WaterSmartConfig): Promise<CookieJar> {
   const jar = new CookieJar();
   const base = `https://${config.hostname}.watersmart.com`;
   const url = `${base}/index.php/welcome/login?forceEmail=1`;
   const headers = { ...BROWSER_HEADERS, 'Content-Type': 'application/x-www-form-urlencoded' };
 
-  let res = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: new URLSearchParams({ token: '', email: config.email, password: config.password }),
-  });
-  jar.absorb(res);
-  let html = await res.text();
-
-  const refreshToken = extractLoginRefreshToken(html);
-  if (refreshToken) {
-    res = await fetch(url, {
+  const post = async (body: URLSearchParams) => {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { ...headers, Cookie: jar.header() },
-      body: new URLSearchParams({
+      body,
+      redirect: 'manual',
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    jar.absorb(res);
+    return res;
+  };
+
+  const isRedirect = (res: Response) => res.status >= 300 && res.status < 400;
+
+  let res = await post(new URLSearchParams({ token: '', email: config.email, password: config.password }));
+  if (isRedirect(res)) return jar;
+
+  let html = await res.text();
+  const refreshToken = extractLoginRefreshToken(html);
+  if (refreshToken) {
+    res = await post(
+      new URLSearchParams({
         token: '',
         loginRefreshToken: refreshToken,
         email: config.email,
         password: config.password,
       }),
-    });
-    jar.absorb(res);
+    );
+    if (isRedirect(res)) return jar;
     html = await res.text();
   }
 
   const errors = extractErrorMessages(html);
   if (errors.length > 0) throw new WaterSmartAuthError(errors.join('; '));
 
-  return jar;
+  // Neither a redirect nor a scraped error -- the portal's response shape
+  // changed in some way this client doesn't recognize. Fail loudly rather
+  // than silently proceeding with a cookie jar that may not actually work.
+  throw new WaterSmartAuthError('Unrecognized login response (no redirect, no error message)');
 }
 
 interface RawUsageRecord {
@@ -158,7 +186,7 @@ interface RawUsageRecord {
 async function fetchHourlyData(config: WaterSmartConfig, jar: CookieJar): Promise<RawUsageRecord[]> {
   const res = await fetch(
     `https://${config.hostname}.watersmart.com/index.php/rest/v1/Chart/RealTimeChart`,
-    { headers: { ...BROWSER_HEADERS, Cookie: jar.header() } },
+    { headers: { ...BROWSER_HEADERS, Cookie: jar.header() }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
   );
   if (!res.ok) {
     throw new WaterSmartFetchError(`RealTimeChart request failed: HTTP ${res.status}`);
@@ -207,10 +235,18 @@ export async function getUsageSummary(): Promise<WaterUsageSummary> {
     return { configured: false, lastSyncedAt: null, latestReadingAt: null, dailyTotals: [], leakDetected: false };
   }
 
+  // Anchored to the LATEST reading actually on file, not wall-clock now().
+  // WaterSmart's own docs say usage data lags "a day or more" -- true for a
+  // healthy account -- but a meter that's stopped reporting (or an account
+  // whose AMI data has a real gap) can lag by months. Anchoring to now()
+  // would show a permanently-empty card in that case; anchoring to the
+  // latest available reading always shows the last 8 days of whatever data
+  // actually exists.
   const { rows: dailyRows } = await query<{ date: string; gallons: string | null }>(
-    `SELECT to_char(read_datetime, 'YYYY-MM-DD') AS date, SUM(gallons) AS gallons
-     FROM water_usage
-     WHERE read_datetime >= now() - INTERVAL '8 days'
+    `WITH bounds AS (SELECT MAX(read_datetime) AS latest FROM water_usage)
+     SELECT to_char(read_datetime, 'YYYY-MM-DD') AS date, SUM(gallons) AS gallons
+     FROM water_usage, bounds
+     WHERE read_datetime >= bounds.latest - INTERVAL '8 days'
      GROUP BY date
      ORDER BY date ASC`,
   );
@@ -220,8 +256,9 @@ export async function getUsageSummary(): Promise<WaterUsageSummary> {
   );
 
   const { rows: leakRows } = await query<{ count: string }>(
-    `SELECT COUNT(*) AS count FROM water_usage
-     WHERE leak_gallons IS NOT NULL AND leak_gallons > 0 AND read_datetime >= now() - INTERVAL '2 days'`,
+    `WITH bounds AS (SELECT MAX(read_datetime) AS latest FROM water_usage)
+     SELECT COUNT(*) AS count FROM water_usage, bounds
+     WHERE leak_gallons IS NOT NULL AND leak_gallons > 0 AND read_datetime >= bounds.latest - INTERVAL '2 days'`,
   );
 
   return {

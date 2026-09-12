@@ -139,10 +139,12 @@ describe('watersmart service', () => {
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    it('logs in with a single POST when no loginRefreshToken challenge is issued, then upserts the series', async () => {
+    it('logs in with a single POST when it gets an immediate redirect, then upserts the series', async () => {
       setConfigured();
       (global.fetch as jest.Mock)
-        .mockResolvedValueOnce(fakeResponse({ text: '<html>welcome back</html>', setCookies: ['session=abc123; Path=/'] }))
+        // a successful login is a 302 to the site root -- the Set-Cookie on
+        // THIS response is what actually authorizes the chart API call
+        .mockResolvedValueOnce(fakeResponse({ status: 302, setCookies: ['session=abc123; Path=/'] }))
         .mockResolvedValueOnce(
           fakeResponse({
             json: {
@@ -159,11 +161,13 @@ describe('watersmart service', () => {
       const result = await syncWaterUsage();
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
-      // the login POST
+      // the login POST -- redirect:'manual' is required, or fetch would
+      // silently follow the redirect and drop its Set-Cookie header
       const [loginUrl, loginInit] = (global.fetch as jest.Mock).mock.calls[0];
       expect(loginUrl).toBe('https://thornton.watersmart.com/index.php/welcome/login?forceEmail=1');
       expect(loginInit.method).toBe('POST');
-      // the authenticated GET carries the cookie captured from the login response
+      expect(loginInit.redirect).toBe('manual');
+      // the authenticated GET carries the cookie captured from the redirect response
       const [chartUrl, chartInit] = (global.fetch as jest.Mock).mock.calls[1];
       expect(chartUrl).toBe('https://thornton.watersmart.com/index.php/rest/v1/Chart/RealTimeChart');
       expect(chartInit.headers.Cookie).toBe('session=abc123');
@@ -186,7 +190,7 @@ describe('watersmart service', () => {
             text: '<form><input type="hidden" name="loginRefreshToken" value="tok-1"></form>',
           }),
         )
-        .mockResolvedValueOnce(fakeResponse({ text: '<html>ok</html>' }))
+        .mockResolvedValueOnce(fakeResponse({ status: 302 })) // the second POST succeeds (redirect)
         .mockResolvedValueOnce(fakeResponse({ json: { data: { series: [] } } }));
 
       const result = await syncWaterUsage();
@@ -196,6 +200,23 @@ describe('watersmart service', () => {
       expect(secondBody.get('loginRefreshToken')).toBe('tok-1');
       expect(result.synced).toBe(0);
       expect(result.latestReadAt).toBeNull();
+    });
+
+    it('throws WaterSmartAuthError when the login response is neither a redirect nor a scraped error', async () => {
+      setConfigured();
+      // the portal's markup changed in some way this client doesn't
+      // recognize -- fail loudly rather than proceed with a cookie jar that
+      // may not actually be authenticated
+      (global.fetch as jest.Mock).mockResolvedValueOnce(fakeResponse({ text: '<html>???</html>' }));
+
+      let caught: unknown;
+      try {
+        await syncWaterUsage();
+      } catch (err) {
+        caught = err;
+      }
+      expect(caught).toBeInstanceOf(WaterSmartAuthError);
+      expect((caught as Error).message).toMatch(/unrecognized login response/i);
     });
 
     it('throws WaterSmartAuthError and never calls the chart endpoint when the portal reports a login error', async () => {
@@ -219,7 +240,7 @@ describe('watersmart service', () => {
     it('throws WaterSmartFetchError when the chart request is not ok', async () => {
       setConfigured();
       (global.fetch as jest.Mock)
-        .mockResolvedValueOnce(fakeResponse({ text: '<html>ok</html>' }))
+        .mockResolvedValueOnce(fakeResponse({ status: 302 }))
         .mockResolvedValueOnce(fakeResponse({ ok: false, status: 500 }));
 
       await expect(syncWaterUsage()).rejects.toThrow(WaterSmartFetchError);
@@ -228,7 +249,7 @@ describe('watersmart service', () => {
     it('skips a record with a non-numeric read_datetime rather than failing the whole sync', async () => {
       setConfigured();
       (global.fetch as jest.Mock)
-        .mockResolvedValueOnce(fakeResponse({ text: '<html>ok</html>' }))
+        .mockResolvedValueOnce(fakeResponse({ status: 302 }))
         .mockResolvedValueOnce(
           fakeResponse({
             json: { data: { series: [{ read_datetime: 'not-a-number', gallons: 1, leak_gallons: null }] } },
