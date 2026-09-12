@@ -17,6 +17,7 @@
     "seed:learning": "ts-node --transpile-only src/scripts/seed-learning.ts",
     "seed:trivia": "ts-node --transpile-only src/scripts/seed-trivia.ts",
     "seed:rewards": "ts-node --transpile-only src/scripts/seed-reward-library.ts",
+    "seed:maintenance": "ts-node --transpile-only src/scripts/seed-maintenance.ts",
     "test": "jest --passWithNoTests --maxWorkers=2 --testTimeout=10000",
     "test:unit": "jest --testPathPattern=unit --passWithNoTests --maxWorkers=2",
     "test:integration": "jest --testPathPattern=integration --passWithNoTests --maxWorkers=2",

@@ -31,6 +31,7 @@ import familyRoutes from './routes/family';
 import activityLogRoutes from './routes/activity-log';
 import waterRoutes from './routes/water';
 import { startWaterSync } from './services/watersmart';
+import maintenanceRoutes from './routes/maintenance';
 import { responseFormatter } from './middleware/response-formatter';
 import { errorHandler } from './middleware/errorHandler';
 import { normalizeBody } from './middleware/normalize-body';
@@ -224,6 +225,9 @@ app.use('/api/activity', activityLogRoutes);
 // Water usage (FR-139): City of Thornton via WaterSmart -- a background poll
 // keeps it fresh; this route just serves the last-synced data.
 app.use('/api/water', waterRoutes);
+
+// Home maintenance tracker (T-15): user-definable recurring items, family-wide
+app.use('/api/maintenance', maintenanceRoutes);
 
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', externalApisRoutes);
