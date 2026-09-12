@@ -140,6 +140,8 @@ tags:
     description: Energy usage tracking and goals (x-user-id auth for goal endpoints; usage/summary endpoints are unauthenticated).
   - name: Water
     description: FR-139 — City of Thornton water usage via the WaterSmart portal (no official API; scraped login + a JSON usage endpoint). Unauthenticated, family-wide, same as Energy. Credentials are env vars (WATERSMART_HOSTNAME/EMAIL/PASSWORD), not a per-user store — a background poll every 4h keeps water_usage current; POST /sync triggers one on demand (rate-limited to once per 2 minutes).
+  - name: Maintenance
+    description: T-15 (FR-078 + FR-080-core + FR-081) — a family-wide, user-definable list of recurring home-maintenance items (x-user-id auth). "Next due" is always computed (last_done_at + interval_days), never stored; marking done just resets last_done_at to today. No role gate, no points — any signed-in member can manage it, same as the shopping list.
   - name: Calendar
     description: Family calendar events plus Google Calendar OAuth/sync (x-user-id auth; OAuth callback is unauthenticated by nature).
   - name: Family
@@ -4971,6 +4973,170 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
 
   # ================================================================
+  # MAINTENANCE (T-15)
+  # ================================================================
+  /api/maintenance:
+    get:
+      tags: [Maintenance]
+      summary: List the family's maintenance items, soonest-due first
+      operationId: listMaintenanceItems
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Items.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  items: { type: array, items: { $ref: '#/components/schemas/MaintenanceItem' } }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Maintenance]
+      summary: Add a maintenance item
+      operationId: createMaintenanceItem
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, intervalDays]
+              properties:
+                name: { type: string }
+                intervalDays: { type: integer, minimum: 1 }
+                lastDoneAt:
+                  type: string
+                  format: date
+                  description: Defaults to today if omitted — the item's next due date starts a full interval out.
+      responses:
+        '201':
+          description: Added.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  item: { $ref: '#/components/schemas/MaintenanceItem' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing name/intervalDays, or the caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/maintenance/{id}/done:
+    post:
+      tags: [Maintenance]
+      summary: Mark a maintenance item done, rescheduling from today
+      description: Sets last_done_at to today — the whole "completion" mechanic. No points, no history row beyond the item's own updated_at.
+      operationId: markMaintenanceItemDone
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Rescheduled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  item: { $ref: '#/components/schemas/MaintenanceItem' }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such item, or it belongs to a different family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/maintenance/{id}:
+    patch:
+      tags: [Maintenance]
+      summary: Edit a maintenance item
+      operationId: updateMaintenanceItem
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                intervalDays: { type: integer, minimum: 1 }
+                lastDoneAt: { type: string, format: date }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  item: { $ref: '#/components/schemas/MaintenanceItem' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid intervalDays.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such item, or it belongs to a different family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Maintenance]
+      summary: Remove a maintenance item
+      operationId: deleteMaintenanceItem
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such item, or it belongs to a different family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
   # CALENDAR
   # ================================================================
   /api/calendar/events:
@@ -7701,7 +7867,20 @@ components:
         leakDetected:
           type: boolean
           description: True when any reading in the last 2 days carried a nonzero leak_gallons flag.
-        created_at: { type: [string, 'null'], format: date-time }
+
+    MaintenanceItem:
+      type: object
+      description: One row from `maintenance_items`, from `MaintenanceService.getItems` -- next due date and days-until-due are always computed, never stored.
+      required: [id, name, intervalDays, lastDoneAt, nextDueAt, daysUntilDue]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        intervalDays: { type: integer }
+        lastDoneAt: { type: string, format: date }
+        nextDueAt: { type: string, format: date, description: lastDoneAt + intervalDays. }
+        daysUntilDue:
+          type: integer
+          description: Negative when overdue (days past nextDueAt).
 
     # ---------------- Calendar ----------------
     CalendarEvent:

@@ -28,6 +28,7 @@ module.exports = {
     '!src/scripts/seed-learning.ts',
     '!src/scripts/seed-trivia.ts',
     '!src/scripts/seed-reward-library.ts',
+    '!src/scripts/seed-maintenance.ts',
     // Pure type declarations, no runtime behavior to cover.
     '!src/types/database.ts'
   ],
