@@ -11,9 +11,11 @@ import { MealPlannerCard } from '../components/shell/MealPlannerCard';
 import { WeatherCard } from '../components/Weather/WeatherCard';
 import { DressForWeather } from '../components/Weather/DressForWeather';
 import { WaterCard } from '../components/Water/WaterCard';
+import { MaintenanceCard } from '../components/Maintenance/MaintenanceCard';
 import { useAuth } from '../hooks/useAuth';
 import { useWeather, WEATHER_CITIES } from '../hooks/useWeather';
 import { useWater } from '../hooks/useWater';
+import { useMaintenance } from '../hooks/useMaintenance';
 import { useReminders } from '../hooks/useReminders';
 import { useEnergy } from '../hooks/useEnergy';
 import { useFamily } from '../hooks/useFamily';
@@ -27,7 +29,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** The dashboard's reorderable cards, in their out-of-the-box order. The first
  *  few sit in the column beside the calendar; the rest flow into a row below
  *  it — the calendar keeps its hero size either way (FR-131). */
-const CARD_IDS = ['reminders', 'shopping', 'activity', 'family', 'energy', 'water', 'weather', 'dress', 'meals'] as const;
+const CARD_IDS = ['reminders', 'shopping', 'activity', 'family', 'energy', 'water', 'maintenance', 'weather', 'dress', 'meals'] as const;
 const COLUMN_COUNT = 3;
 
 /** Picks loading / empty / content for a widget body so the page can render
@@ -108,6 +110,14 @@ export default function Dashboard() {
   const cardWx = useWeather(weatherCity);
   const { meals, loading: mealsLoading, updateMeal } = useMealPlanner();
   const { summary: waterSummary, loading: waterLoading, error: waterError, syncNow: waterSyncNow, syncing: waterSyncing, syncError: waterSyncError } = useWater();
+  const {
+    items: maintenanceItems,
+    loading: maintenanceLoading,
+    error: maintenanceError,
+    addItem: addMaintenanceItem,
+    markDone: markMaintenanceDone,
+    removeItem: removeMaintenanceItem,
+  } = useMaintenance();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -392,6 +402,18 @@ export default function Dashboard() {
         syncNow={waterSyncNow}
         syncing={waterSyncing}
         syncError={waterSyncError}
+      />
+    ),
+
+    maintenance: (
+      <MaintenanceCard
+        {...cardProps('maintenance')}
+        items={maintenanceItems}
+        loading={maintenanceLoading}
+        error={maintenanceError}
+        onAdd={addMaintenanceItem}
+        onMarkDone={markMaintenanceDone}
+        onRemove={removeMaintenanceItem}
       />
     ),
   };
