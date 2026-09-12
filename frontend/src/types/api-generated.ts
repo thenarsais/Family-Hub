@@ -2070,6 +2070,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/water/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The water usage card's read model
+         * @description Always 200s, even when WaterSmart isn't configured (configured false with empty/null fields) — no auth check, family-wide like Energy.
+         */
+        get: operations["getWaterUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/water/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger a WaterSmart sync right now
+         * @description Logs in and fetches the current hourly series immediately, instead of waiting for the next scheduled poll (every 4h). Rate-limited to once per 2 minutes regardless of caller.
+         */
+        post: operations["syncWaterUsage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar/events": {
         parameters: {
             query?: never;
@@ -3616,6 +3656,29 @@ export interface components {
             points_reward?: number | null;
             /** Format: date-time */
             achieved_at?: string | null;
+        };
+        /** @description The water usage dashboard card's whole read model, from `WaterSmartService.getUsageSummary`. */
+        WaterUsageSummary: {
+            /** @description False when WATERSMART_HOSTNAME/EMAIL/PASSWORD aren't all set — every other field is then a placeholder (null / empty). */
+            configured: boolean;
+            /**
+             * Format: date-time
+             * @description When a poll last wrote a row (success or not
+             */
+            lastSyncedAt: string | null;
+            /**
+             * Format: date-time
+             * @description WaterSmart's own most recent meter reading timestamp — this lags real time
+             */
+            latestReadingAt: string | null;
+            /** @description Up to the last 8 days with data, oldest first. */
+            dailyTotals: {
+                /** Format: date */
+                date: string;
+                gallons: number;
+            }[];
+            /** @description True when any reading in the last 2 days carried a nonzero leak_gallons flag. */
+            leakDetected: boolean;
             /** Format: date-time */
             created_at?: string | null;
         };
@@ -11468,6 +11531,96 @@ export interface operations {
             };
             /** @description Unexpected failure. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getWaterUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Usage summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & components["schemas"]["WaterUsageSummary"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    syncWaterUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Synced. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        /** @description Number of readings upserted this call. */
+                        synced?: number;
+                        /** Format: date-time */
+                        latestReadAt?: string | null;
+                    };
+                };
+            };
+            /** @description WaterSmart isn't configured (WATERSMART_HOSTNAME/EMAIL/PASSWORD unset). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description WaterSmart rejected the login — the configured email/password is wrong. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Called again within the 2-minute throttle window. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description WaterSmart request failed for a reason other than bad credentials. */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

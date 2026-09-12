@@ -29,6 +29,8 @@ import shoppingRoutes from './routes/shopping';
 import mealsRoutes from './routes/meals';
 import familyRoutes from './routes/family';
 import activityLogRoutes from './routes/activity-log';
+import waterRoutes from './routes/water';
+import { startWaterSync } from './services/watersmart';
 import { responseFormatter } from './middleware/response-formatter';
 import { errorHandler } from './middleware/errorHandler';
 import { normalizeBody } from './middleware/normalize-body';
@@ -219,6 +221,10 @@ app.use('/api/family', familyRoutes);
 // Activity log endpoints: Dashboard activity feed
 app.use('/api/activity', activityLogRoutes);
 
+// Water usage (FR-139): City of Thornton via WaterSmart -- a background poll
+// keeps it fresh; this route just serves the last-synced data.
+app.use('/api/water', waterRoutes);
+
 // External APIs: Dictionary, Weather, Email
 app.use('/api/external', externalApisRoutes);
 
@@ -336,6 +342,8 @@ app.use(errorHandler);
 // ================================================
 // START SERVER
 // ================================================
+
+startWaterSync();
 
 app.listen(PORT, () => {
   console.log(`\n🚀 ====================================`);
