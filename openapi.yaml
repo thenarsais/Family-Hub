@@ -138,6 +138,8 @@ tags:
     description: The family meal planner (x-user-id auth; family-scoped; one row per date + slot).
   - name: Energy
     description: Energy usage tracking and goals (x-user-id auth for goal endpoints; usage/summary endpoints are unauthenticated).
+  - name: Water
+    description: FR-139 — City of Thornton water usage via the WaterSmart portal (no official API; scraped login + a JSON usage endpoint). Unauthenticated, family-wide, same as Energy. Credentials are env vars (WATERSMART_HOSTNAME/EMAIL/PASSWORD), not a per-user store — a background poll every 4h keeps water_usage current; POST /sync triggers one on demand (rate-limited to once per 2 minutes).
   - name: Calendar
     description: Family calendar events plus Google Calendar OAuth/sync (x-user-id auth; OAuth callback is unauthenticated by nature).
   - name: Family
@@ -4916,6 +4918,59 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
 
   # ================================================================
+  # WATER (FR-139)
+  # ================================================================
+  /api/water/usage:
+    get:
+      tags: [Water]
+      summary: The water usage card's read model
+      description: Always 200s, even when WaterSmart isn't configured (configured false with empty/null fields) — no auth check, family-wide like Energy.
+      operationId: getWaterUsage
+      responses:
+        '200':
+          description: Usage summary.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - $ref: '#/components/schemas/WaterUsageSummary'
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/water/sync:
+    post:
+      tags: [Water]
+      summary: Trigger a WaterSmart sync right now
+      description: Logs in and fetches the current hourly series immediately, instead of waiting for the next scheduled poll (every 4h). Rate-limited to once per 2 minutes regardless of caller.
+      operationId: syncWaterUsage
+      responses:
+        '200':
+          description: Synced.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/EnvelopeSuccess'
+                  - type: object
+                    properties:
+                      synced: { type: integer, description: Number of readings upserted this call. }
+                      latestReadAt: { type: [string, 'null'], format: date-time }
+        '400':
+          description: WaterSmart isn't configured (WATERSMART_HOSTNAME/EMAIL/PASSWORD unset).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: WaterSmart rejected the login — the configured email/password is wrong.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '429':
+          description: Called again within the 2-minute throttle window.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '502':
+          description: WaterSmart request failed for a reason other than bad credentials.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
   # CALENDAR
   # ================================================================
   /api/calendar/events:
@@ -7623,6 +7678,29 @@ components:
         status: { type: [string, 'null'], description: "GET /api/energy/goals filters status = 'active'." }
         points_reward: { type: [integer, 'null'] }
         achieved_at: { type: [string, 'null'], format: date-time }
+
+    WaterUsageSummary:
+      type: object
+      description: The water usage dashboard card's whole read model, from `WaterSmartService.getUsageSummary`.
+      required: [configured, lastSyncedAt, latestReadingAt, dailyTotals, leakDetected]
+      properties:
+        configured:
+          type: boolean
+          description: False when WATERSMART_HOSTNAME/EMAIL/PASSWORD aren't all set — every other field is then a placeholder (null / empty).
+        lastSyncedAt: { type: [string, 'null'], format: date-time, description: When a poll last wrote a row (success or not, this only reflects writes). }
+        latestReadingAt: { type: [string, 'null'], format: date-time, description: WaterSmart's own most recent meter reading timestamp — this lags real time, often by a day or more. }
+        dailyTotals:
+          type: array
+          description: Up to the last 8 days with data, oldest first.
+          items:
+            type: object
+            required: [date, gallons]
+            properties:
+              date: { type: string, format: date }
+              gallons: { type: number }
+        leakDetected:
+          type: boolean
+          description: True when any reading in the last 2 days carried a nonzero leak_gallons flag.
         created_at: { type: [string, 'null'], format: date-time }
 
     # ---------------- Calendar ----------------
