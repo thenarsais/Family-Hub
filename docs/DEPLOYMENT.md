@@ -18,7 +18,7 @@ variant (needs a paid domain, ~$10/yr) is kept at the end for later if the
 | Backend host | **A home mini-PC** (to be purchased — small always-on Linux box). |
 | Frontend host | **Cloudflare Pages** on the free `*.pages.dev` hostname (auto-deploys from `main`). |
 | Public ingress for the backend | **Tailscale Funnel** — `tailscale funnel 3000` on the box → a stable `https://<box>.<tailnet>.ts.net` URL with a real Let's Encrypt cert, no port-forwarding, home IP never exposed. Free for personal use. |
-| Database | **Supabase managed Postgres**, prod project. Only work is applying migrations 001–026 + the learning & trivia seeds. |
+| Database | **Supabase managed Postgres**, prod project. Only work is applying migrations 001–027 + the learning & trivia seeds. |
 | Deploy trigger | **Split** — frontend auto (Pages builds on push); backend **manual scripted** (`./scripts/deploy.sh` on the box). Rationale below. |
 | Redis | **Yes, a tiny container.** The prod env check (`config/environment.ts`) requires `REDIS_URL`; a 5 MB `redis:7-alpine` alongside the API satisfies it and gives real cross-restart caching for weather/dictionary. |
 
@@ -67,7 +67,7 @@ webhook, or add a self-hosted runner.
                     (browser also talks              ┌──────────────────────────┐
                      directly to Supabase            │  Supabase (managed)      │
                      for auth via the anon key)      │  prod project            │
-                                                     │  migrations 001–026      │
+                                                     │  migrations 001–027      │
                                                      └──────────────────────────┘
 ```
 
@@ -92,6 +92,8 @@ connections and Tailscale's edge terminates TLS and forwards to `localhost:3000`
 - [ ] **Carry over the WaterSmart credentials** (FR-139) — `WATERSMART_HOSTNAME`
       (e.g. `thornton`), `WATERSMART_EMAIL`, `WATERSMART_PASSWORD`. Optional —
       the water usage card just no-ops without them.
+- [ ] **Carry over `GOOGLE_MAPS_API_KEY`** (T-16, Directions API) — optional,
+      the commute card just shows "not connected" without it.
 - [ ] *(Optional, not now)* a domain — only if you later want pretty hostnames
       or move to the Cloudflare-Tunnel variant. ~$10/yr.
 
@@ -104,7 +106,7 @@ connections and Tailscale's edge terminates TLS and forwards to `localhost:3000`
 ### 1. Supabase prod (one-time)
 
 1. Confirm the prod project is unpaused.
-2. Apply migrations **001 → 026** in order (the same one-off `pg` script used
+2. Apply migrations **001 → 027** in order (the same one-off `pg` script used
    for dev, pointed at the prod `DATABASE_URL`). Skip `003_seed_demo_users.sql`
    — that seeds demo accounts, not wanted in prod.
 3. Run **`npm run seed:learning`**, **`npm run seed:trivia`**, **`npm run
