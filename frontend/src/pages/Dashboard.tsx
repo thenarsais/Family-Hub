@@ -12,10 +12,12 @@ import { WeatherCard } from '../components/Weather/WeatherCard';
 import { DressForWeather } from '../components/Weather/DressForWeather';
 import { WaterCard } from '../components/Water/WaterCard';
 import { MaintenanceCard } from '../components/Maintenance/MaintenanceCard';
+import { CommuteCard } from '../components/Commute/CommuteCard';
 import { useAuth } from '../hooks/useAuth';
 import { useWeather, WEATHER_CITIES } from '../hooks/useWeather';
 import { useWater } from '../hooks/useWater';
 import { useMaintenance } from '../hooks/useMaintenance';
+import { useCommute } from '../hooks/useCommute';
 import { useReminders } from '../hooks/useReminders';
 import { useEnergy } from '../hooks/useEnergy';
 import { useFamily } from '../hooks/useFamily';
@@ -29,7 +31,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** The dashboard's reorderable cards, in their out-of-the-box order. The first
  *  few sit in the column beside the calendar; the rest flow into a row below
  *  it — the calendar keeps its hero size either way (FR-131). */
-const CARD_IDS = ['reminders', 'shopping', 'activity', 'family', 'energy', 'water', 'maintenance', 'weather', 'dress', 'meals'] as const;
+const CARD_IDS = ['reminders', 'shopping', 'activity', 'family', 'energy', 'water', 'maintenance', 'commute', 'weather', 'dress', 'meals'] as const;
 const COLUMN_COUNT = 3;
 
 /** Picks loading / empty / content for a widget body so the page can render
@@ -118,6 +120,15 @@ export default function Dashboard() {
     markDone: markMaintenanceDone,
     removeItem: removeMaintenanceItem,
   } = useMaintenance();
+  const {
+    summary: commuteSummary,
+    loading: commuteLoading,
+    error: commuteError,
+    addRoute: addCommuteRoute,
+    removeRoute: removeCommuteRoute,
+    setHomeAddress: setCommuteHomeAddress,
+    setNoSchoolToday: setCommuteNoSchoolToday,
+  } = useCommute();
 
   const caller = members.find((m) => m.user_id === user?.id);
   const canManage = caller ? ['admin', 'parent'].includes(caller.role) : false;
@@ -414,6 +425,22 @@ export default function Dashboard() {
         onAdd={addMaintenanceItem}
         onMarkDone={markMaintenanceDone}
         onRemove={removeMaintenanceItem}
+      />
+    ),
+
+    commute: (
+      <CommuteCard
+        {...cardProps('commute')}
+        configured={commuteSummary.configured}
+        homeAddress={commuteSummary.homeAddress}
+        noSchoolToday={commuteSummary.noSchoolToday}
+        routes={commuteSummary.routes}
+        loading={commuteLoading}
+        error={commuteError}
+        onAddRoute={addCommuteRoute}
+        onRemoveRoute={removeCommuteRoute}
+        onSetHomeAddress={setCommuteHomeAddress}
+        onSetNoSchoolToday={setCommuteNoSchoolToday}
       />
     ),
   };
