@@ -142,6 +142,8 @@ tags:
     description: FR-139 — City of Thornton water usage via the WaterSmart portal (no official API; scraped login + a JSON usage endpoint). Unauthenticated, family-wide, same as Energy. Credentials are env vars (WATERSMART_HOSTNAME/EMAIL/PASSWORD), not a per-user store — a background poll every 4h keeps water_usage current; POST /sync triggers one on demand (rate-limited to once per 2 minutes).
   - name: Maintenance
     description: T-15 (FR-078 + FR-080-core + FR-081) — a family-wide, user-definable list of recurring home-maintenance items (x-user-id auth). "Next due" is always computed (last_done_at + interval_days), never stored; marking done just resets last_done_at to today. No role gate, no points — any signed-in member can manage it, same as the shopping list.
+  - name: Commute
+    description: T-16 (FR-083/084/085) — a commute/school-run card, one route per kid. Google Directions (traffic-aware, x-user-id auth, needs GOOGLE_MAPS_API_KEY) computes a live "leave by" time (arriveBy − duration-in-traffic − buffer) plus a traffic-delay figure for a green/yellow/red status. Home address + a same-day "no school today" override live on family_settings.
   - name: Calendar
     description: Family calendar events plus Google Calendar OAuth/sync (x-user-id auth; OAuth callback is unauthenticated by nature).
   - name: Family
@@ -5137,6 +5139,199 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
 
   # ================================================================
+  # COMMUTE (T-16)
+  # ================================================================
+  /api/commute/today:
+    get:
+      tags: [Commute]
+      summary: The dashboard card's read model -- routes plus live traffic-derived leave-by times
+      operationId: getCommuteToday
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Always 200, even when Google Maps isn't configured yet (configured -> false, routes carry nulls).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommuteSummary'
+                  - type: object
+                    properties:
+                      status: { type: string, const: success }
+                      timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/commute/routes:
+    get:
+      tags: [Commute]
+      summary: List the family's commute routes (no live traffic call -- for the manage panel)
+      operationId: listCommuteRoutes
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Routes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  routes: { type: array, items: { $ref: '#/components/schemas/CommuteRoute' } }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    post:
+      tags: [Commute]
+      summary: Add a commute route (one per kid)
+      operationId: createCommuteRoute
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, destinationAddress, arriveByTime]
+              properties:
+                label: { type: string }
+                destinationAddress: { type: string }
+                arriveByTime: { type: string, description: '"HH:MM".' }
+                bufferMinutes: { type: integer, minimum: 0, description: Defaults to 10 if omitted. }
+      responses:
+        '201':
+          description: Added.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  route: { $ref: '#/components/schemas/CommuteRoute' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing/invalid fields, or the caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/commute/routes/{id}:
+    patch:
+      tags: [Commute]
+      summary: Edit a commute route
+      operationId: updateCommuteRoute
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label: { type: string }
+                destinationAddress: { type: string }
+                arriveByTime: { type: string }
+                bufferMinutes: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  route: { $ref: '#/components/schemas/CommuteRoute' }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid arriveByTime/bufferMinutes.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such route, or it belongs to a different family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+    delete:
+      tags: [Commute]
+      summary: Remove a commute route
+      operationId: deleteCommuteRoute
+      security: [{ userIdHeader: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '404':
+          description: No such route, or it belongs to a different family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/commute/settings:
+    put:
+      tags: [Commute]
+      summary: Set the shared home address and/or today's "no school" override
+      operationId: updateCommuteSettings
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                homeAddress: { type: string }
+                noSchoolToday: { type: boolean, description: true hides the card for today only -- it never needs resetting. }
+      responses:
+        '200':
+          description: Returns the fresh summary.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CommuteSummary'
+                  - type: object
+                    properties:
+                      status: { type: string, const: success }
+                      timestamp: { type: string, format: date-time }
+        '400':
+          description: Invalid homeAddress/noSchoolToday, or the caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  # ================================================================
   # CALENDAR
   # ================================================================
   /api/calendar/events:
@@ -7881,6 +8076,41 @@ components:
         daysUntilDue:
           type: integer
           description: Negative when overdue (days past nextDueAt).
+
+    CommuteRoute:
+      type: object
+      description: One row from `commute_routes` -- a kid's school run, no live traffic data.
+      required: [id, label, destinationAddress, arriveByTime, bufferMinutes]
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string, description: 'Free text, e.g. "Krish''s school".' }
+        destinationAddress: { type: string }
+        arriveByTime: { type: string, description: '"HH:MM" -- the school''s bell time.' }
+        bufferMinutes: { type: integer }
+
+    CommuteRouteStatus:
+      allOf:
+        - $ref: '#/components/schemas/CommuteRoute'
+        - type: object
+          description: A route plus live traffic-derived numbers from `CommuteService.getSummary` -- all nullable when Google Maps isn't configured yet or that route's Directions call failed.
+          properties:
+            durationInTrafficMin: { type: [integer, 'null'] }
+            distanceMi: { type: [number, 'null'] }
+            leaveByTime: { type: [string, 'null'], description: '"HH:MM" local to the family''s timezone -- arriveByTime minus traffic duration minus buffer.' }
+            minutesUntilLeave: { type: [integer, 'null'], description: Negative once the leave-by moment has passed. }
+            trafficDelayMin: { type: [integer, 'null'], description: durationInTraffic minus the no-traffic baseline duration -- the basis for the green/yellow/red status. }
+            error: { type: string, enum: [not-configured, directions-failed] }
+
+    CommuteSummary:
+      type: object
+      required: [configured, homeAddress, noSchoolToday, routes]
+      properties:
+        configured: { type: boolean, description: GOOGLE_MAPS_API_KEY is set AND a home address is configured. }
+        homeAddress: { type: [string, 'null'] }
+        noSchoolToday:
+          type: boolean
+          description: True when commute_no_school_date on family_settings equals today in the family's timezone -- a same-day-only override, never needs resetting.
+        routes: { type: array, items: { $ref: '#/components/schemas/CommuteRouteStatus' } }
 
     # ---------------- Calendar ----------------
     CalendarEvent:
