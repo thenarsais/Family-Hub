@@ -2166,6 +2166,76 @@ export interface paths {
         patch: operations["updateMaintenanceItem"];
         trace?: never;
     };
+    "/api/commute/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The dashboard card's read model -- routes plus live traffic-derived leave-by times */
+        get: operations["getCommuteToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/commute/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the family's commute routes (no live traffic call -- for the manage panel) */
+        get: operations["listCommuteRoutes"];
+        put?: never;
+        /** Add a commute route (one per kid) */
+        post: operations["createCommuteRoute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/commute/routes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a commute route */
+        delete: operations["deleteCommuteRoute"];
+        options?: never;
+        head?: never;
+        /** Edit a commute route */
+        patch: operations["updateCommuteRoute"];
+        trace?: never;
+    };
+    "/api/commute/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the shared home address and/or today's "no school" override */
+        put: operations["updateCommuteSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calendar/events": {
         parameters: {
             query?: never;
@@ -3751,6 +3821,37 @@ export interface components {
             nextDueAt: string;
             /** @description Negative when overdue (days past nextDueAt). */
             daysUntilDue: number;
+        };
+        /** @description One row from `commute_routes` -- a kid's school run, no live traffic data. */
+        CommuteRoute: {
+            /** Format: uuid */
+            id: string;
+            /** @description Free text, e.g. "Krish's school". */
+            label: string;
+            destinationAddress: string;
+            /** @description "HH:MM" -- the school's bell time. */
+            arriveByTime: string;
+            bufferMinutes: number;
+        };
+        CommuteRouteStatus: components["schemas"]["CommuteRoute"] & {
+            durationInTrafficMin?: number | null;
+            distanceMi?: number | null;
+            /** @description "HH:MM" local to the family's timezone -- arriveByTime minus traffic duration minus buffer. */
+            leaveByTime?: string | null;
+            /** @description Negative once the leave-by moment has passed. */
+            minutesUntilLeave?: number | null;
+            /** @description durationInTraffic minus the no-traffic baseline duration -- the basis for the green/yellow/red status. */
+            trafficDelayMin?: number | null;
+            /** @enum {string} */
+            error?: "not-configured" | "directions-failed";
+        };
+        CommuteSummary: {
+            /** @description GOOGLE_MAPS_API_KEY is set AND a home address is configured. */
+            configured: boolean;
+            homeAddress: string | null;
+            /** @description True when commute_no_school_date on family_settings equals today in the family's timezone -- a same-day-only override, never needs resetting. */
+            noSchoolToday: boolean;
+            routes: components["schemas"]["CommuteRouteStatus"][];
         };
         /** @description Raw `calendar_events` table row (Tables<'calendar_events'>['Row']). */
         CalendarEvent: {
@@ -11974,6 +12075,344 @@ export interface operations {
             };
             /** @description No such item, or it belongs to a different family. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getCommuteToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Always 200, even when Google Maps isn't configured yet (configured -> false, routes carry nulls). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommuteSummary"] & {
+                        /** @constant */
+                        status?: "success";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    listCommuteRoutes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Routes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        routes?: components["schemas"]["CommuteRoute"][];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    createCommuteRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    label: string;
+                    destinationAddress: string;
+                    /** @description "HH:MM". */
+                    arriveByTime: string;
+                    /** @description Defaults to 10 if omitted. */
+                    bufferMinutes?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Added. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        route?: components["schemas"]["CommuteRoute"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing/invalid fields, or the caller has no family. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    deleteCommuteRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such route, or it belongs to a different family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateCommuteRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    label?: string;
+                    destinationAddress?: string;
+                    arriveByTime?: string;
+                    bufferMinutes?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        route?: components["schemas"]["CommuteRoute"];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid arriveByTime/bufferMinutes. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No such route, or it belongs to a different family. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateCommuteSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    homeAddress?: string;
+                    /** @description true hides the card for today only -- it never needs resetting. */
+                    noSchoolToday?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Returns the fresh summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommuteSummary"] & {
+                        /** @constant */
+                        status?: "success";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Invalid homeAddress/noSchoolToday, or the caller has no family. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
