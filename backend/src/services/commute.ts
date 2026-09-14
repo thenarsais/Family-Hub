@@ -177,7 +177,7 @@ export class CommuteService {
     const row = await queryOne<{ user_id: string }>(
       `SELECT ui.user_id
          FROM user_integrations ui
-         JOIN family_members fm ON fm.user_id = ui.user_id
+         JOIN family_members fm ON fm.user_id::text = ui.user_id
         WHERE fm.family_id = $1 AND ui.provider = 'google_calendar' AND ui.is_active = true
         LIMIT 1`,
       [familyId],
