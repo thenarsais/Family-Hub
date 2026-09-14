@@ -9,6 +9,8 @@ const mockCommuteService = {
   deleteRoute: jest.fn(),
   setHomeAddress: jest.fn(),
   setNoSchoolToday: jest.fn(),
+  getSuggestions: jest.fn(),
+  dismissSuggestion: jest.fn(),
 };
 
 jest.mock('../../services/commute', () => ({
@@ -115,6 +117,73 @@ describe('Commute routes', () => {
         .expect(400);
       expect(res.body.message).toMatch(/family/i);
     });
+
+    it('T-26: accepts an event-linked route with no arriveByTime when eventTitlePattern is set', async () => {
+      mockCommuteService.addRoute.mockResolvedValueOnce({ ...ROUTE, arriveByTime: null, eventTitlePattern: 'Swim Lessons' });
+      const res = await U(request(app).post('/api/commute/routes'))
+        .send({ label: "Karishma's swim", destinationAddress: '456 Fallback Ave', eventTitlePattern: 'Swim Lessons' })
+        .expect(201);
+      expect(res.body.route.eventTitlePattern).toBe('Swim Lessons');
+      expect(mockCommuteService.addRoute).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ eventTitlePattern: 'Swim Lessons', arriveByTime: undefined }),
+      );
+    });
+
+    it('T-26: 400s when neither arriveByTime nor eventTitlePattern is provided', async () => {
+      const res = await U(request(app).post('/api/commute/routes'))
+        .send({ label: 'x', destinationAddress: 'y' })
+        .expect(400);
+      expect(res.body.message).toMatch(/arriveByTime/i);
+    });
+
+    it('T-26: 400s on an empty originOverride', async () => {
+      const res = await U(request(app).post('/api/commute/routes'))
+        .send({ label: 'x', destinationAddress: 'y', arriveByTime: '08:00', originOverride: '  ' })
+        .expect(400);
+      expect(res.body.message).toMatch(/originOverride/i);
+    });
+  });
+
+  describe('GET /api/commute/suggestions (T-26)', () => {
+    it('401s without x-user-id', async () => {
+      await request(app).get('/api/commute/suggestions').expect(401);
+    });
+
+    it('returns suggestions', async () => {
+      const suggestion = { titlePattern: 'Swim Lessons', matchedKeyword: 'swim', occurrenceCount: 2, nextDate: '2026-09-20', suggestedLocation: '123 Pool Rd' };
+      mockCommuteService.getSuggestions.mockResolvedValueOnce([suggestion]);
+      const res = await U(request(app).get('/api/commute/suggestions')).expect(200);
+      expect(res.body.suggestions).toEqual([suggestion]);
+    });
+
+    it('500s on a service error', async () => {
+      mockCommuteService.getSuggestions.mockRejectedValueOnce(new Error('boom'));
+      await U(request(app).get('/api/commute/suggestions')).expect(500);
+    });
+  });
+
+  describe('POST /api/commute/suggestions/dismiss (T-26)', () => {
+    it('401s without x-user-id', async () => {
+      await request(app).post('/api/commute/suggestions/dismiss').expect(401);
+    });
+
+    it('400s without a titlePattern', async () => {
+      const res = await U(request(app).post('/api/commute/suggestions/dismiss')).send({}).expect(400);
+      expect(res.body.message).toMatch(/titlePattern/i);
+    });
+
+    it('dismisses a pattern', async () => {
+      mockCommuteService.dismissSuggestion.mockResolvedValueOnce(undefined);
+      await U(request(app).post('/api/commute/suggestions/dismiss')).send({ titlePattern: 'Swim Lessons' }).expect(200);
+      expect(mockCommuteService.dismissSuggestion).toHaveBeenCalledWith('user-1', 'Swim Lessons');
+    });
+
+    it("400s with a 'set up a family first' message when the caller has no family", async () => {
+      mockCommuteService.dismissSuggestion.mockRejectedValueOnce(new Error('no-family'));
+      const res = await U(request(app).post('/api/commute/suggestions/dismiss')).send({ titlePattern: 'x' }).expect(400);
+      expect(res.body.message).toMatch(/family/i);
+    });
   });
 
   describe('PATCH /api/commute/routes/:id', () => {
@@ -136,6 +205,25 @@ describe('Commute routes', () => {
         .send({ arriveByTime: 'nope' })
         .expect(400);
       expect(res.body.message).toMatch(/arriveByTime/i);
+    });
+
+    it('T-26: converts a route to event-linked (eventTitlePattern set, arriveByTime cleared)', async () => {
+      mockCommuteService.updateRoute.mockResolvedValueOnce({ ...ROUTE, arriveByTime: null, eventTitlePattern: 'Kung Fu' });
+      const res = await U(request(app).patch('/api/commute/routes/route-1'))
+        .send({ eventTitlePattern: 'Kung Fu', arriveByTime: null })
+        .expect(200);
+      expect(res.body.route.eventTitlePattern).toBe('Kung Fu');
+      expect(mockCommuteService.updateRoute).toHaveBeenCalledWith(
+        'user-1',
+        'route-1',
+        expect.objectContaining({ eventTitlePattern: 'Kung Fu', arriveByTime: null }),
+      );
+    });
+
+    it('T-26: sets an originOverride', async () => {
+      mockCommuteService.updateRoute.mockResolvedValueOnce({ ...ROUTE, originOverride: '789 School Ave' });
+      await U(request(app).patch('/api/commute/routes/route-1')).send({ originOverride: '789 School Ave' }).expect(200);
+      expect(mockCommuteService.updateRoute).toHaveBeenCalledWith('user-1', 'route-1', expect.objectContaining({ originOverride: '789 School Ave' }));
     });
   });
 

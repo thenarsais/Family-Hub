@@ -5191,7 +5191,7 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
     post:
       tags: [Commute]
-      summary: Add a commute route (one per kid)
+      summary: Add a commute route (one per kid) -- either fixed-schedule (arriveByTime) or event-linked (T-26, eventTitlePattern)
       operationId: createCommuteRoute
       security: [{ userIdHeader: [] }]
       requestBody:
@@ -5200,12 +5200,16 @@ paths:
           application/json:
             schema:
               type: object
-              required: [label, destinationAddress, arriveByTime]
+              required: [label, destinationAddress]
+              description: Exactly one of arriveByTime or eventTitlePattern is required.
               properties:
                 label: { type: string }
-                destinationAddress: { type: string }
-                arriveByTime: { type: string, description: '"HH:MM".' }
+                destinationAddress: { type: string, description: The saved fallback destination -- an event-linked route's live event location wins when present. }
+                arriveByTime: { type: string, description: '"HH:MM". Required unless eventTitlePattern is set.' }
                 bufferMinutes: { type: integer, minimum: 0, description: Defaults to 10 if omitted. }
+                familyMemberId: { type: string, format: uuid, description: 'T-26: the saved default person for this trip.' }
+                eventTitlePattern: { type: string, description: 'T-26: makes this route event-linked instead of fixed-schedule.' }
+                originOverride: { type: string, description: 'T-26: leave from somewhere other than the family home address.' }
       responses:
         '201':
           description: Added.
@@ -5243,8 +5247,11 @@ paths:
               properties:
                 label: { type: string }
                 destinationAddress: { type: string }
-                arriveByTime: { type: string }
+                arriveByTime: { type: [string, 'null'], description: Pass null when switching a route to event-linked via eventTitlePattern. }
                 bufferMinutes: { type: integer, minimum: 0 }
+                familyMemberId: { type: string, format: uuid }
+                eventTitlePattern: { type: [string, 'null'], description: Pass null to switch a route back to fixed-schedule. }
+                originOverride: { type: [string, 'null'] }
       responses:
         '200':
           description: Updated.
@@ -5290,6 +5297,65 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '404':
           description: No such route, or it belongs to a different family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/commute/suggestions:
+    get:
+      tags: [Commute]
+      summary: T-26 -- calendar events matching a trip keyword, not already a confirmed route or a dismissed pattern
+      operationId: getCommuteSuggestions
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Suggestions (empty when no Google account is connected, or nothing new matches).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  suggestions: { type: array, items: { $ref: '#/components/schemas/CommuteTripSuggestion' } }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '500':
+          description: Unexpected failure.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/commute/suggestions/dismiss:
+    post:
+      tags: [Commute]
+      summary: T-26 -- decline a suggested pattern; it won't be suggested again
+      operationId: dismissCommuteSuggestion
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titlePattern]
+              properties:
+                titlePattern: { type: string }
+      responses:
+        '200':
+          description: Dismissed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing titlePattern, or the caller has no family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
         '500':
           description: Unexpected failure.
@@ -8079,26 +8145,31 @@ components:
 
     CommuteRoute:
       type: object
-      description: One row from `commute_routes` -- a kid's school run, no live traffic data.
-      required: [id, label, destinationAddress, arriveByTime, bufferMinutes]
+      description: One row from `commute_routes` -- either FIXED-SCHEDULE (a stored arrive-by time) or EVENT-LINKED (T-26 -- eventTitlePattern set, arriveByTime null, derived daily from the matching calendar event).
+      required: [id, label, destinationAddress, arriveByTime, bufferMinutes, familyMemberId, eventTitlePattern, originOverride]
       properties:
         id: { type: string, format: uuid }
         label: { type: string, description: 'Free text, e.g. "Krish''s school".' }
-        destinationAddress: { type: string }
-        arriveByTime: { type: string, description: '"HH:MM" -- the school''s bell time.' }
+        destinationAddress: { type: string, description: The saved fallback destination -- an event-linked route prefers its matched event's own `location` each day when present. }
+        arriveByTime: { type: [string, 'null'], description: '"HH:MM" -- the fixed bell time. Null for an event-linked route (T-26), whose arrive-by comes from the matching calendar event''s own start time each day.' }
         bufferMinutes: { type: integer }
+        familyMemberId: { type: [string, 'null'], format: uuid, description: 'T-26: the saved default person for this route -- overridden per-occurrence by a live "Going" tag (FR-153) on the matched event when present.' }
+        eventTitlePattern: { type: [string, 'null'], description: 'T-26: when set, this route is event-linked -- it only appears on a day a calendar event with this exact title occurs.' }
+        originOverride: { type: [string, 'null'], description: 'T-26: leave from somewhere other than the family home address (e.g. picked up from school) -- rare, not a full multi-leg trip model.' }
 
     CommuteRouteStatus:
       allOf:
         - $ref: '#/components/schemas/CommuteRoute'
         - type: object
-          description: A route plus live traffic-derived numbers from `CommuteService.getSummary` -- all nullable when Google Maps isn't configured yet or that route's Directions call failed.
+          description: A route plus live traffic-derived numbers from `CommuteService.getSummary` -- all nullable when Google Maps isn't configured yet or that route's Directions call failed. An event-linked route with no matching calendar event today is omitted from the list entirely, not returned with nulls.
+          required: [matchedEventTitle]
           properties:
             durationInTrafficMin: { type: [integer, 'null'] }
             distanceMi: { type: [number, 'null'] }
             leaveByTime: { type: [string, 'null'], description: '"HH:MM" local to the family''s timezone -- arriveByTime minus traffic duration minus buffer.' }
             minutesUntilLeave: { type: [integer, 'null'], description: Negative once the leave-by moment has passed. }
             trafficDelayMin: { type: [integer, 'null'], description: durationInTraffic minus the no-traffic baseline duration -- the basis for the green/yellow/red status. }
+            matchedEventTitle: { type: [string, 'null'], description: 'T-26: today''s actually-matched calendar event title, for an event-linked route.' }
             error: { type: string, enum: [not-configured, directions-failed] }
 
     CommuteSummary:
@@ -8110,7 +8181,21 @@ components:
         noSchoolToday:
           type: boolean
           description: True when commute_no_school_date on family_settings equals today in the family's timezone -- a same-day-only override, never needs resetting.
-        routes: { type: array, items: { $ref: '#/components/schemas/CommuteRouteStatus' } }
+        routes:
+          type: array
+          items: { $ref: '#/components/schemas/CommuteRouteStatus' }
+          description: Sorted soonest-to-leave first, mixing fixed-schedule and event-linked routes.
+
+    CommuteTripSuggestion:
+      type: object
+      description: 'T-26 -- a calendar event whose title matched a trip keyword (e.g. "swim", "dentist") and isn''t already a confirmed route or a dismissed pattern.'
+      required: [titlePattern, matchedKeyword, occurrenceCount, nextDate, suggestedLocation]
+      properties:
+        titlePattern: { type: string, description: The event's exact title -- what confirming this suggestion stores as the route's eventTitlePattern. }
+        matchedKeyword: { type: string, description: Which keyword triggered the suggestion -- display-only, the most specific match when several keywords match. }
+        occurrenceCount: { type: integer, description: How many times this exact title appears in the next 14 days. }
+        nextDate: { type: [string, 'null'], format: date, description: '"YYYY-MM-DD" of the next occurrence.' }
+        suggestedLocation: { type: [string, 'null'], description: The event's own `location` field, if it has one -- prefilled as the destination when confirming. }
 
     # ---------------- Calendar ----------------
     CalendarEvent:
