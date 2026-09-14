@@ -2193,7 +2193,7 @@ export interface paths {
         /** List the family's commute routes (no live traffic call -- for the manage panel) */
         get: operations["listCommuteRoutes"];
         put?: never;
-        /** Add a commute route (one per kid) */
+        /** Add a commute route (one per kid) -- either fixed-schedule (arriveByTime) or event-linked (T-26, eventTitlePattern) */
         post: operations["createCommuteRoute"];
         delete?: never;
         options?: never;
@@ -2217,6 +2217,40 @@ export interface paths {
         head?: never;
         /** Edit a commute route */
         patch: operations["updateCommuteRoute"];
+        trace?: never;
+    };
+    "/api/commute/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** T-26 -- calendar events matching a trip keyword, not already a confirmed route or a dismissed pattern */
+        get: operations["getCommuteSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/commute/suggestions/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** T-26 -- decline a suggested pattern; it won't be suggested again */
+        post: operations["dismissCommuteSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/commute/settings": {
@@ -3822,16 +3856,26 @@ export interface components {
             /** @description Negative when overdue (days past nextDueAt). */
             daysUntilDue: number;
         };
-        /** @description One row from `commute_routes` -- a kid's school run, no live traffic data. */
+        /** @description One row from `commute_routes` -- either FIXED-SCHEDULE (a stored arrive-by time) or EVENT-LINKED (T-26 -- eventTitlePattern set, arriveByTime null, derived daily from the matching calendar event). */
         CommuteRoute: {
             /** Format: uuid */
             id: string;
             /** @description Free text, e.g. "Krish's school". */
             label: string;
+            /** @description The saved fallback destination -- an event-linked route prefers its matched event's own `location` each day when present. */
             destinationAddress: string;
-            /** @description "HH:MM" -- the school's bell time. */
-            arriveByTime: string;
+            /** @description "HH:MM" -- the fixed bell time. Null for an event-linked route (T-26), whose arrive-by comes from the matching calendar event's own start time each day. */
+            arriveByTime: string | null;
             bufferMinutes: number;
+            /**
+             * Format: uuid
+             * @description T-26: the saved default person for this route -- overridden per-occurrence by a live "Going" tag (FR-153) on the matched event when present.
+             */
+            familyMemberId: string | null;
+            /** @description T-26: when set, this route is event-linked -- it only appears on a day a calendar event with this exact title occurs. */
+            eventTitlePattern: string | null;
+            /** @description T-26: leave from somewhere other than the family home address (e.g. picked up from school) -- rare, not a full multi-leg trip model. */
+            originOverride: string | null;
         };
         CommuteRouteStatus: components["schemas"]["CommuteRoute"] & {
             durationInTrafficMin?: number | null;
@@ -3842,6 +3886,8 @@ export interface components {
             minutesUntilLeave?: number | null;
             /** @description durationInTraffic minus the no-traffic baseline duration -- the basis for the green/yellow/red status. */
             trafficDelayMin?: number | null;
+            /** @description T-26: today's actually-matched calendar event title, for an event-linked route. */
+            matchedEventTitle: string | null;
             /** @enum {string} */
             error?: "not-configured" | "directions-failed";
         };
@@ -3851,7 +3897,24 @@ export interface components {
             homeAddress: string | null;
             /** @description True when commute_no_school_date on family_settings equals today in the family's timezone -- a same-day-only override, never needs resetting. */
             noSchoolToday: boolean;
+            /** @description Sorted soonest-to-leave first, mixing fixed-schedule and event-linked routes. */
             routes: components["schemas"]["CommuteRouteStatus"][];
+        };
+        /** @description T-26 -- a calendar event whose title matched a trip keyword (e.g. "swim", "dentist") and isn't already a confirmed route or a dismissed pattern. */
+        CommuteTripSuggestion: {
+            /** @description The event's exact title -- what confirming this suggestion stores as the route's eventTitlePattern. */
+            titlePattern: string;
+            /** @description Which keyword triggered the suggestion -- display-only */
+            matchedKeyword: string;
+            /** @description How many times this exact title appears in the next 14 days. */
+            occurrenceCount: number;
+            /**
+             * Format: date
+             * @description "YYYY-MM-DD" of the next occurrence.
+             */
+            nextDate: string | null;
+            /** @description The event's own `location` field */
+            suggestedLocation: string | null;
         };
         /** @description Raw `calendar_events` table row (Tables<'calendar_events'>['Row']). */
         CalendarEvent: {
@@ -12191,11 +12254,21 @@ export interface operations {
             content: {
                 "application/json": {
                     label: string;
+                    /** @description The saved fallback destination -- an event-linked route's live event location wins when present. */
                     destinationAddress: string;
-                    /** @description "HH:MM". */
-                    arriveByTime: string;
+                    /** @description "HH:MM". Required unless eventTitlePattern is set. */
+                    arriveByTime?: string;
                     /** @description Defaults to 10 if omitted. */
                     bufferMinutes?: number;
+                    /**
+                     * Format: uuid
+                     * @description T-26: the saved default person for this trip.
+                     */
+                    familyMemberId?: string;
+                    /** @description T-26: makes this route event-linked instead of fixed-schedule. */
+                    eventTitlePattern?: string;
+                    /** @description T-26: leave from somewhere other than the family home address. */
+                    originOverride?: string;
                 };
             };
         };
@@ -12312,8 +12385,14 @@ export interface operations {
                 "application/json": {
                     label?: string;
                     destinationAddress?: string;
-                    arriveByTime?: string;
+                    /** @description Pass null when switching a route to event-linked via eventTitlePattern. */
+                    arriveByTime?: string | null;
                     bufferMinutes?: number;
+                    /** Format: uuid */
+                    familyMemberId?: string;
+                    /** @description Pass null to switch a route back to fixed-schedule. */
+                    eventTitlePattern?: string | null;
+                    originOverride?: string | null;
                 };
             };
         };
@@ -12353,6 +12432,108 @@ export interface operations {
             };
             /** @description No such route, or it belongs to a different family. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getCommuteSuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Suggestions (empty when no Google account is connected, or nothing new matches). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        suggestions?: components["schemas"]["CommuteTripSuggestion"][];
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    dismissCommuteSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    titlePattern: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Dismissed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing titlePattern, or the caller has no family. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
