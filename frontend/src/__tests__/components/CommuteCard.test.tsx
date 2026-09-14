@@ -36,6 +36,7 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof CommuteCard>>
     onRemoveRoute: vi.fn(),
     onSetHomeAddress: vi.fn(),
     onSetNoSchoolToday: vi.fn(),
+    onDismissSuggestion: vi.fn(),
   };
   render(
     <CommuteCard
@@ -44,6 +45,8 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof CommuteCard>>
       homeAddress="123 Home St"
       noSchoolToday={false}
       routes={[]}
+      members={[]}
+      suggestions={[]}
       loading={false}
       error={null}
       {...handlers}
@@ -167,5 +170,76 @@ describe('CommuteCard', () => {
     await userEvent.click(screen.getByText(/manage routes/i));
     await userEvent.click(screen.getByRole('button', { name: /remove krish's school/i }));
     expect(onRemoveRoute).toHaveBeenCalledWith('r1');
+  });
+
+  describe('T-26', () => {
+    const SWIM_SUGGESTION = {
+      titlePattern: 'Swim Lessons',
+      matchedKeyword: 'swim',
+      occurrenceCount: 2,
+      nextDate: '2026-09-20',
+      suggestedLocation: '123 Pool Rd',
+    };
+
+    it('shows a "new" badge and the suggestion prompt when a suggestion exists', async () => {
+      renderCard({ suggestions: [SWIM_SUGGESTION] });
+      expect(screen.getByText(/1 new/i)).toBeInTheDocument();
+      await userEvent.click(screen.getByText(/manage routes/i));
+      expect(screen.getByText('Swim Lessons')).toBeInTheDocument();
+      expect(screen.getByText(/next 2026-09-20/i)).toBeInTheDocument();
+    });
+
+    it('dismisses a suggestion', async () => {
+      const { onDismissSuggestion } = renderCard({ suggestions: [SWIM_SUGGESTION] });
+      await userEvent.click(screen.getByText(/manage routes/i));
+      await userEvent.click(screen.getByRole('button', { name: /not now for swim lessons/i }));
+      expect(onDismissSuggestion).toHaveBeenCalledWith('Swim Lessons');
+    });
+
+    it('confirming a suggestion switches to event-linked mode and prefills the form', async () => {
+      const { onAddRoute } = renderCard({ suggestions: [SWIM_SUGGESTION] });
+      await userEvent.click(screen.getByText(/manage routes/i));
+      await userEvent.click(screen.getByRole('button', { name: /add a commute/i }));
+
+      expect(screen.getByLabelText(/route label/i)).toHaveValue('Swim Lessons');
+      expect(screen.getByLabelText(/destination address/i)).toHaveValue('123 Pool Rd');
+      expect(screen.getByLabelText(/calendar event title/i)).toHaveValue('Swim Lessons');
+
+      await userEvent.click(screen.getByRole('button', { name: /add route/i }));
+      expect(onAddRoute).toHaveBeenCalledWith(
+        expect.objectContaining({ label: 'Swim Lessons', destinationAddress: '123 Pool Rd', eventTitlePattern: 'Swim Lessons' }),
+      );
+      expect(onAddRoute).toHaveBeenCalledWith(expect.not.objectContaining({ arriveByTime: expect.anything() }));
+    });
+
+    it('shows a colour dot for a route with a resolvable family member', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-14T07:00:00')); // Monday morning, in-window
+      const members = [{ id: 'm1', family_id: 'fam-1', user_id: 'u1', role: 'child' as const, name: 'Karishma', color: 'karishma' }];
+      renderCard({
+        members,
+        routes: [route({ familyMemberId: 'm1' })],
+      });
+      expect(document.querySelector('span[style*="background-color"]')).toBeInTheDocument();
+    });
+
+    it("shows the matched event's title alongside the route label when it differs", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-14T07:00:00'));
+      renderCard({
+        routes: [route({ eventTitlePattern: 'Swim Lessons', matchedEventTitle: 'Swim Lessons — Week 3' })],
+      });
+      expect(screen.getByText(/swim lessons — week 3/i)).toBeInTheDocument();
+    });
+
+    it('event-linked routes show regardless of the fixed school-run window', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-14T12:00:00')); // midday, outside the fixed window
+      renderCard({
+        routes: [route({ eventTitlePattern: 'Swim Lessons', matchedEventTitle: 'Swim Lessons', label: "Karishma's swim" })],
+      });
+      expect(screen.getByText("Karishma's swim")).toBeInTheDocument();
+      expect(screen.queryByText(/outside the school-run window/i)).not.toBeInTheDocument();
+    });
   });
 });

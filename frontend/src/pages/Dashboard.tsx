@@ -122,12 +122,14 @@ export default function Dashboard() {
   } = useMaintenance();
   const {
     summary: commuteSummary,
+    suggestions: commuteSuggestions,
     loading: commuteLoading,
     error: commuteError,
     addRoute: addCommuteRoute,
     removeRoute: removeCommuteRoute,
     setHomeAddress: setCommuteHomeAddress,
     setNoSchoolToday: setCommuteNoSchoolToday,
+    dismissSuggestion: dismissCommuteSuggestion,
   } = useCommute();
 
   const caller = members.find((m) => m.user_id === user?.id);
@@ -435,12 +437,15 @@ export default function Dashboard() {
         homeAddress={commuteSummary.homeAddress}
         noSchoolToday={commuteSummary.noSchoolToday}
         routes={commuteSummary.routes}
+        members={members}
+        suggestions={commuteSuggestions}
         loading={commuteLoading}
         error={commuteError}
         onAddRoute={addCommuteRoute}
         onRemoveRoute={removeCommuteRoute}
         onSetHomeAddress={setCommuteHomeAddress}
         onSetNoSchoolToday={setCommuteNoSchoolToday}
+        onDismissSuggestion={dismissCommuteSuggestion}
       />
     ),
   };
