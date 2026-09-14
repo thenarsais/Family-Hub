@@ -246,7 +246,7 @@ export function CommuteCard({
                   </p>
                   {suggestions.map((s) => (
                     <div key={s.titlePattern} className="flex items-center gap-2 text-xs">
-                      <span className="flex-1 truncate text-ink-2">
+                      <span className="flex-1 min-w-0 truncate text-ink-2">
                         {s.titlePattern}
                         {s.nextDate && <span className="text-ink-3"> · next {s.nextDate}</span>}
                       </span>
@@ -284,7 +284,7 @@ export function CommuteCard({
                 <ul className="space-y-1">
                   {routes.map((r) => (
                     <li key={r.id} className="flex items-center gap-2 text-xs text-ink-2">
-                      <span className="flex-1 truncate">
+                      <span className="flex-1 min-w-0 truncate">
                         {r.label} → {r.eventTitlePattern ? `from "${r.eventTitlePattern}"` : `${r.destinationAddress} @ ${r.arriveByTime}`}
                       </span>
                       <button
