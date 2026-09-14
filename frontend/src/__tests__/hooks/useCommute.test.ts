@@ -28,10 +28,22 @@ const route = (over: Partial<Record<string, unknown>> = {}) => ({
 });
 
 function mockSummary(over: Partial<Record<string, unknown>> = {}) {
-  (apiClient.get as Fn).mockResolvedValue({
-    data: { status: 'success', configured: true, homeAddress: '123 Home St', noSchoolToday: false, routes: [], ...over },
+  (apiClient.get as Fn).mockImplementation((url: string) => {
+    if (url === '/api/commute/suggestions') return Promise.resolve({ data: { status: 'success', suggestions: [] } });
+    return Promise.resolve({
+      data: { status: 'success', configured: true, homeAddress: '123 Home St', noSchoolToday: false, routes: [], ...over },
+    });
   });
 }
+
+const suggestion = (over: Partial<Record<string, unknown>> = {}) => ({
+  titlePattern: 'Swim Lessons',
+  matchedKeyword: 'swim',
+  occurrenceCount: 2,
+  nextDate: '2026-09-20',
+  suggestedLocation: '123 Pool Rd',
+  ...over,
+});
 
 describe('useCommute', () => {
   beforeEach(() => {
@@ -79,6 +91,46 @@ describe('useCommute', () => {
       { headers: { 'x-user-id': 'user-1' } },
     );
     expect(result.current.summary.routes).toHaveLength(1);
+  });
+
+  it('updateRoute patches then refreshes the summary', async () => {
+    (apiClient.patch as Fn).mockResolvedValueOnce({ data: { status: 'success', route: route({ eventTitlePattern: 'Kung Fu', arriveByTime: null }) } });
+    const { result } = renderHook(() => useCommute());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    mockSummary({ routes: [route({ eventTitlePattern: 'Kung Fu', arriveByTime: null })] });
+    await act(async () => {
+      await result.current.updateRoute('r1', { eventTitlePattern: 'Kung Fu', arriveByTime: null });
+    });
+
+    expect(apiClient.patch).toHaveBeenCalledWith(
+      '/api/commute/routes/r1',
+      { eventTitlePattern: 'Kung Fu', arriveByTime: null },
+      { headers: { 'x-user-id': 'user-1' } },
+    );
+    expect(result.current.summary.routes[0].eventTitlePattern).toBe('Kung Fu');
+  });
+
+  it('updateRoute surfaces an error and rethrows on failure', async () => {
+    (apiClient.patch as Fn).mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useCommute());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await expect(result.current.updateRoute('r1', { label: 'x' })).rejects.toThrow('offline');
+    });
+    expect(result.current.error).toBe('offline');
+  });
+
+  it('setHomeAddress surfaces an error and rethrows on failure', async () => {
+    (apiClient.put as Fn).mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useCommute());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await expect(result.current.setHomeAddress('999 New St')).rejects.toThrow('offline');
+    });
+    expect(result.current.error).toBe('offline');
   });
 
   it('removeRoute optimistically removes, reverting on failure', async () => {
@@ -139,5 +191,81 @@ describe('useCommute', () => {
 
     expect(result.current.summary.noSchoolToday).toBe(false); // reverted
     expect(result.current.error).toBe('offline');
+  });
+
+  describe('T-26 suggestions', () => {
+    it('loads suggestions alongside the summary', async () => {
+      mockSummary({});
+      (apiClient.get as Fn).mockImplementation((url: string) =>
+        url === '/api/commute/suggestions'
+          ? Promise.resolve({ data: { status: 'success', suggestions: [suggestion()] } })
+          : Promise.resolve({ data: { status: 'success', configured: true, homeAddress: '123 Home St', noSchoolToday: false, routes: [] } }),
+      );
+      const { result } = renderHook(() => useCommute());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(result.current.suggestions).toEqual([suggestion()]);
+    });
+
+    it('dismissSuggestion optimistically removes, reverting on failure', async () => {
+      (apiClient.get as Fn).mockImplementation((url: string) =>
+        url === '/api/commute/suggestions'
+          ? Promise.resolve({ data: { status: 'success', suggestions: [suggestion()] } })
+          : Promise.resolve({ data: { status: 'success', configured: true, homeAddress: '123 Home St', noSchoolToday: false, routes: [] } }),
+      );
+      (apiClient.post as Fn).mockRejectedValueOnce(new Error('offline'));
+      const { result } = renderHook(() => useCommute());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(result.current.suggestions).toHaveLength(1);
+
+      await act(async () => {
+        await result.current.dismissSuggestion('Swim Lessons');
+      });
+
+      expect(result.current.suggestions).toHaveLength(1); // reverted
+      expect(result.current.error).toBe('offline');
+    });
+
+    it('dismissSuggestion removes for good on success', async () => {
+      (apiClient.get as Fn).mockImplementation((url: string) =>
+        url === '/api/commute/suggestions'
+          ? Promise.resolve({ data: { status: 'success', suggestions: [suggestion()] } })
+          : Promise.resolve({ data: { status: 'success', configured: true, homeAddress: '123 Home St', noSchoolToday: false, routes: [] } }),
+      );
+      (apiClient.post as Fn).mockResolvedValueOnce({ data: { status: 'success' } });
+      const { result } = renderHook(() => useCommute());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.dismissSuggestion('Swim Lessons');
+      });
+
+      expect(result.current.suggestions).toEqual([]);
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/api/commute/suggestions/dismiss',
+        { titlePattern: 'Swim Lessons' },
+        { headers: { 'x-user-id': 'user-1' } },
+      );
+    });
+  });
+
+  it('polls every 60s without flipping the loading flag', async () => {
+    vi.useFakeTimers();
+    try {
+      mockSummary();
+      const { result } = renderHook(() => useCommute());
+      await vi.waitFor(() => expect(result.current.loading).toBe(false));
+      const initialCalls = (apiClient.get as Fn).mock.calls.length;
+
+      mockSummary({ homeAddress: '999 Polled St' });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+
+      expect((apiClient.get as Fn).mock.calls.length).toBeGreaterThan(initialCalls);
+      expect(result.current.summary.homeAddress).toBe('999 Polled St');
+      expect(result.current.loading).toBe(false); // refreshLive never flips loading (the T-25 lesson)
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
