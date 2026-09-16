@@ -94,6 +94,9 @@ connections and Tailscale's edge terminates TLS and forwards to `localhost:3000`
       the water usage card just no-ops without them.
 - [ ] **Carry over `GOOGLE_MAPS_API_KEY`** (T-16, Directions API) — optional,
       the commute card just shows "not connected" without it.
+- [ ] **Carry over `GEMINI_API_KEY`** (FR-147, "Add from photo") — optional,
+      free tier from https://aistudio.google.com/apikey; the feature no-ops
+      with a clear message without it.
 - [ ] *(Optional, not now)* a domain — only if you later want pretty hostnames
       or move to the Cloudflare-Tunnel variant. ~$10/yr.
 

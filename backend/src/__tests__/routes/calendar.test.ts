@@ -18,8 +18,26 @@ jest.mock('../../services/calendar', () => ({ getCalendarService: () => mockCale
 
 const mockFamilyService = {
   getUserFamily: jest.fn(),
+  getFamilySettings: jest.fn(),
 };
 jest.mock('../../services/family', () => ({ getFamilyService: () => mockFamilyService }));
+
+const mockPhotoImport = {
+  isPhotoImportConfigured: jest.fn(),
+  extractEventsFromPhoto: jest.fn(),
+};
+class MockPhotoImportError extends Error {
+  status: number;
+  constructor(message: string, status = 502) {
+    super(message);
+    this.status = status;
+  }
+}
+jest.mock('../../services/photo-import', () => ({
+  isPhotoImportConfigured: () => mockPhotoImport.isPhotoImportConfigured(),
+  extractEventsFromPhoto: (...args: unknown[]) => mockPhotoImport.extractEventsFromPhoto(...args),
+  PhotoImportError: MockPhotoImportError,
+}));
 
 const mockGoogleOAuthService = {
   getUserToken: jest.fn(),
@@ -913,6 +931,124 @@ describe('Calendar Routes', () => {
         .send({ people: [] })
         .expect(200);
       expect(res.body.data).toEqual([]);
+    });
+  });
+
+  describe('GET /api/calendar/photo-import/status', () => {
+    it('requires a user id', async () => {
+      const res = await request(app).get('/api/calendar/photo-import/status').expect(401);
+      expect(res.body.message).toBe('User ID required');
+    });
+
+    it('reports whether a Gemini key is configured', async () => {
+      mockPhotoImport.isPhotoImportConfigured.mockReturnValueOnce(true);
+      const res = await request(app)
+        .get('/api/calendar/photo-import/status').set('x-user-id', 'user-1').expect(200);
+      expect(res.body.data).toEqual({ configured: true });
+    });
+  });
+
+  describe('POST /api/calendar/photo-import', () => {
+    const parentFamily = { id: 'family-1', members: [{ user_id: 'user-1', role: 'parent' }] };
+    const validBody = { image: 'ZmFrZQ==', mimeType: 'image/jpeg' };
+
+    it('requires a user id', async () => {
+      const res = await request(app).post('/api/calendar/photo-import').send(validBody).expect(401);
+      expect(res.body.message).toBe('User ID required');
+    });
+
+    it('rejects a non-parent caller with 403', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({
+        id: 'family-1', members: [{ user_id: 'user-1', role: 'child' }],
+      });
+      const res = await request(app)
+        .post('/api/calendar/photo-import').set('x-user-id', 'user-1').send(validBody).expect(403);
+      expect(res.body.message).toMatch(/parent/i);
+    });
+
+    it('no-ops with 503 when no Gemini key is configured', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockPhotoImport.isPhotoImportConfigured.mockReturnValueOnce(false);
+
+      const res = await request(app)
+        .post('/api/calendar/photo-import').set('x-user-id', 'user-1').send(validBody).expect(503);
+      expect(res.body.message).toMatch(/not set up/i);
+      expect(mockPhotoImport.extractEventsFromPhoto).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing image with 400', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockPhotoImport.isPhotoImportConfigured.mockReturnValueOnce(true);
+
+      const res = await request(app)
+        .post('/api/calendar/photo-import').set('x-user-id', 'user-1')
+        .send({ mimeType: 'image/jpeg' }).expect(400);
+      expect(res.body.message).toMatch(/image/i);
+    });
+
+    it('rejects a missing mimeType with 400', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockPhotoImport.isPhotoImportConfigured.mockReturnValueOnce(true);
+
+      const res = await request(app)
+        .post('/api/calendar/photo-import').set('x-user-id', 'user-1')
+        .send({ image: 'ZmFrZQ==' }).expect(400);
+      expect(res.body.message).toMatch(/mimeType/i);
+    });
+
+    it('falls back to America/Denver when the family has no timezone set', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockPhotoImport.isPhotoImportConfigured.mockReturnValueOnce(true);
+      mockFamilyService.getFamilySettings.mockResolvedValueOnce(null);
+      mockPhotoImport.extractEventsFromPhoto.mockResolvedValueOnce([]);
+
+      await request(app)
+        .post('/api/calendar/photo-import').set('x-user-id', 'user-1').send(validBody).expect(200);
+
+      expect(mockPhotoImport.extractEventsFromPhoto).toHaveBeenCalledWith(
+        'ZmFrZQ==', 'image/jpeg', expect.any(String), 'America/Denver',
+      );
+    });
+
+    it('returns draft events extracted from the photo', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockPhotoImport.isPhotoImportConfigured.mockReturnValueOnce(true);
+      mockFamilyService.getFamilySettings.mockResolvedValueOnce({ timezone: 'America/New_York' });
+      mockPhotoImport.extractEventsFromPhoto.mockResolvedValueOnce([
+        { summary: 'Soccer practice', allDay: false, startDate: '2026-09-20', startTime: '16:00' },
+      ]);
+
+      const res = await request(app)
+        .post('/api/calendar/photo-import').set('x-user-id', 'user-1').send(validBody).expect(200);
+
+      expect(mockPhotoImport.extractEventsFromPhoto).toHaveBeenCalledWith(
+        'ZmFrZQ==', 'image/jpeg', expect.any(String), 'America/New_York',
+      );
+      expect(res.body.count).toBe(1);
+      expect(res.body.data[0]).toEqual(expect.objectContaining({ summary: 'Soccer practice' }));
+    });
+
+    it('translates a PhotoImportError into its own status + message', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockPhotoImport.isPhotoImportConfigured.mockReturnValueOnce(true);
+      mockFamilyService.getFamilySettings.mockResolvedValueOnce({ timezone: 'America/Denver' });
+      mockPhotoImport.extractEventsFromPhoto.mockRejectedValueOnce(
+        new MockPhotoImportError('Image is too large (max 6MB) — try a closer crop or lower resolution', 413),
+      );
+
+      const res = await request(app)
+        .post('/api/calendar/photo-import').set('x-user-id', 'user-1').send(validBody).expect(413);
+      expect(res.body.message).toMatch(/too large/);
+    });
+
+    it('returns 500 on an unexpected failure', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce(parentFamily);
+      mockPhotoImport.isPhotoImportConfigured.mockReturnValueOnce(true);
+      mockFamilyService.getFamilySettings.mockRejectedValueOnce(new Error('down'));
+
+      const res = await request(app)
+        .post('/api/calendar/photo-import').set('x-user-id', 'user-1').send(validBody).expect(500);
+      expect(res.body.message).toBe('Failed to extract events from photo');
     });
   });
 });

@@ -75,6 +75,8 @@ interface UseCalendarReturn {
   dismissedSeriesIds: Set<string>;
   dismissedEvents: DismissedEvent[];
   reconnectForSync: boolean;
+  /** FR-147: true once the backend confirms a GEMINI_API_KEY is set. */
+  photoImportConfigured: boolean;
   /** event_id → the members assigned to that event (FR-153). */
   eventPeople: Map<string, EventAssignment[]>;
   setEventPeople: (eventId: string, people: EventAssignment[]) => Promise<void>;
@@ -102,6 +104,9 @@ export function useCalendar(): UseCalendarReturn {
   const [dismissedSeriesIds, setDismissedSeriesIds] = useState<Set<string>>(new Set());
   const [reconnectForSync, setReconnectForSync] = useState(false);
   const [eventPeople, setEventPeopleState] = useState<Map<string, EventAssignment[]>>(new Map());
+  // FR-147: whether the backend has a GEMINI_API_KEY, so "Add from photo" can
+  // hide/disable itself up front rather than only failing after a photo pick.
+  const [photoImportConfigured, setPhotoImportConfigured] = useState(false);
 
   const fetchEvents = async () => {
     try {
@@ -275,6 +280,25 @@ export function useCalendar(): UseCalendarReturn {
 
   useEffect(() => {
     fetchEventPeople();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.get<ApiEnvelope<{ configured: boolean }>>(
+          '/api/calendar/photo-import/status',
+          { headers: { 'x-user-id': user.id } },
+        );
+        if (!cancelled) setPhotoImportConfigured(!!res.data?.data?.configured);
+      } catch (err) {
+        console.warn('Failed to check photo-import status:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   useEffect(() => {
@@ -512,6 +536,7 @@ export function useCalendar(): UseCalendarReturn {
     dismissedSeriesIds,
     dismissedEvents,
     reconnectForSync,
+    photoImportConfigured,
     eventPeople,
     setEventPeople,
     createEvent,

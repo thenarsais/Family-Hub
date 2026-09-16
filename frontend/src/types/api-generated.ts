@@ -2553,6 +2553,46 @@ export interface paths {
         patch: operations["updateGoogleCalendarEvent"];
         trace?: never;
     };
+    "/api/calendar/photo-import/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether "Add from photo" (FR-147) has a Gemini key configured
+         * @description Lets the frontend hide/disable the "Add from photo" button up front rather than only finding out after a photo has been picked.
+         */
+        get: operations["getPhotoImportStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calendar/photo-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * FR-147: extract draft calendar events from a photo of a flyer/invite (Gemini vision, parents only)
+         * @description One outbound call to Gemini with structured-output extraction — no persistent job, no DB write. Returns DRAFT events only; the caller reviews/edits them and creates each one individually through the existing POST /api/calendar/google/events path. Never auto-adds. No-ops with 503 when GEMINI_API_KEY isn't set.
+         */
+        post: operations["importEventsFromPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/family": {
         parameters: {
             query?: never;
@@ -3997,6 +4037,19 @@ export interface components {
              * @default primary
              */
             calendarId: string;
+        };
+        /** @description One event Gemini extracted from a flyer/invite photo (FR-147). Never persisted server-side — the frontend shows these for review/edit, then creates each accepted one via GoogleCalendarEventInput. */
+        PhotoDraftEvent: {
+            summary: string;
+            description?: string;
+            location?: string;
+            allDay: boolean;
+            /** Format: date */
+            startDate: string;
+            startTime?: string;
+            /** Format: date */
+            endDate?: string;
+            endTime?: string;
         };
         /** @description Raw `event_people` table row (migration 007, FR-153). One family member's Going/Maybe assignment to an event. */
         EventPerson: {
@@ -13657,6 +13710,133 @@ export interface operations {
             };
             /** @description Unexpected failure. */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    getPhotoImportStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Configuration status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        data?: {
+                            configured?: boolean;
+                        };
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    importEventsFromPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Base64-encoded image data, ideally pre-resized client-side. Capped at ~6MB decoded. */
+                    image: string;
+                    /** @enum {string} */
+                    mimeType: "image/jpeg" | "image/png" | "image/webp" | "image/heic" | "image/heif";
+                };
+            };
+        };
+        responses: {
+            /** @description Draft events extracted from the photo (may be empty). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "success";
+                        data?: components["schemas"]["PhotoDraftEvent"][];
+                        count?: number;
+                        /** Format: date-time */
+                        timestamp?: string;
+                    };
+                };
+            };
+            /** @description Missing image/mimeType. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller is not a parent/admin in their family. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Image over the size cap. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description The Gemini call failed or returned something unusable. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Photo import isn't configured (no GEMINI_API_KEY). */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

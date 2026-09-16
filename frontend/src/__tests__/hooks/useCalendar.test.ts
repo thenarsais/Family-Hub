@@ -25,6 +25,7 @@ function mockFetchEventsCalls(overrides: {
   auth?: { connected?: boolean; email?: string | null };
   dismissed?: unknown[];
   people?: unknown[];
+  photoImportConfigured?: boolean;
 } = {}) {
   (apiClient.get as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
     if (path === '/api/calendar/events') {
@@ -45,6 +46,9 @@ function mockFetchEventsCalls(overrides: {
     }
     if (path === '/api/calendar/people') {
       return Promise.resolve({ data: { data: overrides.people ?? [] } });
+    }
+    if (path === '/api/calendar/photo-import/status') {
+      return Promise.resolve({ data: { data: { configured: overrides.photoImportConfigured ?? false } } });
     }
     return Promise.reject(new Error(`unexpected path ${path}`));
   });
@@ -419,6 +423,24 @@ describe('useCalendar', () => {
       await waitFor(() => expect(result.current.dismissedEvents).toHaveLength(1));
 
       expect(result.current.dismissedIds.has('g1')).toBe(true);
+    });
+  });
+
+  describe('photo-import status (FR-147)', () => {
+    it('defaults to not configured', async () => {
+      mockFetchEventsCalls();
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      expect(result.current.photoImportConfigured).toBe(false);
+    });
+
+    it('reflects a configured backend', async () => {
+      mockFetchEventsCalls({ photoImportConfigured: true });
+
+      const { result } = renderHook(() => useCalendar());
+      await waitFor(() => expect(result.current.photoImportConfigured).toBe(true));
     });
   });
 

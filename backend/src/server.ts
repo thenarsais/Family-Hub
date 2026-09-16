@@ -78,6 +78,9 @@ initSentry();
 
 app.use(helmet()); // Security headers (X-Content-Type-Options, HSTS, etc.)
 app.use(cors());
+// FR-147: a resized flyer photo as base64 JSON exceeds the default 100kb body
+// limit. Scoped to this one route rather than raising the limit globally.
+app.use('/api/calendar/photo-import', express.json({ limit: '6mb' }));
 app.use(express.json());
 app.use(normalizeBody); // Guard route handlers that destructure req.body (see middleware/normalize-body.ts)
 app.use(compression(compressionPresets.standard)); // Response compression

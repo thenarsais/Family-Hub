@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getCalendarService } from '../services/calendar';
 import { getFamilyService } from '../services/family';
 import { getGoogleOAuthService } from '../services/google-oauth';
+import { extractEventsFromPhoto, isPhotoImportConfigured, PhotoImportError } from '../services/photo-import';
 
 import { getErrorMessage } from '../utils/errors';
 import { normalizeBody } from '../middleware/normalize-body';
@@ -916,6 +917,82 @@ router.delete('/google/events/:id', async (req: Request, res: Response) => {
   } catch (error: unknown) {
     console.error('Failed to delete Google Calendar event:', error);
     sendGoogleError(res, error, 'Failed to delete Google Calendar event');
+  }
+});
+
+function localDateKey(timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).formatToParts(new Date());
+    const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+    return `${map.year}-${map.month}-${map.day}`;
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+/**
+ * GET /api/calendar/photo-import/status
+ * FR-147: lets the frontend hide/disable "Add from photo" when no key is set,
+ * rather than only finding out after a user has already picked a photo.
+ */
+router.get('/photo-import/status', async (req: Request, res: Response) => {
+  const userId = req.headers['x-user-id'] as string | undefined;
+  if (!userId) {
+    return res.status(401).json({ status: 'error', message: 'User ID required' });
+  }
+  res.json({
+    status: 'success',
+    data: { configured: isPhotoImportConfigured() },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * POST /api/calendar/photo-import
+ * FR-147 "Add from photo": one outbound vision-LLM call over a flyer/invite
+ * photo, returning DRAFT events only — nothing is written here. The caller
+ * reviews/edits and then creates each one through the existing FR-006
+ * POST /google/events path. Parent-gated, same as every other create action.
+ */
+router.post('/photo-import', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string | undefined;
+    const gate = await requireParent(userId);
+    if ('fail' in gate) {
+      return res.status(gate.fail.status).json({ status: 'error', message: gate.fail.message });
+    }
+
+    if (!isPhotoImportConfigured()) {
+      return res.status(503).json({ status: 'error', message: 'Photo import is not set up yet (missing GEMINI_API_KEY)' });
+    }
+
+    const { image, mimeType } = req.body || {};
+    if (typeof image !== 'string' || !image) {
+      return res.status(400).json({ status: 'error', message: 'image (base64) is required' });
+    }
+    if (typeof mimeType !== 'string' || !mimeType) {
+      return res.status(400).json({ status: 'error', message: 'mimeType is required' });
+    }
+
+    const settings = await family.getFamilySettings(gate.family!.id);
+    const timeZone = settings?.timezone || 'America/Denver';
+
+    const events = await extractEventsFromPhoto(image, mimeType, localDateKey(timeZone), timeZone);
+
+    res.json({
+      status: 'success',
+      data: events,
+      count: events.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: unknown) {
+    if (error instanceof PhotoImportError) {
+      return res.status(error.status).json({ status: 'error', message: error.message });
+    }
+    console.error('Photo import failed:', error);
+    res.status(500).json({ status: 'error', message: 'Failed to extract events from photo', error: getErrorMessage(error) });
   }
 });
 

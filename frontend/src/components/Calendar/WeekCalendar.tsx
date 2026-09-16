@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2, Settings, Bell, BellRing,
+  ChevronLeft, ChevronRight, Star, Calendar, Ban, Plus, Pencil, Trash2, Settings, Bell, BellRing, Camera,
 } from 'lucide-react';
 import { useCalendar, type EventAssignment, type DismissOpts } from '@hooks/useCalendar';
 import { useReminders } from '@hooks/useReminders';
@@ -11,6 +11,7 @@ import { useCalendarView, CALENDAR_VIEWS, type CalendarView } from '@hooks/useCa
 import { useMealPlanner } from '@hooks/useMealPlanner';
 import { useMealLibrary } from '@hooks/useMealLibrary';
 import { EventForm, type EventFormValues, type EventFormInitial } from './EventForm';
+import { AddFromPhotoModal } from './AddFromPhotoModal';
 import { CalendarSettings } from './CalendarSettings';
 import { PersonDots } from './PersonDots';
 import { PersonPicker } from './PersonPicker';
@@ -208,6 +209,7 @@ export function WeekCalendar() {
   const eventPeople: Map<string, EventAssignment[]> = cal.eventPeople ?? new Map();
   const setEventPeople =
     cal.setEventPeople ?? (async () => undefined);
+  const photoImportConfigured = cal.photoImportConfigured ?? false;
   const { user } = useAuth();
   const { members } = useFamily();
   const {
@@ -225,6 +227,7 @@ export function WeekCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [photoImportOpen, setPhotoImportOpen] = useState(false);
   // Event form: closed | create (optional pre-filled date) | edit (an event).
   const [formState, setFormState] = useState<
     | { mode: 'closed' }
@@ -789,6 +792,16 @@ export function WeekCalendar() {
               Add event
             </button>
           )}
+          {canManage && photoImportConfigured && (
+            <button
+              onClick={() => setPhotoImportOpen(true)}
+              className="btn btn-secondary btn-small flex items-center gap-1"
+              title="Add from photo"
+            >
+              <Camera className="w-4 h-4" />
+              Add from photo
+            </button>
+          )}
           <button
             onClick={() => setSettingsOpen(true)}
             className="p-2 hover:bg-accent-soft rounded-lg transition text-ink-2 hover:text-accent"
@@ -1012,6 +1025,13 @@ export function WeekCalendar() {
           members={members}
           onSubmit={handleFormSubmit}
           onClose={() => setFormState({ mode: 'closed' })}
+        />
+      )}
+
+      {photoImportOpen && (
+        <AddFromPhotoModal
+          createEvent={createEvent}
+          onClose={() => setPhotoImportOpen(false)}
         />
       )}
 
