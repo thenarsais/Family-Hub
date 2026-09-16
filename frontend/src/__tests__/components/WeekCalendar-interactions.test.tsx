@@ -488,6 +488,28 @@ describe('WeekCalendar — interactions', () => {
       expect(createEvent.mock.calls[0][0]).toMatchObject({ summary: 'Piano recital', allDay: false });
     });
 
+    it('hides "Add from photo" when photo import is not configured', () => {
+      asParent();
+      mockCalendar({ photoImportConfigured: false });
+      render(<WeekCalendar />);
+      expect(screen.queryByRole('button', { name: /add from photo/i })).not.toBeInTheDocument();
+    });
+
+    it('hides "Add from photo" from non-parents even when configured', () => {
+      mockCalendar({ photoImportConfigured: true });
+      render(<WeekCalendar />);
+      expect(screen.queryByRole('button', { name: /add from photo/i })).not.toBeInTheDocument();
+    });
+
+    it('shows "Add from photo" to a parent when configured, and opens the modal', () => {
+      asParent();
+      mockCalendar({ photoImportConfigured: true });
+      render(<WeekCalendar />);
+
+      fireEvent.click(screen.getByRole('button', { name: /add from photo/i }));
+      expect(screen.getByRole('heading', { name: /add from photo/i })).toBeInTheDocument();
+    });
+
     it('pre-fills the date when a day cell "+" is used', () => {
       asParent();
       mockCalendar();

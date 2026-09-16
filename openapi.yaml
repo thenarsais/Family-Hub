@@ -6134,6 +6134,88 @@ paths:
           description: Unexpected failure.
           content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
 
+  /api/calendar/photo-import/status:
+    get:
+      tags: [Calendar]
+      summary: Whether "Add from photo" (FR-147) has a Gemini key configured
+      description: >
+        Lets the frontend hide/disable the "Add from photo" button up front
+        rather than only finding out after a photo has been picked.
+      operationId: getPhotoImportStatus
+      security: [{ userIdHeader: [] }]
+      responses:
+        '200':
+          description: Configuration status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    type: object
+                    properties:
+                      configured: { type: boolean }
+                  timestamp: { type: string, format: date-time }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
+  /api/calendar/photo-import:
+    post:
+      tags: [Calendar]
+      summary: "FR-147: extract draft calendar events from a photo of a flyer/invite (Gemini vision, parents only)"
+      description: >
+        One outbound call to Gemini with structured-output extraction — no
+        persistent job, no DB write. Returns DRAFT events only; the caller
+        reviews/edits them and creates each one individually through the
+        existing POST /api/calendar/google/events path. Never auto-adds.
+        No-ops with 503 when GEMINI_API_KEY isn't set.
+      operationId: importEventsFromPhoto
+      security: [{ userIdHeader: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image, mimeType]
+              properties:
+                image: { type: string, contentEncoding: base64, description: "Base64-encoded image data, ideally pre-resized client-side. Capped at ~6MB decoded." }
+                mimeType: { type: string, enum: [image/jpeg, image/png, image/webp, image/heic, image/heif] }
+      responses:
+        '200':
+          description: Draft events extracted from the photo (may be empty).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: success }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/PhotoDraftEvent' }
+                  count: { type: integer }
+                  timestamp: { type: string, format: date-time }
+        '400':
+          description: Missing image/mimeType.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '401':
+          description: Missing x-user-id.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '403':
+          description: Caller is not a parent/admin in their family.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '413':
+          description: Image over the size cap.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '502':
+          description: The Gemini call failed or returned something unusable.
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+        '503':
+          description: Photo import isn't configured (no GEMINI_API_KEY).
+          content: { application/json: { schema: { $ref: '#/components/schemas/EnvelopeError' } } }
+
   # ================================================================
   # FAMILY
   # ================================================================
@@ -8265,6 +8347,23 @@ components:
           description: "Attendee email addresses. Each is validated for shape."
         sendInvites: { type: boolean, default: true, description: "false → sendUpdates: none (no invite/update/cancellation emails)." }
         calendarId: { type: string, default: primary, description: "Reserved for a future calendar picker; only 'primary' is used today." }
+
+    PhotoDraftEvent:
+      type: object
+      description: >
+        One event Gemini extracted from a flyer/invite photo (FR-147). Never
+        persisted server-side — the frontend shows these for review/edit,
+        then creates each accepted one via GoogleCalendarEventInput.
+      required: [summary, allDay, startDate]
+      properties:
+        summary: { type: string }
+        description: { type: string }
+        location: { type: string }
+        allDay: { type: boolean }
+        startDate: { type: string, format: date }
+        startTime: { type: string, pattern: '^\d{2}:\d{2}$' }
+        endDate: { type: string, format: date }
+        endTime: { type: string, pattern: '^\d{2}:\d{2}$' }
 
     EventPerson:
       type: object
