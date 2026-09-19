@@ -140,6 +140,9 @@ describe('KioskService', () => {
         hasPin: true,
         idleMinutes: 7,
       });
+      // A member with show_on_kiosk = false (e.g. a newborn) is filtered at
+      // the query level, not just hidden client-side.
+      expect(mockQuery.mock.calls[0][0]).toContain('fm.show_on_kiosk = true');
     });
 
     it('defaults idle minutes to 5 and hasPin to false with no settings row', async () => {

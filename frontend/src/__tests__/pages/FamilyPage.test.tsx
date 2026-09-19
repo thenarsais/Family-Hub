@@ -15,6 +15,7 @@ const baseFamily = {
   addChild: vi.fn().mockResolvedValue(undefined),
   inviteMember: vi.fn().mockResolvedValue('tok-123'),
   updateMemberRole: vi.fn().mockResolvedValue(undefined),
+  updateMemberKioskVisibility: vi.fn().mockResolvedValue(undefined),
   removeMember: vi.fn().mockResolvedValue(undefined),
   updateSettings: vi.fn().mockResolvedValue(undefined),
   loading: false,
@@ -99,6 +100,25 @@ describe('FamilyPage — existing family', () => {
 
     await user.click(screen.getByRole('button', { name: /remove anand/i }));
     expect(removeMember).toHaveBeenCalledWith('u-anand');
+  });
+
+  it('an admin can toggle a member off the kiosk picker', async () => {
+    const updateMemberKioskVisibility = vi.fn().mockResolvedValue(undefined);
+    withFamily({ family: { id: 'f1', name: 'Fam' }, members, updateMemberKioskVisibility });
+    const user = userEvent.setup();
+    render(<FamilyPage />);
+
+    await user.click(screen.getByLabelText(/show anand on the kiosk picker/i));
+    expect(updateMemberKioskVisibility).toHaveBeenCalledWith('u-anand', false);
+  });
+
+  it('does not show the kiosk toggle to a non-admin', () => {
+    withFamily({
+      family: { id: 'f1', name: 'Fam' },
+      members: [{ id: 'm2', user_id: 'u-priya', role: 'parent', name: 'Priya' }],
+    });
+    render(<FamilyPage />);
+    expect(screen.queryByLabelText(/show on the kiosk picker/i)).not.toBeInTheDocument();
   });
 
   it('sends an invitation and shows the token', async () => {

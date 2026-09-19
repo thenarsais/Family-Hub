@@ -242,6 +242,27 @@ describe('FamilyService', () => {
     });
   });
 
+  describe('updateMemberKioskVisibility', () => {
+    it('updates and returns the member', async () => {
+      const updated = { user_id: 'user-1', show_on_kiosk: false };
+      (connection.queryOne as jest.Mock).mockResolvedValueOnce(updated);
+
+      const result = await service.updateMemberKioskVisibility('family-1', 'user-1', false);
+
+      expect(connection.queryOne).toHaveBeenCalledWith(expect.stringContaining('SET show_on_kiosk = $1'), [
+        false,
+        'family-1',
+        'user-1',
+      ]);
+      expect(result).toEqual(updated);
+    });
+
+    it('rethrows on failure', async () => {
+      (connection.queryOne as jest.Mock).mockRejectedValueOnce(new Error('db down'));
+      await expect(service.updateMemberKioskVisibility('family-1', 'user-1', true)).rejects.toThrow('db down');
+    });
+  });
+
   describe('removeMember', () => {
     it('should soft-delete the member', async () => {
       (connection.query as jest.Mock).mockResolvedValueOnce({});

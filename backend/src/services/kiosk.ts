@@ -172,7 +172,7 @@ export class KioskService {
       `SELECT fm.user_id, fm.role, fm.color, u.name
        FROM family_members fm
        LEFT JOIN users u ON u.id = fm.user_id
-       WHERE fm.family_id = $1 AND fm.is_active = true
+       WHERE fm.family_id = $1 AND fm.is_active = true AND fm.show_on_kiosk = true
        ORDER BY CASE fm.role WHEN 'admin' THEN 0 WHEN 'parent' THEN 1 ELSE 2 END, u.name`,
       [familyId],
     );

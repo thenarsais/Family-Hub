@@ -13,6 +13,10 @@ export type FamilyMemberWithUser = FamilyMember & {
   name: string | null;
   email: string | null;
   color: string | null;
+  /** Migration 029. False keeps a member off the kiosk "tap your name"
+   *  picker entirely -- e.g. a newborn who has a calendar color but no
+   *  Activity Board / kiosk presence yet. */
+  show_on_kiosk: boolean;
 };
 export type FamilySettings = Database['public']['Tables']['family_settings']['Row'];
 type FamilySettingsInsert = Database['public']['Tables']['family_settings']['Insert'];
@@ -270,6 +274,30 @@ class FamilyService {
       return result;
     } catch (error) {
       console.error('Failed to update member colour:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Set whether a family member appears on the kiosk "tap your name" picker
+   * (migration 029). `memberId` is the member's user_id, matching
+   * updateMemberRole/updateMemberColor.
+   */
+  async updateMemberKioskVisibility(
+    familyId: string,
+    memberId: string,
+    showOnKiosk: boolean,
+  ): Promise<FamilyMember | null> {
+    try {
+      const result = await queryOne<FamilyMember>(
+        `UPDATE family_members SET show_on_kiosk = $1, updated_at = CURRENT_TIMESTAMP
+         WHERE family_id = $2 AND user_id = $3
+         RETURNING *`,
+        [showOnKiosk, familyId, memberId]
+      );
+      return result;
+    } catch (error) {
+      console.error('Failed to update member kiosk visibility:', error);
       throw error;
     }
   }

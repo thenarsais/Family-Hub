@@ -7,26 +7,26 @@ import {
 } from '@/data/familyColors';
 
 describe('familyColors', () => {
-  it('has six named member colours, all distinct hex values', () => {
-    expect(FAMILY_COLORS).toHaveLength(6);
+  it('has seven named member colours, all distinct hex values', () => {
+    expect(FAMILY_COLORS).toHaveLength(7);
     const hexes = FAMILY_COLORS.map((c) => c.hex.toLowerCase());
-    expect(new Set(hexes).size).toBe(6);
+    expect(new Set(hexes).size).toBe(7);
     hexes.forEach((h) => expect(h).toMatch(/^#[0-9a-f]{6}$/));
   });
 
   it('maps an index to its named slot', () => {
     expect(colorForIndex(0)).toBe(FAMILY_COLORS[0]);
-    expect(colorForIndex(5)).toBe(FAMILY_COLORS[5]);
+    expect(colorForIndex(6)).toBe(FAMILY_COLORS[6]);
   });
 
-  it('falls back to the shared stone colour past the named slots', () => {
-    expect(colorForIndex(6)).toBe(SHARED_COLOR);
+  it('falls back to the shared neutral colour past the named slots', () => {
+    expect(colorForIndex(7)).toBe(SHARED_COLOR);
     expect(colorForIndex(99)).toBe(SHARED_COLOR);
   });
 
-  it('ALL_FAMILY_COLORS is the six named slots plus the shared stone', () => {
-    expect(ALL_FAMILY_COLORS).toHaveLength(7);
-    expect(ALL_FAMILY_COLORS[6]).toBe(SHARED_COLOR);
+  it('ALL_FAMILY_COLORS is the seven named slots plus the shared neutral', () => {
+    expect(ALL_FAMILY_COLORS).toHaveLength(8);
+    expect(ALL_FAMILY_COLORS[7]).toBe(SHARED_COLOR);
   });
 
   describe('resolveMemberColor', () => {

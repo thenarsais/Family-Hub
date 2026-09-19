@@ -31,6 +31,7 @@ interface UseFamilyReturn {
   inviteMember: (email: string, role: FamilyMember["role"]) => Promise<string>;
   updateMemberRole: (memberId: string, role: FamilyMember["role"]) => Promise<void>;
   updateMemberColor: (memberId: string, color: string | null) => Promise<void>;
+  updateMemberKioskVisibility: (memberId: string, showOnKiosk: boolean) => Promise<void>;
   removeMember: (memberId: string) => Promise<void>;
   updateSettings: (settings: FamilySettingsUpdate) => Promise<void>;
   refresh: () => Promise<void>;
@@ -135,6 +136,20 @@ export function useFamily(): UseFamilyReturn {
     );
   };
 
+  const updateMemberKioskVisibility = async (memberId: string, showOnKiosk: boolean): Promise<void> => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    await apiClient.patch(
+      `/api/family/members/${memberId}/kiosk-visibility`,
+      { showOnKiosk },
+      { headers: { 'x-user-id': user.id } },
+    );
+
+    setMembers((prev) =>
+      prev.map((m) => (m.user_id === memberId ? { ...m, show_on_kiosk: showOnKiosk } : m)),
+    );
+  };
+
   const removeMember = async (memberId: string): Promise<void> => {
     if (!user?.id) throw new Error('User not authenticated');
 
@@ -168,6 +183,7 @@ export function useFamily(): UseFamilyReturn {
     inviteMember,
     updateMemberRole,
     updateMemberColor,
+    updateMemberKioskVisibility,
     removeMember,
     updateSettings,
     refresh: fetchFamily,
