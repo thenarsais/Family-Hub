@@ -221,6 +221,36 @@ model for it is **T-14**, a separate task that depends on this deploy existing.
 
 ---
 
+## Data loss incident (2026-09-20)
+
+The real family roster (Krish, Karishma, Priya, Anand, Dada, Maa) was found **completely
+missing** from both the dev and prod Supabase projects — each had only the generic
+`testparent@example.com` / `testchild@example.com` seed accounts. No backup existed:
+neither project had a usable automatic backup in its retention window (free tier), and
+the only backup-named file in the repo (`lovelace.family_hub.backup`) turned out to be
+an unrelated Home Assistant Lovelace dashboard export, not database data.
+
+**Root cause:** unknown exactly when, but almost certainly one of the full database
+resets from earlier in the project (see `migrations-drift` in project history) — the
+real family existed and was actively used as late as 2026-09-14 (T-26/FR-158 was
+live-verified against it), and was gone by 2026-09-19/20.
+
+**Resolution:** rebuilt from scratch in dev under a new family, "The Narsais" — every
+member's name/role/color was already documented elsewhere in project history, so this
+was pure data entry, not a design decision. The account owner (Priya) got a real
+Supabase Auth login; everyone else got a placeholder `@familyhub.local` account (no one
+else logs in directly). Prod was left untouched — still just the seed account, since
+nothing is deployed against it yet.
+
+**Before the real deployment (Runbook §1) happens**, revisit the $25/mo Supabase Pro
+tier noted in Costs above, specifically for its point-in-time recovery (PITR) — the
+free tier's backup window was not enough to survive this. At minimum, take a manual
+`pg_dump` of the prod database after the real family is re-entered there, and store it
+somewhere outside Supabase (this repo is **not** an appropriate place — it would put
+real family PII in git history).
+
+---
+
 ## Alternative: Cloudflare Tunnel (needs a domain, ~$10/yr) — for later
 
 Swap the ingress if the `*.ts.net` hostname becomes annoying (family can't
