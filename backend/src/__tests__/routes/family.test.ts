@@ -10,6 +10,7 @@ const mockFamilyService = {
   acceptInvitation: jest.fn(),
   updateMemberRole: jest.fn(),
   updateMemberColor: jest.fn(),
+  updateMemberKioskVisibility: jest.fn(),
   removeMember: jest.fn(),
   getFamilySettings: jest.fn(),
   updateFamilySettings: jest.fn(),
@@ -477,6 +478,56 @@ describe('Family Routes', () => {
         .expect(200);
 
       expect(mockFamilyService.updateMemberColor).toHaveBeenCalledWith('family-1', 'u2', null);
+    });
+  });
+
+  describe('PATCH /api/family/members/:memberId/kiosk-visibility', () => {
+    it('should require a user id', async () => {
+      const res = await request(app)
+        .patch('/api/family/members/u2/kiosk-visibility')
+        .send({ showOnKiosk: false })
+        .expect(401);
+      expect(res.body.message).toBe('User ID required');
+    });
+
+    it('rejects a non-boolean showOnKiosk with 400', async () => {
+      const res = await request(app)
+        .patch('/api/family/members/u2/kiosk-visibility')
+        .set('x-user-id', 'user-1')
+        .send({ showOnKiosk: 'nope' })
+        .expect(400);
+      expect(res.body.message).toMatch(/showOnKiosk must be a boolean/);
+    });
+
+    it('returns 403 for a non parent/admin caller', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({
+        id: 'family-1',
+        members: [{ user_id: 'user-1', role: 'child' }],
+      });
+
+      const res = await request(app)
+        .patch('/api/family/members/u2/kiosk-visibility')
+        .set('x-user-id', 'user-1')
+        .send({ showOnKiosk: false })
+        .expect(403);
+      expect(res.body.message).toMatch(/parent or admin/);
+    });
+
+    it('sets kiosk visibility for a parent caller', async () => {
+      mockFamilyService.getUserFamily.mockResolvedValueOnce({
+        id: 'family-1',
+        members: [{ user_id: 'user-1', role: 'parent' }],
+      });
+      mockFamilyService.updateMemberKioskVisibility.mockResolvedValueOnce({ user_id: 'u2', show_on_kiosk: false });
+
+      const res = await request(app)
+        .patch('/api/family/members/u2/kiosk-visibility')
+        .set('x-user-id', 'user-1')
+        .send({ showOnKiosk: false })
+        .expect(200);
+
+      expect(mockFamilyService.updateMemberKioskVisibility).toHaveBeenCalledWith('family-1', 'u2', false);
+      expect(res.body.data).toEqual({ user_id: 'u2', show_on_kiosk: false });
     });
   });
 

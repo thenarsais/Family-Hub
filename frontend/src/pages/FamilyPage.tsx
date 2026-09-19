@@ -100,6 +100,7 @@ export default function FamilyPage() {
     addChild,
     inviteMember,
     updateMemberRole,
+    updateMemberKioskVisibility,
     removeMember,
     updateSettings,
     refresh,
@@ -242,6 +243,18 @@ export default function FamilyPage() {
                   </select>
                 ) : (
                   <span className="badge badge-primary capitalize">{m.role}</span>
+                )}
+
+                {isAdmin && !isSelf && (
+                  <label className="flex items-center gap-1.5 text-xs text-ink-2 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={m.show_on_kiosk ?? true}
+                      onChange={(e) => void updateMemberKioskVisibility(m.user_id, e.target.checked)}
+                      aria-label={`Show ${m.name || m.email || 'member'} on the kiosk picker`}
+                    />
+                    On kiosk
+                  </label>
                 )}
 
                 {canManage && m.role === 'child' && (

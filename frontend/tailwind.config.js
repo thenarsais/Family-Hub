@@ -36,6 +36,7 @@ export default {
           anand: c('fam-anand'),
           dada: c('fam-dada'),
           maa: c('fam-maa'),
+          kavish: c('fam-kavish'),
           all: c('fam-all'),
         },
 

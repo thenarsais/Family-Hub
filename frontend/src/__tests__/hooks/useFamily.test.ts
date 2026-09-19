@@ -257,6 +257,34 @@ describe('useFamily', () => {
     });
   });
 
+  describe('updateMemberKioskVisibility', () => {
+    it('patches kiosk visibility and updates local state', async () => {
+      mockGetPaths({ members: [{ id: 'm1', user_id: 'u2', role: 'child' }] });
+      (apiClient.patch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});
+
+      const { result } = renderHook(() => useFamily());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.updateMemberKioskVisibility('u2', false);
+      });
+
+      expect(apiClient.patch).toHaveBeenCalledWith(
+        '/api/family/members/u2/kiosk-visibility',
+        { showOnKiosk: false },
+        { headers: { 'x-user-id': 'user-1' } }
+      );
+      expect((result.current.members[0] as { show_on_kiosk?: boolean }).show_on_kiosk).toBe(false);
+    });
+
+    it('throws when there is no authenticated user', async () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useFamily());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await expect(result.current.updateMemberKioskVisibility('u2', false)).rejects.toThrow('User not authenticated');
+    });
+  });
+
   describe('updateSettings', () => {
     it('should patch and store the returned settings', async () => {
       mockGetPaths();

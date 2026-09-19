@@ -33,9 +33,10 @@
   --c-fam-karishma: 193 90 147;  /* #C15A93 magenta-pink */
   --c-fam-priya: 122 75 140;     /* #7A4B8C plum purple */
   --c-fam-anand: 58 110 165;     /* #3A6EA5 denim blue */
-  --c-fam-dada: 63 126 98;       /* #3F7E62 deep teal-green */
+  --c-fam-dada: 107 74 50;       /* #6B4A32 umber brown */
   --c-fam-maa: 175 133 36;       /* #AF8524 amber gold */
-  --c-fam-all: 140 129 114;      /* #8C8172 warm stone (unassigned) */
+  --c-fam-kavish: 59 125 74;     /* #3B7D4A forest green */
+  --c-fam-all: 122 117 109;      /* #7A756D neutral grey (unassigned) */
 }
 
 :root.dark,
@@ -63,9 +64,10 @@
   --c-fam-karishma: 216 137 183; /* #D889B7 */
   --c-fam-priya: 167 131 188;    /* #A783BC */
   --c-fam-anand: 110 155 203;    /* #6E9BCB */
-  --c-fam-dada: 102 176 142;     /* #66B08E */
+  --c-fam-dada: 156 116 82;      /* #9C7452 */
   --c-fam-maa: 214 166 63;       /* #D6A63F */
-  --c-fam-all: 169 155 134;      /* #A99B86 */
+  --c-fam-kavish: 111 181 124;   /* #6FB57C */
+  --c-fam-all: 163 157 145;      /* #A39D91 */
 }
 
 /* Base */

@@ -16,11 +16,12 @@ export const FAMILY_COLORS: FamilyColor[] = [
   { key: 'karishma', label: 'Magenta-pink', hex: '#C15A93' },
   { key: 'priya', label: 'Plum purple', hex: '#7A4B8C' },
   { key: 'anand', label: 'Denim blue', hex: '#3A6EA5' },
-  { key: 'dada', label: 'Forest green', hex: '#357A3E' },
+  { key: 'dada', label: 'Umber brown', hex: '#6B4A32' },
   { key: 'maa', label: 'Amber gold', hex: '#AF8524' },
+  { key: 'kavish', label: 'Forest green', hex: '#3B7D4A' },
 ];
 
-export const SHARED_COLOR: FamilyColor = { key: 'all', label: 'Warm stone', hex: '#8C8172' };
+export const SHARED_COLOR: FamilyColor = { key: 'all', label: 'Neutral grey', hex: '#7A756D' };
 
 /** Every assignable colour, for the calendar-settings picker. */
 export const ALL_FAMILY_COLORS: FamilyColor[] = [...FAMILY_COLORS, SHARED_COLOR];

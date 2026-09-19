@@ -383,7 +383,7 @@ router.patch('/members/:memberId/role', async (req: Request, res: Response) => {
  * PATCH /api/family/members/:memberId/color
  * Set or clear (color: null) a member's calendar colour key. Parents/admins only.
  */
-const FAMILY_COLOR_KEYS = ['krish', 'karishma', 'priya', 'anand', 'dada', 'maa', 'all'];
+const FAMILY_COLOR_KEYS = ['krish', 'karishma', 'priya', 'anand', 'dada', 'maa', 'kavish', 'all'];
 
 router.patch('/members/:memberId/color', async (req: Request, res: Response) => {
   try {
@@ -423,6 +423,50 @@ router.patch('/members/:memberId/color', async (req: Request, res: Response) => 
     res.status(500).json({
       status: 'error',
       message: 'Failed to update member colour',
+      error: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * PATCH /api/family/members/:memberId/kiosk-visibility
+ * Show/hide a member on the kiosk "tap your name" picker. Parents/admins only.
+ */
+router.patch('/members/:memberId/kiosk-visibility', async (req: Request, res: Response) => {
+  try {
+    const userId = req.headers['x-user-id'] as string;
+    const { memberId } = req.params;
+    const { showOnKiosk } = req.body ?? {};
+
+    if (!userId) {
+      return res.status(401).json({ status: 'error', message: 'User ID required' });
+    }
+
+    if (typeof showOnKiosk !== 'boolean') {
+      return res.status(400).json({ status: 'error', message: 'showOnKiosk must be a boolean' });
+    }
+
+    const userFamily = await family.getUserFamily(userId);
+    if (!userFamily) {
+      return res.status(404).json({ status: 'error', message: 'No family found' });
+    }
+
+    const caller = userFamily.members.find((m) => m.user_id === userId);
+    if (!caller || !['admin', 'parent'].includes(caller.role)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Only a parent or admin can change kiosk visibility',
+      });
+    }
+
+    const updated = await family.updateMemberKioskVisibility(userFamily.id, memberId as string, showOnKiosk);
+
+    res.json({ status: 'success', data: updated, timestamp: new Date().toISOString() });
+  } catch (error: unknown) {
+    console.error('Failed to update member kiosk visibility:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update member kiosk visibility',
       error: getErrorMessage(error),
     });
   }

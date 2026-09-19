@@ -2716,9 +2716,29 @@ export interface paths {
         head?: never;
         /**
          * Set or clear a family member's calendar colour key
-         * @description `memberId` is the member's user_id (same as the role endpoint). `color` is one of krish, karishma, priya, anand, dada, maa, all — or null to clear it. Parents/admins only.
+         * @description `memberId` is the member's user_id (same as the role endpoint). `color` is one of krish, karishma, priya, anand, dada, maa, kavish, all — or null to clear it. Parents/admins only.
          */
         patch: operations["updateFamilyMemberColor"];
+        trace?: never;
+    };
+    "/api/family/members/{memberId}/kiosk-visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Show or hide a family member on the kiosk "tap your name" picker
+         * @description `memberId` is the member's user_id (same as the role/color endpoints). False keeps the member off the kiosk profile picker entirely and out of the Activity Board's profile-switch flow, without removing them from the family (e.g. a newborn with a calendar color but no board presence yet). Parents/admins only.
+         */
+        patch: operations["updateFamilyMemberKioskVisibility"];
         trace?: never;
     };
     "/api/family/members/{memberId}": {
@@ -4114,6 +4134,8 @@ export interface components {
             email?: string | null;
             /** @description Calendar colour key (migration 006); null until a parent assigns one. */
             color?: string | null;
+            /** @description Migration 029. False keeps this member off the kiosk 'tap your name' picker; defaults true. */
+            show_on_kiosk?: boolean;
         };
         FamilyWithMembers: components["schemas"]["Family"] & {
             member_count: number;
@@ -14287,7 +14309,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @enum {string|null} */
-                    color: "krish" | "karishma" | "priya" | "anand" | "dada" | "maa" | "all" | null;
+                    color: "krish" | "karishma" | "priya" | "anand" | "dada" | "maa" | "kavish" | "all" | null;
                 };
             };
         };
@@ -14304,6 +14326,81 @@ export interface operations {
                 };
             };
             /** @description Invalid colour key. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Missing x-user-id. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Caller is not a parent/admin. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description No family found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+            /** @description Unexpected failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeError"];
+                };
+            };
+        };
+    };
+    updateFamilyMemberKioskVisibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    showOnKiosk: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeSuccess"] & {
+                        data?: components["schemas"]["FamilyMember"];
+                    };
+                };
+            };
+            /** @description showOnKiosk must be a boolean. */
             400: {
                 headers: {
                     [name: string]: unknown;
